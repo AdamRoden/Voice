@@ -4,222 +4,233 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AAC Chat</title>
+  <!-- Google Material Symbols Outlined Font -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   <style>
-    :root, :root[data-theme="dark"] { --bg-main: #131314; --bg-surface: #1e1f20; --bg-surface-hover: #282a2c; --bg-surface-active: #333537; --border: #333537; --accent: #8ab4f8; --accent-hover: #aecbfa; --text: #e3e3e3; --text-secondary: #8e918f; --display-bg: #1e1f20; --key-bg: #282a2c; --key-hover: #333537; --key-active: #444746; --danger: #f2b8b5; --danger-bg: #601410; --shadow: rgba(0, 0, 0, 0.4); color-scheme: dark; }
+    :root, :root[data-theme="dark"] { --bg-main: #131314; --bg-surface: #1e1f20; --bg-surface-hover: #282a2c; --bg-surface-active: #333537; --border: #333537; --accent: #8ab4f8; --accent-hover: #aecbfa; --text: #e3e3e3; --text-secondary: #8e918f; --display-bg: #1e1f20; --key-bg: #282a2c; --key-hover: #333537; --key-active: #444746; --danger: #f2b8b5; --danger-bg: #601410; --shadow: rgba(0, 0, 0, 0.4); --icon-fill: 0; --icon-wght: 400; --icon-grad: 0; --icon-opsz: 24; color-scheme: dark; }
       :root[data-theme="light"] { --bg-main: #f0f4f9; --bg-surface: #ffffff; --bg-surface-hover: #e9eef6; --bg-surface-active: #dde3ea; --border: #c4c7c5; --accent: #0b57d0; --accent-hover: #0842a0; --text: #1f1f1f; --text-secondary: #444746; --display-bg: #ffffff; --key-bg: #e9eef6; --key-hover: #dde3ea; --key-active: #c4c7c5; --danger: #b3261e; --danger-bg: #f9dedc; --shadow: rgba(0, 0, 0, 0.15); color-scheme: light; }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
 
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
       ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
 
-    body { background-color: var(--bg-main); color: var(--text); display: flex; height: 100vh; overflow: hidden; font-size: 15px; transition: background-color 0.2s ease, color 0.2s ease; }
+    body { background-color: var(--bg-main); color: var(--text); display: flex; height: 100vh; overflow: hidden; transition: background-color 0.2s ease, color 0.2s ease; }
 
-    /* ==================== LEFT SIDEBAR (GEMINI STYLE) ==================== */
-    .sidebar { width: 260px; background-color: var(--bg-surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 100; flex-shrink: 0; user-select: none; position: relative; }
-      .sidebar.collapsed { width: 68px; }
+    /* Google Material Symbols Default Styling */
+    .material-symbols-outlined, .nav-icon, .topic-icon, .icon-btn, .search-icon, .toggle-arrow, .icon-studio-item, .ico { 
+      font-family: 'Material Symbols Outlined' !important; font-weight: normal; font-style: normal; font-size: 20px; 
+      line-height: 1; letter-spacing: normal; text-transform: none; display: inline-block; white-space: nowrap; 
+      word-wrap: normal; direction: ltr; -webkit-font-feature-settings: 'liga'; -webkit-font-smoothing: antialiased; 
+      font-variation-settings: 'FILL' var(--icon-fill, 0), 'wght' var(--icon-wght, 400), 'GRAD' var(--icon-grad, 0), 
+        'opsz' var(--icon-opsz, 24); vertical-align: middle; flex-shrink: 0; user-select: none; }
 
-    .sidebar-header { display: flex; align-items: center; padding: 12px 14px; gap: 12px; min-height: 60px; }
-    .icon-btn { background: none; border: none; color: var(--text); font-size: 20px; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s; flex-shrink: 0; }
+    /* ==================== LEFT SIDEBAR (MINIMALIST) ==================== */
+    .sidebar { width: 300px; background-color: var(--bg-surface); border-right: 1px solid var(--border); display: flex; 
+               flex-direction: column; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 100; flex-shrink: 0; 
+               user-select: none; position: relative; height: 100vh; overflow: hidden; }
+      .sidebar.collapsed { width: 48px; }
+
+    .sidebar-header { display: flex; align-items: center; padding: 6px 10px; gap: 8px; min-height: 44px; flex-shrink: 0; }
+    .icon-btn { background: none; border: none; color: var(--text); cursor: pointer; width: 34px; height: 34px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s; }
       .icon-btn:hover { background-color: var(--bg-surface-hover); }
 
-    .logo-text { font-size: 18px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; opacity: 1; transition: opacity 0.2s; }
+    .logo-text { font-size: 16px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; opacity: 1; transition: opacity 0.2s; }
     .sidebar.collapsed .logo-text { opacity: 0; pointer-events: none; }
 
-    .sidebar-nav { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0 8px; display: flex; flex-direction: column; gap: 6px; }
+    .sidebar-nav { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0 4px; display: flex; flex-direction: column; gap: 2px; }
 
-    /* Accordion Section Headers */
-    .nav-accordion-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 20px; cursor: pointer; color: var(--text); font-size: 14px; font-weight: 500; transition: all 0.2s; white-space: nowrap; min-height: 44px; }
+    .accordion-section { display: flex; flex-direction: column; flex-shrink: 0; transition: all 0.2s; }
+    #section-history.open { flex: 1; min-height: 0; }
+
+    .nav-accordion-header { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-radius: 8px; cursor: pointer; color: var(--text); font-size: 18px; font-weight: 500; transition: all 0.2s; white-space: nowrap; min-height: 34px; flex-shrink: 0; }
       .nav-accordion-header:hover { background-color: var(--bg-surface-hover); }
-    .nav-left-content { display: flex; align-items: center; gap: 14px; overflow: hidden; flex: 1; }
-    .nav-icon { font-size: 18px; width: 24px; text-align: center; flex-shrink: 0; }
+    .nav-left-content { display: flex; align-items: center; gap: 8px; overflow: hidden; flex: 1; }
+    .nav-icon { font-size: 20px; width: 24px; text-align: center; }
     .nav-label { flex: 1; overflow: hidden; text-overflow: ellipsis; opacity: 1; transition: opacity 0.2s; }
     .sidebar.collapsed .nav-label { opacity: 0; pointer-events: none; }
 
-    .nav-actions { display: flex; align-items: center; gap: 4px; }
-    .nav-action-btn { background: none; border: none; color: var(--text-secondary); font-size: 14px; cursor: pointer; padding: 4px 6px; border-radius: 50%; transition: color 0.2s, background 0.2s; }
+    .nav-actions { display: flex; align-items: center; gap: 2px; }
+    .nav-action-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 2px; border-radius: 4px; transition: color 0.2s, background 0.2s; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; }
       .nav-action-btn:hover { background-color: var(--bg-surface-active); color: var(--text); }
     .sidebar.collapsed .nav-actions { display: none; }
 
-    .toggle-arrow { font-size: 10px; color: var(--text-secondary); transition: transform 0.2s; margin-left: 4px; }
+    .toggle-arrow { font-size: 16px; color: var(--text-secondary); transition: transform 0.2s; }
     .accordion-section.open .toggle-arrow { transform: rotate(180deg); }
     .sidebar.collapsed .toggle-arrow { display: none; }
 
-    /* Collapsible Content Inside Sidebar */
-    .accordion-content { display: none; flex-direction: column; gap: 4px; padding: 4px 0 8px 12px; margin-left: 12px; border-left: 1px solid var(--border); overflow: hidden; }
+    /* Requirement 1: Padded on the left by only 4px and have no other padding */
+    .accordion-content { display: none; flex-direction: column; gap: 2px; padding: 0 0 0 4px; margin: 0; border: none; overflow: hidden; }
     .accordion-section.open .accordion-content { display: flex; }
     .sidebar.collapsed .accordion-content { display: none !important; }
+    #section-history.open .accordion-content { flex: 1; min-height: 0; gap: 0; }
 
     /* Topic Items */
-    .topic-item { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 16px; cursor: pointer; font-size: 13px; color: var(--text); transition: background 0.2s; min-height: 38px; justify-content: space-between; }
+    .topic-item { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 16px; color: var(--text); transition: background 0.2s; min-height: 28px; justify-content: space-between; }
       .topic-item:hover { background-color: var(--bg-surface-hover); }
       .topic-item.active { background-color: var(--bg-surface-active); color: var(--accent); font-weight: 600; }
-    .topic-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+    .topic-icon { font-size: 18px; width: 18px; text-align: center; }
     .topic-actions { display: flex; opacity: 0; transition: opacity 0.2s; }
     .topic-item:hover .topic-actions { opacity: 1; }
 
-    /* Embedded Settings & History Controls */
-    .sidebar-setting-group { display: flex; flex-direction: column; gap: 6px; padding: 6px 8px; }
-      .sidebar-setting-group label { font-size: 12px; color: var(--text-secondary); display: flex; justify-content: space-between; font-weight: 500; }
-      .sidebar-setting-group select, .sidebar-setting-group input[type="text"] { background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 8px 10px; border-radius: 8px; font-size: 13px; outline: none; }
-      .sidebar-setting-group input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+    /* Embedded Settings Controls */
+    .sidebar-setting-group { display: flex; flex-direction: column; gap: 4px; padding: 2px 4px; }
+      .sidebar-setting-group label { font-size: 14px; color: var(--text-secondary); display: flex; justify-content: space-between; font-weight: 500; }
+      .sidebar-setting-group select, .sidebar-setting-group input[type="text"] { background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 4px 6px; border-radius: 6px; font-size: 14px; outline: none; }
+      .sidebar-setting-group input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; height: 14px; }
 
-    .status-btn { background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 8px 10px; border-radius: 8px; font-size: 12px; cursor: pointer; text-align: left; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; width: 100%; }
+    .status-btn { background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 4px 6px; border-radius: 6px; font-size: 14px; cursor: pointer; text-align: left; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; width: 100%; }
       .status-btn:hover { border-color: var(--accent); }
       .status-btn.missing { border-color: var(--danger); color: var(--danger); }
       .status-btn.saved { border-color: #81c784; color: #81c784; }
 
-    .font-controls { display: flex; gap: 6px; align-items: center; }
-    .font-btn { flex: 1; background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 6px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; text-align: center; }
+    .font-controls { display: flex; gap: 4px; align-items: center; }
+    .font-btn { flex: 1; background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 4px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; text-align: center; }
       .font-btn:hover { background-color: var(--key-hover); }
 
-    /* Embedded History */
-    .history-search-box { position: relative; padding: 4px 8px; }
-      .history-search-box input { width: 100%; background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 6px 24px 6px 28px; border-radius: 14px; font-size: 12px; outline: none; }
-      .history-search-box .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--text-secondary); }
-    .history-list { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding: 4px 8px; }
-    .history-item { background-color: var(--bg-main); border: 1px solid var(--border); border-radius: 10px; padding: 8px; font-size: 12px; display: flex; flex-direction: column; gap: 6px; }
-    .history-item-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; }
+    /* Requirement 2: History list zero gap top/bottom and expand to fill window */
+    .history-search-box { position: relative; padding: 0 0 2px 0; margin: 0; flex-shrink: 0; }
+      .history-search-box input { width: 100%; background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 4px 20px 4px 24px; border-radius: 6px; font-size: 14px; outline: none; }
+      .history-search-box .search-icon { position: absolute; left: 6px; top: 50%; transform: translateY(-50%); font-size: 14px; color: var(--text-secondary); }
+    .history-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding: 0; margin: 0; max-height: none !important; }
+    .history-item { background-color: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; font-size: 14px; display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+    .history-item-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 4px; }
     .history-item-text { font-weight: 500; cursor: pointer; word-break: break-word; flex: 1; }
-    .history-item-meta { font-size: 10px; color: var(--text-secondary); white-space: nowrap; }
-    .history-actions { display: flex; gap: 4px; }
-    .history-btn { flex: 1; background: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 4px; border-radius: 4px; font-size: 10px; cursor: pointer; text-align: center; }
+    .history-item-meta { font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
+    .history-actions { display: flex; gap: 2px; }
+    .history-btn { flex: 1; background: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 2px; border-radius: 4px; font-size: 14px; cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center; gap: 2px; }
       .history-btn:hover { background: var(--key-hover); }
       .history-btn.restore { color: var(--accent); border-color: var(--accent); }
 
-    .clear-history-btn { background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 6px; border-radius: 8px; font-size: 11px; cursor: pointer; margin: 4px 8px; text-align: center; }
+    .clear-history-btn { background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 4px; border-radius: 6px; font-size: 14px; cursor: pointer; margin: 2px 0 0 0; text-align: center; flex-shrink: 0; }
       .clear-history-btn:hover { background: var(--danger-bg); }
 
-    /* Gemini Style Footer & Context Popup */
-    .sidebar-footer { padding: 12px; border-top: 1px solid var(--border); position: relative; }
-    .gemini-settings-btn { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 20px; cursor: pointer; color: var(--text); font-size: 14px; font-weight: 500; transition: all 0.2s; min-height: 44px; }
+    /* Footer & Context Popup */
+    .sidebar-footer { padding: 4px; border-top: 1px solid var(--border); position: relative; flex-shrink: 0; }
+    .gemini-settings-btn { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-radius: 8px; cursor: pointer; color: var(--text); font-size: 16px; font-weight: 500; transition: all 0.2s; min-height: 34px; }
       .gemini-settings-btn:hover { background-color: var(--bg-surface-hover); }
-    .sidebar.collapsed .gemini-settings-btn { justify-content: center; padding: 10px 0; }
+    .sidebar.collapsed .gemini-settings-btn { justify-content: center; padding: 6px 0; }
       .sidebar.collapsed .gemini-settings-btn .nav-label { display: none; }
 
-    .gemini-context-popup { position: absolute; bottom: 64px; left: 12px; width: 236px; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 8px 24px var(--shadow); padding: 8px; display: none; flex-direction: column; gap: 4px; z-index: 500; }
+    .gemini-context-popup { position: absolute; bottom: 44px; left: 4px; width: 220px; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px var(--shadow); padding: 4px; display: none; flex-direction: column; gap: 2px; z-index: 500; }
       .gemini-context-popup.open { display: flex; }
-    .sidebar.collapsed .gemini-context-popup { left: 68px; bottom: 12px; width: 220px; }
+    .sidebar.collapsed .gemini-context-popup { left: 56px; bottom: 4px; width: 200px; }
 
-    .popup-menu-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; cursor: pointer; font-size: 13px; color: var(--text); transition: background 0.2s; }
+    .popup-menu-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 12px; color: var(--text); transition: background 0.2s; }
       .popup-menu-item:hover { background-color: var(--bg-surface-hover); }
-    .popup-divider { height: 1px; background-color: var(--border); margin: 4px 0; }
+    .popup-divider { height: 1px; background-color: var(--border); margin: 2px 0; }
 
-    /* ==================== MAIN WORKSPACE ==================== */
-    .app-main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 12px; padding: 12px; overflow: hidden; height: 100%; }
+    /* ==================== MAIN WORKSPACE (MINIMALIST) ==================== */
+    .app-main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 6px; padding: 6px; overflow: hidden; height: 100%; }
 
-    .workspace-header { display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-surface); padding: 10px 16px; border-radius: 16px; border: 1px solid var(--border); min-height: 54px; flex-shrink: 0; gap: 12px; flex-wrap: wrap; }
-    .topic-title-area { display: flex; align-items: center; gap: 10px; }
-    .active-topic-icon { font-size: 22px; }
-    .active-topic-name { font-size: 18px; font-weight: 600; }
+    .workspace-header { display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-surface); padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); min-height: 40px; flex-shrink: 0; gap: 8px; flex-wrap: wrap; }
+    .topic-title-area { display: flex; align-items: center; gap: 6px; }
+    .active-topic-icon { font-size: 20px; }
+    .active-topic-name { font-size: 16px; font-weight: 600; }
 
-    .workspace-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .tool-btn { background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 8px 14px; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; transition: all 0.2s; white-space: nowrap; }
+    .workspace-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .tool-btn { background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 4px 10px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 4px; transition: all 0.2s; white-space: nowrap; height: 28px; }
       .tool-btn:hover { background-color: var(--key-hover); border-color: var(--text-secondary); }
       .tool-btn.primary { background-color: var(--accent); color: #fff; border-color: var(--accent); }
         .tool-btn.primary:hover { background-color: var(--accent-hover); }
 
-    .edit-mode-controls { display: none; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .edit-mode-controls { display: none; align-items: center; gap: 6px; flex-wrap: wrap; }
       .edit-mode-controls.open { display: flex; }
 
-    /* Stepper Controls in Header */
-    .header-stepper-group { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); background: var(--bg-main); padding: 2px 8px; border-radius: 12px; border: 1px solid var(--border); }
-    .num-control-wrapper { display: flex; align-items: center; gap: 4px; }
-    .num-control-btn { background: var(--key-bg); border: none; color: var(--text); width: 22px; height: 22px; border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .header-stepper-group { display: flex; align-items: center; gap: 4px; font-size: 14px; color: var(--text-secondary); background: var(--bg-main); padding: 2px 6px; border-radius: 6px; border: 1px solid var(--border); height: 28px; }
+    .num-control-wrapper { display: flex; align-items: center; gap: 2px; }
+    .num-control-btn { background: var(--key-bg); border: none; color: var(--text); width: 18px; height: 18px; border-radius: 4px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
       .num-control-btn:hover { background: var(--key-hover); }
-    .num-control-val { font-weight: 600; color: var(--text); min-width: 16px; text-align: center; }
+    .num-control-val { font-weight: 600; color: var(--text); min-width: 14px; text-align: center; font-size: 14px; }
 
-    /* Text Area & Floating Audio Bar */
-    .textarea-wrapper { flex: 1; display: flex; flex-direction: column; position: relative; min-height: 140px; }
-    .display-textarea { width: 100%; height: 100%; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px 20px; line-height: 1.4; color: var(--text); font-size: 32px; resize: none; outline: none; white-space: pre-wrap; word-break: break-word; transition: border-color 0.2s; }
+    /* Text Area & Audio Bar */
+    .textarea-wrapper { flex: 1; display: flex; flex-direction: column; position: relative; min-height: 100px; }
+    .display-textarea { width: 100%; height: 100%; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; line-height: 1.3; color: var(--text); font-size: 24px; resize: none; outline: none; white-space: pre-wrap; word-break: break-word; transition: border-color 0.2s; }
       .display-textarea:focus { border-color: var(--accent); }
 
-    .audio-actions-bar { position: absolute; bottom: 12px; right: 16px; display: none; align-items: center; gap: 8px; background-color: var(--bg-main); border: 1px solid var(--border); padding: 6px 10px; border-radius: 20px; box-shadow: 0 4px 12px var(--shadow); z-index: 20; }
+    .audio-actions-bar { position: absolute; bottom: 8px; right: 8px; display: none; align-items: center; gap: 6px; background-color: var(--bg-main); border: 1px solid var(--border); padding: 4px 8px; border-radius: 8px; box-shadow: 0 4px 12px var(--shadow); z-index: 20; }
       .audio-actions-bar.active { display: flex; }
-    .audio-action-btn { background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 14px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s; }
+    .audio-action-btn { background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; gap: 4px; }
       .audio-action-btn:hover { background-color: var(--key-hover); }
       .audio-action-btn.play { color: var(--accent); border-color: var(--accent); }
 
-    /* Overwrite Mode Banner */
-    .overwrite-banner { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background-color: var(--accent); color: #fff; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; display: none; align-items: center; gap: 12px; box-shadow: 0 4px 16px var(--shadow); z-index: 30; }
+    /* Overwrite Banner */
+    .overwrite-banner { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); background-color: var(--accent); color: #fff; padding: 6px 12px; border-radius: 8px; font-size: 14px; font-weight: 600; display: none; align-items: center; gap: 8px; box-shadow: 0 4px 16px var(--shadow); z-index: 30; }
       .overwrite-banner.active { display: flex; }
-    .overwrite-cancel-btn { background: rgba(0,0,0,0.2); border: none; color: #fff; padding: 4px 8px; border-radius: 10px; cursor: pointer; font-size: 11px; font-weight: bold; }
+    .overwrite-cancel-btn { background: rgba(0,0,0,0.2); border: none; color: #fff; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
 
     /* Sound Button Canvas */
-    .sound-canvas { flex: 0 0 auto; max-height: 34vh; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 16px; display: grid; gap: 8px; padding: 12px; overflow-y: auto; touch-action: none; transition: border-color 0.2s; position: relative; }
+    .sound-canvas { flex: 0 0 auto; max-height: 48vh; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; display: grid; gap: 4px; padding: 6px; overflow-y: auto; touch-action: none; transition: border-color 0.2s; position: relative; }
       .sound-canvas.edit-mode { border: 2px dashed var(--accent); }
 
-    /* Wiggle Animation for Edit Mode */
     @keyframes wiggle {
-      0% { transform: rotate(-1.2deg) scale(1); }
-      50% { transform: rotate(1.2deg) scale(1); }
-      100% { transform: rotate(-1.2deg) scale(1); }
+      0% { transform: rotate(-1deg) scale(1); }
+      50% { transform: rotate(1deg) scale(1); }
+      100% { transform: rotate(-1deg) scale(1); }
     }
 
-    .sound-button { position: relative; background-color: var(--key-bg); border: 2px solid var(--border); border-radius: 12px; padding: 0 10px; cursor: pointer; user-select: none; transition: all 0.15s ease; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; color: #fff; overflow: hidden; width: 100%; height: 52px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
-      .sound-button:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 8px var(--shadow); }
+    .sound-button { position: relative; background-color: var(--key-bg); border: 1px solid var(--border); border-radius: 6px; padding: 0 6px; cursor: pointer; user-select: none; transition: all 0.15s ease; 
+                    display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; color: #fff; overflow: hidden; width: 100%; height: 48px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+      .sound-button:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 2px 6px var(--shadow); }
       .sound-button:active { transform: translateY(0); }
-
-      /* Wiggle active only in edit mode when not actively dragging */
-      .sound-button.edit-mode:not(.dragging) { animation: wiggle 0.25s infinite ease-in-out; cursor: grab; padding-left: 36px; }
+      .sound-button.edit-mode:not(.dragging) { animation: wiggle 0.25s infinite ease-in-out; cursor: grab; padding-left: 28px; }
       .sound-button.dragging { opacity: 0.8; cursor: grabbing; z-index: 50; transform: scale(1.05); box-shadow: 0 8px 20px var(--shadow); animation: none; }
-
-      /* Swap Target Glow */
-      .sound-button.swap-target { border-color: #81c784; box-shadow: 0 0 0 4px rgba(129, 199, 132, 0.4); transform: scale(1.02); }
-      .sound-button.overwrite-target { animation: wiggle 0.4s infinite ease-in-out; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(138, 180, 248, 0.5); }
+      .sound-button.swap-target { border-color: #81c784; box-shadow: 0 0 0 3px rgba(129, 199, 132, 0.4); transform: scale(1.02); }
+      .sound-button.overwrite-target { animation: wiggle 0.4s infinite ease-in-out; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(138, 180, 248, 0.5); }
 
     .sound-button-label { width: 100%; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
-    .sound-button-edit-btn { position: absolute; left: 6px; top: 50%; transform: translateY(-50%); width: 26px; height: 26px; border: 1px solid rgba(255,255,255,0.4); border-radius: 6px; background-color: rgba(0,0,0,0.4); color: white; font-size: 13px; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 5; }
+    .sound-button-edit-btn { position: absolute; left: 4px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; border: 1px solid rgba(255,255,255,0.4); border-radius: 4px; background-color: rgba(0,0,0,0.4); color: white; font-size: 12px; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 5; }
     .sound-canvas.edit-mode .sound-button .sound-button-edit-btn { display: flex; }
     .sound-button-edit-btn:hover { background-color: rgba(0,0,0,0.7); }
 
     /* Bottom Dock */
-    .bottom-dock { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
-    .toolbar { display: flex; gap: 6px; align-items: stretch; height: 52px; }
-    .predictions-wrapper { display: flex; flex: 1; gap: 6px; overflow-x: auto; }
-    .key { background-color: var(--key-bg); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-size: 15px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; padding: 0 16px; white-space: nowrap; height: 52px; }
+    .bottom-dock { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+    .toolbar { display: flex; gap: 4px; align-items: stretch; height: 48px; }
+    .predictions-wrapper { display: flex; flex: 1; gap: 4px; overflow-x: auto; }
+    .key { background-color: var(--key-bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 16px; font-weight: 500; cursor: pointer; display: flex; align-items: center; 
+           justify-content: center; gap: 4px; transition: all 0.15s; padding: 0 10px; white-space: nowrap; height: 48px; }
       .key:hover { background-color: var(--key-hover); border-color: var(--text-secondary); }
       .key:active { background-color: var(--key-active); transform: scale(0.98); }
-      .key.prediction-btn { flex: 1; min-width: 80px; color: var(--accent); font-weight: 600; }
-      .key.tts-btn { background-color: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; min-width: 110px; }
+      .key.prediction-btn { flex: 1; min-width: 64px; color: var(--accent); font-weight: 600; }
+      .key.tts-btn { background-color: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; min-width: 90px; }
         .key.tts-btn:hover { background-color: var(--accent-hover); }
-      .key.clear-btn { background-color: transparent; color: var(--danger); border-color: var(--danger); min-width: 80px; }
+      .key.clear-btn { background-color: transparent; color: var(--danger); border-color: var(--danger); min-width: 70px; }
         .key.clear-btn:hover { background-color: var(--danger-bg); }
 
     /* ==================== MODALS & POPUPS ==================== */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.6); opacity: 0; pointer-events: none; transition: opacity 0.2s ease; z-index: 2000; }
       .modal-overlay.open { opacity: 1; pointer-events: auto; }
 
-    .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95); background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 20px; padding: 24px; display: none; flex-direction: column; gap: 16px; z-index: 2001; min-width: 360px; max-width: 90vw; max-height: 85vh; overflow-y: auto; box-shadow: 0 12px 32px var(--shadow); transition: transform 0.2s ease; }
+    .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95); background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: none; flex-direction: column; gap: 10px; z-index: 2001; min-width: 320px; max-width: 90vw; max-height: 85vh; overflow-y: auto; box-shadow: 0 12px 32px var(--shadow); transition: transform 0.2s ease; }
       .modal.open { display: flex; transform: translate(-50%, -50%) scale(1); }
-    .modal-title { font-size: 18px; font-weight: 600; color: var(--text); }
-    .modal-input { background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 10px 12px; border-radius: 8px; font-size: 14px; outline: none; width: 100%; }
+    .modal-title { font-size: 15px; font-weight: 600; color: var(--text); }
+    .modal-input { background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 6px 8px; border-radius: 6px; font-size: 13px; outline: none; width: 100%; }
       .modal-input:focus { border-color: var(--accent); }
 
-    .modal-color-picker { display: flex; gap: 8px; flex-wrap: wrap; }
-    .color-option { width: 32px; height: 32px; border: 2px solid transparent; border-radius: 50%; cursor: pointer; transition: transform 0.2s; }
+    .modal-color-picker { display: flex; gap: 6px; flex-wrap: wrap; }
+    .color-option { width: 26px; height: 26px; border: 2px solid transparent; border-radius: 50%; cursor: pointer; transition: transform 0.2s; }
       .color-option:hover { transform: scale(1.1); }
       .color-option.selected { border-color: #fff; box-shadow: 0 0 0 2px var(--accent); }
 
-    /* Elegant Google Fonts Style Icon Studio */
-    .icon-studio-search { position: relative; margin-bottom: 8px; }
-      .icon-studio-search input { width: 100%; background: var(--bg-main); border: 1px solid var(--border); padding: 10px 12px 10px 36px; border-radius: 12px; color: var(--text); font-size: 13px; outline: none; }
-      .icon-studio-search .search-ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
+    /* Elegant Google Fonts Icon Studio */
+    .icon-studio-search { position: relative; margin-bottom: 4px; }
+      .icon-studio-search input { width: 100%; background: var(--bg-main); border: 1px solid var(--border); padding: 6px 8px 6px 30px; border-radius: 6px; color: var(--text); font-size: 12px; outline: none; }
+      .icon-studio-search .search-ico { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 16px; }
 
-    .icon-studio-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; max-height: 200px; overflow-y: auto; padding: 8px; background: var(--bg-main); border: 1px solid var(--border); border-radius: 12px; }
-    .icon-studio-item { font-size: 22px; padding: 8px; text-align: center; border-radius: 8px; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; display: flex; align-items: center; justify-content: center; }
+    .icon-studio-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; max-height: 200px; overflow-y: auto; padding: 6px; background: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; }
+    .icon-studio-item { font-size: 24px; padding: 6px; text-align: center; border-radius: 6px; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; display: flex; align-items: center; justify-content: center; }
       .icon-studio-item:hover { background-color: var(--key-hover); transform: scale(1.15); }
       .icon-studio-item.selected { background-color: var(--bg-surface-active); border-color: var(--accent); transform: scale(1.1); }
 
-    .icon-studio-controls { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
-    .icon-size-btns { display: flex; gap: 4px; }
-    .size-btn { background: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 11px; }
+    .icon-studio-controls { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+    .icon-size-btns { display: flex; gap: 2px; }
+    .size-btn { background: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 2px 6px; border-radius: 4px; cursor: pointer; font-size: 10px; }
       .size-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-    .modal-buttons { display: flex; gap: 10px; margin-top: 8px; }
-    .modal-btn { flex: 1; padding: 10px; border: none; border-radius: 20px; cursor: pointer; font-weight: 600; font-size: 14px; transition: background 0.2s; text-align: center; }
+    .modal-buttons { display: flex; gap: 6px; margin-top: 4px; }
+    .modal-btn { flex: 1; padding: 6px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; transition: background 0.2s; text-align: center; }
       .modal-btn.primary { background-color: var(--accent); color: #fff; }
         .modal-btn.primary:hover { background-color: var(--accent-hover); }
       .modal-btn.secondary { background-color: var(--key-bg); color: var(--text); border: 1px solid var(--border); }
@@ -227,15 +238,15 @@
       .modal-btn.danger { background-color: transparent; color: var(--danger); border: 1px solid var(--danger); }
         .modal-btn.danger:hover { background-color: var(--danger-bg); }
 
-    /* Voices Selection Drawer */
-    .voices-panel { position: fixed; top: 0; right: -400px; width: 380px; height: 100vh; background-color: var(--bg-surface); border-left: 1px solid var(--border); box-shadow: -8px 0 24px var(--shadow); transition: right 0.3s ease; padding: 20px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; z-index: 2500; }
+    /* Voices Drawer */
+    .voices-panel { position: fixed; top: 0; right: -360px; width: 340px; height: 100vh; background-color: var(--bg-surface); border-left: 1px solid var(--border); box-shadow: -8px 0 24px var(--shadow); transition: right 0.3s ease; padding: 14px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; z-index: 2500; }
       .voices-panel.open { right: 0; }
-    .voice-list { display: none; flex-direction: column; gap: 4px; }
+    .voice-list { display: none; flex-direction: column; gap: 2px; }
       .voice-list.active { display: flex; }
-    .voice-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-radius: 12px; cursor: pointer; transition: background 0.2s; font-size: 13px; border: 1px solid transparent; }
+    .voice-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 6px; cursor: pointer; transition: background 0.2s; font-size: 12px; border: 1px solid transparent; }
       .voice-item:hover { background-color: var(--bg-surface-hover); }
       .voice-item.selected { background-color: var(--bg-surface-active); border-color: var(--accent); font-weight: 600; color: var(--accent); }
-    .voice-preview-btn { background: var(--key-bg); border: 1px solid var(--border); color: var(--text); font-size: 11px; cursor: pointer; padding: 4px 8px; border-radius: 10px; }
+    .voice-preview-btn { background: var(--key-bg); border: 1px solid var(--border); color: var(--text); font-size: 10px; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
   </style>
 </head>
 <body>
@@ -243,7 +254,9 @@
   <!-- ==================== LEFT SIDEBAR ==================== -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
-      <button class="icon-btn" id="toggle-sidebar-btn" title="Toggle Sidebar">☰</button>
+      <button class="icon-btn" id="toggle-sidebar-btn" title="Toggle Sidebar">
+        <span class="material-symbols-outlined">menu</span>
+      </button>
       <span class="logo-text">AAC Chat</span>
     </div>
 
@@ -252,34 +265,39 @@
       <div class="accordion-section open" id="section-topics">
         <div class="nav-accordion-header" id="header-topics">
           <div class="nav-left-content">
-            <span class="nav-icon" id="nav-icon-topics">📁</span>
+            <span class="nav-icon" id="nav-icon-topics">folder</span>
             <span class="nav-label" id="nav-label-topics">Topics</span>
           </div>
           <div class="nav-actions">
-            <!-- Add Topic button moved here! -->
-            <button class="nav-action-btn" id="add-topic-sidebar-btn" title="Add New Topic">+</button>
-            <button class="nav-action-btn edit-nav-meta-btn" data-nav-id="topics" title="Edit Label/Icon">⚙️</button>
+            <button class="nav-action-btn" id="add-topic-sidebar-btn" title="Add New Topic">
+              <span class="material-symbols-outlined" style="font-size: 16px;">add</span>
+            </button>
+            <button class="nav-action-btn edit-nav-meta-btn" data-nav-id="topics" title="Edit Label/Icon">
+              <span class="material-symbols-outlined" style="font-size: 15px;">edit</span>
+            </button>
           </div>
-          <span class="toggle-arrow">▼</span>
+          <span class="toggle-arrow">expand_more</span>
         </div>
         <div class="accordion-content" id="topics-list"></div>
       </div>
 
-      <!-- 2. Collapsible Chat Settings Accordion -->
+      <!-- 2. Chat Settings Accordion -->
       <div class="accordion-section" id="section-chat">
         <div class="nav-accordion-header" id="header-chat">
           <div class="nav-left-content">
-            <span class="nav-icon" id="nav-icon-chat">💬</span>
+            <span class="nav-icon" id="nav-icon-chat">tune</span>
             <span class="nav-label" id="nav-label-chat">Chat Settings</span>
           </div>
           <div class="nav-actions">
-            <button class="nav-action-btn edit-nav-meta-btn" data-nav-id="chat" title="Edit Label/Icon">⚙️</button>
+            <button class="nav-action-btn edit-nav-meta-btn" data-nav-id="chat" title="Edit Label/Icon">
+              <span class="material-symbols-outlined" style="font-size: 15px;">edit</span>
+            </button>
           </div>
-          <span class="toggle-arrow">▼</span>
+          <span class="toggle-arrow">expand_more</span>
         </div>
         <div class="accordion-content">
           <div class="sidebar-setting-group">
-            <label>Font Size <span id="font-display">32px</span></label>
+            <label>Font Size <span id="font-display">24px</span></label>
             <div class="font-controls">
               <button class="font-btn" id="font-down" type="button">A-</button>
               <button class="font-btn" id="font-up" type="button">A+</button>
@@ -289,15 +307,15 @@
             <label>Browser Voice</label>
             <button class="status-btn" id="open-browser-voices" type="button">
               <span id="selected-browser-name" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Select Voice...</span>
-              <span>❯</span>
+              <span class="material-symbols-outlined" style="font-size:14px;">chevron_right</span>
             </button>
           </div>
-          <div id="group-eleven-settings" style="display: flex; flex-direction: column; gap: 6px;">
+          <div id="group-eleven-settings" style="display: flex; flex-direction: column; gap: 4px;">
             <div class="sidebar-setting-group">
               <label>ElevenLabs Voice</label>
               <button class="status-btn" id="open-eleven-voices" type="button">
                 <span id="selected-eleven-name" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Select Voice...</span>
-                <span>❯</span>
+                <span class="material-symbols-outlined" style="font-size:14px;">chevron_right</span>
               </button>
             </div>
             <div class="sidebar-setting-group">
@@ -320,21 +338,23 @@
         </div>
       </div>
 
-      <!-- 3. Collapsible History Accordion -->
+      <!-- 3. History Accordion (Expands to fill window when open) -->
       <div class="accordion-section" id="section-history">
         <div class="nav-accordion-header" id="header-history">
           <div class="nav-left-content">
-            <span class="nav-icon" id="nav-icon-history">🕒</span>
+            <span class="nav-icon" id="nav-icon-history">history</span>
             <span class="nav-label" id="nav-label-history">History</span>
           </div>
           <div class="nav-actions">
-            <button class="nav-action-btn edit-nav-meta-btn" data-nav-id="history" title="Edit Label/Icon">⚙️</button>
+            <button class="nav-action-btn edit-nav-meta-btn" data-nav-id="history" title="Edit Label/Icon">
+              <span class="material-symbols-outlined" style="font-size: 15px;">edit</span>
+            </button>
           </div>
-          <span class="toggle-arrow">▼</span>
+          <span class="toggle-arrow">expand_more</span>
         </div>
         <div class="accordion-content">
           <div class="history-search-box">
-            <span class="search-icon">🔍</span>
+            <span class="search-icon">search</span>
             <input type="text" id="history-search-input" placeholder="Search speech history...">
           </div>
           <div class="history-list" id="audio-history"></div>
@@ -343,27 +363,22 @@
       </div>
     </div>
 
-    <!-- Gemini Style Footer with Context Popup -->
+    <!-- Footer with Context Popup -->
     <div class="sidebar-footer">
       <div class="gemini-settings-btn" id="footer-settings-btn" title="Settings & Theme">
         <div class="nav-left-content">
-          <span class="nav-icon" id="nav-icon-settings">⚙️</span>
+          <span class="nav-icon" id="nav-icon-settings">settings</span>
           <span class="nav-label" id="nav-label-settings">Settings</span>
         </div>
-        <span style="font-size: 12px; color: var(--text-secondary);">⋮</span>
+        <span class="material-symbols-outlined" style="font-size: 16px; color: var(--text-secondary);"></span>
       </div>
 
-      <!-- Context Popup Menu -->
       <div class="gemini-context-popup" id="gemini-context-popup">
         <div class="popup-menu-item" onclick="openModal('modal-theme')">
-          <span>🎨</span><span>Theme Appearance</span>
+          <span class="material-symbols-outlined" style="font-size: 16px;">palette</span><span>Theme Appearance</span>
         </div>
         <div class="popup-menu-item" onclick="openModal('modal-engine')">
-          <span>🗣️</span><span>Voice Engine & API</span>
-        </div>
-        <div class="popup-divider"></div>
-        <div class="popup-menu-item edit-nav-meta-btn" data-nav-id="settings">
-          <span>✎</span><span>Customize Footer Icon</span>
+          <span class="material-symbols-outlined" style="font-size: 16px;">record_voice_over</span><span>Voice Engine & API</span>
         </div>
       </div>
     </div>
@@ -373,16 +388,16 @@
   <main class="app-main">
     <div class="workspace-header">
       <div class="topic-title-area">
-        <span class="active-topic-icon" id="header-topic-icon">💬</span>
+        <span class="active-topic-icon material-symbols-outlined" id="header-topic-icon">chat</span>
         <span class="active-topic-name" id="header-topic-name">Default Topic</span>
       </div>
 
       <div class="workspace-actions">
-        <!-- Topic Settings button removed as requested! -->
-        <button class="tool-btn" id="edit-mode-btn" type="button">✎ Edit Buttons</button>
+        <button class="tool-btn" id="edit-mode-btn" type="button">
+          <span class="material-symbols-outlined" style="font-size: 15px;">edit</span> Edit Buttons
+        </button>
 
         <div class="edit-mode-controls" id="edit-mode-controls">
-          <!-- Rows and Columns Controls moved here! -->
           <div class="header-stepper-group">
             <span>Cols:</span>
             <div class="num-control-wrapper">
@@ -405,9 +420,10 @@
       </div>
     </div>
 
-    <!-- Overwrite Mode Instruction Banner -->
+    <!-- Overwrite Mode Banner -->
     <div class="overwrite-banner" id="overwrite-banner">
-      <span>👉 Click any button on the grid below to overwrite its audio & label!</span>
+      <span class="material-symbols-outlined" style="font-size: 16px;">touch_app</span>
+      <span>Click any button on the grid below to overwrite its audio & label!</span>
       <button class="overwrite-cancel-btn" id="cancel-overwrite-btn" type="button">Cancel</button>
     </div>
 
@@ -417,7 +433,9 @@
     <!-- Bottom Dock: Predictions & Toolbar -->
     <div class="bottom-dock">
       <div class="toolbar" id="toolbar">
-        <button class="key tts-btn" id="speak-btn" type="button">🔊 Speak</button>
+        <button class="key tts-btn" id="speak-btn" type="button">
+          <span class="material-symbols-outlined" style="font-size: 16px;">volume_up</span> Speak
+        </button>
         <div class="predictions-wrapper">
           <button class="key prediction-btn" type="button"></button>
           <button class="key prediction-btn" type="button"></button>
@@ -426,7 +444,9 @@
           <button class="key prediction-btn" type="button"></button>
           <button class="key prediction-btn" type="button"></button>
         </div>
-        <button class="key clear-btn" id="clear-btn" type="button">Clear</button>
+        <button class="key clear-btn" id="clear-btn" type="button">
+          <span class="material-symbols-outlined" style="font-size: 16px;">delete</span> Clear
+        </button>
       </div>
     </div>
 
@@ -435,8 +455,12 @@
       <textarea class="display-textarea" id="display-input" spellcheck="true" autocomplete="off" autocapitalize="sentences" placeholder="Type here..."></textarea>
 
       <div class="audio-actions-bar" id="generated-audio-actions">
-        <button class="audio-action-btn play" id="ta-replay-btn" type="button">▶ Replay Audio</button>
-        <button class="audio-action-btn" id="ta-assign-btn" type="button">📌 Assign to Button</button>
+        <button class="audio-action-btn play" id="ta-replay-btn" type="button">
+          <span class="material-symbols-outlined" style="font-size: 14px;">play_arrow</span> Replay Audio
+        </button>
+        <button class="audio-action-btn" id="ta-assign-btn" type="button">
+          <span class="material-symbols-outlined" style="font-size: 14px;">push_pin</span> Assign to Button
+        </button>
       </div>
     </div>
   </main>
@@ -444,13 +468,13 @@
   <!-- ==================== MODALS & POPUPS ==================== -->
   <div class="modal-overlay" id="modal-overlay"></div>
 
-  <!-- Theme Selection Modal -->
+  <!-- Theme Modal -->
   <div class="modal" id="modal-theme">
     <div class="modal-title">Appearance Theme</div>
-    <div style="display: flex; gap: 8px;">
-      <button class="modal-btn secondary" onclick="applyTheme('light'); closeModals();">☀️ Light</button>
-      <button class="modal-btn secondary" onclick="applyTheme('dark'); closeModals();">🌙 Dark</button>
-      <button class="modal-btn secondary" onclick="applyTheme('system'); closeModals();">💻 System</button>
+    <div style="display: flex; gap: 6px;">
+      <button class="modal-btn secondary" onclick="applyTheme('light'); closeModals();"><span class="material-symbols-outlined" style="font-size:14px; margin-right:4px;">light_mode</span>Light</button>
+      <button class="modal-btn secondary" onclick="applyTheme('dark'); closeModals();"><span class="material-symbols-outlined" style="font-size:14px; margin-right:4px;">dark_mode</span>Dark</button>
+      <button class="modal-btn secondary" onclick="applyTheme('system'); closeModals();"><span class="material-symbols-outlined" style="font-size:14px; margin-right:4px;">computer</span>System</button>
     </div>
     <div class="modal-buttons"><button class="modal-btn secondary" onclick="closeModals()">Close</button></div>
   </div>
@@ -469,18 +493,18 @@
     </div>
     <div class="sidebar-setting-group">
       <label>ElevenLabs API Key</label>
-      <button id="api-key-btn" class="status-btn missing" type="button">🔴 Show/Edit API Key</button>
+      <button id="api-key-btn" class="status-btn missing" type="button">Show/Edit API Key</button>
     </div>
     <div class="modal-buttons"><button class="modal-btn primary" onclick="closeModals()">Done</button></div>
   </div>
 
-  <!-- Assign Choice Modal (Create New vs Overwrite) -->
+  <!-- Assign Choice Modal -->
   <div class="modal" id="modal-assign-choice">
     <div class="modal-title">Assign Speech Audio</div>
-    <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.4;">Would you like to create a brand new button on this topic, or overwrite an existing button on the grid?</p>
-    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
-      <button class="status-btn" style="padding: 12px; font-weight: 600; color: var(--accent); border-color: var(--accent);" id="choice-create-new-btn">✨ Create New Button</button>
-      <button class="status-btn" style="padding: 12px; font-weight: 600;" id="choice-overwrite-btn">🔄 Overwrite Existing Button</button>
+    <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.4;">Would you like to create a brand new button on this topic, or overwrite an existing button on the grid?</p>
+    <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px;">
+      <button class="status-btn" style="padding: 10px; font-weight: 600; color: var(--accent); border-color: var(--accent);" id="choice-create-new-btn"><span class="material-symbols-outlined" style="font-size:16px;">workspace_premium</span> Create New Button</button>
+      <button class="status-btn" style="padding: 10px; font-weight: 600;" id="choice-overwrite-btn"><span class="material-symbols-outlined" style="font-size:16px;">refresh</span> Overwrite Existing Button</button>
     </div>
     <div class="modal-buttons"><button class="modal-btn secondary" onclick="closeModals()">Cancel</button></div>
   </div>
@@ -493,9 +517,9 @@
       <input type="text" id="nav-name-input" class="modal-input" maxlength="25">
     </div>
     <div class="sidebar-setting-group">
-      <label>Icon (Google Fonts Icon Style Picker)</label>
-      <input type="text" id="nav-icon-input" class="modal-input" maxlength="4" style="margin-bottom: 4px;">
-      <button class="status-btn" onclick="openIconStudio('nav-icon-input')" style="justify-content: center;">🔍 Open Icon Studio Picker...</button>
+      <label>Material Symbol Icon</label>
+      <input type="text" id="nav-icon-input" class="modal-input" maxlength="24" style="margin-bottom: 4px;">
+      <button class="status-btn" onclick="openIconStudio('nav-icon-input')" style="justify-content: center;"><span class="material-symbols-outlined" style="font-size:14px; margin-right:4px;">search</span> Open Icon Studio Picker...</button>
     </div>
     <div class="modal-buttons">
       <button class="modal-btn primary" id="save-nav-edit-btn" type="button">Save</button>
@@ -511,9 +535,9 @@
       <input type="text" id="topic-name-input" class="modal-input" placeholder="Topic name" maxlength="30">
     </div>
     <div class="sidebar-setting-group">
-      <label>Topic Icon</label>
-      <input type="text" id="topic-icon-input" class="modal-input" maxlength="4" style="margin-bottom: 4px;">
-      <button class="status-btn" onclick="openIconStudio('topic-icon-input')" style="justify-content: center;">🔍 Open Icon Studio Picker...</button>
+      <label>Material Symbol Icon</label>
+      <input type="text" id="topic-icon-input" class="modal-input" maxlength="24" style="margin-bottom: 4px;">
+      <button class="status-btn" onclick="openIconStudio('topic-icon-input')" style="justify-content: center;"><span class="material-symbols-outlined" style="font-size:14px; margin-right:4px;">search</span> Open Icon Studio Picker...</button>
     </div>
     <div class="sidebar-setting-group">
       <label>Color Accent</label>
@@ -544,34 +568,58 @@
     </div>
   </div>
 
-  <!-- Elegant Google Fonts Style Icon Studio Modal -->
-  <div class="modal" id="icon-studio-modal" style="min-width: 420px;">
+  <!-- Google Fonts Icon Studio Modal (Full Customization & Material Symbols) -->
+  <div class="modal" id="icon-studio-modal" style="min-width: 440px; max-width: 580px;">
     <div class="modal-title">Google Fonts Icon Studio</div>
     <div class="icon-studio-search">
-      <span class="search-ico">🔍</span>
-      <input type="text" id="icon-search-input" placeholder="Search icons (e.g., chat, home, happy, food, medical)...">
+      <span class="search-ico material-symbols-outlined">search</span>
+      <input type="text" id="icon-search-input" placeholder="Search Material Symbols (e.g., chat, home, favorite, medical)...">
     </div>
+
+    <!-- Live Google Fonts Customization Controls -->
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; background: var(--bg-main); padding: 6px; border-radius: 6px; border: 1px solid var(--border); font-size: 11px; color: var(--text-secondary);">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span>Fill (FILL)</span>
+        <button class="size-btn" id="studio-fill-btn" type="button">Outlined (0)</button>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span>Weight (<span id="studio-val-wght">400</span>)</span>
+        <input type="range" id="studio-wght-slider" min="100" max="700" step="100" value="400" style="width: 70px;">
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span>Grade (<span id="studio-val-grad">0</span>)</span>
+        <input type="range" id="studio-grad-slider" min="-50" max="200" step="50" value="0" style="width: 70px;">
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span>Optical Size (<span id="studio-val-opsz">24</span>)</span>
+        <input type="range" id="studio-opsz-slider" min="20" max="48" step="4" value="24" style="width: 70px;">
+      </div>
+    </div>
+
     <div class="icon-studio-grid" id="icon-studio-grid"></div>
     <div class="icon-studio-controls">
       <div class="icon-size-btns">
         <span>Size Preview:</span>
-        <button class="size-btn" onclick="setStudioIconSize(18, this)">Small</button>
-        <button class="size-btn active" onclick="setStudioIconSize(24, this)">Medium</button>
-        <button class="size-btn" onclick="setStudioIconSize(32, this)">Large</button>
+        <button class="size-btn" onclick="setStudioIconSize(18, this)">18px</button>
+        <button class="size-btn active" onclick="setStudioIconSize(24, this)">24px</button>
+        <button class="size-btn" onclick="setStudioIconSize(32, this)">32px</button>
+        <button class="size-btn" onclick="setStudioIconSize(40, this)">40px</button>
       </div>
       <span id="icon-studio-status">Select an icon</span>
     </div>
     <div class="modal-buttons">
-      <button class="modal-btn primary" id="confirm-icon-studio-btn" type="button">Select Icon</button>
-      <button class="modal-btn secondary" onclick="closeModals()" type="button">Cancel</button>
+      <button class="modal-btn primary" id="confirm-icon-studio-btn" type="button">Select & Apply Style</button>
+      <button class="modal-btn secondary" onclick="closeIconStudio(false)" type="button">Cancel</button>
     </div>
   </div>
 
-  <!-- Voices Selection Drawer -->
+  <!-- Voices Panel -->
   <div class="voices-panel" id="voices-panel">
-    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
-      <h2 style="font-size: 16px;">Select Voice</h2>
-      <button class="icon-btn" onclick="document.getElementById('voices-panel').classList.remove('open')" type="button">×</button>
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+      <h2 style="font-size: 14px;">Select Voice</h2>
+      <button class="icon-btn" onclick="document.getElementById('voices-panel').classList.remove('open')" type="button">
+        <span class="material-symbols-outlined">close</span>
+      </button>
     </div>
     <div id="voice-list-browser" class="voice-list"></div>
     <div id="voice-list-eleven" class="voice-list"></div>
@@ -585,53 +633,78 @@
     const defaultStarters = ["Hey!", "What?", "Yes!", "No!", "I don't know", "Hello"];
     const previewText = "This is a voice preview.";
 
-    // Comprehensive curated icon database with search keywords (mimicking Google Fonts Icons)
+    // Emoji to Google Material Symbols automatic migration map
+    const EMOJI_TO_SYMBOL = {
+      "📁": "folder", "💬": "chat", "🕒": "history", "⚙️": "settings", "☰": "menu", "▼": "expand_more",
+      "❯": "chevron_right", "🔍": "search", "🎨": "palette", "🗣️": "record_voice_over", "✎": "edit",
+      "👉": "touch_app", "🔊": "volume_up", "▶": "play_arrow", "📌": "push_pin", "🗑️": "delete",
+      "🗑": "delete", "☀️": "light_mode", "🌙": "dark_mode", "💻": "computer",
+      "🔄": "refresh", "⏳": "hourglass_empty", "↩": "undo", "⭐": "star", "🏠": "home",
+      "🍔": "restaurant", "🍕": "local_pizza", "☕": "local_cafe", "🚗": "directions_car",
+      "✈️": "flight", "🎮": "sports_esports", "🩺": "medical_services", "💊": "medication",
+      "🛒": "shopping_cart", "🎵": "music_note", "💡": "lightbulb", "🐾": "pets", "📞": "call",
+      "❤️": "favorite", "😊": "sentiment_satisfied", "😢": "sentiment_dissatisfied",
+      "😡": "sentiment_very_dissatisfied", "😴": "bed", "❗": "priority_high", "❓": "help",
+      "🔥": "local_fire_department", "🌟": "workspace_premium", "🎉": "celebration", "👀": "visibility",
+      "👂": "hearing", "🧠": "psychology", "⚡": "bolt", "🏆": "trophy", "📝": "edit", "🔑": "key",
+      "🚶": "directions_walk", "🏃": "directions_run", "✋": "back_hand", "👍": "thumb_up", "👎": "thumb_down"
+    };
+
+    // Comprehensive Google Material Symbols database
     const ICON_DATABASE = [
-      { ico: "💬", name: "chat message talk speech bubble communication" },
-      { ico: "📁", name: "folder topic category directory storage" },
-      { ico: "🕒", name: "time clock history watch schedule recent" },
-      { ico: "⚙️", name: "settings gear cog preferences options" },
-      { ico: "🔊", name: "speaker audio sound volume play music" },
-      { ico: "🏠", name: "home house building living residence" },
-      { ico: "⭐", name: "star favorite rating important badge" },
-      { ico: "🍔", name: "food burger eat dining restaurant meal" },
-      { ico: "🍕", name: "pizza slice Italian food dinner" },
-      { ico: "☕", name: "coffee tea drink cup beverage morning" },
-      { ico: "🚗", name: "car vehicle travel drive transport automobile" },
-      { ico: "✈️", name: "airplane flight travel vacation fly" },
-      { ico: "🎮", name: "game play controller fun hobby entertainment" },
-      { ico: "🩺", name: "doctor medical hospital stethoscope health illness" },
-      { ico: "💊", name: "pill medicine drug prescription pharmacy health" },
-      { ico: "🛒", name: "shopping cart store groceries market buy" },
-      { ico: "🎵", name: "music note song audio melody rhythm" },
-      { ico: "💡", name: "idea lightbulb bright thought electricity" },
-      { ico: "🐾", name: "pets dog cat animal paw footprint" },
-      { ico: "📞", name: "phone call contact telephone dial" },
-      { ico: "❤️", name: "heart love like care feeling emotion" },
-      { ico: "😊", name: "happy smile face joy glad emotion good" },
-      { ico: "😢", name: "sad cry tears upset unhappy feeling" },
-      { ico: "😡", name: "angry mad rage furious emotion upset" },
-      { ico: "😴", name: "sleep tired nap rest bed exhausted" },
-      { ico: "❗", name: "exclamation alert attention warning important" },
-      { ico: "❓", name: "question ask help query doubt what" },
-      { ico: "🔥", name: "fire hot burn amazing urgent trend" },
-      { ico: "✨", name: "sparkles magic shiny new clean special" },
-      { ico: "🌟", name: "glowing star bright excellent winner" },
-      { ico: "🎉", name: "party celebration congrats birthday festive" },
-      { ico: "👀", name: "eyes look see watch observe vision" },
-      { ico: "👂", name: "ear listen hear sound deaf auditory" },
-      { ico: "🧠", name: "brain mind think psychology intelligence idea" },
-      { ico: "⚡", name: "lightning fast power energy electric speed" },
-      { ico: "🏆", name: "trophy win award achievement success goal" },
-      { ico: "📝", name: "note write pencil text edit document" },
-      { ico: "📌", name: "pin tack location assign fix remember" },
-      { ico: "🗑️", name: "trash garbage delete remove dispose clear" },
-      { ico: "🔑", name: "key lock password access security safe" },
-      { ico: "🚶", name: "walk pedestrian go step move exercise" },
-      { ico: "🏃", name: "run sprint fast hurry athlete jogging" },
-      { ico: "✋", name: "hand stop wait highfive palm gesture" },
-      { ico: "👍", name: "thumbs up yes approve like good okay" },
-      { ico: "👎", name: "thumbs down no disapprove bad reject" }
+      { ico: "chat", name: "chat message talk speech bubble communication" },
+      { ico: "folder", name: "folder topic category directory storage" },
+      { ico: "history", name: "time clock history watch schedule recent" },
+      { ico: "settings", name: "settings gear cog preferences options" },
+      { ico: "volume_up", name: "speaker audio sound volume play music" },
+      { ico: "home", name: "home house building living residence" },
+      { ico: "star", name: "star favorite rating important badge" },
+      { ico: "restaurant", name: "food burger eat dining restaurant meal" },
+      { ico: "local_pizza", name: "pizza slice Italian food dinner" },
+      { ico: "local_cafe", name: "coffee tea drink cup beverage morning" },
+      { ico: "directions_car", name: "car vehicle travel drive transport automobile" },
+      { ico: "flight", name: "airplane flight travel vacation fly" },
+      { ico: "sports_esports", name: "game play controller fun hobby entertainment" },
+      { ico: "medical_services", name: "doctor medical hospital stethoscope health illness" },
+      { ico: "medication", name: "pill medicine drug prescription pharmacy health" },
+      { ico: "shopping_cart", name: "shopping cart store groceries market buy" },
+      { ico: "music_note", name: "music note song audio melody rhythm" },
+      { ico: "lightbulb", name: "idea lightbulb bright thought electricity" },
+      { ico: "pets", name: "pets dog cat animal paw footprint" },
+      { ico: "call", name: "phone call contact telephone dial" },
+      { ico: "favorite", name: "heart love like care feeling emotion" },
+      { ico: "sentiment_satisfied", name: "happy smile face joy glad emotion good" },
+      { ico: "sentiment_dissatisfied", name: "sad cry tears upset unhappy feeling" },
+      { ico: "sentiment_very_dissatisfied", name: "angry mad rage furious emotion upset" },
+      { ico: "bed", name: "sleep tired nap rest bed exhausted" },
+      { ico: "priority_high", name: "exclamation alert attention warning important" },
+      { ico: "help", name: "question ask help query doubt what" },
+      { ico: "local_fire_department", name: "fire hot burn amazing urgent trend" },
+      { ico: "workspace_premium", name: "glowing star bright excellent winner" },
+      { ico: "celebration", name: "party celebration congrats birthday festive" },
+      { ico: "visibility", name: "eyes look see watch observe vision" },
+      { ico: "hearing", name: "ear listen hear sound deaf auditory" },
+      { ico: "psychology", name: "brain mind think psychology intelligence idea" },
+      { ico: "bolt", name: "lightning fast power energy electric speed" },
+      { ico: "trophy", name: "trophy win award achievement success goal" },
+      { ico: "edit", name: "note write pencil text edit document" },
+      { ico: "push_pin", name: "pin tack location assign fix remember" },
+      { ico: "delete", name: "trash garbage delete remove dispose clear" },
+      { ico: "key", name: "key lock password access security safe" },
+      { ico: "directions_walk", name: "walk pedestrian go step move exercise" },
+      { ico: "directions_run", name: "run sprint fast hurry athlete jogging" },
+      { ico: "back_hand", name: "hand stop wait highfive palm gesture" },
+      { ico: "thumb_up", name: "thumbs up yes approve like good okay" },
+      { ico: "thumb_down", name: "thumbs down no disapprove bad reject" },
+      { ico: "work", name: "job business briefcase employment career" },
+      { ico: "school", name: "education university college learning graduation" },
+      { ico: "family_restroom", name: "family parents kids children people" },
+      { ico: "water_drop", name: "water rain drink wash clean eco" },
+      { ico: "sunny", name: "sun weather clear hot daytime" },
+      { ico: "nightlight", name: "moon night dark sleeping evening" },
+      { ico: "palette", name: "color art theme design paint" },
+      { ico: "mic", name: "microphone voice record speech audio" },
+      { ico: "translate", name: "language translate bilingual international" }
     ];
 
     // DOM Elements
@@ -661,18 +734,45 @@
     let predTimeout;
     let activeBrowserVoiceIndex = localStorage.getItem("aac_browser_voice_index") || "";
     let activeElevenVoiceId = localStorage.getItem("elevenlabs_voice") || "";
-    let currentFontSize = parseInt(localStorage.getItem("aac_font_size"), 10) || 32;
+    let currentFontSize = parseInt(localStorage.getItem("aac_font_size"), 10) || 24;
     let currentTheme = localStorage.getItem("aac_theme") || "system";
 
-    let navMeta = JSON.parse(localStorage.getItem("aac_nav_meta")) || {
-      topics: { label: "Topics", icon: "📁" },
-      chat: { label: "Chat Settings", icon: "💬" },
-      history: { label: "History", icon: "🕒" },
-      settings: { label: "Settings", icon: "⚙️" }
+    // Google Fonts Customization State
+    let iconFill = parseInt(localStorage.getItem("aac_icon_fill"), 10) || 0;
+    let iconWght = parseInt(localStorage.getItem("aac_icon_wght"), 10) || 400;
+    let iconGrad = parseInt(localStorage.getItem("aac_icon_grad"), 10) || 0;
+    let iconOpsz = parseInt(localStorage.getItem("aac_icon_opsz"), 10) || 24;
+    let initialIconStyles = {};
+
+    function applyGlobalIconStyles() {
+      document.documentElement.style.setProperty("--icon-fill", iconFill);
+      document.documentElement.style.setProperty("--icon-wght", iconWght);
+      document.documentElement.style.setProperty("--icon-grad", iconGrad);
+      document.documentElement.style.setProperty("--icon-opsz", iconOpsz);
+
+      const fillBtn = document.getElementById("studio-fill-btn");
+      if (fillBtn) fillBtn.textContent = iconFill ? "Filled (1)" : "Outlined (0)";
+      document.getElementById("studio-wght-slider").value = iconWght;
+      document.getElementById("studio-val-wght").textContent = iconWght;
+      document.getElementById("studio-grad-slider").value = iconGrad;
+      document.getElementById("studio-val-grad").textContent = iconGrad;
+      document.getElementById("studio-opsz-slider").value = iconOpsz;
+      document.getElementById("studio-val-opsz").textContent = iconOpsz;
+    }
+
+    let rawNavMeta = JSON.parse(localStorage.getItem("aac_nav_meta")) || {
+      topics: { label: "Topics", icon: "folder" },
+      chat: { label: "Chat Settings", icon: "tune" },
+      history: { label: "History", icon: "history" },
+      settings: { label: "Settings", icon: "settings" }
     };
+    let navMeta = {};
+    Object.keys(rawNavMeta).forEach(k => {
+      navMeta[k] = { label: rawNavMeta[k].label, icon: EMOJI_TO_SYMBOL[rawNavMeta[k].icon] || rawNavMeta[k].icon };
+    });
     let editingNavId = null;
 
-    let tabs = normalizeTabs(JSON.parse(localStorage.getItem("aac_tabs")) || [{ id: "default", name: "General Chat", icon: "💬", color: "#8ab4f8", buttons: [], gridCols: DEFAULT_GRID_COLS, gridRows: DEFAULT_GRID_ROWS }]);
+    let tabs = normalizeTabs(JSON.parse(localStorage.getItem("aac_tabs")) || [{ id: "default", name: "General Chat", icon: "chat", color: "#8ab4f8", buttons: [], gridCols: DEFAULT_GRID_COLS, gridRows: DEFAULT_GRID_ROWS }]);
     let activeTabId = localStorage.getItem("aac_active_tab") || tabs[0].id;
     if (!tabs.find(t => t.id === activeTabId)) activeTabId = tabs[0].id;
 
@@ -707,12 +807,12 @@
 
     function normalizeTabs(rawTabs) {
       if (!Array.isArray(rawTabs) || rawTabs.length === 0) {
-        return [{ id: "default", name: "General Chat", icon: "💬", color: "#8ab4f8", buttons: [], gridCols: DEFAULT_GRID_COLS, gridRows: DEFAULT_GRID_ROWS }];
+        return [{ id: "default", name: "General Chat", icon: "chat", color: "#8ab4f8", buttons: [], gridCols: DEFAULT_GRID_COLS, gridRows: DEFAULT_GRID_ROWS }];
       }
       return rawTabs.map((tab, idx) => ({
         id: tab.id || generateId(),
         name: tab.name || `Topic ${idx + 1}`,
-        icon: tab.icon || "📁",
+        icon: EMOJI_TO_SYMBOL[tab.icon] || tab.icon || "folder",
         color: tab.color || COLOR_PALETTE[idx % COLOR_PALETTE.length],
         gridCols: clamp(parseInt(tab.gridCols, 10) || DEFAULT_GRID_COLS, 1, 12),
         gridRows: clamp(parseInt(tab.gridRows, 10) || DEFAULT_GRID_ROWS, 1, 8),
@@ -754,7 +854,6 @@
       document.getElementById("gemini-context-popup").classList.remove("open");
     });
 
-    // Accordion Toggle Handlers
     ["topics", "chat", "history"].forEach(key => {
       document.getElementById(`header-${key}`).addEventListener("click", (e) => {
         if (e.target.closest(".nav-action-btn")) return;
@@ -765,7 +864,6 @@
       });
     });
 
-    // Footer Settings Popup Toggle
     document.getElementById("footer-settings-btn").addEventListener("click", (e) => {
       e.stopPropagation();
       document.getElementById("gemini-context-popup").classList.toggle("open");
@@ -774,7 +872,6 @@
       if (!e.target.closest(".sidebar-footer")) document.getElementById("gemini-context-popup").classList.remove("open");
     });
 
-    // Side Panel Icon & Label Editing
     document.querySelectorAll(".edit-nav-meta-btn").forEach(btn => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -793,18 +890,45 @@
     document.getElementById("save-nav-edit-btn").addEventListener("click", () => {
       if (!editingNavId) return;
       navMeta[editingNavId].label = document.getElementById("nav-name-input").value.trim() || navMeta[editingNavId].label;
-      navMeta[editingNavId].icon = document.getElementById("nav-icon-input").value.trim() || navMeta[editingNavId].icon;
+      const rawIco = document.getElementById("nav-icon-input").value.trim();
+      navMeta[editingNavId].icon = EMOJI_TO_SYMBOL[rawIco] || rawIco || navMeta[editingNavId].icon;
       saveNavMeta(); applyNavMetaUI(); closeModals();
     });
 
-    // ==================== GOOGLE FONTS STYLE ICON STUDIO ====================
+    // ==================== GOOGLE FONTS ICON STUDIO ====================
     function openIconStudio(targetInputId) {
       targetStudioInputId = targetInputId;
-      const currentVal = document.getElementById(targetInputId)?.value || "💬";
-      selectedStudioIcon = currentVal;
+      const currentVal = document.getElementById(targetInputId)?.value || "chat";
+      selectedStudioIcon = EMOJI_TO_SYMBOL[currentVal] || currentVal;
+
+      // Store initial styles in case of cancellation
+      initialIconStyles = { fill: iconFill, wght: iconWght, grad: iconGrad, opsz: iconOpsz };
+
       document.getElementById("icon-search-input").value = "";
+      document.getElementById("icon-studio-status").textContent = `Selected: ${selectedStudioIcon}`;
+      applyGlobalIconStyles();
       renderIconStudioGrid("");
       openModal("icon-studio-modal");
+    }
+
+    function closeIconStudio(save) {
+      if (!save) {
+        // Revert style previews if canceled
+        iconFill = initialIconStyles.fill;
+        iconWght = initialIconStyles.wght;
+        iconGrad = initialIconStyles.grad;
+        iconOpsz = initialIconStyles.opsz;
+        applyGlobalIconStyles();
+      }
+
+      // Return safely to the parent modal instead of closing everything
+      if (targetStudioInputId === "nav-icon-input") {
+        openModal("nav-edit-modal");
+      } else if (targetStudioInputId === "topic-icon-input") {
+        openModal("topic-edit-modal");
+      } else {
+        closeModals();
+      }
     }
 
     function renderIconStudioGrid(query) {
@@ -814,13 +938,13 @@
       const filtered = ICON_DATABASE.filter(item => item.ico.includes(q) || item.name.includes(q));
 
       if (filtered.length === 0) {
-        grid.innerHTML = `<div style="grid-column: span 7; padding: 16px; text-align: center; color: var(--text-secondary); font-size: 12px;">No matching icons found</div>`;
+        grid.innerHTML = `<div style="grid-column: span 7; padding: 12px; text-align: center; color: var(--text-secondary); font-size: 11px;">No matching icons found</div>`;
         return;
       }
 
       filtered.forEach(item => {
         const el = document.createElement("div");
-        el.className = `icon-studio-item ${item.ico === selectedStudioIcon ? "selected" : ""}`;
+        el.className = `icon-studio-item material-symbols-outlined ${item.ico === selectedStudioIcon ? "selected" : ""}`;
         el.textContent = item.ico;
         el.title = item.name;
         el.addEventListener("click", () => {
@@ -835,8 +959,26 @@
 
     document.getElementById("icon-search-input").addEventListener("input", (e) => renderIconStudioGrid(e.target.value));
 
+    // Google Fonts Studio Live Customization Handlers
+    document.getElementById("studio-fill-btn").addEventListener("click", () => {
+      iconFill = iconFill ? 0 : 1;
+      applyGlobalIconStyles();
+    });
+    document.getElementById("studio-wght-slider").addEventListener("input", (e) => {
+      iconWght = parseInt(e.target.value, 10);
+      applyGlobalIconStyles();
+    });
+    document.getElementById("studio-grad-slider").addEventListener("input", (e) => {
+      iconGrad = parseInt(e.target.value, 10);
+      applyGlobalIconStyles();
+    });
+    document.getElementById("studio-opsz-slider").addEventListener("input", (e) => {
+      iconOpsz = parseInt(e.target.value, 10);
+      applyGlobalIconStyles();
+    });
+
     function setStudioIconSize(px, btnEl) {
-      document.querySelectorAll(".size-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".icon-size-btns .size-btn").forEach(b => b.classList.remove("active"));
       btnEl.classList.add("active");
       document.querySelectorAll(".icon-studio-item").forEach(item => item.style.fontSize = `${px}px`);
     }
@@ -846,7 +988,11 @@
         const input = document.getElementById(targetStudioInputId);
         if (input) input.value = selectedStudioIcon;
       }
-      closeModals();
+      localStorage.setItem("aac_icon_fill", iconFill);
+      localStorage.setItem("aac_icon_wght", iconWght);
+      localStorage.setItem("aac_icon_grad", iconGrad);
+      localStorage.setItem("aac_icon_opsz", iconOpsz);
+      closeIconStudio(true);
     });
 
     // ==================== TOPICS NAVIGATION & METADATA ====================
@@ -857,12 +1003,14 @@
         const item = document.createElement("div");
         item.className = `topic-item ${topic.id === activeTabId ? "active" : ""}`;
         item.innerHTML = `
-          <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
-            <span class="topic-icon" style="color: ${topic.color};">${topic.icon || "📁"}</span>
+          <div style="display: flex; align-items: center; gap: 6px; overflow: hidden;">
+            <span class="topic-icon material-symbols-outlined" style="color: ${topic.color};">${topic.icon || "folder"}</span>
             <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${topic.name}</span>
           </div>
           <div class="topic-actions">
-            <button class="nav-action-btn edit-topic-btn" title="Edit Topic Settings">⚙️</button>
+            <button class="nav-action-btn edit-topic-btn" title="Edit Topic Settings">
+              <span class="material-symbols-outlined" style="font-size: 14px;">edit</span>
+            </button>
           </div>
         `;
         item.addEventListener("click", (e) => {
@@ -883,20 +1031,19 @@
     function updateWorkspaceHeader() {
       const active = getActiveTab();
       if (!active) return;
-      document.getElementById("header-topic-icon").textContent = active.icon || "📁";
+      document.getElementById("header-topic-icon").textContent = active.icon || "folder";
       document.getElementById("header-topic-icon").style.color = active.color || "var(--accent)";
       document.getElementById("header-topic-name").textContent = active.name;
       document.getElementById("header-cols-val").textContent = active.gridCols;
       document.getElementById("header-rows-val").textContent = active.gridRows;
     }
 
-    // Relocated Add Topic button in sidebar
     document.getElementById("add-topic-sidebar-btn").addEventListener("click", (e) => {
       e.stopPropagation();
       const name = prompt("Enter new topic name:", `Topic ${tabs.length + 1}`);
       if (name === null) return;
       const newTopic = {
-        id: generateId(), name: name.trim() || "New Topic", icon: "📁",
+        id: generateId(), name: name.trim() || "New Topic", icon: "folder",
         color: COLOR_PALETTE[tabs.length % COLOR_PALETTE.length],
         gridCols: DEFAULT_GRID_COLS, gridRows: DEFAULT_GRID_ROWS, buttons: []
       };
@@ -908,7 +1055,7 @@
       if (!topic) return;
       editingTopicId = topicId;
       document.getElementById("topic-name-input").value = topic.name;
-      document.getElementById("topic-icon-input").value = topic.icon || "📁";
+      document.getElementById("topic-icon-input").value = topic.icon || "folder";
 
       const colorPicker = document.getElementById("topic-color-picker");
       colorPicker.innerHTML = "";
@@ -929,7 +1076,8 @@
       const topic = tabs.find(t => t.id === editingTopicId);
       if (!topic) return;
       topic.name = document.getElementById("topic-name-input").value.trim() || "Untitled";
-      topic.icon = document.getElementById("topic-icon-input").value.trim() || "📁";
+      const rawIco = document.getElementById("topic-icon-input").value.trim();
+      topic.icon = EMOJI_TO_SYMBOL[rawIco] || rawIco || "folder";
       const selCol = document.querySelector("#topic-color-picker .color-option.selected");
       if (selCol) topic.color = selCol.style.backgroundColor;
       saveTabs(); renderTopics(); renderSoundButtons(); closeModals();
@@ -943,7 +1091,6 @@
       saveTabs(); renderTopics(); renderSoundButtons(); closeModals();
     });
 
-    // Relocated Stepper Controls in Header
     function stepGridDimensions(deltaCols, deltaRows) {
       const active = getActiveTab();
       if (!active) return;
@@ -978,7 +1125,7 @@
       const activeTab = getActiveTab();
       if (!activeTab) return;
       soundCanvas.style.gridTemplateColumns = `repeat(${activeTab.gridCols}, minmax(0, 1fr))`;
-      soundCanvas.style.gridAutoRows = `52px`;
+      soundCanvas.style.gridAutoRows = `48px`;
       soundCanvas.innerHTML = "";
 
       activeTab.buttons.forEach(btnData => {
@@ -991,7 +1138,7 @@
 
         btnEl.innerHTML = `
           <div class="sound-button-label">${btnData.label || "Button"}</div>
-          <button class="sound-button-edit-btn" title="Edit Button">✎</button>
+          <button class="sound-button-edit-btn" title="Edit Button"><span class="material-symbols-outlined" style="font-size:14px;">edit</span></button>
         `;
 
         if (isEditMode) {
@@ -1092,7 +1239,6 @@
       const draggedBtn = tab.buttons.find(b => b.id === draggingButton.id);
       if (!draggedBtn) return;
 
-      // Check if hovering directly over another button
       const targetBtn = tab.buttons.find(b => b.col === cell.col && b.row === cell.row && b.id !== draggedBtn.id);
       soundCanvas.querySelectorAll(".sound-button").forEach(el => el.classList.remove("swap-target"));
 
@@ -1103,7 +1249,6 @@
           const relX = (e.clientX - r.left) / r.width;
           const relY = (e.clientY - r.top) / r.height;
 
-          // Hovering inner 50% triggers direct SWAP
           if (relX > 0.25 && relX < 0.75 && relY > 0.25 && relY < 0.75) {
             targetEl.classList.add("swap-target");
             draggingButton.swapTargetId = targetBtn.id;
@@ -1113,7 +1258,6 @@
       }
 
       draggingButton.swapTargetId = null;
-      // Otherwise shift positions sequentially between buttons
       const targetIndex = clamp(cell.row * tab.gridCols + cell.col, 0, tab.buttons.length - 1);
       const currentIndex = tab.buttons.findIndex(b => b.id === draggingButton.id);
       if (currentIndex !== -1 && currentIndex !== targetIndex) {
@@ -1216,7 +1360,7 @@
       container.innerHTML = "";
 
       if (filtered.length === 0) {
-        container.innerHTML = `<div style="padding: 16px; text-align: center; color: var(--text-secondary);">No speech history found</div>`;
+        container.innerHTML = `<div style="padding: 12px; text-align: center; color: var(--text-secondary);">No speech history found</div>`;
         return;
       }
 
@@ -1229,16 +1373,16 @@
             <span class="history-item-meta">${item.timestamp}</span>
           </div>
           <div class="history-actions">
-            <button class="history-btn replay-btn" type="button">▶ Play</button>
-            <button class="history-btn restore restore-btn" type="button">↩ Restore</button>
-            <button class="history-btn delete delete-btn" style="color:var(--danger);" type="button">🗑</button>
+            <button class="history-btn replay-btn" type="button"><span class="material-symbols-outlined" style="font-size:12px;">play_arrow</span> Play</button>
+            <button class="history-btn restore restore-btn" type="button"><span class="material-symbols-outlined" style="font-size:12px;">undo</span> Restore</button>
+            <button class="history-btn delete delete-btn" style="color:var(--danger);" type="button"><span class="material-symbols-outlined" style="font-size:13px;">delete</span></button>
           </div>
         `;
 
         const textSpan = el.querySelector(".history-item-text");
         textSpan.addEventListener("click", () => {
           const input = document.createElement("input");
-          input.type = "text"; input.style.width = "100%"; input.style.padding = "4px"; input.value = item.text;
+          input.type = "text"; input.style.width = "100%"; input.style.padding = "2px 4px"; input.value = item.text;
           textSpan.replaceWith(input); input.focus();
           const saveEdit = () => { item.text = input.value.trim() || item.text; saveHistory(); renderHistory(); };
           input.addEventListener("blur", saveEdit);
@@ -1352,7 +1496,7 @@
       if (!text) return;
       const volume = parseFloat(volumeSlider.value);
       const speed = parseFloat(speedSlider.value);
-      speakBtn.textContent = "⏳..."; speakBtn.disabled = true;
+      speakBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;">hourglass_empty</span>'; speakBtn.disabled = true;
 
       try {
         if (modelSelect.value === "browser_tts") {
@@ -1360,13 +1504,13 @@
           utterance.volume = Math.min(1, volume / 5); utterance.rate = speed;
           const voices = window.speechSynthesis.getVoices();
           utterance.voice = activeBrowserVoiceIndex !== "" ? voices[activeBrowserVoiceIndex] : voices[0];
-          utterance.onend = () => { speakBtn.textContent = "🔊 Speak"; speakBtn.disabled = false; addToHistory(text, "browser_tts", `voice_${activeBrowserVoiceIndex || "0"}`, null); };
+          utterance.onend = () => { speakBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;">volume_up</span> Speak'; speakBtn.disabled = false; addToHistory(text, "browser_tts", `voice_${activeBrowserVoiceIndex || "0"}`, null); };
           window.speechSynthesis.speak(utterance);
         } else {
           const apiKey = localStorage.getItem("elevenlabs_key");
           if (!apiKey || !activeElevenVoiceId) {
             alert("Please configure your API Key and select a voice in Settings.");
-            speakBtn.textContent = "🔊 Speak"; speakBtn.disabled = false; return;
+            speakBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;">volume_up</span> Speak'; speakBtn.disabled = false; return;
           }
           const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${activeElevenVoiceId}`, {
             method: "POST",
@@ -1382,14 +1526,14 @@
           const ctx = new (window.AudioContext || window.webkitAudioContext)();
           const gain = ctx.createGain(); gain.gain.value = volume;
           ctx.createMediaElementSource(audio).connect(gain).connect(ctx.destination);
-          audio.onended = () => { speakBtn.textContent = "🔊 Speak"; speakBtn.disabled = false; };
+          audio.onended = () => { speakBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;">volume_up</span> Speak'; speakBtn.disabled = false; };
           audio.play();
           const reader = new FileReader();
           reader.onloadend = () => addToHistory(text, modelSelect.value, activeElevenVoiceId, reader.result);
           reader.readAsDataURL(blob);
         }
       } catch (_) {
-        alert("Failed to generate speech."); speakBtn.textContent = "🔊 Speak"; speakBtn.disabled = false;
+        alert("Failed to generate speech."); speakBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;">volume_up</span> Speak'; speakBtn.disabled = false;
       }
     }
 
@@ -1437,9 +1581,9 @@
         if (String(activeBrowserVoiceIndex) === String(i)) document.getElementById("selected-browser-name").textContent = voice.name;
         const item = document.createElement("div");
         item.className = `voice-item ${String(activeBrowserVoiceIndex) === String(i) ? "selected" : ""}`;
-        item.innerHTML = `<span>${voice.name} (${voice.lang})</span><button class="voice-preview-btn" type="button">▶</button>`;
+        item.innerHTML = `<span>${voice.name} (${voice.lang})</span><button class="voice-preview-btn" type="button"><span class="material-symbols-outlined" style="font-size:12px;">play_arrow</span></button>`;
         item.addEventListener("click", (e) => {
-          if (e.target.tagName === "BUTTON") return;
+          if (e.target.closest("button")) return;
           activeBrowserVoiceIndex = i; localStorage.setItem("aac_browser_voice_index", i);
           list.querySelectorAll(".voice-item").forEach(o => o.classList.remove("selected")); item.classList.add("selected");
           document.getElementById("selected-browser-name").textContent = voice.name;
@@ -1464,9 +1608,9 @@
           if (activeElevenVoiceId === voice.voice_id) document.getElementById("selected-eleven-name").textContent = voice.name;
           const item = document.createElement("div");
           item.className = `voice-item ${activeElevenVoiceId === voice.voice_id ? "selected" : ""}`;
-          item.innerHTML = `<span>${voice.name}</span><button class="voice-preview-btn" type="button">▶</button>`;
+          item.innerHTML = `<span>${voice.name}</span><button class="voice-preview-btn" type="button"><span class="material-symbols-outlined" style="font-size:12px;">play_arrow</span></button>`;
           item.addEventListener("click", (e) => {
-            if (e.target.tagName === "BUTTON") return;
+            if (e.target.closest("button")) return;
             activeElevenVoiceId = voice.voice_id; localStorage.setItem("elevenlabs_voice", activeElevenVoiceId);
             list.querySelectorAll(".voice-item").forEach(o => o.classList.remove("selected")); item.classList.add("selected");
             document.getElementById("selected-eleven-name").textContent = voice.name;
@@ -1480,8 +1624,8 @@
     const apiKeyBtn = document.getElementById("api-key-btn");
     function updateApiKeyUI() {
       const key = localStorage.getItem("elevenlabs_key") || "";
-      if (key) { apiKeyBtn.textContent = "🟢 API Key Saved (Click to Edit)"; apiKeyBtn.className = "status-btn saved"; fetchElevenVoices(key); }
-      else { apiKeyBtn.textContent = "🔴 API Key Not Set (Click to Add)"; apiKeyBtn.className = "status-btn missing"; fetchElevenVoices(""); }
+      if (key) { apiKeyBtn.textContent = "API Key Saved (Click to Edit)"; apiKeyBtn.className = "status-btn saved"; fetchElevenVoices(key); }
+      else { apiKeyBtn.textContent = "API Key Not Set (Click to Add)"; apiKeyBtn.className = "status-btn missing"; fetchElevenVoices(""); }
     }
     apiKeyBtn.addEventListener("click", () => {
       const key = prompt("Enter your ElevenLabs API Key:", localStorage.getItem("elevenlabs_key") || "");
@@ -1503,11 +1647,12 @@
       displayInput.style.fontSize = `${currentFontSize}px`; fontDisplay.textContent = `${currentFontSize}px`;
       localStorage.setItem("aac_font_size", currentFontSize);
     }
-    document.getElementById("font-down").addEventListener("click", () => { currentFontSize = Math.max(16, currentFontSize - 4); applyFontSize(); });
-    document.getElementById("font-up").addEventListener("click", () => { currentFontSize = Math.min(64, currentFontSize + 4); applyFontSize(); });
+    document.getElementById("font-down").addEventListener("click", () => { currentFontSize = Math.max(16, currentFontSize - 2); applyFontSize(); });
+    document.getElementById("font-up").addEventListener("click", () => { currentFontSize = Math.min(64, currentFontSize + 2); applyFontSize(); });
 
     // Initial Bootstrap
     applyTheme(currentTheme);
+    applyGlobalIconStyles();
     applyNavMetaUI();
     syncSlider(volumeSlider, valVolume, "aac_volume", false);
     syncSlider(speedSlider, valSpeed, "aac_speed", true);
