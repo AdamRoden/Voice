@@ -1,0 +1,1521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AAC Chat</title>
+  <style>
+    :root, :root[data-theme="dark"] { --bg-main: #131314; --bg-surface: #1e1f20; --bg-surface-hover: #282a2c; --bg-surface-active: #333537; --border: #333537; --accent: #8ab4f8; --accent-hover: #aecbfa; --text: #e3e3e3; --text-secondary: #8e918f; --display-bg: #1e1f20; --key-bg: #282a2c; --key-hover: #333537; --key-active: #444746; --danger: #f2b8b5; --danger-bg: #601410; --shadow: rgba(0, 0, 0, 0.4); color-scheme: dark; }
+      :root[data-theme="light"] { --bg-main: #f0f4f9; --bg-surface: #ffffff; --bg-surface-hover: #e9eef6; --bg-surface-active: #dde3ea; --border: #c4c7c5; --accent: #0b57d0; --accent-hover: #0842a0; --text: #1f1f1f; --text-secondary: #444746; --display-bg: #ffffff; --key-bg: #e9eef6; --key-hover: #dde3ea; --key-active: #c4c7c5; --danger: #b3261e; --danger-bg: #f9dedc; --shadow: rgba(0, 0, 0, 0.15); color-scheme: light; }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+      ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+
+    body { background-color: var(--bg-main); color: var(--text); display: flex; height: 100vh; overflow: hidden; transition: background-color 0.2s ease, color 0.2s ease; }
+
+    /* ==================== LEFT SIDEBAR (GEMINI STYLE) ==================== */
+    .sidebar { width: 260px; background-color: var(--bg-surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 100; flex-shrink: 0; user-select: none; position: relative; }
+      .sidebar.collapsed { width: 68px; }
+
+    .sidebar-header { display: flex; align-items: center; padding: 12px 14px; gap: 12px; min-height: 60px; }
+    .icon-btn { background: none; border: none; color: var(--text); font-size: 20px; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s; flex-shrink: 0; }
+      .icon-btn:hover { background-color: var(--bg-surface-hover); }
+
+    .logo-text { font-size: 18px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; opacity: 1; transition: opacity 0.2s; }
+    .sidebar.collapsed .logo-text { opacity: 0; pointer-events: none; }
+
+    .sidebar-nav { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0 8px; display: flex; flex-direction: column; gap: 6px; }
+
+    /* Accordion Section Headers */
+    .nav-accordion-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 20px; cursor: pointer; color: var(--text); font-size: 14px; font-weight: 500; transition: all 0.2s; white-space: nowrap; min-height: 44px; }
+      .nav-accordion-header:hover { background-color: var(--bg-surface-hover); }
+    .nav-left-content { display: flex; align-items: center; gap: 14px; overflow: hidden; flex: 1; }
+    .nav-icon { font-size: 18px; width: 24px; text-align: center; flex-shrink: 0; }
+    .nav-label { flex: 1; overflow: hidden; text-overflow: ellipsis; opacity: 1; transition: opacity 0.2s; }
+    .sidebar.collapsed .nav-label { opacity: 0; pointer-events: none; }
+
+    .nav-actions { display: flex; align-items: center; gap: 4px; }
+    .nav-action-btn { background: none; border: none; color: var(--text-secondary); font-size: 14px; cursor: pointer; padding: 4px 6px; border-radius: 50%; transition: color 0.2s, background 0.2s; }
+      .nav-action-btn:hover { background-color: var(--bg-surface-active); color: var(--text); }
+    .sidebar.collapsed .nav-actions { display: none; }
+
+    .toggle-arrow { font-size: 10px; color: var(--text-secondary); transition: transform 0.2s; margin-left: 4px; }
+    .accordion-section.open .toggle-arrow { transform: rotate(180deg); }
+    .sidebar.collapsed .toggle-arrow { display: none; }
+
+    /* Collapsible Content Inside Sidebar */
+    .accordion-content { display: none; flex-direction: column; gap: 4px; padding: 4px 0 8px 12px; margin-left: 12px; border-left: 1px solid var(--border); overflow: hidden; }
+    .accordion-section.open .accordion-content { display: flex; }
+    .sidebar.collapsed .accordion-content { display: none !important; }
+
+    /* Topic Items */
+    .topic-item { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 16px; cursor: pointer; font-size: 13px; color: var(--text); transition: background 0.2s; min-height: 38px; justify-content: space-between; }
+      .topic-item:hover { background-color: var(--bg-surface-hover); }
+      .topic-item.active { background-color: var(--bg-surface-active); color: var(--accent); font-weight: 600; }
+    .topic-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+    .topic-actions { display: flex; opacity: 0; transition: opacity 0.2s; }
+    .topic-item:hover .topic-actions { opacity: 1; }
+
+    /* Embedded Settings & History Controls */
+    .sidebar-setting-group { display: flex; flex-direction: column; gap: 6px; padding: 6px 8px; }
+      .sidebar-setting-group label { font-size: 12px; color: var(--text-secondary); display: flex; justify-content: space-between; font-weight: 500; }
+      .sidebar-setting-group select, .sidebar-setting-group input[type="text"] { background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 8px 10px; border-radius: 8px; font-size: 13px; outline: none; }
+      .sidebar-setting-group input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+
+    .status-btn { background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 8px 10px; border-radius: 8px; font-size: 12px; cursor: pointer; text-align: left; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; width: 100%; }
+      .status-btn:hover { border-color: var(--accent); }
+      .status-btn.missing { border-color: var(--danger); color: var(--danger); }
+      .status-btn.saved { border-color: #81c784; color: #81c784; }
+
+    .font-controls { display: flex; gap: 6px; align-items: center; }
+    .font-btn { flex: 1; background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 6px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; text-align: center; }
+      .font-btn:hover { background-color: var(--key-hover); }
+
+    /* Embedded History */
+    .history-search-box { position: relative; padding: 4px 8px; }
+      .history-search-box input { width: 100%; background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 6px 24px 6px 28px; border-radius: 14px; font-size: 12px; outline: none; }
+      .history-search-box .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--text-secondary); }
+    .history-list { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding: 4px 8px; }
+    .history-item { background-color: var(--bg-main); border: 1px solid var(--border); border-radius: 10px; padding: 8px; font-size: 12px; display: flex; flex-direction: column; gap: 6px; }
+    .history-item-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; }
+    .history-item-text { font-weight: 500; cursor: pointer; word-break: break-word; flex: 1; }
+    .history-item-meta { font-size: 10px; color: var(--text-secondary); white-space: nowrap; }
+    .history-actions { display: flex; gap: 4px; }
+    .history-btn { flex: 1; background: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 4px; border-radius: 4px; font-size: 10px; cursor: pointer; text-align: center; }
+      .history-btn:hover { background: var(--key-hover); }
+      .history-btn.restore { color: var(--accent); border-color: var(--accent); }
+
+    .clear-history-btn { background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 6px; border-radius: 8px; font-size: 11px; cursor: pointer; margin: 4px 8px; text-align: center; }
+      .clear-history-btn:hover { background: var(--danger-bg); }
+
+    /* Gemini Style Footer & Context Popup */
+    .sidebar-footer { padding: 12px; border-top: 1px solid var(--border); position: relative; }
+    .gemini-settings-btn { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 20px; cursor: pointer; color: var(--text); font-size: 14px; font-weight: 500; transition: all 0.2s; min-height: 44px; }
+      .gemini-settings-btn:hover { background-color: var(--bg-surface-hover); }
+    .sidebar.collapsed .gemini-settings-btn { justify-content: center; padding: 10px 0; }
+      .sidebar.collapsed .gemini-settings-btn .nav-label { display: none; }
+
+    .gemini-context-popup { position: absolute; bottom: 64px; left: 12px; width: 236px; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 8px 24px var(--shadow); padding: 8px; display: none; flex-direction: column; gap: 4px; z-index: 500; }
+      .gemini-context-popup.open { display: flex; }
+    .sidebar.collapsed .gemini-context-popup { left: 68px; bottom: 12px; width: 220px; }
+
+    .popup-menu-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; cursor: pointer; font-size: 13px; color: var(--text); transition: background 0.2s; }
+      .popup-menu-item:hover { background-color: var(--bg-surface-hover); }
+    .popup-divider { height: 1px; background-color: var(--border); margin: 4px 0; }
+
+    /* ==================== MAIN WORKSPACE ==================== */
+    .app-main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 12px; padding: 12px; overflow: hidden; height: 100%; }
+
+    .workspace-header { display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-surface); padding: 10px 16px; border-radius: 16px; border: 1px solid var(--border); min-height: 54px; flex-shrink: 0; gap: 12px; flex-wrap: wrap; }
+    .topic-title-area { display: flex; align-items: center; gap: 10px; }
+    .active-topic-icon { font-size: 22px; }
+    .active-topic-name { font-size: 18px; font-weight: 600; }
+
+    .workspace-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .tool-btn { background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 8px 14px; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; transition: all 0.2s; white-space: nowrap; }
+      .tool-btn:hover { background-color: var(--key-hover); border-color: var(--text-secondary); }
+      .tool-btn.primary { background-color: var(--accent); color: #fff; border-color: var(--accent); }
+        .tool-btn.primary:hover { background-color: var(--accent-hover); }
+
+    .edit-mode-controls { display: none; align-items: center; gap: 12px; flex-wrap: wrap; }
+      .edit-mode-controls.open { display: flex; }
+
+    /* Stepper Controls in Header */
+    .header-stepper-group { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); background: var(--bg-main); padding: 2px 8px; border-radius: 12px; border: 1px solid var(--border); }
+    .num-control-wrapper { display: flex; align-items: center; gap: 4px; }
+    .num-control-btn { background: var(--key-bg); border: none; color: var(--text); width: 22px; height: 22px; border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+      .num-control-btn:hover { background: var(--key-hover); }
+    .num-control-val { font-weight: 600; color: var(--text); min-width: 16px; text-align: center; }
+
+    /* Text Area & Floating Audio Bar */
+    .textarea-wrapper { flex: 1; display: flex; flex-direction: column; position: relative; min-height: 140px; }
+    .display-textarea { width: 100%; height: 100%; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px 20px; line-height: 1.4; color: var(--text); font-size: 32px; resize: none; outline: none; white-space: pre-wrap; word-break: break-word; transition: border-color 0.2s; }
+      .display-textarea:focus { border-color: var(--accent); }
+
+    .audio-actions-bar { position: absolute; bottom: 12px; right: 16px; display: none; align-items: center; gap: 8px; background-color: var(--bg-main); border: 1px solid var(--border); padding: 6px 10px; border-radius: 20px; box-shadow: 0 4px 12px var(--shadow); z-index: 20; }
+      .audio-actions-bar.active { display: flex; }
+    .audio-action-btn { background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 14px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s; }
+      .audio-action-btn:hover { background-color: var(--key-hover); }
+      .audio-action-btn.play { color: var(--accent); border-color: var(--accent); }
+
+    /* Overwrite Mode Banner */
+    .overwrite-banner { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background-color: var(--accent); color: #fff; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; display: none; align-items: center; gap: 12px; box-shadow: 0 4px 16px var(--shadow); z-index: 30; }
+      .overwrite-banner.active { display: flex; }
+    .overwrite-cancel-btn { background: rgba(0,0,0,0.2); border: none; color: #fff; padding: 4px 8px; border-radius: 10px; cursor: pointer; font-size: 11px; font-weight: bold; }
+
+    /* Sound Button Canvas */
+    .sound-canvas { flex: 0 0 auto; max-height: 34vh; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 16px; display: grid; gap: 8px; padding: 12px; overflow-y: auto; touch-action: none; transition: border-color 0.2s; position: relative; }
+      .sound-canvas.edit-mode { border: 2px dashed var(--accent); }
+
+    /* Wiggle Animation for Edit Mode */
+    @keyframes wiggle {
+      0% { transform: rotate(-1.2deg) scale(1); }
+      50% { transform: rotate(1.2deg) scale(1); }
+      100% { transform: rotate(-1.2deg) scale(1); }
+    }
+
+    .sound-button { position: relative; background-color: var(--key-bg); border: 2px solid var(--border); border-radius: 12px; padding: 0 10px; cursor: pointer; user-select: none; transition: all 0.15s ease; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; color: #fff; overflow: hidden; width: 100%; height: 52px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+      .sound-button:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 8px var(--shadow); }
+      .sound-button:active { transform: translateY(0); }
+
+      /* Wiggle active only in edit mode when not actively dragging */
+      .sound-button.edit-mode:not(.dragging) { animation: wiggle 0.25s infinite ease-in-out; cursor: grab; padding-left: 36px; }
+      .sound-button.dragging { opacity: 0.8; cursor: grabbing; z-index: 50; transform: scale(1.05); box-shadow: 0 8px 20px var(--shadow); animation: none; }
+
+      /* Swap Target Glow */
+      .sound-button.swap-target { border-color: #81c784; box-shadow: 0 0 0 4px rgba(129, 199, 132, 0.4); transform: scale(1.02); }
+      .sound-button.overwrite-target { animation: wiggle 0.4s infinite ease-in-out; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(138, 180, 248, 0.5); }
+
+    .sound-button-label { width: 100%; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
+    .sound-button-edit-btn { position: absolute; left: 6px; top: 50%; transform: translateY(-50%); width: 26px; height: 26px; border: 1px solid rgba(255,255,255,0.4); border-radius: 6px; background-color: rgba(0,0,0,0.4); color: white; font-size: 13px; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 5; }
+    .sound-canvas.edit-mode .sound-button .sound-button-edit-btn { display: flex; }
+    .sound-button-edit-btn:hover { background-color: rgba(0,0,0,0.7); }
+
+    /* Bottom Dock */
+    .bottom-dock { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+    .toolbar { display: flex; gap: 6px; align-items: stretch; height: 52px; }
+    .predictions-wrapper { display: flex; flex: 1; gap: 6px; overflow-x: auto; }
+    .key { background-color: var(--key-bg); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-size: 15px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; padding: 0 16px; white-space: nowrap; height: 52px; }
+      .key:hover { background-color: var(--key-hover); border-color: var(--text-secondary); }
+      .key:active { background-color: var(--key-active); transform: scale(0.98); }
+      .key.prediction-btn { flex: 1; min-width: 80px; color: var(--accent); font-weight: 600; }
+      .key.tts-btn { background-color: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; min-width: 110px; }
+        .key.tts-btn:hover { background-color: var(--accent-hover); }
+      .key.clear-btn { background-color: transparent; color: var(--danger); border-color: var(--danger); min-width: 80px; }
+        .key.clear-btn:hover { background-color: var(--danger-bg); }
+
+    /* ==================== MODALS & POPUPS ==================== */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.6); opacity: 0; pointer-events: none; transition: opacity 0.2s ease; z-index: 2000; }
+      .modal-overlay.open { opacity: 1; pointer-events: auto; }
+
+    .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95); background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 20px; padding: 24px; display: none; flex-direction: column; gap: 16px; z-index: 2001; min-width: 360px; max-width: 90vw; max-height: 85vh; overflow-y: auto; box-shadow: 0 12px 32px var(--shadow); transition: transform 0.2s ease; }
+      .modal.open { display: flex; transform: translate(-50%, -50%) scale(1); }
+    .modal-title { font-size: 18px; font-weight: 600; color: var(--text); }
+    .modal-input { background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 10px 12px; border-radius: 8px; font-size: 14px; outline: none; width: 100%; }
+      .modal-input:focus { border-color: var(--accent); }
+
+    .modal-color-picker { display: flex; gap: 8px; flex-wrap: wrap; }
+    .color-option { width: 32px; height: 32px; border: 2px solid transparent; border-radius: 50%; cursor: pointer; transition: transform 0.2s; }
+      .color-option:hover { transform: scale(1.1); }
+      .color-option.selected { border-color: #fff; box-shadow: 0 0 0 2px var(--accent); }
+
+    /* Elegant Google Fonts Style Icon Studio */
+    .icon-studio-search { position: relative; margin-bottom: 8px; }
+      .icon-studio-search input { width: 100%; background: var(--bg-main); border: 1px solid var(--border); padding: 10px 12px 10px 36px; border-radius: 12px; color: var(--text); font-size: 13px; outline: none; }
+      .icon-studio-search .search-ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
+
+    .icon-studio-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; max-height: 200px; overflow-y: auto; padding: 8px; background: var(--bg-main); border: 1px solid var(--border); border-radius: 12px; }
+    .icon-studio-item { font-size: 22px; padding: 8px; text-align: center; border-radius: 8px; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; display: flex; align-items: center; justify-content: center; }
+      .icon-studio-item:hover { background-color: var(--key-hover); transform: scale(1.15); }
+      .icon-studio-item.selected { background-color: var(--bg-surface-active); border-color: var(--accent); transform: scale(1.1); }
+
+    .icon-studio-controls { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+    .icon-size-btns { display: flex; gap: 4px; }
+    .size-btn { background: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 11px; }
+      .size-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    .modal-buttons { display: flex; gap: 10px; margin-top: 8px; }
+    .modal-btn { flex: 1; padding: 10px; border: none; border-radius: 20px; cursor: pointer; font-weight: 600; font-size: 14px; transition: background 0.2s; text-align: center; }
+      .modal-btn.primary { background-color: var(--accent); color: #fff; }
+        .modal-btn.primary:hover { background-color: var(--accent-hover); }
+      .modal-btn.secondary { background-color: var(--key-bg); color: var(--text); border: 1px solid var(--border); }
+        .modal-btn.secondary:hover { background-color: var(--key-hover); }
+      .modal-btn.danger { background-color: transparent; color: var(--danger); border: 1px solid var(--danger); }
+        .modal-btn.danger:hover { background-color: var(--danger-bg); }
+
+    /* Voices Selection Drawer */
+    .voices-panel { position: fixed; top: 0; right: -400px; width: 380px; height: 100vh; background-color: var(--bg-surface); border-left: 1px solid var(--border); box-shadow: -8px 0 24px var(--shadow); transition: right 0.3s ease; padding: 20px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; z-index: 2500; }
+      .voices-panel.open { right: 0; }
+    .voice-list { display: none; flex-direction: column; gap: 4px; }
+      .voice-list.active { display: flex; }
+    .voice-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-radius: 12px; cursor: pointer; transition: background 0.2s; font-size: 13px; border: 1px solid transparent; }
+      .voice-item:hover { background-color: var(--bg-surface-hover); }
+      .voice-item.selected { background-color: var(--bg-surface-active); border-color: var(--accent); font-weight: 600; color: var(--accent); }
+    .voice-preview-btn { background: var(--key-bg); border: 1px solid var(--border); color: var(--text); font-size: 11px; cursor: pointer; padding: 4px 8px; border-radius: 10px; }
+  </style>
+</head>
+<body>
+
+  <!-- ==================== LEFT SIDEBAR ==================== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <button class="icon-btn" id="toggle-sidebar-btn" title="Toggle Sidebar">☰</button>
+      <span class="logo-text">AAC Chat</span>
+    </div>
+
+    <div class="sidebar-nav">
+      <!-- 1. Topics Accordion -->
+      <div class="accordion-section open" id="section-topics">
+        <div class="nav-accordion-header" id="header-topics">
+          <div class="nav-left-content">
+            <span class="nav-icon" id="nav-icon-topics">📁</span>
+            <span class="nav-label" id="nav-label-topics">Topics</span>
+          </div>
+          <div class="nav-actions">
+            <!-- Add Topic button moved here! -->
+            <button class="nav-action-btn" id="add-topic-sidebar-btn" title="Add New Topic">+</button>
+            <button class="nav-action-btn edit-nav-meta-btn" data-nav-id="topics" title="Edit Label/Icon">⚙️</button>
+          </div>
+          <span class="toggle-arrow">▼</span>
+        </div>
+        <div class="accordion-content" id="topics-list"></div>
+      </div>
+
+      <!-- 2. Collapsible Chat Settings Accordion -->
+      <div class="accordion-section" id="section-chat">
+        <div class="nav-accordion-header" id="header-chat">
+          <div class="nav-left-content">
+            <span class="nav-icon" id="nav-icon-chat">💬</span>
+            <span class="nav-label" id="nav-label-chat">Chat Settings</span>
+          </div>
+          <div class="nav-actions">
+            <button class="nav-action-btn edit-nav-meta-btn" data-nav-id="chat" title="Edit Label/Icon">⚙️</button>
+          </div>
+          <span class="toggle-arrow">▼</span>
+        </div>
+        <div class="accordion-content">
+          <div class="sidebar-setting-group">
+            <label>Font Size <span id="font-display">32px</span></label>
+            <div class="font-controls">
+              <button class="font-btn" id="font-down" type="button">A-</button>
+              <button class="font-btn" id="font-up" type="button">A+</button>
+            </div>
+          </div>
+          <div class="sidebar-setting-group" id="group-browser-voice" style="display: none;">
+            <label>Browser Voice</label>
+            <button class="status-btn" id="open-browser-voices" type="button">
+              <span id="selected-browser-name" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Select Voice...</span>
+              <span>❯</span>
+            </button>
+          </div>
+          <div id="group-eleven-settings" style="display: flex; flex-direction: column; gap: 6px;">
+            <div class="sidebar-setting-group">
+              <label>ElevenLabs Voice</label>
+              <button class="status-btn" id="open-eleven-voices" type="button">
+                <span id="selected-eleven-name" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Select Voice...</span>
+                <span>❯</span>
+              </button>
+            </div>
+            <div class="sidebar-setting-group">
+              <label><span>Stability</span><span id="val-stability">0.50</span></label>
+              <input type="range" id="stability-slider" min="0.0" max="1.0" step="0.05" value="0.5">
+            </div>
+            <div class="sidebar-setting-group">
+              <label><span>Similarity</span><span id="val-similarity">0.75</span></label>
+              <input type="range" id="similarity-slider" min="0.0" max="1.0" step="0.05" value="0.75">
+            </div>
+          </div>
+          <div class="sidebar-setting-group">
+            <label><span>Volume Gain</span><span id="val-volume">3.0</span></label>
+            <input type="range" id="volume-slider" min="1" max="5" step="0.5" value="3">
+          </div>
+          <div class="sidebar-setting-group">
+            <label><span>Speech Speed</span><span id="val-speed">1.0</span></label>
+            <input type="range" id="speed-slider" min="0.5" max="2.0" step="0.1" value="1.0">
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Collapsible History Accordion -->
+      <div class="accordion-section" id="section-history">
+        <div class="nav-accordion-header" id="header-history">
+          <div class="nav-left-content">
+            <span class="nav-icon" id="nav-icon-history">🕒</span>
+            <span class="nav-label" id="nav-label-history">History</span>
+          </div>
+          <div class="nav-actions">
+            <button class="nav-action-btn edit-nav-meta-btn" data-nav-id="history" title="Edit Label/Icon">⚙️</button>
+          </div>
+          <span class="toggle-arrow">▼</span>
+        </div>
+        <div class="accordion-content">
+          <div class="history-search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="history-search-input" placeholder="Search speech history...">
+          </div>
+          <div class="history-list" id="audio-history"></div>
+          <button class="clear-history-btn" id="clear-history-btn" type="button">Clear All History</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gemini Style Footer with Context Popup -->
+    <div class="sidebar-footer">
+      <div class="gemini-settings-btn" id="footer-settings-btn" title="Settings & Theme">
+        <div class="nav-left-content">
+          <span class="nav-icon" id="nav-icon-settings">⚙️</span>
+          <span class="nav-label" id="nav-label-settings">Settings</span>
+        </div>
+        <span style="font-size: 12px; color: var(--text-secondary);">⋮</span>
+      </div>
+
+      <!-- Context Popup Menu -->
+      <div class="gemini-context-popup" id="gemini-context-popup">
+        <div class="popup-menu-item" onclick="openModal('modal-theme')">
+          <span>🎨</span><span>Theme Appearance</span>
+        </div>
+        <div class="popup-menu-item" onclick="openModal('modal-engine')">
+          <span>🗣️</span><span>Voice Engine & API</span>
+        </div>
+        <div class="popup-divider"></div>
+        <div class="popup-menu-item edit-nav-meta-btn" data-nav-id="settings">
+          <span>✎</span><span>Customize Footer Icon</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ==================== MAIN WORKSPACE ==================== -->
+  <main class="app-main">
+    <div class="workspace-header">
+      <div class="topic-title-area">
+        <span class="active-topic-icon" id="header-topic-icon">💬</span>
+        <span class="active-topic-name" id="header-topic-name">Default Topic</span>
+      </div>
+
+      <div class="workspace-actions">
+        <!-- Topic Settings button removed as requested! -->
+        <button class="tool-btn" id="edit-mode-btn" type="button">✎ Edit Buttons</button>
+
+        <div class="edit-mode-controls" id="edit-mode-controls">
+          <!-- Rows and Columns Controls moved here! -->
+          <div class="header-stepper-group">
+            <span>Cols:</span>
+            <div class="num-control-wrapper">
+              <button class="num-control-btn" type="button" onclick="stepGridDimensions(-1, 0)">-</button>
+              <span class="num-control-val" id="header-cols-val">4</span>
+              <button class="num-control-btn" type="button" onclick="stepGridDimensions(1, 0)">+</button>
+            </div>
+          </div>
+          <div class="header-stepper-group">
+            <span>Rows:</span>
+            <div class="num-control-wrapper">
+              <button class="num-control-btn" type="button" onclick="stepGridDimensions(0, -1)">-</button>
+              <span class="num-control-val" id="header-rows-val">2</span>
+              <button class="num-control-btn" type="button" onclick="stepGridDimensions(0, 1)">+</button>
+            </div>
+          </div>
+          <button class="tool-btn primary" id="save-edit-btn" type="button">Save</button>
+          <button class="tool-btn" id="cancel-edit-btn" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overwrite Mode Instruction Banner -->
+    <div class="overwrite-banner" id="overwrite-banner">
+      <span>👉 Click any button on the grid below to overwrite its audio & label!</span>
+      <button class="overwrite-cancel-btn" id="cancel-overwrite-btn" type="button">Cancel</button>
+    </div>
+
+    <!-- Sound Button Canvas -->
+    <div class="sound-canvas" id="sound-canvas"></div>
+
+    <!-- Bottom Dock: Predictions & Toolbar -->
+    <div class="bottom-dock">
+      <div class="toolbar" id="toolbar">
+        <button class="key tts-btn" id="speak-btn" type="button">🔊 Speak</button>
+        <div class="predictions-wrapper">
+          <button class="key prediction-btn" type="button"></button>
+          <button class="key prediction-btn" type="button"></button>
+          <button class="key prediction-btn" type="button"></button>
+          <button class="key prediction-btn" type="button"></button>
+          <button class="key prediction-btn" type="button"></button>
+          <button class="key prediction-btn" type="button"></button>
+        </div>
+        <button class="key clear-btn" id="clear-btn" type="button">Clear</button>
+      </div>
+    </div>
+
+    <!-- Text Area Wrapper -->
+    <div class="textarea-wrapper">
+      <textarea class="display-textarea" id="display-input" spellcheck="true" autocomplete="off" autocapitalize="sentences" placeholder="Type here..."></textarea>
+
+      <div class="audio-actions-bar" id="generated-audio-actions">
+        <button class="audio-action-btn play" id="ta-replay-btn" type="button">▶ Replay Audio</button>
+        <button class="audio-action-btn" id="ta-assign-btn" type="button">📌 Assign to Button</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== MODALS & POPUPS ==================== -->
+  <div class="modal-overlay" id="modal-overlay"></div>
+
+  <!-- Theme Selection Modal -->
+  <div class="modal" id="modal-theme">
+    <div class="modal-title">Appearance Theme</div>
+    <div style="display: flex; gap: 8px;">
+      <button class="modal-btn secondary" onclick="applyTheme('light'); closeModals();">☀️ Light</button>
+      <button class="modal-btn secondary" onclick="applyTheme('dark'); closeModals();">🌙 Dark</button>
+      <button class="modal-btn secondary" onclick="applyTheme('system'); closeModals();">💻 System</button>
+    </div>
+    <div class="modal-buttons"><button class="modal-btn secondary" onclick="closeModals()">Close</button></div>
+  </div>
+
+  <!-- Voice Engine Modal -->
+  <div class="modal" id="modal-engine">
+    <div class="modal-title">Voice Engine & API Key</div>
+    <div class="sidebar-setting-group">
+      <label>Voice Engine Model</label>
+      <select id="model-select">
+        <option value="eleven_v3">Eleven v3</option>
+        <option value="eleven_multilingual_v2">Eleven Multilingual v2</option>
+        <option value="eleven_flash_v2">Eleven Flash v2</option>
+        <option value="browser_tts">Local Browser (Utterance)</option>
+      </select>
+    </div>
+    <div class="sidebar-setting-group">
+      <label>ElevenLabs API Key</label>
+      <button id="api-key-btn" class="status-btn missing" type="button">🔴 Show/Edit API Key</button>
+    </div>
+    <div class="modal-buttons"><button class="modal-btn primary" onclick="closeModals()">Done</button></div>
+  </div>
+
+  <!-- Assign Choice Modal (Create New vs Overwrite) -->
+  <div class="modal" id="modal-assign-choice">
+    <div class="modal-title">Assign Speech Audio</div>
+    <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.4;">Would you like to create a brand new button on this topic, or overwrite an existing button on the grid?</p>
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+      <button class="status-btn" style="padding: 12px; font-weight: 600; color: var(--accent); border-color: var(--accent);" id="choice-create-new-btn">✨ Create New Button</button>
+      <button class="status-btn" style="padding: 12px; font-weight: 600;" id="choice-overwrite-btn">🔄 Overwrite Existing Button</button>
+    </div>
+    <div class="modal-buttons"><button class="modal-btn secondary" onclick="closeModals()">Cancel</button></div>
+  </div>
+
+  <!-- Edit Side Panel Nav Item Modal -->
+  <div class="modal" id="nav-edit-modal">
+    <div class="modal-title">Edit Menu Item</div>
+    <div class="sidebar-setting-group">
+      <label>Label Name</label>
+      <input type="text" id="nav-name-input" class="modal-input" maxlength="25">
+    </div>
+    <div class="sidebar-setting-group">
+      <label>Icon (Google Fonts Icon Style Picker)</label>
+      <input type="text" id="nav-icon-input" class="modal-input" maxlength="4" style="margin-bottom: 4px;">
+      <button class="status-btn" onclick="openIconStudio('nav-icon-input')" style="justify-content: center;">🔍 Open Icon Studio Picker...</button>
+    </div>
+    <div class="modal-buttons">
+      <button class="modal-btn primary" id="save-nav-edit-btn" type="button">Save</button>
+      <button class="modal-btn secondary" onclick="closeModals()" type="button">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Edit Topic Meta Modal -->
+  <div class="modal" id="topic-edit-modal">
+    <div class="modal-title">Edit Topic Settings</div>
+    <div class="sidebar-setting-group">
+      <label>Topic Name</label>
+      <input type="text" id="topic-name-input" class="modal-input" placeholder="Topic name" maxlength="30">
+    </div>
+    <div class="sidebar-setting-group">
+      <label>Topic Icon</label>
+      <input type="text" id="topic-icon-input" class="modal-input" maxlength="4" style="margin-bottom: 4px;">
+      <button class="status-btn" onclick="openIconStudio('topic-icon-input')" style="justify-content: center;">🔍 Open Icon Studio Picker...</button>
+    </div>
+    <div class="sidebar-setting-group">
+      <label>Color Accent</label>
+      <div class="modal-color-picker" id="topic-color-picker"></div>
+    </div>
+    <div class="modal-buttons">
+      <button class="modal-btn danger" id="delete-topic-btn" type="button">Delete Topic</button>
+      <button class="modal-btn primary" id="save-topic-meta-btn" type="button">Save</button>
+      <button class="modal-btn secondary" onclick="closeModals()" type="button">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Edit Sound Button Modal -->
+  <div class="modal" id="button-edit-modal">
+    <div class="modal-title">Edit Sound Button</div>
+    <div class="sidebar-setting-group">
+      <label>Label</label>
+      <input type="text" id="button-label-input" class="modal-input" placeholder="Button label" maxlength="30">
+    </div>
+    <div class="sidebar-setting-group">
+      <label>Color</label>
+      <div class="modal-color-picker" id="button-color-picker"></div>
+    </div>
+    <div class="modal-buttons">
+      <button class="modal-btn danger" id="delete-button-edit" type="button">Delete</button>
+      <button class="modal-btn primary" id="save-button-edit" type="button">Save</button>
+      <button class="modal-btn secondary" onclick="closeModals()" type="button">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Elegant Google Fonts Style Icon Studio Modal -->
+  <div class="modal" id="icon-studio-modal" style="min-width: 420px;">
+    <div class="modal-title">Google Fonts Icon Studio</div>
+    <div class="icon-studio-search">
+      <span class="search-ico">🔍</span>
+      <input type="text" id="icon-search-input" placeholder="Search icons (e.g., chat, home, happy, food, medical)...">
+    </div>
+    <div class="icon-studio-grid" id="icon-studio-grid"></div>
+    <div class="icon-studio-controls">
+      <div class="icon-size-btns">
+        <span>Size Preview:</span>
+        <button class="size-btn" onclick="setStudioIconSize(18, this)">Small</button>
+        <button class="size-btn active" onclick="setStudioIconSize(24, this)">Medium</button>
+        <button class="size-btn" onclick="setStudioIconSize(32, this)">Large</button>
+      </div>
+      <span id="icon-studio-status">Select an icon</span>
+    </div>
+    <div class="modal-buttons">
+      <button class="modal-btn primary" id="confirm-icon-studio-btn" type="button">Select Icon</button>
+      <button class="modal-btn secondary" onclick="closeModals()" type="button">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Voices Selection Drawer -->
+  <div class="voices-panel" id="voices-panel">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+      <h2 style="font-size: 16px;">Select Voice</h2>
+      <button class="icon-btn" onclick="document.getElementById('voices-panel').classList.remove('open')" type="button">×</button>
+    </div>
+    <div id="voice-list-browser" class="voice-list"></div>
+    <div id="voice-list-eleven" class="voice-list"></div>
+  </div>
+
+  <script>
+    // ==================== STATE & CONFIG ====================
+    const COLOR_PALETTE = ["#3f3f4e", "#2e7d32", "#d32f2f", "#1976d2", "#f57c00", "#c2185b", "#512da8", "#00838f", "#4a90e2", "#8e24aa"];
+    const DEFAULT_GRID_COLS = 4;
+    const DEFAULT_GRID_ROWS = 2;
+    const defaultStarters = ["Hey!", "What?", "Yes!", "No!", "I don't know", "Hello"];
+    const previewText = "This is a voice preview.";
+
+    // Comprehensive curated icon database with search keywords (mimicking Google Fonts Icons)
+    const ICON_DATABASE = [
+      { ico: "💬", name: "chat message talk speech bubble communication" },
+      { ico: "📁", name: "folder topic category directory storage" },
+      { ico: "🕒", name: "time clock history watch schedule recent" },
+      { ico: "⚙️", name: "settings gear cog preferences options" },
+      { ico: "🔊", name: "speaker audio sound volume play music" },
+      { ico: "🏠", name: "home house building living residence" },
+      { ico: "⭐", name: "star favorite rating important badge" },
+      { ico: "🍔", name: "food burger eat dining restaurant meal" },
+      { ico: "🍕", name: "pizza slice Italian food dinner" },
+      { ico: "☕", name: "coffee tea drink cup beverage morning" },
+      { ico: "🚗", name: "car vehicle travel drive transport automobile" },
+      { ico: "✈️", name: "airplane flight travel vacation fly" },
+      { ico: "🎮", name: "game play controller fun hobby entertainment" },
+      { ico: "🩺", name: "doctor medical hospital stethoscope health illness" },
+      { ico: "💊", name: "pill medicine drug prescription pharmacy health" },
+      { ico: "🛒", name: "shopping cart store groceries market buy" },
+      { ico: "🎵", name: "music note song audio melody rhythm" },
+      { ico: "💡", name: "idea lightbulb bright thought electricity" },
+      { ico: "🐾", name: "pets dog cat animal paw footprint" },
+      { ico: "📞", name: "phone call contact telephone dial" },
+      { ico: "❤️", name: "heart love like care feeling emotion" },
+      { ico: "😊", name: "happy smile face joy glad emotion good" },
+      { ico: "😢", name: "sad cry tears upset unhappy feeling" },
+      { ico: "😡", name: "angry mad rage furious emotion upset" },
+      { ico: "😴", name: "sleep tired nap rest bed exhausted" },
+      { ico: "❗", name: "exclamation alert attention warning important" },
+      { ico: "❓", name: "question ask help query doubt what" },
+      { ico: "🔥", name: "fire hot burn amazing urgent trend" },
+      { ico: "✨", name: "sparkles magic shiny new clean special" },
+      { ico: "🌟", name: "glowing star bright excellent winner" },
+      { ico: "🎉", name: "party celebration congrats birthday festive" },
+      { ico: "👀", name: "eyes look see watch observe vision" },
+      { ico: "👂", name: "ear listen hear sound deaf auditory" },
+      { ico: "🧠", name: "brain mind think psychology intelligence idea" },
+      { ico: "⚡", name: "lightning fast power energy electric speed" },
+      { ico: "🏆", name: "trophy win award achievement success goal" },
+      { ico: "📝", name: "note write pencil text edit document" },
+      { ico: "📌", name: "pin tack location assign fix remember" },
+      { ico: "🗑️", name: "trash garbage delete remove dispose clear" },
+      { ico: "🔑", name: "key lock password access security safe" },
+      { ico: "🚶", name: "walk pedestrian go step move exercise" },
+      { ico: "🏃", name: "run sprint fast hurry athlete jogging" },
+      { ico: "✋", name: "hand stop wait highfive palm gesture" },
+      { ico: "👍", name: "thumbs up yes approve like good okay" },
+      { ico: "👎", name: "thumbs down no disapprove bad reject" }
+    ];
+
+    // DOM Elements
+    const sidebar = document.getElementById("sidebar");
+    const displayInput = document.getElementById("display-input");
+    const predBtns = document.querySelectorAll(".prediction-btn");
+    const soundCanvas = document.getElementById("sound-canvas");
+    const editModeBtn = document.getElementById("edit-mode-btn");
+    const editModeControls = document.getElementById("edit-mode-controls");
+    const modalOverlay = document.getElementById("modal-overlay");
+    const speakBtn = document.getElementById("speak-btn");
+    const audioActionsBar = document.getElementById("generated-audio-actions");
+
+    // Sliders & Controls
+    const modelSelect = document.getElementById("model-select");
+    const volumeSlider = document.getElementById("volume-slider");
+    const speedSlider = document.getElementById("speed-slider");
+    const stabilitySlider = document.getElementById("stability-slider");
+    const similaritySlider = document.getElementById("similarity-slider");
+    const valVolume = document.getElementById("val-volume");
+    const valSpeed = document.getElementById("val-speed");
+    const valStability = document.getElementById("val-stability");
+    const valSimilarity = document.getElementById("val-similarity");
+    const fontDisplay = document.getElementById("font-display");
+
+    // State Variables
+    let predTimeout;
+    let activeBrowserVoiceIndex = localStorage.getItem("aac_browser_voice_index") || "";
+    let activeElevenVoiceId = localStorage.getItem("elevenlabs_voice") || "";
+    let currentFontSize = parseInt(localStorage.getItem("aac_font_size"), 10) || 32;
+    let currentTheme = localStorage.getItem("aac_theme") || "system";
+
+    let navMeta = JSON.parse(localStorage.getItem("aac_nav_meta")) || {
+      topics: { label: "Topics", icon: "📁" },
+      chat: { label: "Chat Settings", icon: "💬" },
+      history: { label: "History", icon: "🕒" },
+      settings: { label: "Settings", icon: "⚙️" }
+    };
+    let editingNavId = null;
+
+    let tabs = normalizeTabs(JSON.parse(localStorage.getItem("aac_tabs")) || [{ id: "default", name: "General Chat", icon: "💬", color: "#8ab4f8", buttons: [], gridCols: DEFAULT_GRID_COLS, gridRows: DEFAULT_GRID_ROWS }]);
+    let activeTabId = localStorage.getItem("aac_active_tab") || tabs[0].id;
+    if (!tabs.find(t => t.id === activeTabId)) activeTabId = tabs[0].id;
+
+    let audioHistory = JSON.parse(localStorage.getItem("aac_history")) || [];
+    let isEditMode = false;
+    let isOverwriteMode = false;
+    let editSnapshot = null;
+    let draggingButton = null;
+    let editingButtonId = null;
+    let editingTopicId = null;
+    let targetStudioInputId = null;
+    let selectedStudioIcon = null;
+    let lastGeneratedAudio = null;
+
+    // ==================== UTILITY FUNCTIONS ====================
+    function generateId() { return Math.random().toString(36).substr(2, 9); }
+    function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
+
+    function normalizeButton(btn, index = 0) {
+      const col = Number.isFinite(btn.col) ? btn.col : (Number.isFinite(btn.x) ? Math.max(0, Math.floor(btn.x / 100)) : (index % DEFAULT_GRID_COLS));
+      const row = Number.isFinite(btn.row) ? btn.row : (Number.isFinite(btn.y) ? Math.max(0, Math.floor(btn.y / 80)) : Math.floor(index / DEFAULT_GRID_COLS));
+      return {
+        id: btn.id || generateId(),
+        label: btn.label || "Button",
+        color: btn.color || COLOR_PALETTE[index % COLOR_PALETTE.length],
+        audioData: btn.audioData || null,
+        col, row,
+        colSpan: clamp(btn.colSpan || 1, 1, 12),
+        rowSpan: clamp(btn.rowSpan || 1, 1, 8)
+      };
+    }
+
+    function normalizeTabs(rawTabs) {
+      if (!Array.isArray(rawTabs) || rawTabs.length === 0) {
+        return [{ id: "default", name: "General Chat", icon: "💬", color: "#8ab4f8", buttons: [], gridCols: DEFAULT_GRID_COLS, gridRows: DEFAULT_GRID_ROWS }];
+      }
+      return rawTabs.map((tab, idx) => ({
+        id: tab.id || generateId(),
+        name: tab.name || `Topic ${idx + 1}`,
+        icon: tab.icon || "📁",
+        color: tab.color || COLOR_PALETTE[idx % COLOR_PALETTE.length],
+        gridCols: clamp(parseInt(tab.gridCols, 10) || DEFAULT_GRID_COLS, 1, 12),
+        gridRows: clamp(parseInt(tab.gridRows, 10) || DEFAULT_GRID_ROWS, 1, 8),
+        buttons: Array.isArray(tab.buttons) ? tab.buttons.map((btn, bIdx) => normalizeButton(btn, bIdx)) : []
+      }));
+    }
+
+    function getActiveTab() { return tabs.find(t => t.id === activeTabId); }
+    function saveTabs() { localStorage.setItem("aac_tabs", JSON.stringify(tabs)); }
+    function saveHistory() { localStorage.setItem("aac_history", JSON.stringify(audioHistory)); }
+    function saveNavMeta() { localStorage.setItem("aac_nav_meta", JSON.stringify(navMeta)); }
+    function cloneTabsState() { return JSON.parse(JSON.stringify(tabs)); }
+
+    // ==================== THEME MANAGEMENT ====================
+    function applyTheme(theme) {
+      currentTheme = theme;
+      localStorage.setItem("aac_theme", theme);
+      if (theme === "system") {
+        const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
+      } else {
+        document.documentElement.setAttribute("data-theme", theme);
+      }
+    }
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if (currentTheme === "system") applyTheme("system"); });
+
+    // ==================== SIDEBAR & ACCORDION NAVIGATION ====================
+    function applyNavMetaUI() {
+      Object.keys(navMeta).forEach(key => {
+        const iconEl = document.getElementById(`nav-icon-${key}`);
+        const labelEl = document.getElementById(`nav-label-${key}`);
+        if (iconEl) iconEl.textContent = navMeta[key].icon;
+        if (labelEl) labelEl.textContent = navMeta[key].label;
+      });
+    }
+
+    document.getElementById("toggle-sidebar-btn").addEventListener("click", () => {
+      sidebar.classList.toggle("collapsed");
+      document.getElementById("gemini-context-popup").classList.remove("open");
+    });
+
+    // Accordion Toggle Handlers
+    ["topics", "chat", "history"].forEach(key => {
+      document.getElementById(`header-${key}`).addEventListener("click", (e) => {
+        if (e.target.closest(".nav-action-btn")) return;
+        if (sidebar.classList.contains("collapsed")) sidebar.classList.remove("collapsed");
+        const section = document.getElementById(`section-${key}`);
+        section.classList.toggle("open");
+        if (key === "history" && section.classList.contains("open")) renderHistory();
+      });
+    });
+
+    // Footer Settings Popup Toggle
+    document.getElementById("footer-settings-btn").addEventListener("click", (e) => {
+      e.stopPropagation();
+      document.getElementById("gemini-context-popup").classList.toggle("open");
+    });
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".sidebar-footer")) document.getElementById("gemini-context-popup").classList.remove("open");
+    });
+
+    // Side Panel Icon & Label Editing
+    document.querySelectorAll(".edit-nav-meta-btn").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openNavEditModal(btn.dataset.navId);
+      });
+    });
+
+    function openNavEditModal(navId) {
+      if (!navMeta[navId]) return;
+      editingNavId = navId;
+      document.getElementById("nav-name-input").value = navMeta[navId].label;
+      document.getElementById("nav-icon-input").value = navMeta[navId].icon;
+      openModal("nav-edit-modal");
+    }
+
+    document.getElementById("save-nav-edit-btn").addEventListener("click", () => {
+      if (!editingNavId) return;
+      navMeta[editingNavId].label = document.getElementById("nav-name-input").value.trim() || navMeta[editingNavId].label;
+      navMeta[editingNavId].icon = document.getElementById("nav-icon-input").value.trim() || navMeta[editingNavId].icon;
+      saveNavMeta(); applyNavMetaUI(); closeModals();
+    });
+
+    // ==================== GOOGLE FONTS STYLE ICON STUDIO ====================
+    function openIconStudio(targetInputId) {
+      targetStudioInputId = targetInputId;
+      const currentVal = document.getElementById(targetInputId)?.value || "💬";
+      selectedStudioIcon = currentVal;
+      document.getElementById("icon-search-input").value = "";
+      renderIconStudioGrid("");
+      openModal("icon-studio-modal");
+    }
+
+    function renderIconStudioGrid(query) {
+      const grid = document.getElementById("icon-studio-grid");
+      grid.innerHTML = "";
+      const q = query.toLowerCase().trim();
+      const filtered = ICON_DATABASE.filter(item => item.ico.includes(q) || item.name.includes(q));
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div style="grid-column: span 7; padding: 16px; text-align: center; color: var(--text-secondary); font-size: 12px;">No matching icons found</div>`;
+        return;
+      }
+
+      filtered.forEach(item => {
+        const el = document.createElement("div");
+        el.className = `icon-studio-item ${item.ico === selectedStudioIcon ? "selected" : ""}`;
+        el.textContent = item.ico;
+        el.title = item.name;
+        el.addEventListener("click", () => {
+          grid.querySelectorAll(".icon-studio-item").forEach(o => o.classList.remove("selected"));
+          el.classList.add("selected");
+          selectedStudioIcon = item.ico;
+          document.getElementById("icon-studio-status").textContent = `Selected: ${item.ico}`;
+        });
+        grid.appendChild(el);
+      });
+    }
+
+    document.getElementById("icon-search-input").addEventListener("input", (e) => renderIconStudioGrid(e.target.value));
+
+    function setStudioIconSize(px, btnEl) {
+      document.querySelectorAll(".size-btn").forEach(b => b.classList.remove("active"));
+      btnEl.classList.add("active");
+      document.querySelectorAll(".icon-studio-item").forEach(item => item.style.fontSize = `${px}px`);
+    }
+
+    document.getElementById("confirm-icon-studio-btn").addEventListener("click", () => {
+      if (targetStudioInputId && selectedStudioIcon) {
+        const input = document.getElementById(targetStudioInputId);
+        if (input) input.value = selectedStudioIcon;
+      }
+      closeModals();
+    });
+
+    // ==================== TOPICS NAVIGATION & METADATA ====================
+    function renderTopics() {
+      const listEl = document.getElementById("topics-list");
+      listEl.innerHTML = "";
+      tabs.forEach(topic => {
+        const item = document.createElement("div");
+        item.className = `topic-item ${topic.id === activeTabId ? "active" : ""}`;
+        item.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+            <span class="topic-icon" style="color: ${topic.color};">${topic.icon || "📁"}</span>
+            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${topic.name}</span>
+          </div>
+          <div class="topic-actions">
+            <button class="nav-action-btn edit-topic-btn" title="Edit Topic Settings">⚙️</button>
+          </div>
+        `;
+        item.addEventListener("click", (e) => {
+          if (e.target.closest(".edit-topic-btn")) { e.stopPropagation(); openTopicEditModal(topic.id); return; }
+          switchTopic(topic.id);
+        });
+        listEl.appendChild(item);
+      });
+      updateWorkspaceHeader();
+    }
+
+    function switchTopic(id) {
+      activeTabId = id;
+      if (!isEditMode) localStorage.setItem("aac_active_tab", activeTabId);
+      renderTopics(); renderSoundButtons();
+    }
+
+    function updateWorkspaceHeader() {
+      const active = getActiveTab();
+      if (!active) return;
+      document.getElementById("header-topic-icon").textContent = active.icon || "📁";
+      document.getElementById("header-topic-icon").style.color = active.color || "var(--accent)";
+      document.getElementById("header-topic-name").textContent = active.name;
+      document.getElementById("header-cols-val").textContent = active.gridCols;
+      document.getElementById("header-rows-val").textContent = active.gridRows;
+    }
+
+    // Relocated Add Topic button in sidebar
+    document.getElementById("add-topic-sidebar-btn").addEventListener("click", (e) => {
+      e.stopPropagation();
+      const name = prompt("Enter new topic name:", `Topic ${tabs.length + 1}`);
+      if (name === null) return;
+      const newTopic = {
+        id: generateId(), name: name.trim() || "New Topic", icon: "📁",
+        color: COLOR_PALETTE[tabs.length % COLOR_PALETTE.length],
+        gridCols: DEFAULT_GRID_COLS, gridRows: DEFAULT_GRID_ROWS, buttons: []
+      };
+      tabs.push(newTopic); saveTabs(); switchTopic(newTopic.id);
+    });
+
+    function openTopicEditModal(topicId) {
+      const topic = tabs.find(t => t.id === topicId);
+      if (!topic) return;
+      editingTopicId = topicId;
+      document.getElementById("topic-name-input").value = topic.name;
+      document.getElementById("topic-icon-input").value = topic.icon || "📁";
+
+      const colorPicker = document.getElementById("topic-color-picker");
+      colorPicker.innerHTML = "";
+      COLOR_PALETTE.forEach(col => {
+        const opt = document.createElement("div");
+        opt.className = `color-option ${topic.color === col ? "selected" : ""}`;
+        opt.style.backgroundColor = col;
+        opt.addEventListener("click", () => {
+          colorPicker.querySelectorAll(".color-option").forEach(o => o.classList.remove("selected"));
+          opt.classList.add("selected");
+        });
+        colorPicker.appendChild(opt);
+      });
+      openModal("topic-edit-modal");
+    }
+
+    document.getElementById("save-topic-meta-btn").addEventListener("click", () => {
+      const topic = tabs.find(t => t.id === editingTopicId);
+      if (!topic) return;
+      topic.name = document.getElementById("topic-name-input").value.trim() || "Untitled";
+      topic.icon = document.getElementById("topic-icon-input").value.trim() || "📁";
+      const selCol = document.querySelector("#topic-color-picker .color-option.selected");
+      if (selCol) topic.color = selCol.style.backgroundColor;
+      saveTabs(); renderTopics(); renderSoundButtons(); closeModals();
+    });
+
+    document.getElementById("delete-topic-btn").addEventListener("click", () => {
+      if (tabs.length === 1) { alert("Cannot delete the last topic."); return; }
+      if (!confirm("Are you sure you want to delete this topic and all its buttons?")) return;
+      tabs = tabs.filter(t => t.id !== editingTopicId);
+      if (!tabs.find(t => t.id === activeTabId)) activeTabId = tabs[0].id;
+      saveTabs(); renderTopics(); renderSoundButtons(); closeModals();
+    });
+
+    // Relocated Stepper Controls in Header
+    function stepGridDimensions(deltaCols, deltaRows) {
+      const active = getActiveTab();
+      if (!active) return;
+      active.gridCols = clamp(active.gridCols + deltaCols, 1, 12);
+      active.gridRows = clamp(active.gridRows + deltaRows, 1, 8);
+      repackSequentialGrid(active);
+      updateWorkspaceHeader();
+      renderSoundButtons();
+    }
+
+    // ==================== EDIT MODE & SMART WIGGLE/SWAP DRAGGING ====================
+    function setEditMode(enabled) {
+      isEditMode = enabled;
+      if (enabled && isOverwriteMode) setOverwriteMode(false);
+      editModeBtn.style.display = enabled ? "none" : "inline-flex";
+      editModeControls.classList.toggle("open", enabled);
+      soundCanvas.classList.toggle("edit-mode", enabled);
+
+      if (enabled) editSnapshot = cloneTabsState();
+      else editSnapshot = null;
+      renderSoundButtons();
+    }
+
+    editModeBtn.addEventListener("click", () => setEditMode(true));
+    document.getElementById("save-edit-btn").addEventListener("click", () => { saveTabs(); setEditMode(false); });
+    document.getElementById("cancel-edit-btn").addEventListener("click", () => {
+      if (editSnapshot) tabs = normalizeTabs(editSnapshot);
+      setEditMode(false); renderTopics(); renderSoundButtons();
+    });
+
+    function renderSoundButtons() {
+      const activeTab = getActiveTab();
+      if (!activeTab) return;
+      soundCanvas.style.gridTemplateColumns = `repeat(${activeTab.gridCols}, minmax(0, 1fr))`;
+      soundCanvas.style.gridAutoRows = `52px`;
+      soundCanvas.innerHTML = "";
+
+      activeTab.buttons.forEach(btnData => {
+        const btnEl = document.createElement("div");
+        btnEl.className = `sound-button${isEditMode ? " edit-mode" : ""}${isOverwriteMode ? " overwrite-target" : ""}`;
+        btnEl.id = `btn-${btnData.id}`;
+        btnEl.style.gridColumn = `${btnData.col + 1} / span ${btnData.colSpan}`;
+        btnEl.style.gridRow = `${btnData.row + 1} / span ${btnData.rowSpan}`;
+        btnEl.style.backgroundColor = btnData.color || "#3f3f4e";
+
+        btnEl.innerHTML = `
+          <div class="sound-button-label">${btnData.label || "Button"}</div>
+          <button class="sound-button-edit-btn" title="Edit Button">✎</button>
+        `;
+
+        if (isEditMode) {
+          btnEl.querySelector(".sound-button-edit-btn").addEventListener("click", (e) => {
+            e.stopPropagation(); openButtonEditModal(btnData.id);
+          });
+          btnEl.addEventListener("mousedown", (e) => {
+            if (e.button !== 0 || e.target.classList.contains("sound-button-edit-btn")) return;
+            startDrag(e, btnData.id);
+          });
+        } else if (isOverwriteMode) {
+          btnEl.addEventListener("click", () => executeOverwrite(btnData.id));
+        } else {
+          btnEl.addEventListener("click", () => playAudioData(btnData.audioData));
+        }
+        soundCanvas.appendChild(btnEl);
+      });
+    }
+
+    function openButtonEditModal(btnId) {
+      const tab = getActiveTab();
+      const btn = tab?.buttons.find(b => b.id === btnId);
+      if (!btn) return;
+      editingButtonId = btnId;
+      document.getElementById("button-label-input").value = btn.label;
+
+      const picker = document.getElementById("button-color-picker");
+      picker.innerHTML = "";
+      COLOR_PALETTE.forEach(col => {
+        const opt = document.createElement("div");
+        opt.className = `color-option ${btn.color === col ? "selected" : ""}`;
+        opt.style.backgroundColor = col;
+        opt.addEventListener("click", () => {
+          picker.querySelectorAll(".color-option").forEach(o => o.classList.remove("selected"));
+          opt.classList.add("selected");
+        });
+        picker.appendChild(opt);
+      });
+      openModal("button-edit-modal");
+    }
+
+    document.getElementById("save-button-edit").addEventListener("click", () => {
+      const tab = getActiveTab();
+      const btn = tab?.buttons.find(b => b.id === editingButtonId);
+      if (!btn) return;
+      btn.label = document.getElementById("button-label-input").value.trim() || "Button";
+      const selCol = document.querySelector("#button-color-picker .color-option.selected");
+      if (selCol) btn.color = selCol.style.backgroundColor;
+      renderSoundButtons(); closeModals();
+    });
+
+    document.getElementById("delete-button-edit").addEventListener("click", () => {
+      const tab = getActiveTab();
+      if (!tab) return;
+      tab.buttons = tab.buttons.filter(b => b.id !== editingButtonId);
+      repackSequentialGrid(tab); renderSoundButtons(); closeModals();
+    });
+
+    function repackSequentialGrid(tab) {
+      let col = 0, row = 0;
+      tab.buttons.forEach(btn => {
+        if (col + btn.colSpan > tab.gridCols) { col = 0; row++; }
+        btn.col = col; btn.row = row;
+        col += btn.colSpan;
+        if (col >= tab.gridCols) { col = 0; row++; }
+      });
+    }
+
+    function getCellFromPoint(clientX, clientY) {
+      const tab = getActiveTab();
+      if (!tab) return { col: 0, row: 0 };
+      const rect = soundCanvas.getBoundingClientRect();
+      const x = clamp(clientX - rect.left, 0, Math.max(0, rect.width - 1));
+      const y = clamp(clientY - rect.top, 0, Math.max(0, rect.height - 1));
+      return {
+        col: clamp(Math.floor((x / rect.width) * tab.gridCols), 0, tab.gridCols - 1),
+        row: clamp(Math.floor((y / rect.height) * Math.max(1, tab.gridRows)), 0, Math.max(0, tab.gridRows - 1))
+      };
+    }
+
+    function startDrag(e, btnId) {
+      if (!isEditMode) return;
+      const tab = getActiveTab();
+      const btnEl = document.getElementById(`btn-${btnId}`);
+      if (!tab || !btnEl) return;
+
+      draggingButton = { id: btnId, element: btnEl };
+      btnEl.classList.add("dragging");
+      e.preventDefault();
+    }
+
+    document.addEventListener("mousemove", (e) => {
+      if (!isEditMode || !draggingButton) return;
+      const tab = getActiveTab();
+      if (!tab) return;
+
+      const cell = getCellFromPoint(e.clientX, e.clientY);
+      const draggedBtn = tab.buttons.find(b => b.id === draggingButton.id);
+      if (!draggedBtn) return;
+
+      // Check if hovering directly over another button
+      const targetBtn = tab.buttons.find(b => b.col === cell.col && b.row === cell.row && b.id !== draggedBtn.id);
+      soundCanvas.querySelectorAll(".sound-button").forEach(el => el.classList.remove("swap-target"));
+
+      if (targetBtn) {
+        const targetEl = document.getElementById(`btn-${targetBtn.id}`);
+        if (targetEl) {
+          const r = targetEl.getBoundingClientRect();
+          const relX = (e.clientX - r.left) / r.width;
+          const relY = (e.clientY - r.top) / r.height;
+
+          // Hovering inner 50% triggers direct SWAP
+          if (relX > 0.25 && relX < 0.75 && relY > 0.25 && relY < 0.75) {
+            targetEl.classList.add("swap-target");
+            draggingButton.swapTargetId = targetBtn.id;
+            return;
+          }
+        }
+      }
+
+      draggingButton.swapTargetId = null;
+      // Otherwise shift positions sequentially between buttons
+      const targetIndex = clamp(cell.row * tab.gridCols + cell.col, 0, tab.buttons.length - 1);
+      const currentIndex = tab.buttons.findIndex(b => b.id === draggingButton.id);
+      if (currentIndex !== -1 && currentIndex !== targetIndex) {
+        const [removed] = tab.buttons.splice(currentIndex, 1);
+        tab.buttons.splice(targetIndex, 0, removed);
+        repackSequentialGrid(tab);
+        tab.buttons.forEach(b => {
+          const el = document.getElementById(`btn-${b.id}`);
+          if (el) {
+            el.style.gridColumn = `${b.col + 1} / span ${b.colSpan}`;
+            el.style.gridRow = `${b.row + 1} / span ${b.rowSpan}`;
+          }
+        });
+      }
+    });
+
+    document.addEventListener("mouseup", () => {
+      if (draggingButton) {
+        const tab = getActiveTab();
+        if (draggingButton.swapTargetId && tab) {
+          const b1 = tab.buttons.find(b => b.id === draggingButton.id);
+          const b2 = tab.buttons.find(b => b.id === draggingButton.swapTargetId);
+          if (b1 && b2) {
+            const tempCol = b1.col, tempRow = b1.row;
+            b1.col = b2.col; b1.row = b2.row;
+            b2.col = tempCol; b2.row = tempRow;
+          }
+        }
+        draggingButton.element.classList.remove("dragging");
+        draggingButton = null;
+        renderSoundButtons();
+      }
+    });
+
+    // ==================== ASSIGN TO BUTTON & OVERWRITE MODE ====================
+    document.getElementById("ta-assign-btn").addEventListener("click", () => {
+      if (!lastGeneratedAudio || !lastGeneratedAudio.audioData) return;
+      openModal("modal-assign-choice");
+    });
+
+    document.getElementById("choice-create-new-btn").addEventListener("click", () => {
+      if (!lastGeneratedAudio) return;
+      const activeTab = getActiveTab();
+      if (!activeTab) return;
+
+      activeTab.buttons.push(normalizeButton({
+        id: generateId(),
+        label: lastGeneratedAudio.text.substring(0, 24) || "Speech",
+        audioData: lastGeneratedAudio.audioData,
+        col: activeTab.buttons.length % activeTab.gridCols,
+        row: Math.floor(activeTab.buttons.length / activeTab.gridCols)
+      }, activeTab.buttons.length));
+
+      repackSequentialGrid(activeTab);
+      saveTabs(); renderSoundButtons(); closeModals();
+    });
+
+    document.getElementById("choice-overwrite-btn").addEventListener("click", () => {
+      closeModals();
+      setOverwriteMode(true);
+    });
+
+    function setOverwriteMode(enabled) {
+      isOverwriteMode = enabled;
+      document.getElementById("overwrite-banner").classList.toggle("active", enabled);
+      renderSoundButtons();
+    }
+
+    document.getElementById("cancel-overwrite-btn").addEventListener("click", () => setOverwriteMode(false));
+
+    function executeOverwrite(btnId) {
+      if (!lastGeneratedAudio || !lastGeneratedAudio.audioData) return;
+      const tab = getActiveTab();
+      const btn = tab?.buttons.find(b => b.id === btnId);
+      if (!btn) return;
+
+      btn.audioData = lastGeneratedAudio.audioData;
+      btn.label = lastGeneratedAudio.text.substring(0, 24) || "Speech";
+      saveTabs();
+      setOverwriteMode(false);
+    }
+
+    // ==================== AUDIO HISTORY & INLINE EDITING ====================
+    function addToHistory(textSpoken, model, voiceId, audioBlob) {
+      const item = {
+        id: generateId(),
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        text: textSpoken, model, voiceId, audioData: audioBlob
+      };
+      audioHistory.unshift(item);
+      if (audioHistory.length > 50) audioHistory.pop();
+      saveHistory(); renderHistory(); setGeneratedAudioActions(item);
+    }
+
+    function renderHistory() {
+      const container = document.getElementById("audio-history");
+      if (!container) return;
+      const query = (document.getElementById("history-search-input")?.value || "").toLowerCase().trim();
+      const filtered = audioHistory.filter(item => (item.text || "").toLowerCase().includes(query));
+      container.innerHTML = "";
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div style="padding: 16px; text-align: center; color: var(--text-secondary);">No speech history found</div>`;
+        return;
+      }
+
+      filtered.forEach(item => {
+        const el = document.createElement("div");
+        el.className = "history-item";
+        el.innerHTML = `
+          <div class="history-item-header">
+            <span class="history-item-text" title="Click to Edit Label">${item.text}</span>
+            <span class="history-item-meta">${item.timestamp}</span>
+          </div>
+          <div class="history-actions">
+            <button class="history-btn replay-btn" type="button">▶ Play</button>
+            <button class="history-btn restore restore-btn" type="button">↩ Restore</button>
+            <button class="history-btn delete delete-btn" style="color:var(--danger);" type="button">🗑</button>
+          </div>
+        `;
+
+        const textSpan = el.querySelector(".history-item-text");
+        textSpan.addEventListener("click", () => {
+          const input = document.createElement("input");
+          input.type = "text"; input.style.width = "100%"; input.style.padding = "4px"; input.value = item.text;
+          textSpan.replaceWith(input); input.focus();
+          const saveEdit = () => { item.text = input.value.trim() || item.text; saveHistory(); renderHistory(); };
+          input.addEventListener("blur", saveEdit);
+          input.addEventListener("keydown", (e) => { if (e.key === "Enter") input.blur(); });
+        });
+
+        el.querySelector(".replay-btn").addEventListener("click", () => {
+          if (!item.audioData) { alert("Browser TTS audio cannot be replayed directly from history."); return; }
+          playAudioData(item.audioData);
+        });
+        el.querySelector(".restore-btn").addEventListener("click", () => {
+          setText(item.text);
+          if (item.model) modelSelect.value = item.model;
+          if (item.voiceId && item.model !== "browser_tts") { activeElevenVoiceId = item.voiceId; localStorage.setItem("elevenlabs_voice", activeElevenVoiceId); }
+          setGeneratedAudioActions(item); displayInput.focus();
+        });
+        el.querySelector(".delete-btn").addEventListener("click", () => {
+          audioHistory = audioHistory.filter(h => h.id !== item.id); saveHistory(); renderHistory();
+        });
+        container.appendChild(el);
+      });
+    }
+
+    document.getElementById("history-search-input")?.addEventListener("input", renderHistory);
+    document.getElementById("clear-history-btn")?.addEventListener("click", () => {
+      if (!confirm("Clear all audio history?")) return;
+      audioHistory = []; saveHistory(); renderHistory();
+    });
+
+    function setGeneratedAudioActions(historyItem) {
+      lastGeneratedAudio = historyItem;
+      audioActionsBar.classList.toggle("active", !!(lastGeneratedAudio && lastGeneratedAudio.audioData));
+    }
+    document.getElementById("ta-replay-btn").addEventListener("click", () => {
+      if (lastGeneratedAudio && lastGeneratedAudio.audioData) playAudioData(lastGeneratedAudio.audioData);
+    });
+
+    // ==================== TEXTAREA & WORD PREDICTIONS ====================
+    function getText() { return displayInput.value; }
+    function setText(val, caret = val.length) {
+      displayInput.value = val;
+      try { displayInput.setSelectionRange(caret, caret); } catch (_) {}
+      updatePredictions();
+    }
+
+    async function updatePredictions() {
+      audioActionsBar.classList.remove("active");
+      const textUpToCaret = getText().substring(0, displayInput.selectionStart || getText().length);
+      clearTimeout(predTimeout);
+      if (!textUpToCaret.trim()) { predBtns.forEach((btn, i) => btn.textContent = defaultStarters[i] || ""); return; }
+
+      const words = textUpToCaret.trim().split(/\s+/).filter(w => w.length > 0);
+      const endsWithSpace = /\s$/.test(textUpToCaret);
+      let lastWord = "", activePrefix = "";
+
+      if (endsWithSpace) { if (words.length > 0) lastWord = words[words.length - 1].replace(/[^a-zA-Z']/g, ""); }
+      else if (words.length > 0) {
+        activePrefix = words[words.length - 1].replace(/[^a-zA-Z']/g, "");
+        if (words.length > 1) lastWord = words[words.length - 2].replace(/[^a-zA-Z']/g, "");
+      }
+
+      predTimeout = setTimeout(async () => {
+        try {
+          const urls = [];
+          if (lastWord && activePrefix) urls.push(`https://api.datamuse.com/words?lc=${encodeURIComponent(lastWord)}&sp=${encodeURIComponent(activePrefix)}*&max=6&md=f`);
+          else if (lastWord) urls.push(`https://api.datamuse.com/words?lc=${encodeURIComponent(lastWord)}&sp=*&max=6&md=f`);
+          else if (activePrefix) urls.push(`https://api.datamuse.com/sug?s=${encodeURIComponent(activePrefix)}&max=6&md=f`);
+          if (!urls.length) return;
+
+          const res = await Promise.all(urls.map(u => fetch(u).catch(() => null)));
+          const jsons = await Promise.all(res.map(r => (r && r.ok ? r.json() : [])));
+          const suggestions = []; const seen = new Set();
+          jsons.forEach(data => {
+            data.forEach(item => { if (!seen.has(item.word) && suggestions.length < 6) { seen.add(item.word); suggestions.push(item.word); } });
+          });
+          predBtns.forEach((btn, i) => btn.textContent = suggestions[i] || "");
+        } catch (_) {}
+      }, 250);
+    }
+
+    predBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const suggestion = btn.textContent;
+        if (!suggestion) return;
+        const text = getText(); const caret = displayInput.selectionStart || text.length;
+        const match = text.substring(0, caret).match(/([a-zA-Z']+)$/);
+        const replaceStart = match ? caret - match[1].length : caret;
+        const next = text.substring(0, replaceStart) + suggestion + " " + text.substring(caret);
+        setText(next, replaceStart + suggestion.length + 1); displayInput.focus();
+      });
+    });
+
+    displayInput.addEventListener("input", updatePredictions);
+    displayInput.addEventListener("click", updatePredictions);
+    displayInput.addEventListener("keyup", updatePredictions);
+    document.getElementById("clear-btn").addEventListener("click", () => {
+      setText(""); audioActionsBar.classList.remove("active"); displayInput.focus();
+    });
+
+    // ==================== TTS & AUDIO PLAYBACK ====================
+    function getPlaybackVolume() { return clamp(parseFloat(volumeSlider.value) / 5, 0, 1); }
+    function playAudioData(audioData) {
+      if (!audioData) return;
+      const audio = new Audio(audioData);
+      audio.volume = getPlaybackVolume();
+      audio.play().catch(() => {});
+    }
+
+    async function speakText() {
+      const text = getText().trim();
+      if (!text) return;
+      const volume = parseFloat(volumeSlider.value);
+      const speed = parseFloat(speedSlider.value);
+      speakBtn.textContent = "⏳..."; speakBtn.disabled = true;
+
+      try {
+        if (modelSelect.value === "browser_tts") {
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.volume = Math.min(1, volume / 5); utterance.rate = speed;
+          const voices = window.speechSynthesis.getVoices();
+          utterance.voice = activeBrowserVoiceIndex !== "" ? voices[activeBrowserVoiceIndex] : voices[0];
+          utterance.onend = () => { speakBtn.textContent = "🔊 Speak"; speakBtn.disabled = false; addToHistory(text, "browser_tts", `voice_${activeBrowserVoiceIndex || "0"}`, null); };
+          window.speechSynthesis.speak(utterance);
+        } else {
+          const apiKey = localStorage.getItem("elevenlabs_key");
+          if (!apiKey || !activeElevenVoiceId) {
+            alert("Please configure your API Key and select a voice in Settings.");
+            speakBtn.textContent = "🔊 Speak"; speakBtn.disabled = false; return;
+          }
+          const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${activeElevenVoiceId}`, {
+            method: "POST",
+            headers: { Accept: "audio/mpeg", "Content-Type": "application/json", "xi-api-key": apiKey },
+            body: JSON.stringify({
+              text, model_id: modelSelect.value,
+              voice_settings: { stability: parseFloat(stabilitySlider.value), similarity_boost: parseFloat(similaritySlider.value) }
+            })
+          });
+          if (!res.ok) throw new Error("API Error");
+          const blob = await res.blob(); const audioUrl = URL.createObjectURL(blob);
+          const audio = new Audio(audioUrl); audio.playbackRate = speed;
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const gain = ctx.createGain(); gain.gain.value = volume;
+          ctx.createMediaElementSource(audio).connect(gain).connect(ctx.destination);
+          audio.onended = () => { speakBtn.textContent = "🔊 Speak"; speakBtn.disabled = false; };
+          audio.play();
+          const reader = new FileReader();
+          reader.onloadend = () => addToHistory(text, modelSelect.value, activeElevenVoiceId, reader.result);
+          reader.readAsDataURL(blob);
+        }
+      } catch (_) {
+        alert("Failed to generate speech."); speakBtn.textContent = "🔊 Speak"; speakBtn.disabled = false;
+      }
+    }
+
+    speakBtn.addEventListener("click", speakText);
+    displayInput.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!speakBtn.disabled) speakText(); } });
+
+    // ==================== SETTINGS & MODAL UTILS ====================
+    function openModal(modalId) {
+      document.querySelectorAll(".modal").forEach(m => m.classList.remove("open"));
+      document.getElementById(modalId)?.classList.add("open");
+      modalOverlay.classList.add("open");
+      document.getElementById("gemini-context-popup").classList.remove("open");
+    }
+    function closeModals() {
+      document.querySelectorAll(".modal").forEach(m => m.classList.remove("open"));
+      modalOverlay.classList.remove("open");
+      editingButtonId = null; editingTopicId = null; editingNavId = null;
+    }
+    modalOverlay.addEventListener("click", closeModals);
+
+    function syncSlider(el, valEl, storeKey, isFloat = true) {
+      const saved = localStorage.getItem(storeKey);
+      if (saved !== null) el.value = saved;
+      valEl.textContent = isFloat ? parseFloat(el.value).toFixed(2) : el.value;
+      el.addEventListener("input", (e) => {
+        valEl.textContent = isFloat ? parseFloat(e.target.value).toFixed(2) : e.target.value;
+        localStorage.setItem(storeKey, e.target.value);
+      });
+    }
+
+    function updateSettingsVisibility() {
+      const isBrowser = modelSelect.value === "browser_tts";
+      document.getElementById("group-browser-voice").style.display = isBrowser ? "flex" : "none";
+      document.getElementById("group-eleven-settings").style.display = isBrowser ? "none" : "flex";
+    }
+
+    modelSelect.value = localStorage.getItem("elevenlabs_model") || "eleven_v3";
+    modelSelect.addEventListener("change", (e) => { localStorage.setItem("elevenlabs_model", e.target.value); updateSettingsVisibility(); });
+
+    function loadVoices() {
+      const voices = window.speechSynthesis.getVoices();
+      const list = document.getElementById("voice-list-browser");
+      list.innerHTML = "";
+      voices.forEach((voice, i) => {
+        if (String(activeBrowserVoiceIndex) === String(i)) document.getElementById("selected-browser-name").textContent = voice.name;
+        const item = document.createElement("div");
+        item.className = `voice-item ${String(activeBrowserVoiceIndex) === String(i) ? "selected" : ""}`;
+        item.innerHTML = `<span>${voice.name} (${voice.lang})</span><button class="voice-preview-btn" type="button">▶</button>`;
+        item.addEventListener("click", (e) => {
+          if (e.target.tagName === "BUTTON") return;
+          activeBrowserVoiceIndex = i; localStorage.setItem("aac_browser_voice_index", i);
+          list.querySelectorAll(".voice-item").forEach(o => o.classList.remove("selected")); item.classList.add("selected");
+          document.getElementById("selected-browser-name").textContent = voice.name;
+          document.getElementById("voices-panel").classList.remove("open");
+        });
+        item.querySelector("button").addEventListener("click", (e) => {
+          e.stopPropagation(); const utt = new SpeechSynthesisUtterance(previewText); utt.voice = voices[i]; window.speechSynthesis.speak(utt);
+        });
+        list.appendChild(item);
+      });
+    }
+
+    async function fetchElevenVoices(apiKey) {
+      const list = document.getElementById("voice-list-eleven");
+      if (!apiKey) { list.innerHTML = "<div style='padding:12px; text-align:center; color:var(--text-secondary);'>Enter API Key in Settings to load voices</div>"; return; }
+      list.innerHTML = "<div style='padding:12px; text-align:center;'>Loading ElevenLabs voices...</div>";
+      try {
+        const res = await fetch("https://api.elevenlabs.io/v1/voices", { headers: { "xi-api-key": apiKey } });
+        if (!res.ok) throw new Error("Invalid API Key");
+        const data = await res.json(); list.innerHTML = "";
+        data.voices.forEach(voice => {
+          if (activeElevenVoiceId === voice.voice_id) document.getElementById("selected-eleven-name").textContent = voice.name;
+          const item = document.createElement("div");
+          item.className = `voice-item ${activeElevenVoiceId === voice.voice_id ? "selected" : ""}`;
+          item.innerHTML = `<span>${voice.name}</span><button class="voice-preview-btn" type="button">▶</button>`;
+          item.addEventListener("click", (e) => {
+            if (e.target.tagName === "BUTTON") return;
+            activeElevenVoiceId = voice.voice_id; localStorage.setItem("elevenlabs_voice", activeElevenVoiceId);
+            list.querySelectorAll(".voice-item").forEach(o => o.classList.remove("selected")); item.classList.add("selected");
+            document.getElementById("selected-eleven-name").textContent = voice.name;
+            document.getElementById("voices-panel").classList.remove("open");
+          });
+          list.appendChild(item);
+        });
+      } catch (_) { list.innerHTML = "<div style='padding:12px; text-align:center; color:var(--danger);'>Error loading voices. Verify API Key.</div>"; }
+    }
+
+    const apiKeyBtn = document.getElementById("api-key-btn");
+    function updateApiKeyUI() {
+      const key = localStorage.getItem("elevenlabs_key") || "";
+      if (key) { apiKeyBtn.textContent = "🟢 API Key Saved (Click to Edit)"; apiKeyBtn.className = "status-btn saved"; fetchElevenVoices(key); }
+      else { apiKeyBtn.textContent = "🔴 API Key Not Set (Click to Add)"; apiKeyBtn.className = "status-btn missing"; fetchElevenVoices(""); }
+    }
+    apiKeyBtn.addEventListener("click", () => {
+      const key = prompt("Enter your ElevenLabs API Key:", localStorage.getItem("elevenlabs_key") || "");
+      if (key !== null) { localStorage.setItem("elevenlabs_key", key.trim()); updateApiKeyUI(); }
+    });
+
+    document.getElementById("open-browser-voices").addEventListener("click", () => {
+      document.getElementById("voice-list-browser").classList.add("active");
+      document.getElementById("voice-list-eleven").classList.remove("active");
+      document.getElementById("voices-panel").classList.add("open");
+    });
+    document.getElementById("open-eleven-voices").addEventListener("click", () => {
+      document.getElementById("voice-list-eleven").classList.add("active");
+      document.getElementById("voice-list-browser").classList.remove("active");
+      document.getElementById("voices-panel").classList.add("open");
+    });
+
+    function applyFontSize() {
+      displayInput.style.fontSize = `${currentFontSize}px`; fontDisplay.textContent = `${currentFontSize}px`;
+      localStorage.setItem("aac_font_size", currentFontSize);
+    }
+    document.getElementById("font-down").addEventListener("click", () => { currentFontSize = Math.max(16, currentFontSize - 4); applyFontSize(); });
+    document.getElementById("font-up").addEventListener("click", () => { currentFontSize = Math.min(64, currentFontSize + 4); applyFontSize(); });
+
+    // Initial Bootstrap
+    applyTheme(currentTheme);
+    applyNavMetaUI();
+    syncSlider(volumeSlider, valVolume, "aac_volume", false);
+    syncSlider(speedSlider, valSpeed, "aac_speed", true);
+    syncSlider(stabilitySlider, valStability, "aac_stability", true);
+    syncSlider(similaritySlider, valSimilarity, "aac_similarity", true);
+    updateSettingsVisibility(); applyFontSize(); updateApiKeyUI();
+    if (window.speechSynthesis.onvoiceschanged !== undefined) window.speechSynthesis.onvoiceschanged = loadVoices;
+    loadVoices(); renderTopics(); renderSoundButtons(); updatePredictions();
+  </script>
+</body>
+</html>
