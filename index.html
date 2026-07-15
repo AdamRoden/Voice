@@ -2,24 +2,37 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#131314" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f0f4f9" media="(prefers-color-scheme: light)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="format-detection" content="telephone=no">
   <title>AAC Speech & Audio Workspace</title>
   <!-- Google Material Symbols Outlined Font -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   <style>
     /* ==================== THEME VARIABLES & ROOT ==================== */
-    :root, :root[data-theme="dark"] { --bg-main: #131314; --bg-surface: #1e1f20; --bg-surface-hover: #282a2c; --bg-surface-active: #333537; --border: #333537; --accent: #8ab4f8; --accent-hover: #aecbfa; --text: #e3e3e3; --text-secondary: #8e918f; --display-bg: #1e1f20; --key-bg: #282a2c; --key-hover: #333537; --key-active: #444746; --danger: #f2b8b5; --danger-bg: #601410; --shadow: rgba(0, 0, 0, 0.4); --icon-fill: 0; --icon-wght: 400; --icon-grad: 0; --icon-opsz: 24; color-scheme: dark; }
+    :root, :root[data-theme="dark"] { --bg-main: #131314; --bg-surface: #1e1f20; --bg-surface-hover: #282a2c; --bg-surface-active: #333537; --border: #333537; --accent: #8ab4f8; --accent-hover: #aecbfa; --text: #e3e3e3; --text-secondary: #8e918f; --display-bg: #1e1f20; --key-bg: #282a2c; --key-hover: #333537; --key-active: #444746; --danger: #f2b8b5; --danger-bg: #601410; --shadow: rgba(0, 0, 0, 0.4); --icon-fill: 0; --icon-wght: 400; --icon-grad: 0; --icon-opsz: 24; --safe-top: env(safe-area-inset-top, 0px); --safe-right: env(safe-area-inset-right, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px); --safe-left: env(safe-area-inset-left, 0px); --app-height: 100dvh; color-scheme: dark; }
 
       :root[data-theme="light"] { --bg-main: #f0f4f9; --bg-surface: #ffffff; --bg-surface-hover: #e9eef6; --bg-surface-active: #dde3ea; --border: #c4c7c5; --accent: #0b57d0; --accent-hover: #0842a0; --text: #1f1f1f; --text-secondary: #444746; --display-bg: #ffffff; --key-bg: #e9eef6; --key-hover: #dde3ea; --key-active: #c4c7c5; --danger: #b3261e; --danger-bg: #f9dedc; --shadow: rgba(0, 0, 0, 0.15); color-scheme: light; }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+
+    html { height: 100%; height: -webkit-fill-available; }
 
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
       ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
 
-    body { background-color: var(--bg-main); color: var(--text); display: flex; height: 100vh; overflow: hidden; transition: background-color 0.2s ease, color 0.2s ease; }
+    body { background-color: var(--bg-main); color: var(--text); display: flex; height: 100vh; height: 100dvh; max-height: -webkit-fill-available; overflow: hidden; transition: background-color 0.2s ease, color 0.2s ease; overscroll-behavior: none; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left); }
+    body.modal-open { overflow: hidden; }
+
+    button, input, select, textarea { font: inherit; touch-action: manipulation; }
+    button { -webkit-appearance: none; appearance: none; }
+    input, select, textarea { font-size: 16px; } /* prevent iOS focus zoom */
 
     /* ==================== MATERIAL SYMBOLS ICON ENGINE ==================== */
     .material-symbols-outlined { font-family: 'Material Symbols Outlined' !important; font-weight: normal; font-style: normal; font-size: 20px; line-height: 1; letter-spacing: normal; text-transform: none; display: inline-block; white-space: nowrap; word-wrap: normal; direction: ltr; -webkit-font-feature-settings: 'liga'; -webkit-font-smoothing: antialiased; font-variation-settings: 'FILL' var(--icon-fill, 0), 'wght' var(--icon-wght, 400), 'GRAD' var(--icon-grad, 0), 'opsz' var(--icon-opsz, 24); vertical-align: middle; flex-shrink: 0; user-select: none; }
@@ -31,22 +44,38 @@
     .icon-btn-margin { margin-right: 4px; }
 
     /* ==================== LEFT SIDEBAR ==================== */
-    .sidebar { width: 300px; background-color: var(--bg-surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 100; flex-shrink: 0; user-select: none; position: relative; height: 100vh; overflow: hidden; }
+    .sidebar { width: 300px; background-color: var(--bg-surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 100; flex-shrink: 0; user-select: none; position: relative; height: 100%; overflow: hidden; }
       .sidebar.collapsed { width: 52px; }
+
+    .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 99; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+      .sidebar-backdrop.open { opacity: 1; pointer-events: auto; }
 
     .sidebar-header { display: flex; align-items: center; padding: 8px 10px; gap: 10px; min-height: 48px; flex-shrink: 0; border-bottom: 1px solid var(--border); }
 
-    .icon-btn { background: none; border: none; color: var(--text); cursor: pointer; width: 34px; height: 34px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s; }
+    .icon-btn { background: none; border: none; color: var(--text); cursor: pointer; width: 40px; height: 40px; min-width: 40px; min-height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s; }
       .icon-btn:hover { background-color: var(--bg-surface-hover); }
+      .icon-btn:active { background-color: var(--bg-surface-active); }
+
+    .mobile-only { display: none !important; }
+    .desktop-only { display: flex; }
 
     .logo-text { font-size: 16px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; opacity: 1; transition: opacity 0.2s; }
     .sidebar.collapsed .logo-text { opacity: 0; pointer-events: none; }
 
     /* SIDEBAR TABS */
     .sidebar-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-    .sidebar-tab { flex: 1; padding: 10px 8px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .sidebar-tab { flex: 1; padding: 10px 8px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; border: none; background: none; font-family: inherit; }
       .sidebar-tab:hover { background-color: var(--bg-surface-hover); color: var(--text); }
       .sidebar-tab.active { background-color: var(--bg-surface-active); color: var(--accent); border-bottom: 3px solid var(--accent); }
+    .sidebar-tab-label { white-space: nowrap; }
+
+    /* Collapsed: vertical icon button rail */
+    .sidebar.collapsed .sidebar-header { justify-content: center; padding: 8px 0; }
+    .sidebar.collapsed .sidebar-tabs { flex-direction: column; border-bottom: none; flex: 1; min-height: 0; }
+    .sidebar.collapsed .sidebar-tab { flex: 0 0 auto; width: 100%; padding: 14px 0; border-bottom: 1px solid var(--border); border-radius: 0; gap: 0; }
+      .sidebar.collapsed .sidebar-tab.active { border-bottom: 1px solid var(--border); border-left: 3px solid var(--accent); background-color: var(--bg-surface-active); }
+    .sidebar.collapsed .sidebar-tab-label { display: none; }
+    .sidebar.collapsed .sidebar-content { display: none; }
 
     .sidebar-content { flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; min-height: 0; position: relative; }
 
@@ -54,43 +83,72 @@
       .tab-content.active { display: flex; }
 
     /* Topic Sidebar Items */
-    .topic-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 14px; color: var(--text); transition: background 0.2s; min-height: 32px; justify-content: space-between; }
+    .topic-item { display: flex; flex-direction: column; border-radius: 6px; font-size: 14px; color: var(--text); transition: background 0.2s; margin-bottom: 4px; overflow: hidden; }
       .topic-item:hover { background-color: var(--bg-surface-hover); }
       .topic-item.active { background-color: var(--bg-surface-active); color: var(--accent); font-weight: 600; }
-    .topic-item-content { display: flex; align-items: center; gap: 8px; overflow: hidden; flex: 1; }
+    .topic-item-header { display: flex; align-items: center; gap: 8px; padding: 6px 8px; cursor: pointer; min-height: 32px; justify-content: space-between; width: 100%; }
+    .topic-item-content { display: flex; align-items: center; gap: 8px; overflow: hidden; flex: 1; min-width: 0; }
     .topic-item-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .topic-actions { display: flex; opacity: 0; transition: opacity 0.2s; }
-    .topic-item:hover .topic-actions { opacity: 1; }
+    .topic-actions { display: flex; opacity: 0; transition: opacity 0.2s; flex-shrink: 0; }
+    .topic-item:hover .topic-actions, .topic-item.active .topic-actions { opacity: 1; }
+    .nav-action-btn { background: none; border: none; color: inherit; cursor: pointer; width: 36px; height: 36px; min-width: 36px; min-height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 0; }
+      .nav-action-btn:hover { background-color: var(--bg-surface-hover); color: var(--accent); }
+      .nav-action-btn:active { background-color: var(--bg-surface-active); }
 
-    #add-topic-sidebar-btn { margin-top: 12px; width: 100%; justify-content: center; }
+    /* Expanded topic sound-button list */
+    .topic-buttons-list { display: none; flex-direction: column; gap: 2px; padding: 0 6px 8px 12px; border-top: 1px solid var(--border); margin-top: 2px; }
+      .topic-item.active .topic-buttons-list { display: flex; }
+    .topic-sound-item { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--text); cursor: default; min-height: 30px; }
+      .topic-sound-item:hover { background-color: var(--bg-main); }
+    .topic-sound-swatch { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.2); }
+    .topic-sound-symbol { font-size: 16px; flex-shrink: 0; }
+    .topic-sound-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .topic-sound-edit-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; width: 36px; height: 36px; min-width: 36px; min-height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; opacity: 0; transition: opacity 0.15s, background 0.15s; padding: 0; }
+      .topic-sound-item:hover .topic-sound-edit-btn { opacity: 1; }
+      .topic-sound-edit-btn:hover { background-color: var(--bg-surface-hover); color: var(--accent); }
+    .topic-buttons-empty { padding: 8px 6px; font-size: 12px; color: var(--text-secondary); font-weight: 400; }
+
+    #add-topic-sidebar-btn { margin-bottom: 12px; width: 100%; justify-content: center; flex-shrink: 0; }
+    #topics-list { flex: 1; overflow-y: auto; min-height: 0; }
+
+    .accent-color-row { display: flex; align-items: center; gap: 8px; }
+    .accent-color-row input[type="color"] { width: 44px; height: 36px; padding: 2px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-main); cursor: pointer; flex-shrink: 0; }
+    .accent-color-row .font-btn { flex: 1; }
 
     /* Settings Groups */
     .sidebar-setting-group { display: flex; flex-direction: column; gap: 4px; padding: 4px; margin-bottom: 6px; }
       .sidebar-setting-group label { font-size: 13px; color: var(--text-secondary); display: flex; justify-content: space-between; font-weight: 500; }
-      .sidebar-setting-group select, .sidebar-setting-group input[type="text"] { background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 6px 8px; border-radius: 6px; font-size: 13px; outline: none; width: 100%; }
+      .sidebar-setting-group select, .sidebar-setting-group input[type="text"] { background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 10px 12px; border-radius: 8px; font-size: 16px; outline: none; width: 100%; min-height: 44px; }
         .sidebar-setting-group select:focus, .sidebar-setting-group input[type="text"]:focus { border-color: var(--accent); }
-      .sidebar-setting-group input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; height: 16px; }
+      .sidebar-setting-group input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; height: 28px; }
     .settings-stack { display: flex; flex-direction: column; gap: 4px; }
+    .setting-divider { border: 0; border-top: 1px solid var(--border); margin: 6px 0; }
 
-    .status-btn { background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 6px 8px; border-radius: 6px; font-size: 13px; cursor: pointer; text-align: left; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; width: 100%; }
+    /* Icon name inputs render the Material Symbol glyph instead of the raw name */
+    .icon-name-input { font-family: 'Material Symbols Outlined' !important; font-size: 28px !important; text-align: center; height: 48px; letter-spacing: normal; font-variation-settings: 'FILL' var(--icon-fill, 0), 'wght' var(--icon-wght, 400), 'GRAD' var(--icon-grad, 0), 'opsz' var(--icon-opsz, 24); -webkit-font-feature-settings: 'liga'; line-height: 1; }
+
+    .status-btn { background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 10px 12px; border-radius: 8px; font-size: 14px; cursor: pointer; text-align: left; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 8px; min-height: 44px; }
       .status-btn:hover { border-color: var(--accent); }
+      .status-btn:active { background-color: var(--bg-surface-hover); }
       .status-btn.missing { border-color: var(--danger); color: var(--danger); }
       .status-btn.saved { border-color: #81c784; color: #81c784; }
     .status-btn-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     .font-controls { display: flex; gap: 6px; align-items: center; }
-    .font-btn { flex: 1; background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 4px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; text-align: center; }
+    .font-btn { flex: 1; background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 8px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; text-align: center; min-height: 40px; }
       .font-btn:hover { background-color: var(--key-hover); }
+      .font-btn:active { background-color: var(--key-active); }
 
     /* Theme Picker Group in Settings Tab */
     .theme-picker-group { display: flex; gap: 4px; }
-    .theme-btn { flex: 1; background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 6px 4px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s; }
+    .theme-btn { flex: 1; background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 8px 4px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s; min-height: 40px; }
       .theme-btn:hover { background-color: var(--key-hover); }
+      .theme-btn:active { background-color: var(--key-active); }
       .theme-btn.active { background-color: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
 
     /* History List */
     .history-search-box { position: relative; padding: 0 4px 6px 0; margin: 0; flex-shrink: 0; }
-      .history-search-box input { width: 100%; background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 6px 20px 6px 26px; border-radius: 6px; font-size: 13px; outline: none; }
+      .history-search-box input { width: 100%; background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 10px 20px 10px 32px; border-radius: 8px; font-size: 16px; outline: none; min-height: 44px; }
         .history-search-box input:focus { border-color: var(--accent); }
       .history-search-box .search-icon { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 14px; color: var(--text-secondary); pointer-events: none; }
 
@@ -100,45 +158,34 @@
     .history-item-text { font-weight: 500; word-break: break-word; flex: 1; }
     .history-item-meta { font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
     .history-actions { display: flex; gap: 4px; }
-    .history-btn { flex: 1; background: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 4px; border-radius: 4px; font-size: 12px; cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center; gap: 4px; }
+    .history-btn { flex: 1; background: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 8px; border-radius: 8px; font-size: 13px; cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 40px; }
       .history-btn:hover { background: var(--key-hover); }
+      .history-btn:active { background: var(--key-active); }
       .history-btn.restore { color: var(--accent); border-color: var(--accent); }
-      .history-btn.delete { color: var(--danger); max-width: 36px; }
+      .history-btn.delete { color: var(--danger); max-width: 44px; }
     .history-empty-notice { padding: 16px; text-align: center; color: var(--text-secondary); font-size: 13px; }
 
-    .clear-history-btn { background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 6px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; margin: 6px 4px 0 0; text-align: center; flex-shrink: 0; }
+    .clear-history-btn { background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 10px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin: 6px 4px 0 0; text-align: center; flex-shrink: 0; min-height: 44px; }
       .clear-history-btn:hover { background: var(--danger-bg); }
 
-    /* Footer & Popup Menu */
-    .sidebar-footer { padding: 8px; border-top: 1px solid var(--border); position: relative; flex-shrink: 0; z-index: 2000; }
-    .gemini-settings-btn { display: flex; align-items: center; justify-content: space-between; padding: 8px; border-radius: 8px; cursor: pointer; color: var(--text); font-size: 15px; font-weight: 600; transition: all 0.2s; min-height: 38px; }
-      .gemini-settings-btn:hover { background-color: var(--bg-surface-hover); }
-    .sidebar.collapsed .gemini-settings-btn { justify-content: center; padding: 8px 0; }
-      .sidebar.collapsed .gemini-settings-btn .nav-label { display: none; }
-
-    .gemini-context-popup { position: absolute; bottom: 52px; left: 8px; width: 220px; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px var(--shadow); display: none; flex-direction: column; gap: 2px; padding: 6px; z-index: 300; }
-      .gemini-context-popup.open { display: flex; }
-    .sidebar.collapsed .gemini-context-popup { left: 56px; bottom: 8px; width: 210px; }
-
-    .popup-menu-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--text); transition: background 0.2s; font-weight: 500; }
-      .popup-menu-item:hover { background-color: var(--bg-surface-hover); }
-
     /* ==================== MAIN WORKSPACE ==================== */
-    .app-main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 8px; overflow: hidden; height: 100%; }
+    .app-main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 8px; overflow: hidden; height: 100%; position: relative; }
 
     /* Workspace Header & Tabs */
-    .workspace-header { display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-surface); padding: 6px 10px; border-radius: 10px; border: 1px solid var(--border); min-height: 46px; flex-shrink: 0; gap: 10px; flex-wrap: wrap; }
+    .workspace-header { display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-surface); padding: 6px 10px; border-radius: 10px; border: 1px solid var(--border); min-height: 48px; flex-shrink: 0; gap: 10px; flex-wrap: wrap; }
 
-    .workspace-tabs { display: flex; align-items: center; gap: 6px; overflow-x: auto; flex: 1; min-width: 0; padding: 2px 0; scrollbar-width: none; }
+    .workspace-tabs { display: flex; align-items: center; gap: 6px; overflow-x: auto; flex: 1; min-width: 0; padding: 2px 0; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
       .workspace-tabs::-webkit-scrollbar { display: none; }
 
-    .workspace-tab { display: flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 8px; background-color: var(--bg-main); border: 1px solid var(--border); color: var(--text-secondary); cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap; transition: all 0.2s; height: 32px; flex-shrink: 0; }
+    .workspace-tab { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 8px; background-color: var(--bg-main); border: 1px solid var(--border); color: var(--text-secondary); cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap; transition: all 0.2s; min-height: 40px; height: auto; flex-shrink: 0; }
       .workspace-tab:hover { background-color: var(--bg-surface-hover); color: var(--text); }
+      .workspace-tab:active { background-color: var(--bg-surface-active); }
       .workspace-tab.active { background-color: var(--key-active); color: var(--accent); border-color: var(--accent); font-weight: 600; box-shadow: 0 2px 6px var(--shadow); }
 
     .workspace-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex-shrink: 0; }
-    .tool-btn { background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; transition: all 0.2s; white-space: nowrap; height: 32px; }
+    .tool-btn { background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; transition: all 0.2s; white-space: nowrap; min-height: 40px; height: auto; }
       .tool-btn:hover { background-color: var(--key-hover); border-color: var(--text-secondary); }
+      .tool-btn:active { background-color: var(--key-active); }
       .tool-btn.primary { background-color: var(--accent); color: #fff; border-color: var(--accent); }
         .tool-btn.primary:hover { background-color: var(--accent-hover); }
 
@@ -147,19 +194,20 @@
 
     .header-stepper-group { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); background: var(--bg-main); padding: 2px 8px; border-radius: 8px; border: 1px solid var(--border); height: 32px; font-weight: 500; }
     .num-control-wrapper { display: flex; align-items: center; gap: 4px; }
-    .num-control-btn { background: var(--key-bg); border: none; color: var(--text); width: 22px; height: 22px; border-radius: 4px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .num-control-btn { background: var(--key-bg); border: none; color: var(--text); width: 32px; height: 32px; border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
       .num-control-btn:hover { background: var(--key-hover); }
+      .num-control-btn:active { background: var(--key-active); }
     .num-control-val { font-weight: 600; color: var(--text); min-width: 16px; text-align: center; font-size: 13px; }
 
     /* Overwrite Banner */
-    .overwrite-banner { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background-color: var(--accent); color: #fff; padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; display: none; align-items: center; gap: 10px; box-shadow: 0 6px 20px var(--shadow); z-index: 30; }
+    .overwrite-banner { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background-color: var(--accent); color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 14px; font-weight: 600; display: none; align-items: center; gap: 10px; box-shadow: 0 6px 20px var(--shadow); z-index: 30; max-width: calc(100% - 24px); flex-wrap: wrap; justify-content: center; text-align: center; }
       .overwrite-banner.active { display: flex; }
-    .overwrite-cancel-btn { background: rgba(0,0,0,0.25); border: none; color: #fff; padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; transition: background 0.2s; }
+    .overwrite-cancel-btn { background: rgba(0,0,0,0.25); border: none; color: #fff; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; transition: background 0.2s; min-height: 36px; }
       .overwrite-cancel-btn:hover { background: rgba(0,0,0,0.4); }
 
     /* Sound Button Grid Canvas */
-    .sound-canvas { flex: 0 0 auto; max-height: 44vh; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px; display: grid; gap: 6px; padding: 8px; overflow-y: auto; touch-action: none; transition: border-color 0.2s; position: relative; }
-      .sound-canvas.edit-mode { border: 2px dashed var(--accent); }
+    .sound-canvas { flex: 0 0 auto; max-height: 44vh; max-height: 44dvh; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px; display: grid; gap: 6px; padding: 8px; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; transition: border-color 0.2s; position: relative; }
+      .sound-canvas.edit-mode { border: 2px dashed var(--accent); touch-action: none; }
 
     @keyframes wiggle {
       0% { transform: rotate(-1deg) scale(1); }
@@ -167,57 +215,62 @@
       100% { transform: rotate(-1deg) scale(1); }
     }
 
-    .sound-button { position: relative; background-color: var(--key-bg); border: 1px solid var(--border); border-radius: 8px; padding: 0 8px; cursor: pointer; user-select: none; transition: all 0.15s ease; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; color: #fff; overflow: hidden; width: 100%; height: 52px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+    .sound-button { position: relative; background-color: var(--key-bg); border: 1px solid var(--border); border-radius: 10px; padding: 0 8px; cursor: pointer; user-select: none; -webkit-user-select: none; transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; color: #fff; overflow: hidden; width: 100%; min-height: 52px; height: 52px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); -webkit-touch-callout: none; }
       .sound-button:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 4px 10px var(--shadow); }
-      .sound-button:active { transform: translateY(0); }
+      .sound-button:active { transform: scale(0.97); box-shadow: none; }
       .sound-button.edit-mode:not(.dragging) { animation: wiggle 0.25s infinite ease-in-out; cursor: grab; padding-left: 32px; }
       .sound-button.dragging { opacity: 0.85; cursor: grabbing; z-index: 50; transform: scale(1.05); box-shadow: 0 10px 25px var(--shadow); animation: none; }
       .sound-button.swap-target { border-color: #81c784; box-shadow: 0 0 0 3px rgba(129, 199, 132, 0.4); transform: scale(1.02); }
-      .sound-button.overwrite-target { animation: wiggle 0.4s infinite ease-in-out; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(138, 180, 248, 0.5); }
+      .sound-button.overwrite-target { animation: wiggle 0.4s infinite ease-in-out; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 50%, transparent); }
 
+    .sound-button-inner { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; overflow: hidden; pointer-events: none; }
+    .sound-button-symbol { font-size: 18px; flex-shrink: 0; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
     .sound-button-label { width: 100%; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
-    .sound-button-edit-btn { position: absolute; left: 6px; top: 50%; transform: translateY(-50%); width: 24px; height: 24px; border: 1px solid rgba(255,255,255,0.4); border-radius: 6px; background-color: rgba(0,0,0,0.45); color: white; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 5; transition: background 0.2s; }
+    .sound-button-inner .sound-button-label { width: auto; flex: 1; min-width: 0; }
+    .sound-button-edit-btn { position: absolute; left: 6px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border: 1px solid rgba(255,255,255,0.4); border-radius: 8px; background-color: rgba(0,0,0,0.45); color: white; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 5; transition: background 0.2s; }
     .sound-canvas.edit-mode .sound-button .sound-button-edit-btn { display: flex; }
     .sound-button-edit-btn:hover { background-color: rgba(0,0,0,0.8); }
 
     /* Bottom Dock & Prediction Toolbar */
     .bottom-dock { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
-    .toolbar { display: flex; gap: 6px; align-items: stretch; height: 50px; }
-    .predictions-wrapper { display: flex; flex: 1; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+    .toolbar { display: flex; gap: 6px; align-items: stretch; min-height: 50px; }
+    .predictions-wrapper { display: flex; flex: 1; gap: 6px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
       .predictions-wrapper::-webkit-scrollbar { display: none; }
 
-    .key { background-color: var(--key-bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 16px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.15s; padding: 0 12px; white-space: nowrap; height: 50px; }
+    .key { background-color: var(--key-bg); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 16px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.15s; padding: 0 12px; white-space: nowrap; min-height: 50px; height: 50px; }
       .key:hover { background-color: var(--key-hover); border-color: var(--text-secondary); }
-      .key:active { background-color: var(--key-active); transform: scale(0.98); }
+      .key:active { background-color: var(--key-active); transform: scale(0.97); }
 
-      .key.prediction-btn { flex: 1; min-width: 70px; color: var(--accent); font-weight: 600; overflow: hidden; text-overflow: ellipsis; padding: 0 6px; }
+      .key.prediction-btn { flex: 1; min-width: 72px; color: var(--accent); font-weight: 600; overflow: hidden; text-overflow: ellipsis; padding: 0 6px; }
 
       .key.tts-btn { background-color: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; min-width: 100px; }
         .key.tts-btn:hover { background-color: var(--accent-hover); }
       .key.clear-btn { background-color: transparent; color: var(--danger); border-color: var(--danger); min-width: 80px; }
         .key.clear-btn:hover { background-color: var(--danger-bg); }
+    .key-label { display: inline; }
 
     /* Text Area & Floating Audio Action Bar */
-    .textarea-wrapper { flex: 1 1 auto; display: flex; flex-direction: column; position: relative; min-height: 120px; height: 100%; }
-    .display-textarea { width: 100%; height: 100%; flex: 1; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; line-height: 1.4; color: var(--text); font-size: 24px; resize: none; outline: none; white-space: pre-wrap; word-break: break-word; transition: border-color 0.2s; }
+    .textarea-wrapper { flex: 1 1 auto; display: flex; flex-direction: column; position: relative; min-height: 100px; height: 100%; }
+    .display-textarea { width: 100%; height: 100%; flex: 1; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; line-height: 1.4; color: var(--text); font-size: 24px; resize: none; outline: none; white-space: pre-wrap; word-break: break-word; transition: border-color 0.2s; -webkit-overflow-scrolling: touch; }
       .display-textarea:focus { border-color: var(--accent); }
 
-    .audio-actions-bar { position: absolute; bottom: 12px; right: 12px; display: none; align-items: center; gap: 8px; background-color: var(--bg-main); border: 1px solid var(--border); padding: 6px 10px; border-radius: 8px; box-shadow: 0 6px 16px var(--shadow); z-index: 20; }
+    .audio-actions-bar { position: absolute; bottom: max(12px, env(safe-area-inset-bottom, 0px)); right: 12px; display: none; align-items: center; gap: 8px; background-color: var(--bg-main); border: 1px solid var(--border); padding: 6px 10px; border-radius: 10px; box-shadow: 0 6px 16px var(--shadow); z-index: 20; flex-wrap: wrap; max-width: calc(100% - 24px); }
       .audio-actions-bar.active { display: flex; }
-    .audio-action-btn { background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+    .audio-action-btn { background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; gap: 6px; min-height: 40px; }
       .audio-action-btn:hover { background-color: var(--key-hover); }
+      .audio-action-btn:active { background-color: var(--key-active); }
       .audio-action-btn.play { color: var(--accent); border-color: var(--accent); }
 
     /* ==================== MODALS & POPUPS ==================== */
-    .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.65); opacity: 0; pointer-events: none; transition: opacity 0.2s ease; z-index: 2000; }
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; height: 100dvh; background: rgba(0, 0, 0, 0.65); opacity: 0; pointer-events: none; transition: opacity 0.2s ease; z-index: 2000; -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
       .modal-overlay.open { opacity: 1; pointer-events: auto; }
 
-    .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95); background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; display: none; flex-direction: column; gap: 12px; z-index: 2001; min-width: 340px; max-width: 90vw; max-height: 85vh; overflow-y: auto; box-shadow: 0 16px 36px var(--shadow); transition: transform 0.2s ease; }
+    .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95); background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; display: none; flex-direction: column; gap: 12px; z-index: 2001; min-width: min(340px, calc(100vw - 32px)); width: min(420px, calc(100vw - 32px)); max-width: calc(100vw - 32px); max-height: min(85vh, 85dvh); overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; box-shadow: 0 16px 36px var(--shadow); transition: transform 0.2s ease; }
       .modal.open { display: flex; transform: translate(-50%, -50%) scale(1); }
-    .modal-title { font-size: 16px; font-weight: 600; color: var(--text); }
+    .modal-title { font-size: 17px; font-weight: 600; color: var(--text); }
     .modal-description { font-size: 13px; color: var(--text-secondary); line-height: 1.4; }
 
-    .modal-input { background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 8px 10px; border-radius: 6px; font-size: 14px; outline: none; width: 100%; }
+    .modal-input { background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 12px; border-radius: 8px; font-size: 16px; outline: none; width: 100%; min-height: 44px; }
       .modal-input:focus { border-color: var(--accent); }
     .input-margin-bottom { margin-bottom: 6px; }
 
@@ -229,35 +282,37 @@
     .color-picker-input { -webkit-appearance: none; appearance: none; width: 28px; height: 28px; padding: 0; border: none; background: transparent; border-radius: 50%; cursor: pointer; }
 
     /* Google Fonts Icon Studio */
-    .icon-studio-modal-box { min-width: 460px; max-width: 600px; }
+    .icon-studio-modal-box { min-width: min(460px, calc(100vw - 32px)); width: min(600px, calc(100vw - 32px)); max-width: calc(100vw - 32px); }
     .icon-studio-search { position: relative; margin-bottom: 6px; }
-      .icon-studio-search input { width: 100%; background: var(--bg-main); border: 1px solid var(--border); padding: 8px 10px 8px 34px; border-radius: 8px; color: var(--text); font-size: 13px; outline: none; }
+      .icon-studio-search input { width: 100%; background: var(--bg-main); border: 1px solid var(--border); padding: 12px 10px 12px 36px; border-radius: 8px; color: var(--text); font-size: 16px; outline: none; min-height: 44px; }
         .icon-studio-search input:focus { border-color: var(--accent); }
       .icon-studio-search .search-ico { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 18px; pointer-events: none; }
 
     .studio-live-controls { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; background: var(--bg-main); padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 12px; color: var(--text-secondary); }
-    .studio-control-row { display: flex; justify-content: space-between; align-items: center; }
-    .studio-slider { width: 80px; accent-color: var(--accent); cursor: pointer; height: 14px; }
+    .studio-control-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .studio-slider { width: 80px; max-width: 40%; accent-color: var(--accent); cursor: pointer; height: 20px; }
 
-    .icon-studio-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; max-height: 220px; overflow-y: auto; padding: 8px; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; }
-    .icon-studio-item { font-size: 24px; padding: 8px; text-align: center; border-radius: 6px; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; display: flex; align-items: center; justify-content: center; }
-      .icon-studio-item:hover { background-color: var(--key-hover); transform: scale(1.15); }
-      .icon-studio-item.selected { background-color: var(--bg-surface-active); border-color: var(--accent); transform: scale(1.1); }
-    .icon-studio-empty { grid-column: span 7; padding: 16px; text-align: center; color: var(--text-secondary); font-size: 13px; }
+    .icon-studio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); gap: 6px; max-height: 220px; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 8px; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; }
+    .icon-studio-item { font-size: 24px; padding: 10px; min-height: 48px; text-align: center; border-radius: 8px; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; display: flex; align-items: center; justify-content: center; }
+      .icon-studio-item:hover { background-color: var(--key-hover); transform: scale(1.08); }
+      .icon-studio-item:active { background-color: var(--key-active); }
+      .icon-studio-item.selected { background-color: var(--bg-surface-active); border-color: var(--accent); transform: scale(1.05); }
+    .icon-studio-empty { grid-column: 1 / -1; padding: 16px; text-align: center; color: var(--text-secondary); font-size: 13px; }
 
     .icon-studio-controls { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
     .icon-size-btns { display: flex; gap: 4px; align-items: center; }
     .size-btn { background: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500; }
       .size-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-    .modal-buttons { display: flex; gap: 8px; margin-top: 6px; }
-    .modal-btn { flex: 1; padding: 8px 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; transition: background 0.2s; text-align: center; }
+    .modal-buttons { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+    .modal-btn { flex: 1; min-width: 100px; padding: 12px; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 14px; transition: background 0.2s; text-align: center; min-height: 44px; }
       .modal-btn.primary { background-color: var(--accent); color: #fff; }
         .modal-btn.primary:hover { background-color: var(--accent-hover); }
       .modal-btn.secondary { background-color: var(--key-bg); color: var(--text); border: 1px solid var(--border); }
         .modal-btn.secondary:hover { background-color: var(--key-hover); }
       .modal-btn.danger { background-color: transparent; color: var(--danger); border: 1px solid var(--danger); }
         .modal-btn.danger:hover { background-color: var(--danger-bg); }
+      .modal-btn:active { filter: brightness(0.95); }
 
     .modal-choice-group { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
     .choice-btn-create { padding: 12px; font-weight: 600; color: var(--accent); border-color: var(--accent); }
@@ -265,29 +320,276 @@
     .btn-center { justify-content: center; }
 
     /* Voices Drawer (Left Side Positioned with Right Shadow) */
-    .voices-panel { position: fixed; top: 0; left: -360px; width: 360px; height: 100vh; background-color: var(--bg-surface); border-right: 1px solid var(--border); box-shadow: 8px 0 24px var(--shadow); transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 16px; display: flex; flex-direction: column; gap: 12px; overflow: hidden; z-index: 1500; }
+    .voices-panel { position: fixed; top: 0; left: -360px; width: min(360px, 100vw); height: 100%; height: 100dvh; background-color: var(--bg-surface); border-right: 1px solid var(--border); box-shadow: 8px 0 24px var(--shadow); transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 16px; padding-top: max(16px, env(safe-area-inset-top, 0px)); padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 12px; overflow: hidden; z-index: 1500; }
       .voices-panel.open { left: 0; }
-    .voices-panel-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+    .voices-panel-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; gap: 8px; }
     .voices-panel-title { font-size: 16px; font-weight: 600; }
 
     .voice-search-box { position: relative; }
-      .voice-search-box input { width: 100%; background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 8px 34px 8px 36px; border-radius: 8px; font-size: 14px; outline: none; }
+      .voice-search-box input { width: 100%; background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 12px 34px 12px 36px; border-radius: 8px; font-size: 16px; outline: none; min-height: 44px; }
         .voice-search-box input:focus { border-color: var(--accent); }
       .voice-search-box .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 18px; color: var(--text-secondary); pointer-events: none; }
 
-    .voice-list { display: none; flex-direction: column; gap: 4px; overflow-y: auto; flex: 1; padding-right: 4px; }
+    .voice-list { display: none; flex-direction: column; gap: 4px; overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; padding-right: 4px; overscroll-behavior: contain; }
       .voice-list.active { display: flex; }
 
-    .voice-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 13px; border: 1px solid transparent; background-color: var(--bg-main); }
+    .voice-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-radius: 10px; cursor: pointer; transition: all 0.2s; font-size: 14px; border: 1px solid transparent; background-color: var(--bg-main); min-height: 48px; gap: 8px; }
       .voice-item:hover { background-color: var(--bg-surface-hover); border-color: var(--border); }
+      .voice-item:active { background-color: var(--bg-surface-active); }
       .voice-item.selected { background-color: var(--bg-surface-active); border-color: var(--accent); font-weight: 600; color: var(--accent); }
-    .voice-item-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; margin-right: 8px; }
+    .voice-item-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; margin-right: 8px; min-width: 0; }
 
-    .voice-preview-btn { background: var(--key-bg); border: 1px solid var(--border); color: var(--text); font-size: 11px; font-weight: 600; cursor: pointer; padding: 4px 8px; border-radius: 6px; display: flex; align-items: center; gap: 4px; transition: all 0.2s; }
+    .voice-preview-btn { background: var(--key-bg); border: 1px solid var(--border); color: var(--text); font-size: 12px; font-weight: 600; cursor: pointer; padding: 8px 10px; border-radius: 8px; display: flex; align-items: center; gap: 4px; transition: all 0.2s; min-height: 36px; min-width: 40px; flex-shrink: 0; }
       .voice-preview-btn:hover { background: var(--key-hover); color: var(--accent); border-color: var(--accent); }
+
+    /* ==================== MOBILE / TABLET ==================== */
+    @media (max-width: 900px) {
+      body { padding: 0; }
+
+      .mobile-only { display: flex !important; }
+      .desktop-hide-label .key-label { display: none; }
+
+      .sidebar-backdrop { display: block; }
+
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: min(320px, 88vw);
+        max-width: 360px;
+        height: 100%;
+        height: 100dvh;
+        border-right: 1px solid var(--border);
+        transform: translateX(-105%);
+        box-shadow: none;
+        z-index: 120;
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        padding-left: env(safe-area-inset-left, 0px);
+      }
+      .sidebar.collapsed {
+        width: min(320px, 88vw);
+      }
+      /* Always full drawer content on mobile (not rail) */
+      .sidebar.collapsed .sidebar-header { justify-content: flex-start; padding: 8px 10px; }
+      .sidebar.collapsed .logo-text { opacity: 1; pointer-events: auto; }
+      .sidebar.collapsed .sidebar-tabs { flex-direction: row; border-bottom: 1px solid var(--border); flex: 0 0 auto; }
+      .sidebar.collapsed .sidebar-tab {
+        flex: 1;
+        width: auto;
+        padding: 12px 6px;
+        border-bottom: none;
+        border-left: none;
+        gap: 4px;
+        flex-direction: column;
+        font-size: 11px;
+      }
+      .sidebar.collapsed .sidebar-tab.active {
+        border-left: none;
+        border-bottom: 3px solid var(--accent);
+      }
+      .sidebar.collapsed .sidebar-tab-label { display: block; font-size: 11px; }
+      .sidebar.collapsed .sidebar-content { display: flex; }
+
+      .sidebar.mobile-open {
+        transform: translateX(0);
+        box-shadow: 12px 0 40px var(--shadow);
+      }
+
+      .app-main {
+        width: 100%;
+        padding: 6px;
+        padding-top: max(6px, env(safe-area-inset-top, 0px));
+        padding-bottom: max(6px, env(safe-area-inset-bottom, 0px));
+        padding-left: max(6px, env(safe-area-inset-left, 0px));
+        padding-right: max(6px, env(safe-area-inset-right, 0px));
+        gap: 6px;
+      }
+
+      .workspace-header {
+        flex-wrap: nowrap;
+        gap: 6px;
+        padding: 6px 8px;
+        border-radius: 12px;
+        align-items: center;
+      }
+      .workspace-header .workspace-tabs { order: 2; flex: 1; }
+      .workspace-header .workspace-actions { order: 3; }
+      .workspace-header .mobile-menu-btn { order: 1; flex-shrink: 0; }
+
+      .workspace-tab {
+        padding: 8px 10px;
+        gap: 6px;
+        font-size: 12px;
+        max-width: 42vw;
+      }
+      .workspace-tab .topic-item-name {
+        max-width: 28vw;
+      }
+
+      .tool-btn .tool-btn-label { display: none; }
+      .tool-btn { padding: 8px 10px; min-width: 40px; justify-content: center; }
+
+      .edit-mode-controls {
+        width: 100%;
+        justify-content: flex-end;
+      }
+      .workspace-header:has(.edit-mode-controls.open) {
+        flex-wrap: wrap;
+      }
+
+      .sound-canvas {
+        max-height: 34dvh;
+        gap: 5px;
+        padding: 6px;
+        border-radius: 12px;
+      }
+      .sound-button {
+        height: 56px;
+        min-height: 56px;
+        font-size: 15px;
+        border-radius: 12px;
+      }
+
+      .toolbar {
+        gap: 5px;
+      }
+      .key {
+        height: 48px;
+        min-height: 48px;
+        border-radius: 12px;
+        padding: 0 10px;
+        font-size: 15px;
+      }
+      .key.tts-btn, .key.clear-btn {
+        min-width: 48px;
+        padding: 0 12px;
+        flex-shrink: 0;
+      }
+      .key.prediction-btn {
+        min-width: 64px;
+        font-size: 14px;
+      }
+
+      .textarea-wrapper { min-height: 88px; }
+      .display-textarea {
+        font-size: 20px;
+        padding: 12px;
+        border-radius: 12px;
+        padding-bottom: 56px; /* room for action bar */
+      }
+
+      .audio-actions-bar {
+        left: 8px;
+        right: 8px;
+        bottom: 8px;
+        justify-content: stretch;
+      }
+      .audio-action-btn { flex: 1; justify-content: center; }
+
+      /* Bottom-sheet style modals */
+      .modal {
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        transform: translateY(110%);
+        border-radius: 18px 18px 0 0;
+        max-height: min(92dvh, 92%);
+        padding: 16px 16px max(16px, env(safe-area-inset-bottom, 0px));
+        border-bottom: none;
+      }
+      .modal.open {
+        transform: translateY(0);
+      }
+      .modal::before {
+        content: "";
+        display: block;
+        width: 36px;
+        height: 4px;
+        border-radius: 99px;
+        background: var(--border);
+        margin: -4px auto 8px;
+        flex-shrink: 0;
+      }
+
+      .icon-studio-modal-box {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+      }
+      .studio-live-controls {
+        grid-template-columns: 1fr;
+      }
+      .studio-slider { width: 50%; max-width: none; }
+
+      .voices-panel {
+        width: 100%;
+        left: -100%;
+        border-right: none;
+      }
+      .voices-panel.open { left: 0; }
+
+      /* Always-visible touch affordances (no hover) */
+      .topic-actions { opacity: 1; }
+      .topic-sound-edit-btn { opacity: 1; }
+
+      .sidebar-tab { min-height: 52px; padding: 10px 4px; }
+      .topic-item-header { min-height: 44px; padding: 8px; }
+
+      .overwrite-banner {
+        top: max(8px, env(safe-area-inset-top, 0px));
+        width: calc(100% - 16px);
+        font-size: 13px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .sound-canvas { max-height: 30dvh; }
+      .sound-button { height: 52px; min-height: 52px; font-size: 14px; }
+      .key.prediction-btn { min-width: 56px; font-size: 13px; }
+      .key-label { display: none; }
+      .key.tts-btn, .key.clear-btn { min-width: 48px; width: 48px; padding: 0; }
+      .display-textarea { font-size: 18px; }
+      .workspace-tab .topic-item-name { max-width: 22vw; }
+      .theme-btn { flex-direction: column; gap: 2px; font-size: 11px; padding: 8px 2px; }
+      .audio-action-btn { font-size: 12px; padding: 8px; }
+    }
+
+    /* Short landscape phones */
+    @media (max-height: 500px) and (orientation: landscape) {
+      .sound-canvas { max-height: 28dvh; }
+      .textarea-wrapper { min-height: 64px; }
+      .key { height: 42px; min-height: 42px; }
+      .display-textarea { font-size: 16px; padding-bottom: 48px; }
+      .sidebar { width: min(280px, 70vw); }
+    }
+
+    /* Prefer reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* Coarse pointer (touch) polish even on wide tablets */
+    @media (hover: none) and (pointer: coarse) {
+      .topic-actions { opacity: 1; }
+      .topic-sound-edit-btn { opacity: 1; }
+      .sound-button:hover { transform: none; box-shadow: none; }
+      .sound-button:active { transform: scale(0.97); }
+    }
   </style>
 </head>
 <body>
+
+  <div class="sidebar-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
 
   <!-- ==================== LEFT SIDEBAR ==================== -->
   <aside class="sidebar" id="sidebar">
@@ -300,56 +602,57 @@
 
     <!-- Sidebar Tabs -->
     <div class="sidebar-tabs" id="sidebar-tabs">
-      <div class="sidebar-tab active" data-tab="topics" id="tab-topics">
+      <button class="sidebar-tab active" data-tab="topics" id="tab-topics" type="button" title="Topics">
         <span class="material-symbols-outlined icon-medium">folder</span>
-        <span>Topics</span>
-      </div>
-      <div class="sidebar-tab" data-tab="settings" id="tab-settings">
+        <span class="sidebar-tab-label">Topics</span>
+      </button>
+      <button class="sidebar-tab" data-tab="settings" id="tab-settings" type="button" title="Settings">
         <span class="material-symbols-outlined icon-medium">tune</span>
-        <span>Audio</span>
-      </div>
-      <div class="sidebar-tab" data-tab="history" id="tab-history">
+        <span class="sidebar-tab-label">Settings</span>
+      </button>
+      <button class="sidebar-tab" data-tab="history" id="tab-history" type="button" title="History">
         <span class="material-symbols-outlined icon-medium">history</span>
-        <span>History</span>
-      </div>
+        <span class="sidebar-tab-label">History</span>
+      </button>
     </div>
 
     <div class="sidebar-content" id="sidebar-content">
       <!-- Topics Tab Content -->
       <div id="tab-content-topics" class="tab-content active">
-        <div id="topics-list"></div>
-        <button class="tool-btn" id="add-topic-sidebar-btn">
+        <button class="tool-btn" id="add-topic-sidebar-btn" type="button">
           <span class="material-symbols-outlined icon-medium">add</span> New Topic
         </button>
+        <div id="topics-list"></div>
       </div>
 
-      <!-- Audio Settings Tab Content -->
+      <!-- Settings Tab Content -->
       <div id="tab-content-settings" class="tab-content">
-        <!-- Theme Picker Directly inside Settings Tab -->
         <div class="sidebar-setting-group">
-          <label>Theme Appearance</label>
-          <div class="theme-picker-group">
-            <button class="theme-btn" data-theme="light" onclick="applyTheme('light')" type="button"><span class="material-symbols-outlined icon-small">light_mode</span> Light</button>
-            <button class="theme-btn" data-theme="dark" onclick="applyTheme('dark')" type="button"><span class="material-symbols-outlined icon-small">dark_mode</span> Dark</button>
-            <button class="theme-btn" data-theme="system" onclick="applyTheme('system')" type="button"><span class="material-symbols-outlined icon-small">computer</span> System</button>
+          <label>Voice Model</label>
+          <select id="model-select">
+            <option value="browser_tts">Local Browser (Utterance)</option>
+            <option value="eleven_v3">Eleven v3</option>
+            <option value="eleven_multilingual_v2">Eleven Multilingual v2</option>
+            <option value="eleven_flash_v2">Eleven Flash v2</option>
+          </select>
+        </div>
+
+        <div class="settings-stack" id="group-browser-voice">
+          <div class="sidebar-setting-group">
+            <label>Browser Voice</label>
+            <button class="status-btn" id="open-browser-voices" type="button">
+              <span class="status-btn-text" id="selected-browser-name">Select Voice...</span>
+              <span class="material-symbols-outlined icon-small">chevron_right</span>
+            </button>
           </div>
         </div>
 
-        <div class="sidebar-setting-group">
-          <label><span>Font Size</span><span id="font-display">24px</span></label>
-          <div class="font-controls">
-            <button class="font-btn" id="font-down" type="button">A-</button>
-            <button class="font-btn" id="font-up" type="button">A+</button>
-          </div>
-        </div>
-        <div class="sidebar-setting-group" id="group-browser-voice">
-          <label>Browser Voice</label>
-          <button class="status-btn" id="open-browser-voices" type="button">
-            <span class="status-btn-text" id="selected-browser-name">Select Voice...</span>
-            <span class="material-symbols-outlined icon-small">chevron_right</span>
-          </button>
-        </div>
         <div class="settings-stack" id="group-eleven-settings">
+          <div class="sidebar-setting-group">
+            <button id="api-key-btn" class="status-btn missing" type="button">
+              <span class="status-btn-text"><span class="material-symbols-outlined icon-small icon-btn-margin">key</span>Missing API Key (Click to Add)</span>
+            </button>
+          </div>
           <div class="sidebar-setting-group">
             <label>ElevenLabs Voice</label>
             <button class="status-btn" id="open-eleven-voices" type="button">
@@ -357,6 +660,7 @@
               <span class="material-symbols-outlined icon-small">chevron_right</span>
             </button>
           </div>
+          <hr class="setting-divider">
           <div class="sidebar-setting-group">
             <label><span>Stability</span><span id="val-stability">0.50</span></label>
             <input type="range" id="stability-slider" min="0.0" max="1.0" step="0.05" value="0.5">
@@ -366,6 +670,9 @@
             <input type="range" id="similarity-slider" min="0.0" max="1.0" step="0.05" value="0.75">
           </div>
         </div>
+
+        <hr class="setting-divider">
+
         <div class="sidebar-setting-group">
           <label><span>Volume Gain</span><span id="val-volume">3.00</span></label>
           <input type="range" id="volume-slider" min="1" max="5" step="0.5" value="3">
@@ -373,6 +680,34 @@
         <div class="sidebar-setting-group">
           <label><span>Speech Speed</span><span id="val-speed">1.00</span></label>
           <input type="range" id="speed-slider" min="0.5" max="2.0" step="0.1" value="1.0">
+        </div>
+
+        <hr class="setting-divider">
+
+        <div class="sidebar-setting-group">
+          <label><span>Font Size</span><span id="font-display">24px</span></label>
+          <div class="font-controls">
+            <button class="font-btn" id="font-down" type="button">A-</button>
+            <button class="font-btn" id="font-up" type="button">A+</button>
+          </div>
+        </div>
+
+        <hr class="setting-divider">
+
+        <div class="sidebar-setting-group">
+          <label>Theme Appearance</label>
+          <div class="theme-picker-group">
+            <button class="theme-btn" data-theme="light" onclick="applyTheme('light')" type="button"><span class="material-symbols-outlined icon-small">light_mode</span> Light</button>
+            <button class="theme-btn" data-theme="dark" onclick="applyTheme('dark')" type="button"><span class="material-symbols-outlined icon-small">dark_mode</span> Dark</button>
+            <button class="theme-btn" data-theme="system" onclick="applyTheme('system')" type="button"><span class="material-symbols-outlined icon-small">computer</span> System</button>
+          </div>
+        </div>
+        <div class="sidebar-setting-group">
+          <label>Accent Color</label>
+          <div class="accent-color-row">
+            <input type="color" id="accent-color-picker" value="#8ab4f8" title="Custom accent color">
+            <button class="font-btn" id="accent-color-reset" type="button" title="Reset to theme default">Reset</button>
+          </div>
         </div>
       </div>
 
@@ -386,38 +721,20 @@
         <button class="clear-history-btn" id="clear-history-btn" type="button">Clear All History</button>
       </div>
     </div>
-
-    <!-- Footer with Context Popup -->
-    <div class="sidebar-footer">
-      <div class="gemini-settings-btn" id="footer-settings-btn" title="Engine & Settings">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span class="material-symbols-outlined" id="nav-icon-settings">settings</span>
-          <span class="nav-label" id="nav-label-settings">Settings & API</span>
-        </div>
-        <span class="material-symbols-outlined icon-small">expand_less</span>
-      </div>
-
-      <div class="gemini-context-popup" id="gemini-context-popup">
-        <div class="popup-menu-item" onclick="openModal('modal-engine')">
-          <span class="material-symbols-outlined icon-medium">record_voice_over</span>
-          <span>Voice Engine & API Key</span>
-        </div>
-        <div class="popup-menu-item" onclick="switchSidebarTab('settings')">
-          <span class="material-symbols-outlined icon-medium">tune</span>
-          <span>Audio Control Sliders</span>
-        </div>
-      </div>
-    </div>
   </aside>
 
   <!-- ==================== MAIN WORKSPACE ==================== -->
   <main class="app-main">
     <div class="workspace-header">
+      <button class="icon-btn mobile-only mobile-menu-btn" id="mobile-menu-btn" type="button" title="Open menu" aria-label="Open menu">
+        <span class="material-symbols-outlined">menu</span>
+      </button>
       <div class="workspace-tabs" id="workspace-tabs"></div>
 
       <div class="workspace-actions">
         <button class="tool-btn" id="edit-mode-btn" type="button">
-          <span class="material-symbols-outlined icon-small">edit</span> Edit Buttons
+          <span class="material-symbols-outlined icon-small">edit</span>
+          <span class="tool-btn-label">Edit Buttons</span>
         </button>
 
         <div class="edit-mode-controls" id="edit-mode-controls">
@@ -453,8 +770,9 @@
 
     <div class="bottom-dock">
       <div class="toolbar" id="toolbar">
-        <button class="key tts-btn" id="speak-btn" type="button">
-          <span class="material-symbols-outlined icon-medium">volume_up</span> Speak
+        <button class="key tts-btn" id="speak-btn" type="button" aria-label="Speak">
+          <span class="material-symbols-outlined icon-medium">volume_up</span>
+          <span class="key-label">Speak</span>
         </button>
         <div class="predictions-wrapper" id="predictions-wrapper">
           <button class="key prediction-btn" type="button"></button>
@@ -464,8 +782,9 @@
           <button class="key prediction-btn" type="button"></button>
           <button class="key prediction-btn" type="button"></button>
         </div>
-        <button class="key clear-btn" id="clear-btn" type="button">
-          <span class="material-symbols-outlined icon-medium">delete</span> Clear
+        <button class="key clear-btn" id="clear-btn" type="button" aria-label="Clear">
+          <span class="material-symbols-outlined icon-medium">delete</span>
+          <span class="key-label">Clear</span>
         </button>
       </div>
     </div>
@@ -487,25 +806,6 @@
   <!-- ==================== MODALS & POPUPS ==================== -->
   <div class="modal-overlay" id="modal-overlay"></div>
 
-  <!-- Voice Engine Modal -->
-  <div class="modal" id="modal-engine">
-    <div class="modal-title">Voice Engine & API Key</div>
-    <div class="sidebar-setting-group">
-      <label>Voice Engine Model</label>
-      <select id="model-select">
-        <option value="browser_tts">Local Browser (Utterance)</option>
-        <option value="eleven_flash_v2">Eleven Flash v2</option>
-        <option value="eleven_multilingual_v2">Eleven Multilingual v2</option>
-        <option value="eleven_v3">Eleven v3</option>
-      </select>
-    </div>
-    <div class="sidebar-setting-group">
-      <label>ElevenLabs API Key</label>
-      <button id="api-key-btn" class="status-btn missing" type="button">Show / Edit API Key</button>
-    </div>
-    <div class="modal-buttons"><button class="modal-btn primary" onclick="closeModals()">Done</button></div>
-  </div>
-
   <!-- Assign Choice Modal -->
   <div class="modal" id="modal-assign-choice">
     <div class="modal-title">Assign Speech Audio</div>
@@ -525,7 +825,7 @@
     </div>
     <div class="sidebar-setting-group">
       <label>Material Symbol Icon</label>
-      <input type="text" id="topic-icon-input" class="modal-input input-margin-bottom" maxlength="24">
+      <input type="text" id="topic-icon-input" class="modal-input icon-name-input input-margin-bottom" maxlength="48" spellcheck="false" autocomplete="off" aria-label="Topic icon">
       <button class="status-btn btn-center" onclick="openIconStudio('topic-icon-input')" type="button"><span class="material-symbols-outlined icon-small icon-btn-margin">search</span> Open Icon Studio Picker...</button>
     </div>
     <div class="sidebar-setting-group">
@@ -545,6 +845,11 @@
     <div class="sidebar-setting-group">
       <label>Label</label>
       <input type="text" id="button-label-input" class="modal-input" placeholder="Button label" maxlength="30">
+    </div>
+    <div class="sidebar-setting-group">
+      <label>Symbol (optional)</label>
+      <input type="text" id="button-symbol-input" class="modal-input icon-name-input input-margin-bottom" maxlength="48" spellcheck="false" autocomplete="off" placeholder="" aria-label="Button symbol">
+      <button class="status-btn btn-center" onclick="openIconStudio('button-symbol-input')" type="button"><span class="material-symbols-outlined icon-small icon-btn-margin">search</span> Open Icon Studio Picker...</button>
     </div>
     <div class="sidebar-setting-group">
       <label>Color</label>
@@ -705,10 +1010,25 @@
 
     // State Variables
     let predictionTimeout;
-    let activeBrowserVoiceIndex = localStorage.getItem("aac_browser_voice_index") || "";
+    let activeBrowserVoiceIndex = localStorage.getItem("aac_browser_voice_index");
+    if (activeBrowserVoiceIndex !== null && activeBrowserVoiceIndex !== "") {
+      activeBrowserVoiceIndex = parseInt(activeBrowserVoiceIndex, 10);
+      if (Number.isNaN(activeBrowserVoiceIndex)) activeBrowserVoiceIndex = "";
+    } else {
+      activeBrowserVoiceIndex = "";
+    }
     let activeElevenVoiceId = localStorage.getItem("elevenlabs_voice") || "";
     let currentFontSize = parseInt(localStorage.getItem("aac_font_size"), 10) || 24;
     let currentTheme = localStorage.getItem("aac_theme") || "system";
+    let customAccentColor = localStorage.getItem("aac_accent_color") || "";
+
+    /** Return keyboard focus to the main text display after actions. */
+    function focusDisplayInput() {
+      requestAnimationFrame(() => {
+        try { displayInput.focus({ preventScroll: true }); }
+        catch (_) { try { displayInput.focus(); } catch (__) {} }
+      });
+    }
 
     let iconFill = parseInt(localStorage.getItem("aac_icon_fill"), 10) || 0;
     let iconWght = parseInt(localStorage.getItem("aac_icon_wght"), 10) || 400;
@@ -742,6 +1062,7 @@
     let editSnapshot = null;
     let draggingButton = null;
     let editingButtonId = null;
+    let editingButtonTopicId = null;
     let editingTopicId = null;
     let targetStudioInputId = null;
     let selectedStudioIcon = null;
@@ -756,9 +1077,11 @@
     function normalizeButton(btn, index = 0) {
       const col = Number.isFinite(btn.col) ? btn.col : (Number.isFinite(btn.x) ? Math.max(0, Math.floor(btn.x / 100)) : (index % DEFAULT_GRID_COLS));
       const row = Number.isFinite(btn.row) ? btn.row : (Number.isFinite(btn.y) ? Math.max(0, Math.floor(btn.y / 80)) : Math.floor(index / DEFAULT_GRID_COLS));
+      const rawSymbol = btn.symbol || btn.icon || "";
       return {
         id: btn.id || generateId(),
         label: btn.label || "Button",
+        symbol: SYMBOL_MIGRATION_MAP[rawSymbol] || rawSymbol || "",
         color: btn.color || COLOR_PALETTE[index % COLOR_PALETTE.length],
         audioData: btn.audioData || null,
         col, row,
@@ -786,6 +1109,45 @@
     function saveTopicsList() { localStorage.setItem("aac_tabs", JSON.stringify(topicsList)); }
     function saveHistory() { localStorage.setItem("aac_history", JSON.stringify(audioHistory)); }
 
+    function getDefaultAccentForResolvedTheme() {
+      const resolved = document.documentElement.getAttribute("data-theme") || "dark";
+      return resolved === "light" ? "#0b57d0" : "#8ab4f8";
+    }
+
+    function accentHoverFrom(hex) {
+      // Lighten custom accent slightly for hover states
+      const m = String(hex || "").trim().match(/^#?([0-9a-f]{6})$/i);
+      if (!m) return hex;
+      const n = parseInt(m[1], 16);
+      const r = Math.min(255, ((n >> 16) & 255) + 28);
+      const g = Math.min(255, ((n >> 8) & 255) + 28);
+      const b = Math.min(255, (n & 255) + 28);
+      return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+    }
+
+    function applyAccentColor(color, { persist = true } = {}) {
+      const root = document.documentElement;
+      if (color) {
+        customAccentColor = color;
+        root.style.setProperty("--accent", color);
+        root.style.setProperty("--accent-hover", accentHoverFrom(color));
+        if (persist) localStorage.setItem("aac_accent_color", color);
+      } else {
+        customAccentColor = "";
+        root.style.removeProperty("--accent");
+        root.style.removeProperty("--accent-hover");
+        if (persist) localStorage.removeItem("aac_accent_color");
+      }
+      const picker = document.getElementById("accent-color-picker");
+      if (picker) picker.value = customAccentColor || getDefaultAccentForResolvedTheme();
+    }
+
+    function syncThemeColorMeta() {
+      const resolved = document.documentElement.getAttribute("data-theme") || "dark";
+      const color = resolved === "light" ? "#f0f4f9" : "#131314";
+      document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute("content", color));
+    }
+
     function applyTheme(theme) {
       currentTheme = theme;
       localStorage.setItem("aac_theme", theme);
@@ -798,11 +1160,59 @@
       document.querySelectorAll('.theme-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.theme === theme);
       });
+      // Re-apply custom accent (or sync picker to theme default)
+      applyAccentColor(customAccentColor || "", { persist: false });
+      syncThemeColorMeta();
     }
 
-    // ==================== SIDEBAR TABS ====================
-    function switchSidebarTab(tab) {
+    // ==================== SIDEBAR TABS & MOBILE DRAWER ====================
+    const sidebarBackdrop = document.getElementById("sidebar-backdrop");
+    const mobileMenuBtn = document.getElementById("mobile-menu-btn");
+    const MOBILE_MQ = "(max-width: 900px)";
+
+    function isMobileLayout() {
+      return window.matchMedia(MOBILE_MQ).matches;
+    }
+
+    function isSidebarOpen() {
+      if (isMobileLayout()) return sidebar.classList.contains("mobile-open");
+      return !sidebar.classList.contains("collapsed");
+    }
+
+    function setSidebarOpen(open) {
+      if (isMobileLayout()) {
+        sidebar.classList.toggle("mobile-open", open);
+        // On mobile, keep "collapsed" unused for layout; drawer is full content
+        sidebar.classList.remove("collapsed");
+        if (sidebarBackdrop) {
+          sidebarBackdrop.classList.toggle("open", open);
+          sidebarBackdrop.setAttribute("aria-hidden", open ? "false" : "true");
+        }
+        document.body.classList.toggle("sidebar-drawer-open", open);
+        if (mobileMenuBtn) {
+          mobileMenuBtn.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+          mobileMenuBtn.setAttribute("title", open ? "Close menu" : "Open menu");
+        }
+      } else {
+        sidebar.classList.toggle("collapsed", !open);
+        sidebar.classList.remove("mobile-open");
+        if (sidebarBackdrop) {
+          sidebarBackdrop.classList.remove("open");
+          sidebarBackdrop.setAttribute("aria-hidden", "true");
+        }
+        document.body.classList.remove("sidebar-drawer-open");
+      }
+    }
+
+    function closeMobileSidebar() {
+      if (isMobileLayout()) setSidebarOpen(false);
+    }
+
+    function switchSidebarTab(tab, expandIfCollapsed = false) {
       currentSidebarTab = tab;
+      if (expandIfCollapsed && !isSidebarOpen()) {
+        setSidebarOpen(true);
+      }
       document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       const content = document.getElementById(`tab-content-${tab}`);
@@ -812,29 +1222,58 @@
     }
 
     document.querySelectorAll('.sidebar-tab').forEach(tab => {
-      tab.addEventListener('click', () => switchSidebarTab(tab.dataset.tab));
+      tab.addEventListener('click', () => {
+        const wasClosed = !isSidebarOpen();
+        switchSidebarTab(tab.dataset.tab, wasClosed);
+      });
     });
 
     document.getElementById("toggle-sidebar-btn").addEventListener("click", () => {
-      sidebar.classList.toggle("collapsed");
+      setSidebarOpen(!isSidebarOpen());
     });
 
-    document.getElementById("footer-settings-btn").addEventListener("click", (e) => {
-      e.stopPropagation();
-      document.getElementById("gemini-context-popup").classList.toggle("open");
+    if (mobileMenuBtn) {
+      mobileMenuBtn.addEventListener("click", () => setSidebarOpen(!isSidebarOpen()));
+    }
+    if (sidebarBackdrop) {
+      sidebarBackdrop.addEventListener("click", () => closeMobileSidebar());
+    }
+
+    // Escape closes mobile drawer / voices panel
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      const voicesPanel = document.getElementById("voices-panel");
+      if (voicesPanel?.classList.contains("open")) {
+        voicesPanel.classList.remove("open");
+        return;
+      }
+      if (isMobileLayout() && isSidebarOpen()) closeMobileSidebar();
     });
 
-    document.addEventListener("click", (e) => {
-      if (!e.target.closest("#footer-settings-btn") && !e.target.closest("#gemini-context-popup")) {
-        document.getElementById("gemini-context-popup").classList.remove("open");
+    window.matchMedia(MOBILE_MQ).addEventListener("change", (e) => {
+      if (e.matches) {
+        // Entering mobile: start with drawer closed
+        setSidebarOpen(false);
+      } else {
+        // Leaving mobile: restore desktop rail as expanded
+        sidebar.classList.remove("mobile-open");
+        if (sidebarBackdrop) sidebarBackdrop.classList.remove("open");
+        document.body.classList.remove("sidebar-drawer-open");
+        sidebar.classList.remove("collapsed");
       }
     });
 
     // ==================== GOOGLE FONTS ICON STUDIO ====================
+    let iconStudioReturnModalId = null;
+
     function openIconStudio(targetInputId) {
       targetStudioInputId = targetInputId;
       const currentVal = document.getElementById(targetInputId)?.value || "chat";
-      selectedStudioIcon = SYMBOL_MIGRATION_MAP[currentVal] || currentVal;
+      selectedStudioIcon = SYMBOL_MIGRATION_MAP[currentVal] || currentVal || "chat";
+
+      // Remember which edit modal to restore after picking an icon
+      const openParent = document.querySelector(".modal.open:not(#icon-studio-modal)");
+      iconStudioReturnModalId = openParent ? openParent.id : null;
 
       initialIconStyles = { fill: iconFill, wght: iconWght, grad: iconGrad, opsz: iconOpsz };
       document.getElementById("icon-search-input").value = "";
@@ -852,7 +1291,16 @@
         iconOpsz = initialIconStyles.opsz;
         applyGlobalIconStyles();
       }
-      closeModals();
+      const returnTo = iconStudioReturnModalId;
+      iconStudioReturnModalId = null;
+      if (returnTo) {
+        document.querySelectorAll(".modal").forEach(m => m.classList.remove("open"));
+        document.getElementById(returnTo)?.classList.add("open");
+        modalOverlay.classList.add("open");
+        document.body.classList.add("modal-open");
+      } else {
+        closeModals();
+      }
     }
 
     function renderIconStudioGrid(query) {
@@ -913,29 +1361,67 @@
       if (tabsEl) tabsEl.innerHTML = "";
 
       topicsList.forEach(topic => {
+        const isActive = topic.id === activeTopicId;
         const item = document.createElement("div");
-        item.className = `topic-item ${topic.id === activeTopicId ? "active" : ""}`;
-        item.innerHTML = `
+        item.className = `topic-item ${isActive ? "active" : ""}`;
+
+        const header = document.createElement("div");
+        header.className = "topic-item-header";
+        header.innerHTML = `
           <div class="topic-item-content">
             <span class="material-symbols-outlined icon-medium" style="color: ${topic.color};">${topic.icon || "folder"}</span>
             <span class="topic-item-name">${topic.name}</span>
           </div>
           <div class="topic-actions">
-            <button class="nav-action-btn edit-topic-btn" title="Edit Topic Settings">
+            <button class="nav-action-btn edit-topic-btn" type="button" title="Edit Topic Settings">
               <span class="material-symbols-outlined icon-small">edit</span>
             </button>
           </div>
         `;
-        item.addEventListener("click", (e) => {
+        header.addEventListener("click", (e) => {
           if (e.target.closest(".edit-topic-btn")) { e.stopPropagation(); openTopicEditModal(topic.id); return; }
           switchTopic(topic.id);
         });
+        item.appendChild(header);
+
+        // Active topic expands to list its sound buttons
+        if (isActive) {
+          const buttonsList = document.createElement("div");
+          buttonsList.className = "topic-buttons-list";
+          const buttons = Array.isArray(topic.buttons) ? topic.buttons : [];
+          if (buttons.length === 0) {
+            buttonsList.innerHTML = `<div class="topic-buttons-empty">No sound buttons yet</div>`;
+          } else {
+            buttons.forEach(btn => {
+              const row = document.createElement("div");
+              row.className = "topic-sound-item";
+              const symbolHtml = btn.symbol
+                ? `<span class="material-symbols-outlined topic-sound-symbol">${btn.symbol}</span>`
+                : "";
+              row.innerHTML = `
+                <span class="topic-sound-swatch" style="background-color: ${btn.color || "#8ab4f8"};"></span>
+                ${symbolHtml}
+                <span class="topic-sound-label">${btn.label || "Button"}</span>
+                <button class="topic-sound-edit-btn" type="button" title="Edit button">
+                  <span class="material-symbols-outlined icon-small">edit</span>
+                </button>
+              `;
+              row.querySelector(".topic-sound-edit-btn").addEventListener("click", (e) => {
+                e.stopPropagation();
+                openButtonEditModal(btn.id, topic.id);
+              });
+              buttonsList.appendChild(row);
+            });
+          }
+          item.appendChild(buttonsList);
+        }
+
         listEl.appendChild(item);
 
         if (tabsEl) {
           const tabEl = document.createElement("button");
           tabEl.type = "button";
-          tabEl.className = `workspace-tab ${topic.id === activeTopicId ? "active" : ""}`;
+          tabEl.className = `workspace-tab ${isActive ? "active" : ""}`;
           tabEl.innerHTML = `
             <span class="material-symbols-outlined icon-medium" style="color: ${topic.color};">${topic.icon || "folder"}</span>
             <span class="topic-item-name">${topic.name}</span>
@@ -951,6 +1437,8 @@
       activeTopicId = id;
       if (!isEditMode) localStorage.setItem("aac_active_tab", activeTopicId);
       renderTopics(); renderSoundButtons();
+      closeMobileSidebar();
+      focusDisplayInput();
     }
 
     function updateWorkspaceHeader() {
@@ -969,6 +1457,7 @@
         gridCols: DEFAULT_GRID_COLS, gridRows: DEFAULT_GRID_ROWS, buttons: []
       };
       topicsList.push(newTopic); saveTopicsList(); switchTopic(newTopic.id);
+      focusDisplayInput();
     });
 
     function normalizeToHex(col) {
@@ -1072,7 +1561,11 @@
     }
 
     editModeBtn.addEventListener("click", () => setEditMode(true));
-    document.getElementById("save-edit-btn").addEventListener("click", () => { saveTopicsList(); setEditMode(false); });
+    document.getElementById("save-edit-btn").addEventListener("click", () => {
+      saveTopicsList();
+      setEditMode(false);
+      renderTopics();
+    });
     document.getElementById("cancel-edit-btn").addEventListener("click", () => {
       if (editSnapshot) topicsList = normalizeTopicsList(editSnapshot);
       setEditMode(false); renderTopics(); renderSoundButtons();
@@ -1082,7 +1575,8 @@
       const activeTab = getActiveTopic();
       if (!activeTab) return;
       soundCanvas.style.gridTemplateColumns = `repeat(${activeTab.gridCols}, minmax(0, 1fr))`;
-      soundCanvas.style.gridAutoRows = `52px`;
+      const rowH = isMobileLayout() ? 56 : 52;
+      soundCanvas.style.gridAutoRows = `${rowH}px`;
       soundCanvas.innerHTML = "";
 
       activeTab.buttons.forEach(btnData => {
@@ -1093,9 +1587,15 @@
         btnEl.style.gridRow = `${btnData.row + 1} / span ${btnData.rowSpan}`;
         btnEl.style.backgroundColor = btnData.color || "#3f3f4e";
 
+        const symbolPart = btnData.symbol
+          ? `<span class="material-symbols-outlined sound-button-symbol">${btnData.symbol}</span>`
+          : "";
         btnEl.innerHTML = `
-          <div class="sound-button-label">${btnData.label || "Button"}</div>
-          <button class="sound-button-edit-btn" title="Edit Button"><span class="material-symbols-outlined icon-small">edit</span></button>
+          <div class="sound-button-inner">
+            ${symbolPart}
+            <div class="sound-button-label">${btnData.label || "Button"}</div>
+          </div>
+          <button class="sound-button-edit-btn" type="button" title="Edit Button"><span class="material-symbols-outlined icon-small">edit</span></button>
         `;
 
         if (isEditMode) {
@@ -1119,18 +1619,23 @@
       });
     }
 
-    function openButtonEditModal(btnId) {
-      const tab = getActiveTopic();
+    function openButtonEditModal(btnId, topicId = null) {
+      const tab = topicId
+        ? topicsList.find(t => t.id === topicId)
+        : getActiveTopic();
       const btn = tab?.buttons.find(b => b.id === btnId);
-      if (!btn) return;
+      if (!btn || !tab) return;
       editingButtonId = btnId;
-      document.getElementById("button-label-input").value = btn.label;
+      editingButtonTopicId = tab.id;
+      document.getElementById("button-label-input").value = btn.label || "";
+      document.getElementById("button-symbol-input").value = btn.symbol || "";
 
       const picker = document.getElementById("button-color-picker");
       picker.innerHTML = "";
+      const btnHex = normalizeToHex(btn.color);
       COLOR_PALETTE.forEach(col => {
         const opt = document.createElement("div");
-        opt.className = `color-option ${btn.color === col ? "selected" : ""}`;
+        opt.className = `color-option ${btnHex === normalizeToHex(col) ? "selected" : ""}`;
         opt.style.backgroundColor = col;
         opt.addEventListener("click", () => {
           picker.querySelectorAll(".color-option").forEach(o => o.classList.remove("selected"));
@@ -1138,24 +1643,55 @@
         });
         picker.appendChild(opt);
       });
+
+      const customOpt = document.createElement("div");
+      customOpt.className = "color-option custom";
+      if (btnHex && !COLOR_PALETTE.some(c => normalizeToHex(c) === btnHex)) customOpt.classList.add("selected");
+      const colorInput = document.createElement("input");
+      colorInput.type = "color";
+      colorInput.className = "color-picker-input";
+      colorInput.value = btnHex || "#3f3f4e";
+      customOpt.style.backgroundColor = colorInput.value;
+      colorInput.addEventListener("input", (e) => {
+        customOpt.style.backgroundColor = e.target.value;
+        picker.querySelectorAll(".color-option").forEach(o => o.classList.remove("selected"));
+        customOpt.classList.add("selected");
+      });
+      customOpt.addEventListener("click", () => {
+        picker.querySelectorAll(".color-option").forEach(o => o.classList.remove("selected"));
+        customOpt.classList.add("selected");
+        colorInput.focus();
+      });
+      customOpt.appendChild(colorInput);
+      picker.appendChild(customOpt);
+
       openModal("button-edit-modal");
     }
 
     document.getElementById("save-button-edit").addEventListener("click", () => {
-      const tab = getActiveTopic();
+      const tab = topicsList.find(t => t.id === editingButtonTopicId) || getActiveTopic();
       const btn = tab?.buttons.find(b => b.id === editingButtonId);
       if (!btn) return;
       btn.label = document.getElementById("button-label-input").value.trim() || "Button";
+      const rawSymbol = document.getElementById("button-symbol-input").value.trim();
+      btn.symbol = SYMBOL_MIGRATION_MAP[rawSymbol] || rawSymbol || "";
       const selCol = document.querySelector("#button-color-picker .color-option.selected");
       if (selCol) btn.color = selCol.style.backgroundColor;
-      renderSoundButtons(); closeModals();
+      if (!isEditMode) saveTopicsList();
+      renderTopics();
+      renderSoundButtons();
+      closeModals();
     });
 
     document.getElementById("delete-button-edit").addEventListener("click", () => {
-      const tab = getActiveTopic();
+      const tab = topicsList.find(t => t.id === editingButtonTopicId) || getActiveTopic();
       if (!tab) return;
       tab.buttons = tab.buttons.filter(b => b.id !== editingButtonId);
-      repackSequentialGrid(tab); renderSoundButtons(); closeModals();
+      repackSequentialGrid(tab);
+      if (!isEditMode) saveTopicsList();
+      renderTopics();
+      renderSoundButtons();
+      closeModals();
     });
 
     function repackSequentialGrid(tab) {
@@ -1284,7 +1820,8 @@
       }, activeTab.buttons.length));
 
       repackSequentialGrid(activeTab);
-      saveTopicsList(); renderSoundButtons(); closeModals();
+      saveTopicsList(); renderTopics(); renderSoundButtons(); closeModals();
+      // focus handled by closeModals
     });
 
     document.getElementById("choice-overwrite-btn").addEventListener("click", () => {
@@ -1298,7 +1835,10 @@
       renderSoundButtons();
     }
 
-    document.getElementById("cancel-overwrite-btn").addEventListener("click", () => setOverwriteMode(false));
+    document.getElementById("cancel-overwrite-btn").addEventListener("click", () => {
+      setOverwriteMode(false);
+      focusDisplayInput();
+    });
 
     function executeOverwrite(btnId) {
       if (!lastGeneratedAudio || !lastGeneratedAudio.audioData) return;
@@ -1310,6 +1850,8 @@
       btn.label = lastGeneratedAudio.text.substring(0, 24) || "Speech";
       saveTopicsList();
       setOverwriteMode(false);
+      renderTopics();
+      focusDisplayInput();
     }
 
     // ==================== HISTORY (No Inline Relabeling) ====================
@@ -1359,7 +1901,7 @@
           setText(item.text);
           if (item.model) modelSelect.value = item.model;
           if (item.voiceId && item.model !== "browser_tts") { activeElevenVoiceId = item.voiceId; localStorage.setItem("elevenlabs_voice", activeElevenVoiceId); }
-          setGeneratedAudioActions(item); displayInput.focus();
+          setGeneratedAudioActions(item); focusDisplayInput();
         });
         el.querySelector(".delete-btn").addEventListener("click", () => {
           audioHistory = audioHistory.filter(h => h.id !== item.id); saveHistory(); renderHistory();
@@ -1381,6 +1923,7 @@
 
     document.getElementById("textarea-replay-btn").addEventListener("click", () => {
       if (lastGeneratedAudio && lastGeneratedAudio.audioData) playAudioData(lastGeneratedAudio.audioData);
+      else focusDisplayInput();
     });
 
     // ==================== TEXT & PREDICTIONS ====================
@@ -1470,7 +2013,8 @@
         const match = text.substring(0, caret).match(/([a-zA-Z']+)$/);
         const replaceStart = match ? caret - match[1].length : caret;
         const next = text.substring(0, replaceStart) + suggestion + " " + text.substring(caret);
-        setText(next, replaceStart + suggestion.length + 1); displayInput.focus();
+        setText(next, replaceStart + suggestion.length + 1);
+        focusDisplayInput();
       });
     });
 
@@ -1478,7 +2022,7 @@
     displayInput.addEventListener("click", updatePredictions);
     displayInput.addEventListener("keyup", updatePredictions);
     document.getElementById("clear-btn").addEventListener("click", () => {
-      setText(""); audioActionsBar.classList.remove("active"); displayInput.focus();
+      setText(""); audioActionsBar.classList.remove("active"); focusDisplayInput();
     });
 
     window.addEventListener("resize", () => {
@@ -1487,10 +2031,12 @@
 
     // ==================== AUDIO PLAYBACK ====================
     function playAudioData(audioData) {
-      if (!audioData) return;
-      const audio = new Audio(audioData);
-      const gainSetting = parseFloat(volumeSlider.value) || 3.0;
-      playAudioWithGain(audio, gainSetting);
+      if (audioData) {
+        const audio = new Audio(audioData);
+        const gainSetting = parseFloat(volumeSlider.value) || 3.0;
+        playAudioWithGain(audio, gainSetting);
+      }
+      focusDisplayInput();
     }
 
     function playAudioWithGain(audioElement, gainValue) {
@@ -1519,7 +2065,7 @@
       if (!text) return;
       const gainSetting = parseFloat(volumeSlider.value) || 3.0;
       const speed = parseFloat(speedSlider.value) || 1.0;
-      speakBtn.innerHTML = '<span class="material-symbols-outlined icon-medium">hourglass_empty</span>'; speakBtn.disabled = true;
+      setSpeakBtnLoading();
 
       let modelToUse = modelSelect.value;
       if (text.includes('[') && modelToUse !== "browser_tts") {
@@ -1532,14 +2078,24 @@
           utterance.volume = Math.min(1.0, gainSetting / 5.0);
           utterance.rate = speed;
           const voices = window.speechSynthesis.getVoices();
-          utterance.voice = activeBrowserVoiceIndex !== "" ? voices[activeBrowserVoiceIndex] : voices[0];
-          utterance.onend = () => { speakBtn.innerHTML = '<span class="material-symbols-outlined icon-medium">volume_up</span> Speak'; speakBtn.disabled = false; addToHistory(text, "browser_tts", `voice_${activeBrowserVoiceIndex || "0"}`, null); };
+          const voiceIdx = (activeBrowserVoiceIndex !== "" && voices[activeBrowserVoiceIndex])
+            ? activeBrowserVoiceIndex
+            : 0;
+          utterance.voice = voices[voiceIdx] || null;
+          utterance.onend = () => {
+            setSpeakBtnIdle();
+            addToHistory(text, "browser_tts", `voice_${voiceIdx}`, null);
+            focusDisplayInput();
+          };
           window.speechSynthesis.speak(utterance);
+          focusDisplayInput();
         } else {
           const apiKey = localStorage.getItem("elevenlabs_key");
           if (!apiKey || !activeElevenVoiceId) {
             alert("Please configure your API Key and select a voice in Settings.");
-            speakBtn.innerHTML = '<span class="material-symbols-outlined icon-medium">volume_up</span> Speak'; speakBtn.disabled = false; return;
+            setSpeakBtnIdle();
+            focusDisplayInput();
+            return;
           }
           const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${activeElevenVoiceId}`, {
             method: "POST",
@@ -1555,16 +2111,31 @@
           const audio = new Audio(audioUrl);
           audio.playbackRate = speed;
 
-          audio.onended = () => { speakBtn.innerHTML = '<span class="material-symbols-outlined icon-medium">volume_up</span> Speak'; speakBtn.disabled = false; };
+          audio.onended = () => {
+            setSpeakBtnIdle();
+            focusDisplayInput();
+          };
           playAudioWithGain(audio, gainSetting);
+          focusDisplayInput();
 
           const reader = new FileReader();
           reader.onloadend = () => addToHistory(text, modelToUse, activeElevenVoiceId, reader.result);
           reader.readAsDataURL(blob);
         }
       } catch (_) {
-        alert("Failed to generate speech."); speakBtn.innerHTML = '<span class="material-symbols-outlined icon-medium">volume_up</span> Speak'; speakBtn.disabled = false;
+        alert("Failed to generate speech.");
+        setSpeakBtnIdle();
+        focusDisplayInput();
       }
+    }
+
+    function setSpeakBtnIdle() {
+      speakBtn.innerHTML = '<span class="material-symbols-outlined icon-medium">volume_up</span><span class="key-label">Speak</span>';
+      speakBtn.disabled = false;
+    }
+    function setSpeakBtnLoading() {
+      speakBtn.innerHTML = '<span class="material-symbols-outlined icon-medium">hourglass_empty</span>';
+      speakBtn.disabled = true;
     }
 
     speakBtn.addEventListener("click", speakText);
@@ -1575,12 +2146,16 @@
       document.querySelectorAll(".modal").forEach(m => m.classList.remove("open"));
       document.getElementById(modalId)?.classList.add("open");
       modalOverlay.classList.add("open");
-      document.getElementById("gemini-context-popup").classList.remove("open");
+      document.body.classList.add("modal-open");
     }
     function closeModals() {
       document.querySelectorAll(".modal").forEach(m => m.classList.remove("open"));
       modalOverlay.classList.remove("open");
-      editingButtonId = null; editingTopicId = null;
+      document.body.classList.remove("modal-open");
+      editingButtonId = null;
+      editingButtonTopicId = null;
+      editingTopicId = null;
+      focusDisplayInput();
     }
     modalOverlay.addEventListener("click", closeModals);
 
@@ -1600,43 +2175,74 @@
       document.getElementById("group-eleven-settings").style.display = isBrowser ? "none" : "flex";
     }
 
-    modelSelect.value = localStorage.getItem("elevenlabs_model") || "eleven_v3";
+    modelSelect.value = localStorage.getItem("elevenlabs_model") || "browser_tts";
     modelSelect.addEventListener("change", (e) => { localStorage.setItem("elevenlabs_model", e.target.value); updateSettingsVisibility(); });
 
     // ==================== VOICES & API KEY MANAGEMENT ====================
-    function loadBrowserVoices(filter = '') {
+    const previewText = "This is a preview.";
+    let elevenVoicesCache = [];
+    let voiceSearchTimeout = null;
+
+    function getVoiceSearchQuery() {
+      return (document.getElementById("voice-search-input").value || "").toLowerCase().trim();
+    }
+
+    function ensureDefaultBrowserVoice(voices) {
+      if (!voices || !voices.length) return;
+      const idxValid = activeBrowserVoiceIndex !== "" && voices[activeBrowserVoiceIndex];
+      if (!idxValid) {
+        activeBrowserVoiceIndex = 0;
+        localStorage.setItem("aac_browser_voice_index", "0");
+      }
+      const selected = voices[activeBrowserVoiceIndex];
+      if (selected) {
+        document.getElementById("selected-browser-name").textContent = selected.name;
+      }
+    }
+
+    function loadBrowserVoices() {
       const voices = window.speechSynthesis.getVoices();
       const list = document.getElementById("voice-list-browser");
       list.innerHTML = "";
 
-      const q = filter.toLowerCase().trim();
-      const filtered = voices.filter(v => v.name.toLowerCase().includes(q) || v.lang.toLowerCase().includes(q));
+      ensureDefaultBrowserVoice(voices);
 
-      filtered.forEach((voice) => {
-        const originalIdx = voices.indexOf(voice);
-        if (String(activeBrowserVoiceIndex) === String(originalIdx)) {
-          document.getElementById("selected-browser-name").textContent = voice.name;
-        }
+      const q = getVoiceSearchQuery();
+      const filtered = voices
+        .map((voice, index) => ({ voice, index }))
+        .filter(({ voice }) => voice.name.toLowerCase().includes(q) || voice.lang.toLowerCase().includes(q));
+
+      if (filtered.length === 0) {
+        list.innerHTML = `<div class="history-empty-notice">No voices found</div>`;
+        return;
+      }
+
+      filtered.forEach(({ voice, index }) => {
         const item = document.createElement("div");
-        item.className = `voice-item ${String(activeBrowserVoiceIndex) === String(originalIdx) ? "selected" : ""}`;
+        item.className = `voice-item ${String(activeBrowserVoiceIndex) === String(index) ? "selected" : ""}`;
         item.innerHTML = `
           <span class="voice-item-name">${voice.name} (${voice.lang})</span>
           <button class="voice-preview-btn" type="button" title="Preview Voice">
-            <span class="material-symbols-outlined voice-preview-icon">play_arrow</span> Preview
+            <span class="material-symbols-outlined icon-small">play_arrow</span>
           </button>
         `;
-        item.addEventListener("click", () => {
-          activeBrowserVoiceIndex = originalIdx;
-          localStorage.setItem("aac_browser_voice_index", originalIdx);
+        item.addEventListener("click", (e) => {
+          if (e.target.closest("button")) return;
+          activeBrowserVoiceIndex = index;
+          localStorage.setItem("aac_browser_voice_index", index);
           document.getElementById("selected-browser-name").textContent = voice.name;
-          loadBrowserVoices(document.getElementById("voice-search-input").value);
+          document.querySelectorAll("#voice-list-browser .voice-item").forEach(el => el.classList.remove("selected"));
+          item.classList.add("selected");
+          setTimeout(() => {
+            document.getElementById("voices-panel").classList.remove("open");
+            focusDisplayInput();
+          }, 200);
         });
 
-        const previewBtn = item.querySelector(".voice-preview-btn");
-        previewBtn.addEventListener("click", (e) => {
+        item.querySelector(".voice-preview-btn").addEventListener("click", (e) => {
           e.stopPropagation();
           window.speechSynthesis.cancel();
-          const utterance = new SpeechSynthesisUtterance("Hello, this is a local voice preview.");
+          const utterance = new SpeechSynthesisUtterance(previewText);
           utterance.voice = voice;
           utterance.rate = parseFloat(speedSlider.value) || 1.0;
           utterance.volume = Math.min(1.0, (parseFloat(volumeSlider.value) || 3.0) / 5.0);
@@ -1646,84 +2252,109 @@
       });
     }
 
-    async function loadElevenLabsVoices(filter = '') {
+    async function fetchElevenVoices(apiKey) {
+      if (!apiKey) {
+        elevenVoicesCache = [];
+        renderElevenVoiceList();
+        return;
+      }
       const list = document.getElementById("voice-list-eleven");
-      const apiKey = localStorage.getItem("elevenlabs_key");
       list.innerHTML = `<div class="history-empty-notice">Loading ElevenLabs voices...</div>`;
 
       try {
-        const headers = { Accept: "application/json" };
-        if (apiKey) headers["xi-api-key"] = apiKey;
-        const res = await fetch("https://api.elevenlabs.io/v1/voices", { headers });
+        const res = await fetch("https://api.elevenlabs.io/v1/voices", {
+          headers: { Accept: "application/json", "xi-api-key": apiKey }
+        });
         if (!res.ok) throw new Error("Could not fetch ElevenLabs voices");
         const data = await res.json();
-        let voices = data.voices || [];
-
-        if (filter) {
-          const f = filter.toLowerCase().trim();
-          voices = voices.filter(v => v.name.toLowerCase().includes(f) || (v.category || '').toLowerCase().includes(f));
-        }
-
-        list.innerHTML = "";
-
-        if (voices.length === 0) {
-          list.innerHTML = `<div class="history-empty-notice">No matching voices found.</div>`;
-          return;
-        }
-
-        voices.forEach(voice => {
-          if (activeElevenVoiceId === voice.voice_id) document.getElementById("selected-eleven-name").textContent = voice.name;
-          const item = document.createElement("div");
-          item.className = `voice-item ${activeElevenVoiceId === voice.voice_id ? "selected" : ""}`;
-          item.innerHTML = `
-            <span class="voice-item-name">${voice.name} (${voice.category || "General"})</span>
-            <button class="voice-preview-btn" type="button" title="Preview Voice">
-              <span class="material-symbols-outlined voice-preview-icon">play_arrow</span>
-            </button>
-          `;
-
-          item.addEventListener("click", () => {
-            activeElevenVoiceId = voice.voice_id;
-            localStorage.setItem("elevenlabs_voice", activeElevenVoiceId);
-            document.getElementById("selected-eleven-name").textContent = voice.name;
-            loadElevenLabsVoices(document.getElementById("voice-search-input").value);
-          });
-
-          const previewBtn = item.querySelector(".voice-preview-btn");
-          previewBtn.addEventListener("click", async (e) => {
-            e.stopPropagation();
-            previewBtn.disabled = true;
-            const icon = previewBtn.querySelector(".voice-preview-icon");
-            if (icon) icon.textContent = "hourglass_empty";
-
-            try {
-              const gainSetting = parseFloat(volumeSlider.value) || 3.0;
-              if (voice.preview_url) {
-                const audio = new Audio(voice.preview_url);
-                playAudioWithGain(audio, gainSetting);
-              } else if (apiKey) {
-                const synRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice.voice_id}`, {
-                  method: "POST",
-                  headers: { Accept: "audio/mpeg", "Content-Type": "application/json", "xi-api-key": apiKey },
-                  body: JSON.stringify({ text: "Hello, this is a cloud voice preview.", model_id: modelSelect.value || "eleven_v3" })
-                });
-                if (!synRes.ok) throw new Error();
-                const blob = await synRes.blob();
-                const audio = new Audio(URL.createObjectURL(blob));
-                playAudioWithGain(audio, gainSetting);
-              }
-            } catch (_) {
-              alert("Could not preview voice.");
-            } finally {
-              previewBtn.disabled = false;
-              if (icon) icon.textContent = "play_arrow";
-            }
-          });
-          list.appendChild(item);
-        });
+        elevenVoicesCache = data.voices || [];
+        renderElevenVoiceList();
       } catch (_) {
+        elevenVoicesCache = [];
         list.innerHTML = `<div class="history-empty-notice">Could not load voices. Check API Key.</div>`;
       }
+    }
+
+    function renderElevenVoiceList() {
+      const list = document.getElementById("voice-list-eleven");
+      const q = getVoiceSearchQuery();
+      const filtered = elevenVoicesCache.filter(v =>
+        v.name.toLowerCase().includes(q) || (v.category || "").toLowerCase().includes(q)
+      );
+      list.innerHTML = "";
+
+      const selected = elevenVoicesCache.find(v => v.voice_id === activeElevenVoiceId);
+      if (selected) document.getElementById("selected-eleven-name").textContent = selected.name;
+
+      if (!elevenVoicesCache.length) {
+        list.innerHTML = `<div class="history-empty-notice">Enter an API Key to load voices...</div>`;
+        return;
+      }
+      if (filtered.length === 0) {
+        list.innerHTML = `<div class="history-empty-notice">No matching voices found.</div>`;
+        return;
+      }
+
+      filtered.forEach(voice => {
+        const item = document.createElement("div");
+        item.className = `voice-item ${activeElevenVoiceId === voice.voice_id ? "selected" : ""}`;
+        item.innerHTML = `
+          <span class="voice-item-name">${voice.name} (${voice.category || "General"})</span>
+          <button class="voice-preview-btn" type="button" title="Preview Voice">
+            <span class="material-symbols-outlined icon-small">play_arrow</span>
+          </button>
+        `;
+
+        item.addEventListener("click", (e) => {
+          if (e.target.closest("button")) return;
+          activeElevenVoiceId = voice.voice_id;
+          localStorage.setItem("elevenlabs_voice", activeElevenVoiceId);
+          document.getElementById("selected-eleven-name").textContent = voice.name;
+          document.querySelectorAll("#voice-list-eleven .voice-item").forEach(el => el.classList.remove("selected"));
+          item.classList.add("selected");
+          setTimeout(() => {
+            document.getElementById("voices-panel").classList.remove("open");
+            focusDisplayInput();
+          }, 200);
+        });
+
+        const previewBtn = item.querySelector(".voice-preview-btn");
+        previewBtn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          const icon = previewBtn.querySelector(".material-symbols-outlined");
+          icon.textContent = "hourglass_top";
+          previewBtn.disabled = true;
+          const apiKey = localStorage.getItem("elevenlabs_key");
+          const previewModel = modelSelect.value === "browser_tts" ? "eleven_v3" : modelSelect.value;
+
+          try {
+            if (!apiKey) throw new Error("No API key");
+            // Synthesize a short sample (more reliable than preview_url + WebAudio CORS issues)
+            const synRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice.voice_id}`, {
+              method: "POST",
+              headers: { Accept: "audio/mpeg", "Content-Type": "application/json", "xi-api-key": apiKey },
+              body: JSON.stringify({ text: previewText, model_id: previewModel })
+            });
+            if (!synRes.ok) throw new Error("API Error");
+            const blob = await synRes.blob();
+            const audio = new Audio(URL.createObjectURL(blob));
+            audio.onended = () => {
+              icon.textContent = "play_arrow";
+              previewBtn.disabled = false;
+            };
+            audio.onerror = () => {
+              icon.textContent = "play_arrow";
+              previewBtn.disabled = false;
+            };
+            await audio.play();
+          } catch (_) {
+            alert("Could not preview voice.");
+            icon.textContent = "play_arrow";
+            previewBtn.disabled = false;
+          }
+        });
+        list.appendChild(item);
+      });
     }
 
     document.getElementById("open-browser-voices").addEventListener("click", () => {
@@ -1738,31 +2369,43 @@
       document.getElementById("voice-list-eleven").classList.add("active");
       document.getElementById("voice-list-browser").classList.remove("active");
       document.getElementById("voice-search-input").value = "";
-      loadElevenLabsVoices();
+      const apiKey = localStorage.getItem("elevenlabs_key");
+      if (elevenVoicesCache.length) renderElevenVoiceList();
+      else fetchElevenVoices(apiKey);
       document.getElementById("voices-panel").classList.add("open");
     });
 
     document.getElementById("close-voices-panel-btn").addEventListener("click", () => {
       document.getElementById("voices-panel").classList.remove("open");
+      focusDisplayInput();
     });
 
-    document.getElementById("voice-search-input").addEventListener("input", (e) => {
-      if (document.getElementById("voice-list-browser").classList.contains("active")) {
-        loadBrowserVoices(e.target.value);
-      } else {
-        loadElevenLabsVoices(e.target.value);
-      }
+    document.getElementById("voice-search-input").addEventListener("input", () => {
+      clearTimeout(voiceSearchTimeout);
+      voiceSearchTimeout = setTimeout(() => {
+        if (document.getElementById("voice-list-browser").classList.contains("active")) loadBrowserVoices();
+        if (document.getElementById("voice-list-eleven").classList.contains("active")) renderElevenVoiceList();
+      }, 200);
     });
 
     const apiKeyBtn = document.getElementById("api-key-btn");
     function updateApiKeyStatus() {
-      const key = localStorage.getItem("elevenlabs_key");
+      const key = localStorage.getItem("elevenlabs_key") || "";
+      const label = apiKeyBtn.querySelector(".status-btn-text");
       if (key) {
-        apiKeyBtn.textContent = `API Key: ••••••••${key.slice(-4)}`;
-        apiKeyBtn.className = "status-btn saved";
+        if (label) {
+          label.innerHTML = `<span class="material-symbols-outlined icon-small icon-btn-margin">key</span>API Key Saved (••••${key.slice(-4)})`;
+        }
+        apiKeyBtn.classList.remove("missing");
+        apiKeyBtn.classList.add("saved");
+        fetchElevenVoices(key);
       } else {
-        apiKeyBtn.textContent = "Set API Key (Required for Cloud)...";
-        apiKeyBtn.className = "status-btn missing";
+        if (label) {
+          label.innerHTML = `<span class="material-symbols-outlined icon-small icon-btn-margin">key</span>Missing API Key (Click to Add)`;
+        }
+        apiKeyBtn.classList.remove("saved");
+        apiKeyBtn.classList.add("missing");
+        elevenVoicesCache = [];
       }
     }
 
@@ -1772,7 +2415,6 @@
       if (updated !== null) {
         localStorage.setItem("elevenlabs_key", updated.trim());
         updateApiKeyStatus();
-        loadElevenLabsVoices();
       }
     });
 
@@ -1786,6 +2428,18 @@
       syncSlider(speedSlider, valSpeed, "elevenlabs_speed");
       updateSettingsVisibility();
       updateApiKeyStatus();
+
+      // Mobile: start with drawer closed so the workspace is full-width
+      if (isMobileLayout()) setSidebarOpen(false);
+
+      const accentPicker = document.getElementById("accent-color-picker");
+      if (accentPicker) {
+        accentPicker.value = customAccentColor || getDefaultAccentForResolvedTheme();
+        accentPicker.addEventListener("input", (e) => applyAccentColor(e.target.value));
+      }
+      document.getElementById("accent-color-reset")?.addEventListener("click", () => {
+        applyAccentColor("");
+      });
 
       displayInput.style.fontSize = `${currentFontSize}px`;
       fontDisplay.textContent = `${currentFontSize}px`;
@@ -1809,9 +2463,27 @@
         loadBrowserVoices();
       }
 
+      // Keep layout height in sync with mobile browser chrome / keyboard when possible
+      const setAppHeight = () => {
+        const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        document.documentElement.style.setProperty("--app-height", `${h}px`);
+        if (isMobileLayout()) {
+          document.body.style.height = `${h}px`;
+        } else {
+          document.body.style.height = "";
+        }
+      };
+      setAppHeight();
+      window.addEventListener("resize", setAppHeight);
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", setAppHeight);
+      }
+
       renderTopics();
       renderSoundButtons();
       updatePredictions();
+      // Avoid auto-focus on mobile (opens keyboard immediately)
+      if (!isMobileLayout()) focusDisplayInput();
     }
 
     window.addEventListener("DOMContentLoaded", init);
