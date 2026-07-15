@@ -1,0 +1,1557 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AAC Chat - Accessible Communication</title>
+  <!-- Google Material Symbols Outlined Font -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <style>
+    :root, :root[data-theme="dark"] { --bg-main: #131314; --bg-surface: #1e1f20; --bg-surface-hover: #282a2c; --bg-surface-active: #333537; --border: #333537; --accent: #8ab4f8; --accent-hover: #aecbfa; --text: #f1f3f4; --text-secondary: #9aa0a6; --display-bg: #1e1f20; --key-bg: #282a2c; --key-hover: #333537; --key-active: #444746; --danger: #f2b8b5; --danger-bg: #601410; --shadow: rgba(0, 0, 0, 0.4); --icon-fill: 0; --icon-wght: 400; --icon-grad: 0; --icon-opsz: 24; color-scheme: dark; }
+      :root[data-theme="light"] { --bg-main: #f0f4f9; --bg-surface: #ffffff; --bg-surface-hover: #e9eef6; --bg-surface-active: #dde3ea; --border: #c4c7c5; --accent: #0b57d0; --accent-hover: #0842a0; --text: #1f1f1f; --text-secondary: #444746; --display-bg: #ffffff; --key-bg: #e9eef6; --key-hover: #dde3ea; --key-active: #c4c7c5; --danger: #b3261e; --danger-bg: #f9dedc; --shadow: rgba(0, 0, 0, 0.15); color-scheme: light; }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+      ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+
+    body { background-color: var(--bg-main); color: var(--text); display: flex; height: 100vh; overflow: hidden; font-size: 15px; transition: background-color 0.2s ease, color 0.2s ease; }
+
+    /* Google Material Symbols Default Styling (Scaled Up) */
+    .material-symbols-outlined, .nav-icon, .topic-icon, .icon-btn, .search-icon, .toggle-arrow, .icon-studio-item, .ico { font-family: 'Material Symbols Outlined' !important; font-weight: normal; font-style: normal; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; display: inline-block; white-space: nowrap; word-wrap: normal; direction: ltr; -webkit-font-feature-settings: 'liga'; -webkit-font-smoothing: antialiased; font-variation-settings: 'FILL' var(--icon-fill, 0), 'wght' var(--icon-wght, 400), 'GRAD' var(--icon-grad, 0), 'opsz' var(--icon-opsz, 24); vertical-align: middle; flex-shrink: 0; user-select: none; }
+
+    /* ==================== LEFT SIDEBAR ==================== */
+    .sidebar { width: 270px; background-color: var(--bg-surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 100; flex-shrink: 0; user-select: none; position: relative; height: 100vh; overflow: hidden; }
+      .sidebar.collapsed { width: 64px; }
+
+    .sidebar-header { display: flex; align-items: center; padding: 10px 14px; gap: 12px; min-height: 56px; flex-shrink: 0; }
+    .icon-btn { background: none; border: none; color: var(--text); cursor: pointer; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s; }
+      .icon-btn:hover { background-color: var(--bg-surface-hover); }
+
+    .logo-text { font-size: 19px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; opacity: 1; transition: opacity 0.2s; }
+    .sidebar.collapsed .logo-text { opacity: 0; pointer-events: none; }
+
+    .sidebar-nav { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0 6px; display: flex; flex-direction: column; gap: 4px; }
+
+    .accordion-section { display: flex; flex-direction: column; flex-shrink: 0; transition: all 0.2s; }
+    #section-history.open { flex: 1; min-height: 0; }
+
+    .nav-accordion-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 8px; cursor: pointer; color: var(--text); font-size: 16px; font-weight: 600; transition: all 0.2s; white-space: nowrap; min-height: 44px; flex-shrink: 0; }
+      .nav-accordion-header:hover { background-color: var(--bg-surface-hover); }
+    .nav-left-content { display: flex; align-items: center; gap: 12px; overflow: hidden; flex: 1; }
+    .nav-icon { font-size: 24px; width: 26px; text-align: center; }
+    .nav-label { flex: 1; overflow: hidden; text-overflow: ellipsis; opacity: 1; transition: opacity 0.2s; }
+    .sidebar.collapsed .nav-label { opacity: 0; pointer-events: none; }
+
+    .nav-actions { display: flex; align-items: center; gap: 4px; }
+    .nav-action-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 4px; border-radius: 6px; transition: color 0.2s, background 0.2s; display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; }
+      .nav-action-btn:hover { background-color: var(--bg-surface-active); color: var(--text); }
+    .sidebar.collapsed .nav-actions { display: none; }
+
+    .toggle-arrow { font-size: 20px; color: var(--text-secondary); transition: transform 0.2s; }
+    .accordion-section.open .toggle-arrow { transform: rotate(180deg); }
+    .sidebar.collapsed .toggle-arrow { display: none; }
+
+    .accordion-content { display: none; flex-direction: column; gap: 4px; padding: 0 0 4px 4px; margin: 0; border: none; overflow: hidden; }
+    .accordion-section.open .accordion-content { display: flex; }
+    .sidebar.collapsed .accordion-content { display: none !important; }
+    #section-history.open .accordion-content { flex: 1; min-height: 0; gap: 2px; }
+
+    /* Topic Items */
+    .topic-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 15px; color: var(--text); transition: background 0.2s; min-height: 38px; justify-content: space-between; }
+      .topic-item:hover { background-color: var(--bg-surface-hover); }
+      .topic-item.active { background-color: var(--bg-surface-active); color: var(--accent); font-weight: 600; }
+    .topic-icon { font-size: 20px; width: 22px; text-align: center; }
+    .topic-actions { display: flex; opacity: 0; transition: opacity 0.2s; }
+    .topic-item:hover .topic-actions { opacity: 1; }
+
+    /* Embedded Settings Controls */
+    .sidebar-setting-group { display: flex; flex-direction: column; gap: 6px; padding: 4px 6px; }
+      .sidebar-setting-group label { font-size: 13px; color: var(--text-secondary); display: flex; justify-content: space-between; font-weight: 600; }
+      .sidebar-setting-group select, .sidebar-setting-group input[type="text"] { background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 8px 10px; border-radius: 8px; font-size: 14px; outline: none; }
+      .sidebar-setting-group input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; height: 16px; }
+
+    .status-btn { background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 8px 10px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; text-align: left; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: 38px; }
+      .status-btn:hover { border-color: var(--accent); background-color: var(--bg-surface-hover); }
+      .status-btn.missing { border-color: var(--danger); color: var(--danger); }
+
+    .font-controls { display: flex; gap: 6px; align-items: center; }
+    .font-btn { flex: 1; background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 6px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; text-align: center; }
+      .font-btn:hover { background-color: var(--key-hover); }
+
+    /* History List */
+    .history-search-box { position: relative; padding: 2px 0 6px 0; margin: 0; flex-shrink: 0; }
+      .history-search-box input { width: 100%; background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 8px 28px 8px 34px; border-radius: 8px; font-size: 14px; outline: none; }
+      .history-search-box .search-icon { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 18px; color: var(--text-secondary); }
+    .history-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding: 0; margin: 0; }
+    .history-item { background-color: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 14px; display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+    .history-item-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; }
+    .history-item-text { font-weight: 500; cursor: pointer; word-break: break-word; flex: 1; font-size: 14px; }
+    .history-item-meta { font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
+    .history-actions { display: flex; gap: 4px; }
+    .history-btn { flex: 1; background: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 4px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 28px; }
+      .history-btn:hover { background: var(--key-hover); }
+      .history-btn.restore { color: var(--accent); border-color: var(--accent); }
+
+    .clear-history-btn { background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 8px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; margin: 4px 0 0 0; text-align: center; flex-shrink: 0; }
+      .clear-history-btn:hover { background: var(--danger-bg); }
+
+    /* Footer & Context Popup */
+    .sidebar-footer { padding: 8px; border-top: 1px solid var(--border); position: relative; flex-shrink: 0; }
+    .gemini-settings-btn { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 8px; cursor: pointer; color: var(--text); font-size: 16px; font-weight: 600; transition: all 0.2s; min-height: 44px; }
+      .gemini-settings-btn:hover { background-color: var(--bg-surface-hover); }
+    .sidebar.collapsed .gemini-settings-btn { justify-content: center; padding: 10px 0; }
+      .sidebar.collapsed .gemini-settings-btn .nav-label { display: none; }
+
+    .gemini-context-popup { position: absolute; bottom: 58px; left: 8px; width: 240px; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 24px var(--shadow); padding: 6px; display: none; flex-direction: column; gap: 4px; z-index: 500; }
+      .gemini-context-popup.open { display: flex; }
+    .sidebar.collapsed .gemini-context-popup { left: 64px; bottom: 8px; width: 220px; }
+
+    .popup-menu-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 15px; color: var(--text); transition: background 0.2s; }
+      .popup-menu-item:hover { background-color: var(--bg-surface-hover); }
+    .popup-divider { height: 1px; background-color: var(--border); margin: 4px 0; }
+
+    /* ==================== MAIN WORKSPACE ==================== */
+    .app-main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 10px; overflow: hidden; height: 100%; }
+
+    .workspace-header { display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-surface); padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); min-height: 52px; flex-shrink: 0; gap: 10px; flex-wrap: wrap; }
+    .topic-title-area { display: flex; align-items: center; gap: 10px; }
+    .active-topic-icon { font-size: 28px; }
+    .active-topic-name { font-size: 19px; font-weight: 700; }
+
+    .workspace-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .tool-btn { background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: all 0.2s; white-space: nowrap; min-height: 36px; }
+      .tool-btn:hover { background-color: var(--key-hover); border-color: var(--text-secondary); }
+      .tool-btn.primary { background-color: var(--accent); color: #fff; border-color: var(--accent); }
+        .tool-btn.primary:hover { background-color: var(--accent-hover); }
+
+    .edit-mode-controls { display: none; align-items: center; gap: 8px; flex-wrap: wrap; }
+      .edit-mode-controls.open { display: flex; }
+
+    .header-stepper-group { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: var(--text-secondary); background: var(--bg-main); padding: 4px 8px; border-radius: 8px; border: 1px solid var(--border); min-height: 36px; }
+    .num-control-wrapper { display: flex; align-items: center; gap: 4px; }
+    .num-control-btn { background: var(--key-bg); border: none; color: var(--text); width: 24px; height: 24px; border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+      .num-control-btn:hover { background: var(--key-hover); }
+    .num-control-val { font-weight: 700; color: var(--text); min-width: 18px; text-align: center; font-size: 14px; }
+
+    /* Text Area & Audio Bar */
+    .textarea-wrapper { flex: 1; display: flex; flex-direction: column; position: relative; min-height: 120px; }
+    .display-textarea { width: 100%; height: 100%; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; line-height: 1.4; color: var(--text); font-size: 32px; font-weight: 500; resize: none; outline: none; white-space: pre-wrap; word-break: break-word; transition: border-color 0.2s; }
+      .display-textarea:focus { border-color: var(--accent); }
+
+    .audio-actions-bar { position: absolute; bottom: 12px; right: 12px; display: none; align-items: center; gap: 8px; background-color: var(--bg-main); border: 1px solid var(--border); padding: 6px 10px; border-radius: 8px; box-shadow: 0 4px 12px var(--shadow); z-index: 20; }
+      .audio-actions-bar.active { display: flex; }
+    .audio-action-btn { background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+      .audio-action-btn:hover { background-color: var(--key-hover); }
+      .audio-action-btn.play { color: var(--accent); border-color: var(--accent); }
+
+    /* Overwrite Banner */
+    .overwrite-banner { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background-color: var(--accent); color: #fff; padding: 8px 16px; border-radius: 8px; font-size: 15px; font-weight: 700; display: none; align-items: center; gap: 10px; box-shadow: 0 4px 16px var(--shadow); z-index: 30; }
+      .overwrite-banner.active { display: flex; }
+    .overwrite-cancel-btn { background: rgba(0,0,0,0.2); border: none; color: #fff; padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
+
+    /* Sound Button Canvas */
+    .sound-canvas { flex: 0 0 auto; max-height: 42vh; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px; display: grid; gap: 6px; padding: 8px; overflow-y: auto; touch-action: none; transition: border-color 0.2s; position: relative; }
+      .sound-canvas.edit-mode { border: 2px dashed var(--accent); }
+
+    @keyframes wiggle {
+      0% { transform: rotate(-1deg) scale(1); }
+      50% { transform: rotate(1deg) scale(1); }
+      100% { transform: rotate(-1deg) scale(1); }
+    }
+
+    .sound-button { position: relative; background-color: var(--key-bg); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; cursor: pointer; user-select: none; transition: all 0.15s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 16px; font-weight: 700; color: #fff; overflow: hidden; width: 100%; height: 56px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+      .sound-button:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 10px var(--shadow); }
+      .sound-button:active { transform: translateY(0); }
+      .sound-button.edit-mode:not(.dragging) { animation: wiggle 0.25s infinite ease-in-out; cursor: grab; padding-left: 32px; }
+      .sound-button.dragging { opacity: 0.8; cursor: grabbing; z-index: 50; transform: scale(1.05); box-shadow: 0 8px 20px var(--shadow); animation: none; }
+      .sound-button.swap-target { border-color: #81c784; box-shadow: 0 0 0 3px rgba(129, 199, 132, 0.4); transform: scale(1.02); }
+      .sound-button.overwrite-target { animation: wiggle 0.4s infinite ease-in-out; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(138, 180, 248, 0.5); }
+
+    .sound-button-icon { font-size: 22px; line-height: 1; pointer-events: none; }
+    .sound-button-label { width: 100%; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; font-size: 15px; font-weight: 700; }
+    .sound-button-edit-btn { position: absolute; left: 6px; top: 50%; transform: translateY(-50%); width: 26px; height: 26px; border: 1px solid rgba(255,255,255,0.4); border-radius: 6px; background-color: rgba(0,0,0,0.5); color: white; font-size: 16px; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 5; }
+    .sound-canvas.edit-mode .sound-button .sound-button-edit-btn { display: flex; }
+    .sound-button-edit-btn:hover { background-color: rgba(0,0,0,0.8); }
+
+    /* Bottom Dock */
+    .bottom-dock { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+    .toolbar { display: flex; gap: 6px; align-items: stretch; min-height: 48px; }
+    .predictions-wrapper { display: flex; flex: 1; gap: 6px; overflow-x: auto; }
+    .key { background-color: var(--key-bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.15s; padding: 0 14px; white-space: nowrap; min-height: 48px; }
+      .key:hover { background-color: var(--key-hover); border-color: var(--text-secondary); }
+      .key:active { background-color: var(--key-active); transform: scale(0.98); }
+      .key.prediction-btn { flex: 1; min-width: 80px; color: var(--accent); font-weight: 700; font-size: 16px; }
+      .key.tts-btn { background-color: var(--accent); color: #fff; border-color: var(--accent); font-weight: 700; min-width: 110px; font-size: 16px; }
+        .key.tts-btn:hover { background-color: var(--accent-hover); }
+      .key.clear-btn { background-color: transparent; color: var(--danger); border-color: var(--danger); min-width: 85px; font-size: 15px; }
+        .key.clear-btn:hover { background-color: var(--danger-bg); }
+
+    /* ==================== MODALS & POPUPS ==================== */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.65); opacity: 0; pointer-events: none; transition: opacity 0.2s ease; z-index: 2000; }
+      .modal-overlay.open { opacity: 1; pointer-events: auto; }
+
+    .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95); background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; display: none; flex-direction: column; gap: 14px; z-index: 2001; min-width: 360px; max-width: 90vw; max-height: 85vh; overflow-y: auto; box-shadow: 0 12px 36px var(--shadow); transition: transform 0.2s ease; }
+      .modal.open { display: flex; transform: translate(-50%, -50%) scale(1); }
+    .modal-title { font-size: 20px; font-weight: 700; color: var(--text); }
+    .modal-input { background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 10px 12px; border-radius: 8px; font-size: 15px; outline: none; width: 100%; }
+      .modal-input:focus { border-color: var(--accent); }
+
+    .modal-color-picker { display: flex; gap: 8px; flex-wrap: wrap; }
+    .color-option { width: 32px; height: 32px; border: 2px solid transparent; border-radius: 50%; cursor: pointer; transition: transform 0.2s; }
+      .color-option:hover { transform: scale(1.15); }
+      .color-option.selected { border-color: #fff; box-shadow: 0 0 0 2px var(--accent); }
+
+    /* Elegant Google Fonts Icon Studio */
+    .icon-studio-search { position: relative; margin-bottom: 6px; }
+      .icon-studio-search input { width: 100%; background: var(--bg-main); border: 1px solid var(--border); padding: 10px 12px 10px 38px; border-radius: 8px; color: var(--text); font-size: 15px; outline: none; }
+      .icon-studio-search .search-ico { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 20px; }
+
+    .icon-studio-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; max-height: 240px; overflow-y: auto; padding: 8px; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; }
+    .icon-studio-item { font-size: 32px; padding: 8px; text-align: center; border-radius: 8px; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; display: flex; align-items: center; justify-content: center; }
+      .icon-studio-item:hover { background-color: var(--key-hover); transform: scale(1.15); }
+      .icon-studio-item.selected { background-color: var(--bg-surface-active); border-color: var(--accent); transform: scale(1.1); }
+
+    .icon-studio-controls { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--text-secondary); margin-top: 4px; font-weight: 500; }
+    .icon-size-btns { display: flex; gap: 4px; }
+    .size-btn { background: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
+      .size-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    .modal-buttons { display: flex; gap: 8px; margin-top: 6px; }
+    .modal-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 15px; transition: background 0.2s; text-align: center; }
+      .modal-btn.primary { background-color: var(--accent); color: #fff; }
+        .modal-btn.primary:hover { background-color: var(--accent-hover); }
+      .modal-btn.secondary { background-color: var(--key-bg); color: var(--text); border: 1px solid var(--border); }
+        .modal-btn.secondary:hover { background-color: var(--key-hover); }
+      .modal-btn.danger { background-color: transparent; color: var(--danger); border: 1px solid var(--danger); }
+        .modal-btn.danger:hover { background-color: var(--danger-bg); }
+
+    /* Voices Drawer */
+    .voices-panel { position: fixed; top: 0; right: -380px; width: 360px; height: 100vh; background-color: var(--bg-surface); border-left: 1px solid var(--border); box-shadow: -8px 0 24px var(--shadow); transition: right 0.3s ease; padding: 16px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; z-index: 2500; }
+      .voices-panel.open { right: 0; }
+    .voice-list { display: none; flex-direction: column; gap: 4px; }
+      .voice-list.active { display: flex; }
+    .voice-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 8px; cursor: pointer; transition: background 0.2s; font-size: 14px; border: 1px solid transparent; font-weight: 500; }
+      .voice-item:hover { background-color: var(--bg-surface-hover); }
+      .voice-item.selected { background-color: var(--bg-surface-active); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .voice-preview-btn { background: var(--key-bg); border: 1px solid var(--border); color: var(--text); font-size: 12px; cursor: pointer; padding: 4px 8px; border-radius: 6px; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <!-- ==================== LEFT SIDEBAR ==================== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <button class="icon-btn" id="toggle-sidebar-btn" title="Toggle Sidebar">
+        <span class="material-symbols-outlined">menu</span>
+      </button>
+      <span class="logo-text">AAC Chat</span>
+    </div>
+
+    <div class="sidebar-nav">
+      <!-- 1. Topics Accordion -->
+      <div class="accordion-section open" id="section-topics">
+        <div class="nav-accordion-header" id="header-topics">
+          <div class="nav-left-content">
+            <span class="nav-icon" id="nav-icon-topics">folder</span>
+            <span class="nav-label" id="nav-label-topics">Topics</span>
+          </div>
+          <div class="nav-actions">
+            <button class="nav-action-btn" id="add-topic-sidebar-btn" title="Add New Topic">
+              <span class="material-symbols-outlined" style="font-size: 20px;">add</span>
+            </button>
+            <button class="nav-action-btn edit-nav-meta-btn" data-nav-id="topics" title="Edit Label/Icon">
+              <span class="material-symbols-outlined" style="font-size: 18px;">settings</span>
+            </button>
+          </div>
+          <span class="toggle-arrow">expand_more</span>
+        </div>
+        <div class="accordion-content" id="topics-list"></div>
+      </div>
+
+      <!-- 2. Chat Settings Accordion -->
+      <div class="accordion-section" id="section-chat">
+        <div class="nav-accordion-header" id="header-chat">
+          <div class="nav-left-content">
+            <span class="nav-icon" id="nav-icon-chat">tune</span>
+            <span class="nav-label" id="nav-label-chat">Chat Settings</span>
+          </div>
+          <div class="nav-actions">
+            <button class="nav-action-btn edit-nav-meta-btn" data-nav-id="chat" title="Edit Label/Icon">
+              <span class="material-symbols-outlined" style="font-size: 18px;">settings</span>
+            </button>
+          </div>
+          <span class="toggle-arrow">expand_more</span>
+        </div>
+        <div class="accordion-content">
+          <div class="sidebar-setting-group">
+            <label>Font Size <span id="font-display">32px</span></label>
+            <div class="font-controls">
+              <button class="font-btn" id="font-down" type="button">A-</button>
+              <button class="font-btn" id="font-up" type="button">A+</button>
+            </div>
+          </div>
+          <div class="sidebar-setting-group" id="group-browser-voice" style="display: none;">
+            <label>Browser Voice</label>
+            <button class="status-btn" id="open-browser-voices" type="button">
+              <span id="selected-browser-name" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Select Voice...</span>
+              <span class="material-symbols-outlined" style="font-size:18px;">chevron_right</span>
+            </button>
+          </div>
+          <div id="group-eleven-settings" style="display: flex; flex-direction: column; gap: 6px;">
+            <div class="sidebar-setting-group">
+              <label>ElevenLabs Voice</label>
+              <button class="status-btn" id="open-eleven-voices" type="button">
+                <span id="selected-eleven-name" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Select Voice...</span>
+                <span class="material-symbols-outlined" style="font-size:18px;">chevron_right</span>
+              </button>
+            </div>
+            <div class="sidebar-setting-group">
+              <label><span>Stability</span><span id="val-stability">0.50</span></label>
+              <input type="range" id="stability-slider" min="0.0" max="1.0" step="0.05" value="0.5">
+            </div>
+            <div class="sidebar-setting-group">
+              <label><span>Similarity</span><span id="val-similarity">0.75</span></label>
+              <input type="range" id="similarity-slider" min="0.0" max="1.0" step="0.05" value="0.75">
+            </div>
+          </div>
+          <div class="sidebar-setting-group">
+            <label><span>Volume Gain</span><span id="val-volume">3.0</span></label>
+            <input type="range" id="volume-slider" min="1" max="5" step="0.5" value="3">
+          </div>
+          <div class="sidebar-setting-group">
+            <label><span>Speech Speed</span><span id="val-speed">1.0</span></label>
+            <input type="range" id="speed-slider" min="0.5" max="2.0" step="0.1" value="1.0">
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. History Accordion -->
+      <div class="accordion-section" id="section-history">
+        <div class="nav-accordion-header" id="header-history">
+          <div class="nav-left-content">
+            <span class="nav-icon" id="nav-icon-history">history</span>
+            <span class="nav-label" id="nav-label-history">History</span>
+          </div>
+          <div class="nav-actions">
+            <button class="nav-action-btn edit-nav-meta-btn" data-nav-id="history" title="Edit Label/Icon">
+              <span class="material-symbols-outlined" style="font-size: 18px;">settings</span>
+            </button>
+          </div>
+          <span class="toggle-arrow">expand_more</span>
+        </div>
+        <div class="accordion-content">
+          <div class="history-search-box">
+            <span class="search-icon">search</span>
+            <input type="text" id="history-search-input" placeholder="Search speech history...">
+          </div>
+          <div class="history-list" id="audio-history"></div>
+          <button class="clear-history-btn" id="clear-history-btn" type="button">Clear All History</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer with Context Popup -->
+    <div class="sidebar-footer">
+      <div class="gemini-settings-btn" id="footer-settings-btn" title="Settings & Theme">
+        <div class="nav-left-content">
+          <span class="nav-icon" id="nav-icon-settings">settings</span>
+          <span class="nav-label" id="nav-label-settings">Settings</span>
+        </div>
+        <span class="material-symbols-outlined" style="font-size: 20px; color: var(--text-secondary);">more_vert</span>
+      </div>
+
+      <div class="gemini-context-popup" id="gemini-context-popup">
+        <div class="popup-menu-item" onclick="openModal('modal-theme'); closePopup();">
+          <span class="material-symbols-outlined" style="font-size: 20px;">palette</span><span>Theme Appearance</span>
+        </div>
+        <div class="popup-menu-item" onclick="openModal('modal-engine'); closePopup();">
+          <span class="material-symbols-outlined" style="font-size: 20px;">record_voice_over</span><span>Voice Engine & API</span>
+        </div>
+        <div class="popup-divider"></div>
+        <div class="popup-menu-item edit-nav-meta-btn" data-nav-id="settings" onclick="closePopup();">
+          <span class="material-symbols-outlined" style="font-size: 20px;">edit</span><span>Customize Footer Icon</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ==================== MAIN WORKSPACE ==================== -->
+  <main class="app-main">
+    <div class="workspace-header">
+      <div class="topic-title-area">
+        <span class="active-topic-icon material-symbols-outlined" id="header-topic-icon">chat</span>
+        <span class="active-topic-name" id="header-topic-name">Default Topic</span>
+      </div>
+
+      <div class="workspace-actions">
+        <button class="tool-btn" id="edit-mode-btn" type="button">
+          <span class="material-symbols-outlined" style="font-size: 18px;">edit</span> Edit Buttons
+        </button>
+
+        <div class="edit-mode-controls" id="edit-mode-controls">
+          <div class="header-stepper-group">
+            <span>Cols:</span>
+            <div class="num-control-wrapper">
+              <button class="num-control-btn" type="button" onclick="stepGridDimensions(-1, 0)">-</button>
+              <span class="num-control-val" id="header-cols-val">4</span>
+              <button class="num-control-btn" type="button" onclick="stepGridDimensions(1, 0)">+</button>
+            </div>
+          </div>
+          <div class="header-stepper-group">
+            <span>Rows:</span>
+            <div class="num-control-wrapper">
+              <button class="num-control-btn" type="button" onclick="stepGridDimensions(0, -1)">-</button>
+              <span class="num-control-val" id="header-rows-val">2</span>
+              <button class="num-control-btn" type="button" onclick="stepGridDimensions(0, 1)">+</button>
+            </div>
+          </div>
+          <button class="tool-btn primary" id="save-edit-btn" type="button">Save</button>
+          <button class="tool-btn" id="cancel-edit-btn" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overwrite Mode Banner -->
+    <div class="overwrite-banner" id="overwrite-banner">
+      <span class="material-symbols-outlined" style="font-size: 20px;">touch_app</span>
+      <span>Click any button on the grid below to overwrite its audio & label!</span>
+      <button class="overwrite-cancel-btn" id="cancel-overwrite-btn" type="button">Cancel</button>
+    </div>
+
+    <!-- Sound Button Canvas -->
+    <div class="sound-canvas" id="sound-canvas"></div>
+
+    <!-- Bottom Dock: Predictions & Toolbar -->
+    <div class="bottom-dock">
+      <div class="toolbar" id="toolbar">
+        <button class="key tts-btn" id="speak-btn" type="button">
+          <span class="material-symbols-outlined" style="font-size: 20px;">volume_up</span> Speak
+        </button>
+        <div class="predictions-wrapper">
+          <button class="key prediction-btn" type="button"></button>
+          <button class="key prediction-btn" type="button"></button>
+          <button class="key prediction-btn" type="button"></button>
+          <button class="key prediction-btn" type="button"></button>
+          <button class="key prediction-btn" type="button"></button>
+          <button class="key prediction-btn" type="button"></button>
+        </div>
+        <button class="key clear-btn" id="clear-btn" type="button">
+          <span class="material-symbols-outlined" style="font-size: 20px;">delete</span> Clear
+        </button>
+      </div>
+    </div>
+
+    <!-- Text Area Wrapper -->
+    <div class="textarea-wrapper">
+      <textarea class="display-textarea" id="display-input" spellcheck="true" autocomplete="off" autocapitalize="sentences" placeholder="Type message here..."></textarea>
+
+      <div class="audio-actions-bar" id="generated-audio-actions">
+        <button class="audio-action-btn play" id="ta-replay-btn" type="button">
+          <span class="material-symbols-outlined" style="font-size: 18px;">play_arrow</span> Replay Audio
+        </button>
+        <button class="audio-action-btn" id="ta-assign-btn" type="button">
+          <span class="material-symbols-outlined" style="font-size: 18px;">push_pin</span> Assign to Button
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== MODALS & POPUPS ==================== -->
+  <div class="modal-overlay" id="modal-overlay"></div>
+
+  <!-- Theme Modal -->
+  <div class="modal" id="modal-theme">
+    <div class="modal-title">Appearance Theme</div>
+    <div style="display: flex; gap: 8px;">
+      <button class="modal-btn secondary" onclick="applyTheme('light'); closeModals();"><span class="material-symbols-outlined" style="font-size:18px; margin-right:6px;">light_mode</span>Light</button>
+      <button class="modal-btn secondary" onclick="applyTheme('dark'); closeModals();"><span class="material-symbols-outlined" style="font-size:18px; margin-right:6px;">dark_mode</span>Dark</button>
+      <button class="modal-btn secondary" onclick="applyTheme('system'); closeModals();"><span class="material-symbols-outlined" style="font-size:18px; margin-right:6px;">computer</span>System</button>
+    </div>
+    <div class="modal-buttons"><button class="modal-btn secondary" onclick="closeModals()">Close</button></div>
+  </div>
+
+  <!-- Voice Engine Modal -->
+  <div class="modal" id="modal-engine">
+    <div class="modal-title">Voice Engine & API Key</div>
+    <div class="sidebar-setting-group">
+      <label>Voice Engine Model</label>
+      <select id="model-select">
+        <option value="eleven_v3">Eleven v3</option>
+        <option value="eleven_multilingual_v2">Eleven Multilingual v2</option>
+        <option value="eleven_flash_v2">Eleven Flash v2</option>
+        <option value="browser_tts">Local Browser (Utterance)</option>
+      </select>
+    </div>
+    <div class="sidebar-setting-group">
+      <label>ElevenLabs API Key</label>
+      <button id="api-key-btn" class="status-btn missing" type="button">Show/Edit API Key</button>
+    </div>
+    <div class="modal-buttons"><button class="modal-btn primary" onclick="closeModals()">Done</button></div>
+  </div>
+
+  <!-- Assign Choice Modal -->
+  <div class="modal" id="modal-assign-choice">
+    <div class="modal-title">Assign Speech Audio</div>
+    <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.4;">Would you like to create a brand new button on this topic, or overwrite an existing button on the grid?</p>
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+      <button class="status-btn" style="padding: 12px; font-weight: 700; color: var(--accent); border-color: var(--accent);" id="choice-create-new-btn"><span class="material-symbols-outlined" style="font-size:20px;">auto_sparkles</span> Create New Button</button>
+      <button class="status-btn" style="padding: 12px; font-weight: 700;" id="choice-overwrite-btn"><span class="material-symbols-outlined" style="font-size:20px;">refresh</span> Overwrite Existing Button</button>
+    </div>
+    <div class="modal-buttons"><button class="modal-btn secondary" onclick="closeModals()">Cancel</button></div>
+  </div>
+
+  <!-- Edit Side Panel Nav Item Modal -->
+  <div class="modal" id="nav-edit-modal">
+    <div class="modal-title">Edit Menu Item</div>
+    <div class="sidebar-setting-group">
+      <label>Label Name</label>
+      <input type="text" id="nav-name-input" class="modal-input" maxlength="25">
+    </div>
+    <div class="sidebar-setting-group">
+      <label>Material Symbol Icon</label>
+      <input type="text" id="nav-icon-input" class="modal-input" maxlength="30" style="margin-bottom: 4px;">
+      <button class="status-btn" onclick="openIconStudio('nav-icon-input')" style="justify-content: center;"><span class="material-symbols-outlined" style="font-size:18px; margin-right:6px;">search</span> Open Icon Studio Picker...</button>
+    </div>
+    <div class="modal-buttons">
+      <button class="modal-btn primary" id="save-nav-edit-btn" type="button">Save</button>
+      <button class="modal-btn secondary" onclick="closeModals()" type="button">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Edit Topic Meta Modal -->
+  <div class="modal" id="topic-edit-modal">
+    <div class="modal-title">Edit Topic Settings</div>
+    <div class="sidebar-setting-group">
+      <label>Topic Name</label>
+      <input type="text" id="topic-name-input" class="modal-input" placeholder="Topic name" maxlength="30">
+    </div>
+    <div class="sidebar-setting-group">
+      <label>Material Symbol Icon</label>
+      <input type="text" id="topic-icon-input" class="modal-input" maxlength="30" style="margin-bottom: 4px;">
+      <button class="status-btn" onclick="openIconStudio('topic-icon-input')" style="justify-content: center;"><span class="material-symbols-outlined" style="font-size:18px; margin-right:6px;">search</span> Open Icon Studio Picker...</button>
+    </div>
+    <div class="sidebar-setting-group">
+      <label>Color Accent</label>
+      <div class="modal-color-picker" id="topic-color-picker"></div>
+    </div>
+    <div class="modal-buttons">
+      <button class="modal-btn danger" id="delete-topic-btn" type="button">Delete Topic</button>
+      <button class="modal-btn primary" id="save-topic-meta-btn" type="button">Save</button>
+      <button class="modal-btn secondary" onclick="closeModals()" type="button">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Edit Sound Button Modal -->
+  <div class="modal" id="button-edit-modal">
+    <div class="modal-title">Edit Sound Button</div>
+    <div class="sidebar-setting-group">
+      <label>Button Label</label>
+      <input type="text" id="button-label-input" class="modal-input" placeholder="Button label" maxlength="30">
+    </div>
+    <div class="sidebar-setting-group">
+      <label>Material Symbol Icon (Optional)</label>
+      <input type="text" id="button-icon-input" class="modal-input" placeholder="e.g. chat, volume_up, home" maxlength="30" style="margin-bottom: 4px;">
+      <button class="status-btn" onclick="openIconStudio('button-icon-input')" style="justify-content: center;"><span class="material-symbols-outlined" style="font-size:18px; margin-right:6px;">search</span> Open Icon Studio Picker...</button>
+    </div>
+    <div class="sidebar-setting-group">
+      <label>Button Color</label>
+      <div class="modal-color-picker" id="button-color-picker"></div>
+    </div>
+    <div class="modal-buttons">
+      <button class="modal-btn danger" id="delete-button-edit" type="button">Delete</button>
+      <button class="modal-btn primary" id="save-button-edit" type="button">Save</button>
+      <button class="modal-btn secondary" onclick="closeModals()" type="button">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Google Fonts Icon Studio Modal -->
+  <div class="modal" id="icon-studio-modal" style="min-width: 480px; max-width: 640px;">
+    <div class="modal-title">Google Fonts Material Symbols Studio</div>
+    <div class="icon-studio-search">
+      <span class="search-ico material-symbols-outlined">search</span>
+      <input type="text" id="icon-search-input" placeholder="Search 3,000+ symbols (e.g. medical, school, water, happy, chat)...">
+    </div>
+
+    <!-- Live Google Fonts Customization Controls -->
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; background: var(--bg-main); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; color: var(--text-secondary); font-weight: 500;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span>Fill Style (FILL)</span>
+        <button class="size-btn" id="studio-fill-btn" type="button">Outlined (0)</button>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span>Weight (<span id="studio-val-wght">400</span>)[cite: 1]</span>
+        <input type="range" id="studio-wght-slider" min="100" max="700" step="100" value="400" style="width: 80px;">
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span>Grade (<span id="studio-val-grad">0</span>)[cite: 1]</span>
+        <input type="range" id="studio-grad-slider" min="-50" max="200" step="50" value="0" style="width: 80px;">
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span>Optical Size (<span id="studio-val-opsz">24</span>)[cite: 1]</span>
+        <input type="range" id="studio-opsz-slider" min="20" max="48" step="4" value="24" style="width: 80px;">
+      </div>
+    </div>
+
+    <div class="icon-studio-grid" id="icon-studio-grid"></div>
+    <div class="icon-studio-controls">
+      <div class="icon-size-btns">
+        <span>Size Preview:</span>
+        <button class="size-btn" onclick="setStudioIconSize(20, this)">20px</button>
+        <button class="size-btn active" onclick="setStudioIconSize(28, this)">28px</button>
+        <button class="size-btn" onclick="setStudioIconSize(36, this)">36px</button>
+        <button class="size-btn" onclick="setStudioIconSize(44, this)">44px</button>
+      </div>
+      <span id="icon-studio-status" style="font-weight: 600; color: var(--accent);">Select an icon</span>
+    </div>
+    <div class="modal-buttons">
+      <button class="modal-btn primary" id="confirm-icon-studio-btn" type="button">Select & Apply Style</button>
+      <button class="modal-btn secondary" onclick="closeModals()" type="button">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Voices Panel -->
+  <div class="voices-panel" id="voices-panel">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+      <h2 style="font-size: 18px; font-weight: 700;">Select Voice</h2>
+      <button class="icon-btn" onclick="document.getElementById('voices-panel').classList.remove('open')" type="button">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div id="voice-list-browser" class="voice-list"></div>
+    <div id="voice-list-eleven" class="voice-list"></div>
+  </div>
+
+  <script>
+    // ==================== STATE & CONFIG ====================
+    const COLOR_PALETTE = ["#3f3f4e", "#2e7d32", "#d32f2f", "#1976d2", "#f57c00", "#c2185b", "#512da8", "#00838f", "#4a90e2", "#8e24aa"];
+    const DEFAULT_GRID_COLS = 4;
+    const DEFAULT_GRID_ROWS = 2;
+    const defaultStarters = ["Hey!", "What?", "Yes!", "No!", "I don't know", "Hello", "Thank you", "Please", "Help", "Good morning"];
+    const previewText = "Hello! This is an AAC voice preview.";
+
+    // Emoji to Google Material Symbols automatic migration map
+    const EMOJI_TO_SYMBOL = {
+      "📁": "folder", "💬": "chat", "🕒": "history", "⚙️": "settings", "☰": "menu", "▼": "expand_more",
+      "❯": "chevron_right", "🔍": "search", "🎨": "palette", "🗣️": "record_voice_over", "✎": "edit",
+      "👉": "touch_app", "🔊": "volume_up", "▶": "play_arrow", "📌": "push_pin", "🗑️": "delete",
+      "🗑": "delete", "☀️": "light_mode", "🌙": "dark_mode", "💻": "computer", "✨": "auto_sparkles",
+      "🔄": "refresh", "⏳": "hourglass_empty", "↩": "undo", "⭐": "star", "🏠": "home",
+      "🍔": "restaurant", "🍕": "local_pizza", "☕": "local_cafe", "🚗": "directions_car",
+      "✈️": "flight", "🎮": "sports_esports", "🩺": "medical_services", "💊": "medication",
+      "🛒": "shopping_cart", "🎵": "music_note", "💡": "lightbulb", "🐾": "pets", "📞": "call",
+      "❤️": "favorite", "😊": "sentiment_satisfied", "😢": "sentiment_dissatisfied",
+      "😡": "sentiment_very_dissatisfied", "😴": "bed", "❗": "priority_high", "❓": "help",
+      "🔥": "local_fire_department", "🌟": "workspace_premium", "🎉": "celebration", "👀": "visibility",
+      "👂": "hearing", "🧠": "psychology", "⚡": "bolt", "🏆": "trophy", "📝": "edit", "🔑": "key",
+      "🚶": "directions_walk", "🏃": "directions_run", "✋": "back_hand", "👍": "thumb_up", "👎": "thumb_down"
+    };
+
+    // Built-in fallback database of common Material Symbols
+    const INITIAL_ICONS = [
+      "chat", "folder", "history", "settings", "volume_up", "home", "star", "restaurant", "local_pizza",
+      "local_cafe", "directions_car", "flight", "sports_esports", "medical_services", "medication",
+      "shopping_cart", "music_note", "lightbulb", "pets", "call", "favorite", "sentiment_satisfied",
+      "sentiment_dissatisfied", "sentiment_very_dissatisfied", "bed", "priority_high", "help",
+      "local_fire_department", "auto_sparkles", "workspace_premium", "celebration", "visibility",
+      "hearing", "psychology", "bolt", "trophy", "edit", "push_pin", "delete", "key", "directions_walk",
+      "directions_run", "back_hand", "thumb_up", "thumb_down", "work", "school", "family_restroom",
+      "water_drop", "sunny", "nightlight", "palette", "mic", "translate", "accessible", "blind", "deaf",
+      "assistive_tech", "emergency", "hospital", "toothbrush", "soap", "bathtub", "check_circle", "cancel"
+    ];
+
+    let ALL_SYMBOLS = [...INITIAL_ICONS];
+    let isFetchingSymbols = false;
+
+    // Dynamically fetch the complete Google Material Symbols Outlined library (3,000+ icons)
+    function fetchCompleteSymbolLibrary() {
+      if (isFetchingSymbols) return;
+      isFetchingSymbols = true;
+      fetch("https://raw.githubusercontent.com/google/material-design-icons/master/variablefont/MaterialSymbolsOutlined%5BFILL%2CGRAD%2Copsz%2Cwght%5D.codepoints")
+        .then(res => res.text())
+        .then(text => {
+          const lines = text.split("\n");
+          const icons = [];
+          lines.forEach(line => {
+            const parts = line.trim().split(" ");
+            if (parts[0]) icons.push(parts[0]);
+          });
+          if (icons.length > 0) {
+            ALL_SYMBOLS = icons;
+            if (document.getElementById("icon-studio-modal").classList.contains("open")) {
+              renderIconStudioGrid(document.getElementById("icon-search-input").value);
+            }
+          }
+        })
+        .catch(e => console.log("Using local symbols fallback library.", e));
+    }
+
+    // DOM Elements
+    const sidebar = document.getElementById("sidebar");
+    const displayInput = document.getElementById("display-input");
+    const predBtns = document.querySelectorAll(".prediction-btn");
+    const soundCanvas = document.getElementById("sound-canvas");
+    const editModeBtn = document.getElementById("edit-mode-btn");
+    const editModeControls = document.getElementById("edit-mode-controls");
+    const modalOverlay = document.getElementById("modal-overlay");
+    const speakBtn = document.getElementById("speak-btn");
+    const audioActionsBar = document.getElementById("generated-audio-actions");
+
+    // State Variables
+    let predTimeout;
+    let activeBrowserVoiceIndex = localStorage.getItem("aac_browser_voice_index") || "";
+    let activeElevenVoiceId = localStorage.getItem("elevenlabs_voice") || "";
+    let currentFontSize = parseInt(localStorage.getItem("aac_font_size"), 10) || 32;
+    let currentTheme = localStorage.getItem("aac_theme") || "system";
+
+    // Google Fonts Customization State[cite: 1]
+    let iconFill = parseInt(localStorage.getItem("aac_icon_fill"), 10) || 0;
+    let iconWght = parseInt(localStorage.getItem("aac_icon_wght"), 10) || 400;
+    let iconGrad = parseInt(localStorage.getItem("aac_icon_grad"), 10) || 0;
+    let iconOpsz = parseInt(localStorage.getItem("aac_icon_opsz"), 10) || 24;
+
+    let targetStudioInputId = null;
+    let selectedStudioIcon = "chat";
+    let previousModalId = null;
+    let editState = { isEditing: false, draggingId: null, dragOverId: null, targetTopicId: null, targetButtonId: null, isOverwriting: false, overwriteAudio: null };
+
+    // ==================== MODAL CONTROLLER (THE CRITICAL FIX) ====================
+    function openModal(modalId) {
+      const currentOpen = document.querySelector(".modal.open");
+      if (currentOpen && currentOpen.id !== "icon-studio-modal" && modalId === "icon-studio-modal") {
+        previousModalId = currentOpen.id;
+      }
+      document.querySelectorAll(".modal").forEach(m => m.classList.remove("open"));
+      const target = document.getElementById(modalId);
+      if (target) {
+        target.classList.add("open");
+        modalOverlay.classList.add("open");
+      }
+    }
+
+    function closeModals() {
+      document.querySelectorAll(".modal").forEach(m => m.classList.remove("open"));
+      if (modalOverlay) modalOverlay.classList.remove("open");
+      previousModalId = null;
+    }
+
+    function closePopup() {
+      const popup = document.getElementById("gemini-context-popup");
+      if (popup) popup.classList.remove("open");
+    }
+
+    if (modalOverlay) modalOverlay.addEventListener("click", closeModals);
+
+    // ==================== ICON STUDIO LOGIC ====================
+    function applyGlobalIconStyles() {
+      document.documentElement.style.setProperty("--icon-fill", iconFill);
+      document.documentElement.style.setProperty("--icon-wght", iconWght);
+      document.documentElement.style.setProperty("--icon-grad", iconGrad);
+      document.documentElement.style.setProperty("--icon-opsz", iconOpsz);
+
+      const fillBtn = document.getElementById("studio-fill-btn");
+      if (fillBtn) fillBtn.textContent = iconFill ? "Filled (1)" : "Outlined (0)";
+      document.getElementById("studio-wght-slider").value = iconWght;
+      document.getElementById("studio-val-wght").textContent = iconWght;
+      document.getElementById("studio-grad-slider").value = iconGrad;
+      document.getElementById("studio-val-grad").textContent = iconGrad;
+      document.getElementById("studio-opsz-slider").value = iconOpsz;
+      document.getElementById("studio-val-opsz").textContent = iconOpsz;
+    }
+
+    function openIconStudio(targetInputId) {
+      fetchCompleteSymbolLibrary();
+      targetStudioInputId = targetInputId;
+      const currentVal = document.getElementById(targetInputId)?.value || "chat";
+      selectedStudioIcon = EMOJI_TO_SYMBOL[currentVal] || currentVal;
+      document.getElementById("icon-search-input").value = "";
+      applyGlobalIconStyles();
+      renderIconStudioGrid("");
+      openModal("icon-studio-modal");
+      const status = document.getElementById("icon-studio-status");
+      if (status) status.textContent = `Selected: ${selectedStudioIcon}`;
+    }
+
+    function renderIconStudioGrid(query = "") {
+      const grid = document.getElementById("icon-studio-grid");
+      if (!grid) return;
+      grid.innerHTML = "";
+      const q = query.toLowerCase().trim();
+
+      let listToRender = [];
+      if (!q) {
+        listToRender = ALL_SYMBOLS.slice(0, 140);
+      } else {
+        listToRender = ALL_SYMBOLS.filter(sym => sym.toLowerCase().includes(q) || sym.replace(/_/g, " ").includes(q)).slice(0, 180);
+      }
+
+      if (listToRender.length === 0) {
+        grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 24px; color: var(--text-secondary); font-size: 15px;">No icons found for "${query}"</div>`;
+        return;
+      }
+
+      listToRender.forEach(ico => {
+        const el = document.createElement("div");
+        el.className = "icon-studio-item material-symbols-outlined";
+        if (ico === selectedStudioIcon) el.classList.add("selected");
+        el.textContent = ico;
+        el.title = ico.replace(/_/g, " ");
+        el.addEventListener("click", () => {
+          document.querySelectorAll(".icon-studio-item").forEach(i => i.classList.remove("selected"));
+          el.classList.add("selected");
+          selectedStudioIcon = ico;
+          const status = document.getElementById("icon-studio-status");
+          if (status) status.textContent = `Selected: ${ico}`;
+        });
+        grid.appendChild(el);
+      });
+    }
+
+    function setStudioIconSize(px, btnEl) {
+      document.querySelectorAll(".icon-size-btns .size-btn").forEach(b => b.classList.remove("active"));
+      if (btnEl) btnEl.classList.add("active");
+      document.querySelectorAll(".icon-studio-item").forEach(item => {
+        item.style.fontSize = px + "px";
+      });
+    }
+
+    document.getElementById("icon-search-input").addEventListener("input", (e) => {
+      renderIconStudioGrid(e.target.value);
+    });
+
+    document.getElementById("studio-fill-btn").addEventListener("click", () => {
+      iconFill = iconFill ? 0 : 1;
+      applyGlobalIconStyles();
+    });
+    document.getElementById("studio-wght-slider").addEventListener("input", (e) => {
+      iconWght = parseInt(e.target.value, 10);
+      applyGlobalIconStyles();
+    });
+    document.getElementById("studio-grad-slider").addEventListener("input", (e) => {
+      iconGrad = parseInt(e.target.value, 10);
+      applyGlobalIconStyles();
+    });
+    document.getElementById("studio-opsz-slider").addEventListener("input", (e) => {
+      iconOpsz = parseInt(e.target.value, 10);
+      applyGlobalIconStyles();
+    });
+
+    // The core Select & Apply button handler
+    document.getElementById("confirm-icon-studio-btn").addEventListener("click", () => {
+      if (targetStudioInputId && selectedStudioIcon) {
+        const input = document.getElementById(targetStudioInputId);
+        if (input) {
+          input.value = selectedStudioIcon;
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+      }
+      localStorage.setItem("aac_icon_fill", iconFill);
+      localStorage.setItem("aac_icon_wght", iconWght);
+      localStorage.setItem("aac_icon_grad", iconGrad);
+      localStorage.setItem("aac_icon_opsz", iconOpsz);
+
+      if (previousModalId) {
+        openModal(previousModalId);
+        previousModalId = null;
+      } else {
+        closeModals();
+      }
+    });
+
+    // ==================== TABS & DATA STORE ====================
+    function generateId() { return "id_" + Math.random().toString(36).substr(2, 9); }
+    function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
+
+    function normalizeButton(btn, idx) {
+      if (typeof btn === "string") return { id: generateId(), label: btn, text: btn, color: COLOR_PALETTE[idx % COLOR_PALETTE.length], icon: "" };
+      return {
+        id: btn.id || generateId(),
+        label: btn.label || btn.text || "Button",
+        text: btn.text || btn.label || "Button",
+        color: btn.color || COLOR_PALETTE[idx % COLOR_PALETTE.length],
+        icon: btn.icon || ""
+      };
+    }
+
+    function normalizeTabs(rawTabs) {
+      if (!Array.isArray(rawTabs) || rawTabs.length === 0) {
+        return [{ id: "default_topic", name: "General Chat", icon: "chat", color: COLOR_PALETTE[0], cols: DEFAULT_GRID_COLS, rows: DEFAULT_GRID_ROWS, buttons: defaultStarters.map((s, i) => normalizeButton(s, i)) }];
+      }
+      return rawTabs.map((tab, tIdx) => {
+        let cleanIcon = EMOJI_TO_SYMBOL[tab.icon] || tab.icon || "folder";
+        return {
+          id: tab.id || generateId(),
+          name: tab.name || `Topic ${tIdx + 1}`,
+          icon: cleanIcon,
+          color: tab.color || COLOR_PALETTE[tIdx % COLOR_PALETTE.length],
+          cols: clamp(parseInt(tab.cols) || DEFAULT_GRID_COLS, 1, 8),
+          rows: clamp(parseInt(tab.rows) || DEFAULT_GRID_ROWS, 1, 8),
+          buttons: Array.isArray(tab.buttons) ? tab.buttons.map((b, bIdx) => normalizeButton(b, bIdx)) : []
+        };
+      });
+    }
+
+    let tabs = normalizeTabs(JSON.parse(localStorage.getItem("aac_tabs") || "null"));
+    let activeTabId = localStorage.getItem("aac_active_tab_id") || tabs[0].id;
+
+    function getActiveTab() {
+      let t = tabs.find(x => x.id === activeTabId);
+      if (!t) { t = tabs[0]; activeTabId = t.id; }
+      return t;
+    }
+
+    function saveTabs() {
+      localStorage.setItem("aac_tabs", JSON.stringify(tabs));
+      localStorage.setItem("aac_active_tab_id", activeTabId);
+    }
+
+    function saveHistory(historyArray) { localStorage.setItem("aac_speech_history", JSON.stringify(historyArray)); }
+    function getHistory() { return JSON.parse(localStorage.getItem("aac_speech_history") || "[]"); }
+
+    function saveNavMeta(meta) { localStorage.setItem("aac_nav_meta", JSON.stringify(meta)); }
+    function getNavMeta() {
+      return JSON.parse(localStorage.getItem("aac_nav_meta") || "null") || {
+        topics: { label: "Topics", icon: "folder" },
+        chat: { label: "Chat Settings", icon: "tune" },
+        history: { label: "History", icon: "history" },
+        settings: { label: "Settings", icon: "settings" }
+      };
+    }
+
+    // ==================== THEME & UI META ====================
+    function applyTheme(mode) {
+      currentTheme = mode;
+      localStorage.setItem("aac_theme", mode);
+      if (mode === "system") {
+        const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
+      } else {
+        document.documentElement.setAttribute("data-theme", mode);
+      }
+    }
+
+    function applyNavMetaUI() {
+      const meta = getNavMeta();
+      Object.keys(meta).forEach(key => {
+        const lblEl = document.getElementById(`nav-label-${key}`);
+        const icoEl = document.getElementById(`nav-icon-${key}`);
+        if (lblEl && meta[key].label) lblEl.textContent = meta[key].label;
+        if (icoEl && meta[key].icon) icoEl.textContent = meta[key].icon;
+      });
+    }
+
+    document.querySelectorAll(".edit-nav-meta-btn").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const navId = btn.getAttribute("data-nav-id");
+        const meta = getNavMeta();
+        const item = meta[navId] || { label: navId, icon: "folder" };
+        document.getElementById("nav-name-input").value = item.label;
+        document.getElementById("nav-icon-input").value = item.icon;
+        document.getElementById("save-nav-edit-btn").onclick = () => {
+          meta[navId] = {
+            label: document.getElementById("nav-name-input").value.trim() || navId,
+            icon: document.getElementById("nav-icon-input").value.trim() || "folder"
+          };
+          saveNavMeta(meta);
+          applyNavMetaUI();
+          closeModals();
+        };
+        openModal("nav-edit-modal");
+      });
+    });
+
+    // ==================== TOPICS RENDER ====================
+    function renderTopics() {
+      const listEl = document.getElementById("topics-list");
+      listEl.innerHTML = "";
+      tabs.forEach(tab => {
+        const item = document.createElement("div");
+        item.className = `topic-item ${tab.id === activeTabId ? "active" : ""}`;
+        item.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+            <span class="topic-icon material-symbols-outlined" style="color: ${tab.color};">${tab.icon}</span>
+            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${tab.name}</span>
+          </div>
+          <div class="topic-actions">
+            <button class="nav-action-btn edit-topic-btn" title="Edit Topic Settings">
+              <span class="material-symbols-outlined" style="font-size: 18px;">settings</span>
+            </button>
+          </div>
+        `;
+        item.addEventListener("click", () => switchTopic(tab.id));
+        item.querySelector(".edit-topic-btn").addEventListener("click", (e) => {
+          e.stopPropagation();
+          openTopicEditModal(tab.id);
+        });
+        listEl.appendChild(item);
+      });
+      updateWorkspaceHeader();
+    }
+
+    function switchTopic(id) {
+      if (editState.isEditing) setEditMode(false);
+      activeTabId = id;
+      saveTabs();
+      renderTopics();
+      renderSoundButtons();
+    }
+
+    function updateWorkspaceHeader() {
+      const tab = getActiveTab();
+      const icoEl = document.getElementById("header-topic-icon");
+      const nameEl = document.getElementById("header-topic-name");
+      icoEl.textContent = tab.icon;
+      icoEl.style.color = tab.color;
+      nameEl.textContent = tab.name;
+      document.getElementById("header-cols-val").textContent = tab.cols;
+      document.getElementById("header-rows-val").textContent = tab.rows;
+    }
+
+    function openTopicEditModal(topicId) {
+      editState.targetTopicId = topicId;
+      const tab = tabs.find(x => x.id === topicId) || getActiveTab();
+      document.getElementById("topic-name-input").value = tab.name;
+      document.getElementById("topic-icon-input").value = tab.icon;
+
+      const picker = document.getElementById("topic-color-picker");
+      picker.innerHTML = "";
+      COLOR_PALETTE.forEach(color => {
+        const opt = document.createElement("div");
+        opt.className = `color-option ${tab.color === color ? "selected" : ""}`;
+        opt.style.backgroundColor = color;
+        opt.onclick = () => {
+          picker.querySelectorAll(".color-option").forEach(c => c.classList.remove("selected"));
+          opt.classList.add("selected");
+          tab.color = color;
+        };
+        picker.appendChild(opt);
+      });
+
+      document.getElementById("delete-topic-btn").style.display = tabs.length > 1 ? "block" : "none";
+      openModal("topic-edit-modal");
+    }
+
+    document.getElementById("save-topic-meta-btn").addEventListener("click", () => {
+      const tab = tabs.find(x => x.id === editState.targetTopicId);
+      if (tab) {
+        tab.name = document.getElementById("topic-name-input").value.trim() || "Topic";
+        tab.icon = document.getElementById("topic-icon-input").value.trim() || "folder";
+        saveTabs();
+        renderTopics();
+      }
+      closeModals();
+    });
+
+    document.getElementById("delete-topic-btn").addEventListener("click", () => {
+      if (tabs.length <= 1) return;
+      tabs = tabs.filter(x => x.id !== editState.targetTopicId);
+      if (activeTabId === editState.targetTopicId) activeTabId = tabs[0].id;
+      saveTabs();
+      renderTopics();
+      renderSoundButtons();
+      closeModals();
+    });
+
+    document.getElementById("add-topic-sidebar-btn").addEventListener("click", (e) => {
+      e.stopPropagation();
+      const newTab = {
+        id: generateId(),
+        name: `Topic ${tabs.length + 1}`,
+        icon: "chat",
+        color: COLOR_PALETTE[tabs.length % COLOR_PALETTE.length],
+        cols: DEFAULT_GRID_COLS, rows: DEFAULT_GRID_ROWS,
+        buttons: defaultStarters.map((s, i) => normalizeButton(s, i))
+      };
+      tabs.push(newTab);
+      switchTopic(newTab.id);
+      openTopicEditModal(newTab.id);
+    });
+
+    // ==================== GRID & BUTTON RENDERING ====================
+    function stepGridDimensions(dCols, dRows) {
+      const tab = getActiveTab();
+      tab.cols = clamp(tab.cols + dCols, 1, 8);
+      tab.rows = clamp(tab.rows + dRows, 1, 8);
+      saveTabs();
+      updateWorkspaceHeader();
+      renderSoundButtons();
+    }
+
+    function setEditMode(enable) {
+      editState.isEditing = enable;
+      if (enable) {
+        editModeBtn.style.display = "none";
+        editModeControls.classList.add("open");
+        soundCanvas.classList.add("edit-mode");
+      } else {
+        editModeBtn.style.display = "flex";
+        editModeControls.classList.remove("open");
+        soundCanvas.classList.remove("edit-mode");
+      }
+      renderSoundButtons();
+    }
+
+    editModeBtn.addEventListener("click", () => setEditMode(true));
+    document.getElementById("save-edit-btn").addEventListener("click", () => setEditMode(false));
+    document.getElementById("cancel-edit-btn").addEventListener("click", () => {
+      setEditMode(false);
+      renderSoundButtons();
+    });
+
+    function renderSoundButtons() {
+      const tab = getActiveTab();
+      soundCanvas.style.gridTemplateColumns = `repeat(${tab.cols}, 1fr)`;
+      soundCanvas.innerHTML = "";
+
+      const totalSlots = tab.cols * tab.rows;
+      const displayCount = Math.max(totalSlots, tab.buttons.length + (editState.isEditing ? 1 : 0));
+
+      for (let idx = 0; idx < displayCount; idx++) {
+        const btnData = tab.buttons[idx];
+        const btnEl = document.createElement("div");
+
+        if (btnData) {
+          btnEl.className = `sound-button ${editState.isEditing ? "edit-mode" : ""}`;
+          btnEl.style.backgroundColor = btnData.color;
+          btnEl.setAttribute("data-id", btnData.id);
+
+          let iconHtml = btnData.icon ? `<span class="material-symbols-outlined sound-button-icon">${btnData.icon}</span>` : "";
+          btnEl.innerHTML = `
+            ${iconHtml}
+            <div class="sound-button-label">${btnData.label || "Button"}</div>
+            <button class="sound-button-edit-btn" title="Edit Button"><span class="material-symbols-outlined" style="font-size:16px;">edit</span></button>
+          `;
+
+          if (editState.isEditing) {
+            btnEl.draggable = true;
+            btnEl.addEventListener("dragstart", (e) => startDrag(e, btnData.id));
+            btnEl.addEventListener("dragend", endDrag);
+            btnEl.querySelector(".sound-button-edit-btn").addEventListener("click", (e) => {
+              e.stopPropagation();
+              openButtonEditModal(btnData.id);
+            });
+            btnEl.addEventListener("click", () => openButtonEditModal(btnData.id));
+          } else if (editState.isOverwriting) {
+            btnEl.classList.add("overwrite-target");
+            btnEl.addEventListener("click", () => executeOverwrite(btnData.id));
+          } else {
+            btnEl.addEventListener("click", () => {
+              speakText(btnData.text || btnData.label);
+              addToHistory(btnData.text || btnData.label);
+            });
+          }
+        } else if (editState.isEditing) {
+          btnEl.className = "sound-button";
+          btnEl.style.backgroundColor = "transparent";
+          btnEl.style.border = "2px dashed var(--border)";
+          btnEl.style.color = "var(--text-secondary)";
+          btnEl.innerHTML = `<span class="material-symbols-outlined" style="font-size: 28px;">add</span>`;
+          btnEl.onclick = () => {
+            const newBtn = normalizeButton("New Phrase", tab.buttons.length);
+            tab.buttons.push(newBtn);
+            saveTabs();
+            renderSoundButtons();
+            openButtonEditModal(newBtn.id);
+          };
+        } else {
+          btnEl.className = "sound-button";
+          btnEl.style.visibility = "hidden";
+          btnEl.style.pointerEvents = "none";
+        }
+
+        btnEl.addEventListener("dragover", (e) => handleDragOver(e, btnEl, btnData?.id));
+        btnEl.addEventListener("dragleave", () => btnEl.classList.remove("swap-target"));
+        btnEl.addEventListener("drop", (e) => handleDrop(e, btnData?.id));
+        soundCanvas.appendChild(btnEl);
+      }
+    }
+
+    // ==================== DRAG & DROP SWAPPING ====================
+    function startDrag(e, id) {
+      editState.draggingId = id;
+      e.target.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", id);
+    }
+
+    function endDrag(e) {
+      e.target.classList.remove("dragging");
+      document.querySelectorAll(".sound-button").forEach(b => b.classList.remove("swap-target"));
+    }
+
+    function handleDragOver(e, el, targetId) {
+      e.preventDefault();
+      if (!editState.draggingId || editState.draggingId === targetId) return;
+      el.classList.add("swap-target");
+    }
+
+    function handleDrop(e, targetId) {
+      e.preventDefault();
+      document.querySelectorAll(".sound-button").forEach(b => b.classList.remove("swap-target"));
+      if (!editState.draggingId || !targetId || editState.draggingId === targetId) return;
+
+      const tab = getActiveTab();
+      const idxA = tab.buttons.findIndex(b => b.id === editState.draggingId);
+      const idxB = tab.buttons.findIndex(b => b.id === targetId);
+
+      if (idxA !== -1 && idxB !== -1) {
+        const temp = tab.buttons[idxA];
+        tab.buttons[idxA] = tab.buttons[idxB];
+        tab.buttons[idxB] = temp;
+        saveTabs();
+        renderSoundButtons();
+      }
+    }
+
+    // ==================== BUTTON EDITING ====================
+    function openButtonEditModal(buttonId) {
+      editState.targetButtonId = buttonId;
+      const tab = getActiveTab();
+      const btn = tab.buttons.find(b => b.id === buttonId);
+      if (!btn) return;
+
+      document.getElementById("button-label-input").value = btn.label;
+      document.getElementById("button-icon-input").value = btn.icon || "";
+
+      const picker = document.getElementById("button-color-picker");
+      picker.innerHTML = "";
+      COLOR_PALETTE.forEach(color => {
+        const opt = document.createElement("div");
+        opt.className = `color-option ${btn.color === color ? "selected" : ""}`;
+        opt.style.backgroundColor = color;
+        opt.onclick = () => {
+          picker.querySelectorAll(".color-option").forEach(c => c.classList.remove("selected"));
+          opt.classList.add("selected");
+          btn.color = color;
+        };
+        picker.appendChild(opt);
+      });
+
+      openModal("button-edit-modal");
+    }
+
+    document.getElementById("save-button-edit").addEventListener("click", () => {
+      const tab = getActiveTab();
+      const btn = tab.buttons.find(b => b.id === editState.targetButtonId);
+      if (btn) {
+        const lbl = document.getElementById("button-label-input").value.trim() || "Button";
+        btn.label = lbl;
+        btn.text = lbl;
+        btn.icon = document.getElementById("button-icon-input").value.trim() || "";
+        saveTabs();
+        renderSoundButtons();
+      }
+      closeModals();
+    });
+
+    document.getElementById("delete-button-edit").addEventListener("click", () => {
+      const tab = getActiveTab();
+      tab.buttons = tab.buttons.filter(b => b.id !== editState.targetButtonId);
+      saveTabs();
+      renderSoundButtons();
+      closeModals();
+    });
+
+    // ==================== OVERWRITE MODE ====================
+    function setOverwriteMode(enable, audioData = null) {
+      editState.isOverwriting = enable;
+      editState.overwriteAudio = audioData;
+      const banner = document.getElementById("overwrite-banner");
+      if (enable) {
+        banner.classList.add("active");
+        if (editState.isEditing) setEditMode(false);
+      } else {
+        banner.classList.remove("active");
+      }
+      renderSoundButtons();
+    }
+
+    document.getElementById("cancel-overwrite-btn").addEventListener("click", () => setOverwriteMode(false));
+
+    function executeOverwrite(buttonId) {
+      const tab = getActiveTab();
+      const btn = tab.buttons.find(b => b.id === buttonId);
+      if (btn && editState.overwriteAudio) {
+        btn.label = editState.overwriteAudio.label;
+        btn.text = editState.overwriteAudio.text;
+        saveTabs();
+        setOverwriteMode(false);
+        renderSoundButtons();
+      }
+    }
+
+    document.getElementById("ta-assign-btn").addEventListener("click", () => {
+      const txt = displayInput.value.trim();
+      if (!txt) return;
+      editState.overwriteAudio = { label: txt, text: txt };
+      openModal("modal-assign-choice");
+    });
+
+    document.getElementById("choice-create-new-btn").addEventListener("click", () => {
+      const tab = getActiveTab();
+      const newBtn = normalizeButton(editState.overwriteAudio.text, tab.buttons.length);
+      tab.buttons.push(newBtn);
+      saveTabs();
+      renderSoundButtons();
+      closeModals();
+    });
+
+    document.getElementById("choice-overwrite-btn").addEventListener("click", () => {
+      closeModals();
+      setOverwriteMode(true, editState.overwriteAudio);
+    });
+
+    // ==================== SPEECH SYNTHESIS & TTS ====================
+    function speakText(text) {
+      if (!text) return;
+      const model = document.getElementById("model-select").value;
+
+      if (model === "browser_tts" || !window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        const utt = new SpeechSynthesisUtterance(text);
+        utt.rate = parseFloat(document.getElementById("speed-slider").value) || 1.0;
+        const voices = window.speechSynthesis.getVoices();
+        if (activeBrowserVoiceIndex !== "" && voices[activeBrowserVoiceIndex]) {
+          utt.voice = voices[activeBrowserVoiceIndex];
+        }
+        window.speechSynthesis.speak(utt);
+      } else {
+        // Fallback to local browser TTS if ElevenLabs API key isn't provided
+        window.speechSynthesis.cancel();
+        const utt = new SpeechSynthesisUtterance(text);
+        window.speechSynthesis.speak(utt);
+      }
+    }
+
+    speakBtn.addEventListener("click", () => {
+      const txt = displayInput.value.trim();
+      if (txt) {
+        speakText(txt);
+        addToHistory(txt);
+      }
+    });
+
+    document.getElementById("ta-replay-btn").addEventListener("click", () => {
+      speakText(displayInput.value.trim());
+    });
+
+    // ==================== HISTORY MANAGER ====================
+    function addToHistory(text) {
+      let hist = getHistory();
+      hist = hist.filter(x => x.text !== text);
+      hist.unshift({ id: generateId(), text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
+      if (hist.length > 50) hist.pop();
+      saveHistory(hist);
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const listEl = document.getElementById("audio-history");
+      if (!listEl) return;
+      const query = (document.getElementById("history-search-input").value || "").toLowerCase().trim();
+      const hist = getHistory().filter(x => x.text.toLowerCase().includes(query));
+
+      listEl.innerHTML = "";
+      if (hist.length === 0) {
+        listEl.innerHTML = `<div style="text-align: center; padding: 16px; color: var(--text-secondary); font-size: 14px;">No history entries</div>`;
+        return;
+      }
+
+      hist.forEach(item => {
+        const el = document.createElement("div");
+        el.className = "history-item";
+        el.innerHTML = `
+          <div class="history-item-header">
+            <span class="history-item-text">${item.text}</span>
+            <span class="history-item-meta">${item.time}</span>
+          </div>
+          <div class="history-actions">
+            <button class="history-btn restore" type="button"><span class="material-symbols-outlined" style="font-size: 14px;">input</span> Restore</button>
+            <button class="history-btn speak" type="button"><span class="material-symbols-outlined" style="font-size: 14px;">volume_up</span> Speak</button>
+            <button class="history-btn del" type="button"><span class="material-symbols-outlined" style="font-size: 14px;">close</span></button>
+          </div>
+        `;
+        el.querySelector(".history-item-text").addEventListener("click", () => speakText(item.text));
+        el.querySelector(".speak").addEventListener("click", () => speakText(item.text));
+        el.querySelector(".restore").addEventListener("click", () => {
+          displayInput.value = item.text;
+          displayInput.focus();
+          audioActionsBar.classList.add("active");
+        });
+        el.querySelector(".del").addEventListener("click", () => {
+          let h = getHistory().filter(x => x.id !== item.id);
+          saveHistory(h);
+          renderHistory();
+        });
+        listEl.appendChild(el);
+      });
+    }
+
+    document.getElementById("history-search-input").addEventListener("input", renderHistory);
+    document.getElementById("clear-history-btn").addEventListener("click", () => {
+      saveHistory([]);
+      renderHistory();
+    });
+
+    // ==================== WORD PREDICTIONS ====================
+    const CORE_WORDS = ["I", "you", "want", "more", "help", "yes", "no", "stop", "go", "good", "please", "thank you", "hello", "goodbye", "water", "food", "eat", "drink", "play", "like", "do", "can", "have", "need", "what", "where", "when", "who", "why", "how", "big", "small", "hot", "cold", "all done"];
+
+    function updatePredictions() {
+      const val = displayInput.value;
+      audioActionsBar.classList.toggle("active", val.trim().length > 0);
+
+      const words = val.trim().split(/\s+/);
+      const lastWord = words[words.length - 1].toLowerCase();
+
+      let preds = [];
+      if (!val.trim() || val.endsWith(" ")) {
+        preds = ["I", "want", "help", "more", "please", "thank you"];
+      } else {
+        preds = CORE_WORDS.filter(w => w.toLowerCase().startsWith(lastWord) && w.toLowerCase() !== lastWord);
+        if (preds.length < 6) {
+          const fillers = ["please", "now", "today", "thanks", "there", "here"];
+          preds = [...preds, ...fillers].slice(0, 6);
+        }
+      }
+
+      predBtns.forEach((btn, i) => {
+        if (preds[i]) {
+          btn.textContent = preds[i];
+          btn.style.visibility = "visible";
+          btn.onclick = () => {
+            if (val.endsWith(" ") || !val) {
+              displayInput.value = val + preds[i] + " ";
+            } else {
+              words[words.length - 1] = preds[i];
+              displayInput.value = words.join(" ") + " ";
+            }
+            displayInput.focus();
+            updatePredictions();
+          };
+        } else {
+          btn.style.visibility = "hidden";
+        }
+      });
+    }
+
+    displayInput.addEventListener("input", updatePredictions);
+    document.getElementById("clear-btn").addEventListener("click", () => {
+      displayInput.value = "";
+      updatePredictions();
+      audioActionsBar.classList.remove("active");
+    });
+
+    // ==================== SETTINGS SLIDERS & FONTS ====================
+    document.getElementById("font-down").addEventListener("click", () => {
+      currentFontSize = Math.max(20, currentFontSize - 4);
+      localStorage.setItem("aac_font_size", currentFontSize);
+      displayInput.style.fontSize = currentFontSize + "px";
+      document.getElementById("font-display").textContent = currentFontSize + "px";
+    });
+
+    document.getElementById("font-up").addEventListener("click", () => {
+      currentFontSize = Math.min(64, currentFontSize + 4);
+      localStorage.setItem("aac_font_size", currentFontSize);
+      displayInput.style.fontSize = currentFontSize + "px";
+      document.getElementById("font-display").textContent = currentFontSize + "px";
+    });
+
+    document.getElementById("volume-slider").addEventListener("input", (e) => document.getElementById("val-volume").textContent = parseFloat(e.target.value).toFixed(1));
+    document.getElementById("speed-slider").addEventListener("input", (e) => document.getElementById("val-speed").textContent = parseFloat(e.target.value).toFixed(1));
+    document.getElementById("stability-slider").addEventListener("input", (e) => document.getElementById("val-stability").textContent = parseFloat(e.target.value).toFixed(2));
+    document.getElementById("similarity-slider").addEventListener("input", (e) => document.getElementById("val-similarity").textContent = parseFloat(e.target.value).toFixed(2));
+
+    // ==================== SIDEBAR & POPUP TOGGLES ====================
+    document.getElementById("toggle-sidebar-btn").addEventListener("click", () => sidebar.classList.toggle("collapsed"));
+    document.getElementById("footer-settings-btn").addEventListener("click", (e) => {
+      e.stopPropagation();
+      document.getElementById("gemini-context-popup").classList.toggle("open");
+    });
+
+    document.querySelectorAll(".nav-accordion-header").forEach(hdr => {
+      hdr.addEventListener("click", (e) => {
+        if (e.target.closest(".nav-actions")) return;
+        hdr.parentElement.classList.toggle("open");
+      });
+    });
+
+    // ==================== BROWSER VOICES LOAD ====================
+    function loadBrowserVoices() {
+      if (!window.speechSynthesis) return;
+      const voices = window.speechSynthesis.getVoices();
+      const listEl = document.getElementById("voice-list-browser");
+      if (!listEl) return;
+      listEl.innerHTML = "";
+
+      voices.forEach((v, idx) => {
+        const item = document.createElement("div");
+        item.className = `voice-item ${activeBrowserVoiceIndex == idx ? "selected" : ""}`;
+        item.innerHTML = `
+          <span>${v.name} (${v.lang})</span>
+          <button class="voice-preview-btn" type="button">Preview</button>
+        `;
+        item.addEventListener("click", () => {
+          activeBrowserVoiceIndex = idx;
+          localStorage.setItem("aac_browser_voice_index", idx);
+          document.getElementById("selected-browser-name").textContent = v.name;
+          listEl.querySelectorAll(".voice-item").forEach(i => i.classList.remove("selected"));
+          item.classList.add("selected");
+        });
+        item.querySelector(".voice-preview-btn").addEventListener("click", (e) => {
+          e.stopPropagation();
+          const utt = new SpeechSynthesisUtterance(previewText);
+          utt.voice = v;
+          window.speechSynthesis.speak(utt);
+        });
+        listEl.appendChild(item);
+      });
+
+      if (voices[activeBrowserVoiceIndex]) {
+        document.getElementById("selected-browser-name").textContent = voices[activeBrowserVoiceIndex].name;
+      }
+    }
+
+    if (window.speechSynthesis) {
+      window.speechSynthesis.onvoiceschanged = loadBrowserVoices;
+      loadBrowserVoices();
+    }
+
+    document.getElementById("model-select").addEventListener("change", (e) => {
+      const isBrowser = e.target.value === "browser_tts";
+      document.getElementById("group-browser-voice").style.display = isBrowser ? "flex" : "none";
+      document.getElementById("group-eleven-settings").style.display = isBrowser ? "none" : "flex";
+    });
+
+    document.getElementById("open-browser-voices").addEventListener("click", () => {
+      document.getElementById("voice-list-browser").classList.add("active");
+      document.getElementById("voice-list-eleven").classList.remove("active");
+      document.getElementById("voices-panel").classList.add("open");
+    });
+    document.getElementById("open-eleven-voices").addEventListener("click", () => {
+      document.getElementById("voice-list-eleven").classList.add("active");
+      document.getElementById("voice-list-browser").classList.remove("active");
+      document.getElementById("voices-panel").classList.add("open");
+    });
+
+    // ==================== INIT ====================
+    window.addEventListener("DOMContentLoaded", () => {
+      applyTheme(currentTheme);
+      applyGlobalIconStyles();
+      applyNavMetaUI();
+      renderTopics();
+      renderSoundButtons();
+      renderHistory();
+      updatePredictions();
+
+      displayInput.style.fontSize = currentFontSize + "px";
+      document.getElementById("font-display").textContent = currentFontSize + "px";
+
+      // Trigger background symbol library fetch
+      fetchCompleteSymbolLibrary();
+    });
+  </script>
+</body>
+</html>
