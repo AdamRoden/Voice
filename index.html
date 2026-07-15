@@ -684,7 +684,12 @@
         </div>
         <div class="sidebar-setting-group">
           <label><span>Pitch</span><span id="val-pitch">0</span></label>
-          <input type="range" id="pitch-slider" min="-12" max="12" step="1" value="0">
+          <input type="range" id="pitch-slider" min="0" max="14" step="1" value="7" list="pitch-ticks" aria-valuetext="0">
+          <datalist id="pitch-ticks">
+            <option value="0" label="-12"></option>
+            <option value="7" label="0"></option>
+            <option value="14" label="12"></option>
+          </datalist>
         </div>
 
         <hr class="setting-divider">
@@ -944,7 +949,6 @@
     <div id="voice-list-eleven" class="voice-list"></div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/tone@14.8.49/build/Tone.js"></script>
   <script>
     // ==================== STATE & PALETTE CONFIG ====================
     const rootStyle = window.getComputedStyle(document.documentElement);
@@ -1047,7 +1051,8 @@
 
     /** Saved caret in #display-input so programmatic refocus restores it. */
     let savedDisplaySelection = { start: null, end: null };
-    let activeToneNodes = [];
+    /** Active Web Audio buffer sources (stop previous speech when starting new). */
+    let activeBufferSources = [];
 
     function saveDisplaySelection() {
       // On blur, activeElement has already left the textarea; still read selection from it.
@@ -1059,18 +1064,37 @@
       } catch (_) {}
     }
 
-    function getPitchSemitones() {
-      const v = parseFloat(pitchSlider?.value);
-      return Number.isFinite(v) ? v : 0;
+    /** Discrete pitch steps (semitones). Slider index maps into this list. */
+    const PITCH_STEPS = [-12, -8, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 8, 12];
+
+    function pitchIndexFromSemitones(semitones) {
+      const target = parseFloat(semitones);
+      if (!Number.isFinite(target)) return PITCH_STEPS.indexOf(0);
+      let best = 0;
+      let bestDist = Infinity;
+      for (let i = 0; i < PITCH_STEPS.length; i++) {
+        const d = Math.abs(PITCH_STEPS[i] - target);
+        if (d < bestDist) {
+          bestDist = d;
+          best = i;
+        }
+      }
+      return best;
     }
 
-    function formatPitchLabel(v) {
-      const n = parseFloat(v) || 0;
+    function getPitchSemitones() {
+      const idx = parseInt(pitchSlider?.value, 10);
+      if (!Number.isFinite(idx) || idx < 0 || idx >= PITCH_STEPS.length) return 0;
+      return PITCH_STEPS[idx];
+    }
+
+    function formatPitchLabel(semitones) {
+      const n = parseFloat(semitones) || 0;
       if (n > 0) return `+${n}`;
       return String(n);
     }
 
-    /** Map pitch semitones to speechSynthesis.pitch (0–2, default 1). */
+    /** Map pitch semitones to speechSynthesis.pitch (0–2, default 1). Independent of rate. */
     function pitchToUtterance(semitones) {
       return clamp(Math.pow(2, (semitones || 0) / 12), 0.1, 2);
     }
@@ -2105,12 +2129,20 @@
     });
 
     // ==================== AUDIO PLAYBACK ====================
-    function disposeToneNodes() {
-      activeToneNodes.forEach(node => {
-        try { if (node.stop) node.stop(); } catch (_) {}
-        try { if (node.dispose) node.dispose(); } catch (_) {}
+    function getSharedAudioContext() {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return null;
+      if (!window.sharedAudioContext) window.sharedAudioContext = new Ctx();
+      return window.sharedAudioContext;
+    }
+
+    function stopActiveBufferSources() {
+      activeBufferSources.forEach(source => {
+        try { source.onended = null; } catch (_) {}
+        try { source.stop(0); } catch (_) {}
+        try { source.disconnect(); } catch (_) {}
       });
-      activeToneNodes = [];
+      activeBufferSources = [];
     }
 
     function playAudioData(audioData) {
@@ -2124,48 +2156,164 @@
       focusDisplayInput();
     }
 
+    function interpolateSample(data, pos) {
+      if (pos <= 0) return data[0] || 0;
+      if (pos >= data.length - 1) return data[data.length - 1] || 0;
+      const i0 = Math.floor(pos);
+      const frac = pos - i0;
+      return data[i0] * (1 - frac) + data[i0 + 1] * frac;
+    }
+
+    function makeHannWindow(size) {
+      const w = new Float32Array(size);
+      if (size <= 1) {
+        w[0] = 1;
+        return w;
+      }
+      for (let i = 0; i < size; i++) {
+        w[i] = 0.5 * (1 - Math.cos((2 * Math.PI * i) / (size - 1)));
+      }
+      return w;
+    }
+
+    /** Resample for pitch: ratio > 1 → higher pitch, shorter buffer. */
+    function resampleChannel(input, pitchRatio) {
+      const newLen = Math.max(1, Math.round(input.length / pitchRatio));
+      const out = new Float32Array(newLen);
+      for (let i = 0; i < newLen; i++) {
+        out[i] = interpolateSample(input, i * pitchRatio);
+      }
+      return out;
+    }
+
     /**
-     * Play HTMLAudioElement through Tone.js Gain + PitchShift (semitones).
-     * Falls back to element volume when Tone is unavailable.
+     * Overlap-add time stretch to targetLen without changing pitch.
+     * Used after resample so overall duration matches the original.
+     */
+    function timeStretchChannel(input, targetLen) {
+      if (targetLen <= 0) return new Float32Array(0);
+      if (input.length === targetLen) return input.slice ? input.slice() : new Float32Array(input);
+      if (input.length < 32 || targetLen < 32) {
+        const out = new Float32Array(targetLen);
+        const ratio = input.length / targetLen;
+        for (let i = 0; i < targetLen; i++) out[i] = interpolateSample(input, i * ratio);
+        return out;
+      }
+
+      const frameSize = Math.min(1024, 1 << Math.floor(Math.log2(Math.min(input.length, targetLen, 1024))));
+      const hopOut = Math.max(1, Math.floor(frameSize / 4));
+      const window = makeHannWindow(frameSize);
+      const output = new Float32Array(targetLen + frameSize);
+      const weight = new Float32Array(targetLen + frameSize);
+      const maxInStart = Math.max(0, input.length - frameSize);
+
+      for (let outPos = 0; outPos < targetLen; outPos += hopOut) {
+        const inPos = maxInStart === 0
+          ? 0
+          : Math.floor((outPos / Math.max(1, targetLen - 1)) * maxInStart);
+        for (let i = 0; i < frameSize; i++) {
+          const di = outPos + i;
+          const si = inPos + i;
+          const s = si < input.length ? input[si] * window[i] : 0;
+          output[di] += s;
+          weight[di] += window[i];
+        }
+      }
+
+      const result = new Float32Array(targetLen);
+      for (let i = 0; i < targetLen; i++) {
+        result[i] = weight[i] > 1e-6 ? output[i] / weight[i] : 0;
+      }
+      return result;
+    }
+
+    /**
+     * Pitch-shift an AudioBuffer by semitones while keeping the same duration.
+     * Speed is applied separately via playbackRate when playing.
+     */
+    function pitchShiftBufferPreserveDuration(ctx, audioBuffer, semitones) {
+      if (!audioBuffer || Math.abs(semitones) < 1e-6) return audioBuffer;
+      const pitchRatio = Math.pow(2, semitones / 12);
+      const numChannels = audioBuffer.numberOfChannels;
+      const targetLength = audioBuffer.length;
+      const sampleRate = audioBuffer.sampleRate;
+      const out = ctx.createBuffer(numChannels, targetLength, sampleRate);
+
+      for (let ch = 0; ch < numChannels; ch++) {
+        const input = audioBuffer.getChannelData(ch);
+        const pitched = resampleChannel(input, pitchRatio);
+        const stretched = timeStretchChannel(pitched, targetLength);
+        out.copyToChannel(stretched, ch);
+      }
+      return out;
+    }
+
+    /**
+     * Play audio with Web Audio gain + pitch (duration-preserving) + speed.
+     * Pitch does not affect playback speed; speed uses playbackRate only.
      */
     async function playAudioWithGain(audioElement, gainValue) {
       const pitchSemitones = getPitchSemitones();
-      const playbackRate = audioElement.playbackRate || 1;
+      const speed = audioElement.playbackRate || 1;
       const onEnded = typeof audioElement.onended === "function" ? audioElement.onended.bind(audioElement) : null;
       const url = audioElement.src;
 
       const fallbackPlay = () => {
+        // Fallback cannot pitch without changing speed; keep speed only.
         audioElement.volume = Math.min(1.0, gainValue / 5.0);
-        audioElement.playbackRate = playbackRate;
+        try {
+          audioElement.preservesPitch = true;
+          audioElement.mozPreservesPitch = true;
+          audioElement.webkitPreservesPitch = true;
+        } catch (_) {}
+        audioElement.playbackRate = speed;
         if (onEnded) audioElement.onended = onEnded;
         audioElement.play().catch(() => {});
       };
 
-      if (typeof Tone === "undefined" || !url) {
+      if (!url) {
+        fallbackPlay();
+        return;
+      }
+
+      const ctx = getSharedAudioContext();
+      if (!ctx) {
         fallbackPlay();
         return;
       }
 
       try {
-        await Tone.start();
-        disposeToneNodes();
+        if (ctx.state === "suspended") await ctx.resume();
+        stopActiveBufferSources();
 
-        const gainNode = new Tone.Gain(gainValue).toDestination();
-        const pitchShift = new Tone.PitchShift({ pitch: pitchSemitones }).connect(gainNode);
-        const player = new Tone.Player({ url, playbackRate }).connect(pitchShift);
-        activeToneNodes = [player, pitchShift, gainNode];
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("fetch failed");
+        const arrayBuffer = await response.arrayBuffer();
+        let audioBuffer = await ctx.decodeAudioData(arrayBuffer.slice(0));
+        audioBuffer = pitchShiftBufferPreserveDuration(ctx, audioBuffer, pitchSemitones);
 
-        await Tone.loaded();
-        player.start();
+        const source = ctx.createBufferSource();
+        source.buffer = audioBuffer;
+        // Speed only — pitch already applied offline without changing duration
+        source.playbackRate.value = speed;
+        source.detune.value = 0;
 
-        const dur = (player.buffer?.duration || 0) / (playbackRate || 1);
-        if (onEnded) {
-          if (dur > 0) {
-            setTimeout(() => { try { onEnded(); } catch (_) {} }, dur * 1000 + 40);
-          } else {
+        const gainNode = ctx.createGain();
+        gainNode.gain.value = gainValue;
+        source.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        source.onended = () => {
+          activeBufferSources = activeBufferSources.filter(s => s !== source);
+          try { source.disconnect(); } catch (_) {}
+          try { gainNode.disconnect(); } catch (_) {}
+          if (onEnded) {
             try { onEnded(); } catch (_) {}
           }
-        }
+        };
+
+        activeBufferSources.push(source);
+        source.start(0);
       } catch (err) {
         fallbackPlay();
       }
@@ -2560,14 +2708,21 @@
       syncSlider(volumeSlider, valVolume, "elevenlabs_volume");
       syncSlider(speedSlider, valSpeed, "elevenlabs_speed");
 
-      // Pitch (semitones) — custom label formatting
+      // Pitch (discrete semitone steps) — store actual semitone value
       if (pitchSlider && valPitch) {
         const savedPitch = localStorage.getItem("aac_pitch");
-        if (savedPitch !== null) pitchSlider.value = savedPitch;
-        valPitch.textContent = formatPitchLabel(pitchSlider.value);
-        pitchSlider.addEventListener("input", (e) => {
-          valPitch.textContent = formatPitchLabel(e.target.value);
-          localStorage.setItem("aac_pitch", e.target.value);
+        const idx = pitchIndexFromSemitones(savedPitch !== null ? savedPitch : 0);
+        pitchSlider.value = String(idx);
+        pitchSlider.max = String(PITCH_STEPS.length - 1);
+        const applyPitchLabel = () => {
+          const semi = getPitchSemitones();
+          valPitch.textContent = formatPitchLabel(semi);
+          pitchSlider.setAttribute("aria-valuetext", formatPitchLabel(semi));
+        };
+        applyPitchLabel();
+        pitchSlider.addEventListener("input", () => {
+          applyPitchLabel();
+          localStorage.setItem("aac_pitch", String(getPitchSemitones()));
         });
       }
 
