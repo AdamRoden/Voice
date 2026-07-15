@@ -191,8 +191,9 @@
 
     .edit-mode-controls { display: none; align-items: center; gap: 8px; flex-wrap: wrap; }
       .edit-mode-controls.open { display: flex; }
+    .edit-mode-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
-    .header-stepper-group { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); background: var(--bg-main); padding: 2px 8px; border-radius: 8px; border: 1px solid var(--border); height: 32px; font-weight: 500; }
+    .header-stepper-group { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); background: var(--bg-main); padding: 2px 8px; border-radius: 8px; border: 1px solid var(--border); height: 32px; font-weight: 500; flex-shrink: 0; }
     .num-control-wrapper { display: flex; align-items: center; gap: 4px; }
     .num-control-btn { background: var(--key-bg); border: none; color: var(--text); width: 32px; height: 32px; border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
       .num-control-btn:hover { background: var(--key-hover); }
@@ -261,13 +262,19 @@
       .audio-action-btn:active { background-color: var(--key-active); }
       .audio-action-btn.play { color: var(--accent); border-color: var(--accent); }
 
+    /* Toggle-style setting row */
+    .toggle-setting { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; cursor: pointer; font-size: 13px; color: var(--text); font-weight: 500; min-height: 44px; }
+    .toggle-setting span { color: var(--text); }
+    .toggle-setting input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+
     /* ==================== MODALS & POPUPS ==================== */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; height: 100dvh; background: rgba(0, 0, 0, 0.65); opacity: 0; pointer-events: none; transition: opacity 0.2s ease; z-index: 2000; -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
       .modal-overlay.open { opacity: 1; pointer-events: auto; }
 
-    .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95); background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; display: none; flex-direction: column; gap: 12px; z-index: 2001; min-width: min(340px, calc(100vw - 32px)); width: min(420px, calc(100vw - 32px)); max-width: calc(100vw - 32px); max-height: min(85vh, 85dvh); overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; box-shadow: 0 16px 36px var(--shadow); transition: transform 0.2s ease; }
+    .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95); background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; display: none; flex-direction: column; gap: 12px; z-index: 2001; min-width: min(340px, calc(100vw - 32px)); width: min(420px, calc(100vw - 32px)); max-width: calc(100vw - 32px); max-height: min(85vh, 85dvh); overflow: hidden; box-shadow: 0 16px 36px var(--shadow); transition: transform 0.2s ease; }
       .modal.open { display: flex; transform: translate(-50%, -50%) scale(1); }
-    .modal-title { font-size: 17px; font-weight: 600; color: var(--text); }
+    .modal-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 12px; }
+    .modal-title { font-size: 17px; font-weight: 600; color: var(--text); flex-shrink: 0; }
     .modal-description { font-size: 13px; color: var(--text-secondary); line-height: 1.4; }
 
     .modal-input { background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 12px; border-radius: 8px; font-size: 16px; outline: none; width: 100%; min-height: 44px; }
@@ -304,8 +311,8 @@
     .size-btn { background: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500; }
       .size-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-    .modal-buttons { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
-    .modal-btn { flex: 1; min-width: 100px; padding: 12px; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 14px; transition: background 0.2s; text-align: center; min-height: 44px; }
+    .modal-buttons { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; flex-shrink: 0; padding-top: 4px; background: var(--bg-surface); }
+    .modal-btn { flex: 1 1 0; min-width: 0; padding: 12px; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 14px; transition: background 0.2s; text-align: center; min-height: 44px; }
       .modal-btn.primary { background-color: var(--accent); color: #fff; }
         .modal-btn.primary:hover { background-color: var(--accent-hover); }
       .modal-btn.secondary { background-color: var(--key-bg); color: var(--text); border: 1px solid var(--border); }
@@ -432,12 +439,46 @@
       .tool-btn .tool-btn-label { display: none; }
       .tool-btn { padding: 8px 10px; min-width: 40px; justify-content: center; }
 
+      /* Edit mode: keep Save/Cancel on-screen (full-width second row) */
+      .workspace-header.edit-active {
+        flex-wrap: wrap;
+        align-items: stretch;
+      }
+      .workspace-header.edit-active .workspace-tabs {
+        display: none;
+      }
+      .workspace-header.edit-active .workspace-actions {
+        order: 3;
+        flex: 1 1 100%;
+        width: 100%;
+        min-width: 0;
+        justify-content: stretch;
+      }
       .edit-mode-controls {
         width: 100%;
-        justify-content: flex-end;
+        justify-content: flex-start;
+        gap: 6px;
       }
-      .workspace-header:has(.edit-mode-controls.open) {
+      .edit-mode-controls.open {
+        display: flex;
         flex-wrap: wrap;
+      }
+      .edit-mode-controls .header-stepper-group {
+        flex: 1 1 auto;
+        min-width: 0;
+        justify-content: center;
+      }
+      .edit-mode-actions {
+        flex: 1 1 100%;
+        width: 100%;
+        display: flex;
+        gap: 6px;
+      }
+      .edit-mode-actions .tool-btn {
+        flex: 1;
+        min-width: 0;
+        justify-content: center;
+        padding: 10px 8px;
       }
 
       .sound-canvas {
@@ -473,23 +514,38 @@
         font-size: 14px;
       }
 
-      .textarea-wrapper { min-height: 88px; }
+      .textarea-wrapper {
+        min-height: 88px;
+        /* Keep action bar in normal flow so it is never clipped off-screen */
+        overflow: visible;
+      }
       .display-textarea {
         font-size: 20px;
         padding: 12px;
         border-radius: 12px;
-        padding-bottom: 56px; /* room for action bar */
+        /* Share height with in-flow action bar (avoid height:100% overflow) */
+        height: auto;
+        flex: 1 1 auto;
+        min-height: 0;
       }
 
+      /* In-flow action bar on mobile (always visible when active) */
       .audio-actions-bar {
-        left: 8px;
-        right: 8px;
-        bottom: 8px;
+        position: static;
+        left: auto;
+        right: auto;
+        bottom: auto;
+        max-width: 100%;
+        width: 100%;
+        margin-top: 6px;
+        flex-shrink: 0;
         justify-content: stretch;
+        box-shadow: none;
       }
-      .audio-action-btn { flex: 1; justify-content: center; }
+      .audio-actions-bar.active { display: flex; }
+      .audio-action-btn { flex: 1; justify-content: center; min-width: 0; }
 
-      /* Bottom-sheet style modals */
+      /* Bottom-sheet style modals — body scrolls, footer stays pinned */
       .modal {
         top: auto;
         bottom: 0;
@@ -501,8 +557,9 @@
         transform: translateY(110%);
         border-radius: 18px 18px 0 0;
         max-height: min(92dvh, 92%);
-        padding: 16px 16px max(16px, env(safe-area-inset-bottom, 0px));
+        padding: 16px 16px 0;
         border-bottom: none;
+        overflow: hidden;
       }
       .modal.open {
         transform: translateY(0);
@@ -516,6 +573,21 @@
         background: var(--border);
         margin: -4px auto 8px;
         flex-shrink: 0;
+      }
+      .modal-scroll {
+        padding-bottom: 4px;
+      }
+      .modal-buttons {
+        margin: 0 -16px 0;
+        padding: 10px 16px max(16px, env(safe-area-inset-bottom, 0px));
+        border-top: 1px solid var(--border);
+        flex-wrap: nowrap;
+      }
+      .modal-btn {
+        min-width: 0;
+        flex: 1 1 0;
+        padding: 12px 8px;
+        font-size: 13px;
       }
 
       .icon-studio-modal-box {
@@ -559,6 +631,8 @@
       .workspace-tab .topic-item-name { max-width: 22vw; }
       .theme-btn { flex-direction: column; gap: 2px; font-size: 11px; padding: 8px 2px; }
       .audio-action-btn { font-size: 12px; padding: 8px; }
+      .edit-mode-controls .header-stepper-group { font-size: 12px; padding: 2px 6px; }
+      .edit-mode-actions .tool-btn { font-size: 13px; }
     }
 
     /* Short landscape phones */
@@ -566,8 +640,10 @@
       .sound-canvas { max-height: 28dvh; }
       .textarea-wrapper { min-height: 64px; }
       .key { height: 42px; min-height: 42px; }
-      .display-textarea { font-size: 16px; padding-bottom: 48px; }
+      .display-textarea { font-size: 16px; }
       .sidebar { width: min(280px, 70vw); }
+      .audio-actions-bar { margin-top: 4px; padding: 4px 8px; }
+      .audio-action-btn { min-height: 36px; font-size: 12px; }
     }
 
     /* Prefer reduced motion */
@@ -695,6 +771,15 @@
         <hr class="setting-divider">
 
         <div class="sidebar-setting-group">
+          <label class="toggle-setting" for="speak-predictions-toggle">
+            <span>Speak Predictions</span>
+            <input type="checkbox" id="speak-predictions-toggle" aria-label="Speak predictions when inserted">
+          </label>
+        </div>
+
+        <hr class="setting-divider">
+
+        <div class="sidebar-setting-group">
           <label><span>Font Size</span><span id="font-display">24px</span></label>
           <div class="font-controls">
             <button class="font-btn" id="font-down" type="button">A-</button>
@@ -764,8 +849,10 @@
               <button class="num-control-btn" type="button" onclick="stepGridDimensions(0, 1)">+</button>
             </div>
           </div>
-          <button class="tool-btn primary" id="save-edit-btn" type="button">Save</button>
-          <button class="tool-btn" id="cancel-edit-btn" type="button">Cancel</button>
+          <div class="edit-mode-actions">
+            <button class="tool-btn primary" id="save-edit-btn" type="button">Save</button>
+            <button class="tool-btn" id="cancel-edit-btn" type="button">Cancel</button>
+          </div>
         </div>
       </div>
     </div>
@@ -819,9 +906,11 @@
   <!-- Assign Choice Modal -->
   <div class="modal" id="modal-assign-choice">
     <div class="modal-title">Assign Speech Audio</div>
-    <div class="modal-choice-group">
-      <button class="status-btn choice-btn-create" id="choice-create-new-btn"><span class="material-symbols-outlined icon-medium icon-btn-margin">workspace_premium</span> Create New Button</button>
-      <button class="status-btn choice-btn-overwrite" id="choice-overwrite-btn"><span class="material-symbols-outlined icon-medium icon-btn-margin">refresh</span> Overwrite Existing Button</button>
+    <div class="modal-scroll">
+      <div class="modal-choice-group">
+        <button class="status-btn choice-btn-create" id="choice-create-new-btn"><span class="material-symbols-outlined icon-medium icon-btn-margin">workspace_premium</span> Create New Button</button>
+        <button class="status-btn choice-btn-overwrite" id="choice-overwrite-btn"><span class="material-symbols-outlined icon-medium icon-btn-margin">refresh</span> Overwrite Existing Button</button>
+      </div>
     </div>
     <div class="modal-buttons"><button class="modal-btn secondary" onclick="closeModals()">Cancel</button></div>
   </div>
@@ -829,18 +918,20 @@
   <!-- Edit Topic Meta Modal -->
   <div class="modal" id="topic-edit-modal">
     <div class="modal-title">Edit Topic Settings</div>
-    <div class="sidebar-setting-group">
-      <label>Topic Name</label>
-      <input type="text" id="topic-name-input" class="modal-input" placeholder="Topic name" maxlength="30">
-    </div>
-    <div class="sidebar-setting-group">
-      <label>Material Symbol Icon</label>
-      <input type="text" id="topic-icon-input" class="modal-input icon-name-input input-margin-bottom" maxlength="48" spellcheck="false" autocomplete="off" aria-label="Topic icon">
-      <button class="status-btn btn-center" onclick="openIconStudio('topic-icon-input')" type="button"><span class="material-symbols-outlined icon-small icon-btn-margin">search</span> Open Icon Studio Picker...</button>
-    </div>
-    <div class="sidebar-setting-group">
-      <label>Color Accent</label>
-      <div class="modal-color-picker" id="topic-color-picker"></div>
+    <div class="modal-scroll">
+      <div class="sidebar-setting-group">
+        <label>Topic Name</label>
+        <input type="text" id="topic-name-input" class="modal-input" placeholder="Topic name" maxlength="30">
+      </div>
+      <div class="sidebar-setting-group">
+        <label>Material Symbol Icon</label>
+        <input type="text" id="topic-icon-input" class="modal-input icon-name-input input-margin-bottom" maxlength="48" spellcheck="false" autocomplete="off" aria-label="Topic icon">
+        <button class="status-btn btn-center" onclick="openIconStudio('topic-icon-input')" type="button"><span class="material-symbols-outlined icon-small icon-btn-margin">search</span> Open Icon Studio Picker...</button>
+      </div>
+      <div class="sidebar-setting-group">
+        <label>Color Accent</label>
+        <div class="modal-color-picker" id="topic-color-picker"></div>
+      </div>
     </div>
     <div class="modal-buttons">
       <button class="modal-btn danger" id="delete-topic-btn" type="button">Delete</button>
@@ -852,18 +943,20 @@
   <!-- Edit Sound Button Modal -->
   <div class="modal" id="button-edit-modal">
     <div class="modal-title">Edit Sound Button</div>
-    <div class="sidebar-setting-group">
-      <label>Label</label>
-      <input type="text" id="button-label-input" class="modal-input" placeholder="Button label" maxlength="30">
-    </div>
-    <div class="sidebar-setting-group">
-      <label>Symbol (optional)</label>
-      <input type="text" id="button-symbol-input" class="modal-input icon-name-input input-margin-bottom" maxlength="48" spellcheck="false" autocomplete="off" placeholder="" aria-label="Button symbol">
-      <button class="status-btn btn-center" onclick="openIconStudio('button-symbol-input')" type="button"><span class="material-symbols-outlined icon-small icon-btn-margin">search</span> Open Icon Studio Picker...</button>
-    </div>
-    <div class="sidebar-setting-group">
-      <label>Color</label>
-      <div class="modal-color-picker" id="button-color-picker"></div>
+    <div class="modal-scroll">
+      <div class="sidebar-setting-group">
+        <label>Label</label>
+        <input type="text" id="button-label-input" class="modal-input" placeholder="Button label" maxlength="30">
+      </div>
+      <div class="sidebar-setting-group">
+        <label>Symbol (optional)</label>
+        <input type="text" id="button-symbol-input" class="modal-input icon-name-input input-margin-bottom" maxlength="48" spellcheck="false" autocomplete="off" placeholder="" aria-label="Button symbol">
+        <button class="status-btn btn-center" onclick="openIconStudio('button-symbol-input')" type="button"><span class="material-symbols-outlined icon-small icon-btn-margin">search</span> Open Icon Studio Picker...</button>
+      </div>
+      <div class="sidebar-setting-group">
+        <label>Color</label>
+        <div class="modal-color-picker" id="button-color-picker"></div>
+      </div>
     </div>
     <div class="modal-buttons">
       <button class="modal-btn danger" id="delete-button-edit" type="button">Delete</button>
@@ -875,12 +968,14 @@
   <!-- ElevenLabs API Key Modal -->
   <div class="modal" id="api-key-modal">
     <div class="modal-title">ElevenLabs API Key</div>
-    <div class="modal-description">Get more voices with ElevenLabs.</div>
-    <div class="modal-choice-group">
-      <a class="modal-btn primary" href="https://elevenlabs.io/app/sign-up" target="_blank" rel="noopener noreferrer">Create Free Account</a>
-      <a class="modal-btn secondary" href="https://elevenlabs.io/app/developers/api-keys" target="_blank" rel="noopener noreferrer">Create Unrestricted Key</a>
+    <div class="modal-scroll">
+      <div class="modal-description">Get more voices with ElevenLabs.</div>
+      <div class="modal-choice-group">
+        <a class="modal-btn primary" href="https://elevenlabs.io/app/sign-up" target="_blank" rel="noopener noreferrer">Create Free Account</a>
+        <a class="modal-btn secondary" href="https://elevenlabs.io/app/developers/api-keys" target="_blank" rel="noopener noreferrer">Create Unrestricted Key</a>
+      </div>
+      <input type="text" id="api-key-input" class="modal-input" placeholder="Paste key here" autocomplete="off" spellcheck="false" autocapitalize="off">
     </div>
-    <input type="text" id="api-key-input" class="modal-input" placeholder="Paste key here" autocomplete="off" spellcheck="false" autocapitalize="off">
     <div class="modal-buttons">
       <button class="modal-btn primary" id="save-api-key-btn" type="button">Save</button>
       <button class="modal-btn secondary" type="button" onclick="closeModals()">Cancel</button>
@@ -890,40 +985,42 @@
   <!-- Google Fonts Icon Studio Modal -->
   <div class="modal icon-studio-modal-box" id="icon-studio-modal">
     <div class="modal-title">Google Fonts Icon Studio</div>
-    <div class="icon-studio-search">
-      <span class="material-symbols-outlined search-ico">search</span>
-      <input type="text" id="icon-search-input" placeholder="Search Material Symbols (e.g., chat, home, favorite)...">
-    </div>
+    <div class="modal-scroll">
+      <div class="icon-studio-search">
+        <span class="material-symbols-outlined search-ico">search</span>
+        <input type="text" id="icon-search-input" placeholder="Search Material Symbols (e.g., chat, home, favorite)...">
+      </div>
 
-    <div class="studio-live-controls">
-      <div class="studio-control-row">
-        <span>Fill (FILL)</span>
-        <button class="size-btn" id="studio-fill-btn" type="button">Outlined (0)</button>
+      <div class="studio-live-controls">
+        <div class="studio-control-row">
+          <span>Fill (FILL)</span>
+          <button class="size-btn" id="studio-fill-btn" type="button">Outlined (0)</button>
+        </div>
+        <div class="studio-control-row">
+          <span>Weight (<span id="studio-val-wght">400</span>)</span>
+          <input type="range" id="studio-wght-slider" class="studio-slider" min="100" max="700" step="100" value="400">
+        </div>
+        <div class="studio-control-row">
+          <span>Grade (<span id="studio-val-grad">0</span>)</span>
+          <input type="range" id="studio-grad-slider" class="studio-slider" min="-50" max="200" step="50" value="0">
+        </div>
+        <div class="studio-control-row">
+          <span>Optical Size (<span id="studio-val-opsz">24</span>)</span>
+          <input type="range" id="studio-opsz-slider" class="studio-slider" min="20" max="48" step="4" value="24">
+        </div>
       </div>
-      <div class="studio-control-row">
-        <span>Weight (<span id="studio-val-wght">400</span>)</span>
-        <input type="range" id="studio-wght-slider" class="studio-slider" min="100" max="700" step="100" value="400">
-      </div>
-      <div class="studio-control-row">
-        <span>Grade (<span id="studio-val-grad">0</span>)</span>
-        <input type="range" id="studio-grad-slider" class="studio-slider" min="-50" max="200" step="50" value="0">
-      </div>
-      <div class="studio-control-row">
-        <span>Optical Size (<span id="studio-val-opsz">24</span>)</span>
-        <input type="range" id="studio-opsz-slider" class="studio-slider" min="20" max="48" step="4" value="24">
-      </div>
-    </div>
 
-    <div class="icon-studio-grid" id="icon-studio-grid"></div>
-    <div class="icon-studio-controls">
-      <div class="icon-size-btns">
-        <span>Size Preview:</span>
-        <button class="size-btn" onclick="setStudioIconSize(18, this)" type="button">18px</button>
-        <button class="size-btn active" onclick="setStudioIconSize(24, this)" type="button">24px</button>
-        <button class="size-btn" onclick="setStudioIconSize(32, this)" type="button">32px</button>
-        <button class="size-btn" onclick="setStudioIconSize(40, this)" type="button">40px</button>
+      <div class="icon-studio-grid" id="icon-studio-grid"></div>
+      <div class="icon-studio-controls">
+        <div class="icon-size-btns">
+          <span>Size Preview:</span>
+          <button class="size-btn" onclick="setStudioIconSize(18, this)" type="button">18px</button>
+          <button class="size-btn active" onclick="setStudioIconSize(24, this)" type="button">24px</button>
+          <button class="size-btn" onclick="setStudioIconSize(32, this)" type="button">32px</button>
+          <button class="size-btn" onclick="setStudioIconSize(40, this)" type="button">40px</button>
+        </div>
+        <span id="icon-studio-status">Select an icon</span>
       </div>
-      <span id="icon-studio-status">Select an icon</span>
     </div>
     <div class="modal-buttons">
       <button class="modal-btn primary" id="confirm-icon-studio-btn" type="button">Select & Apply Style</button>
@@ -1037,6 +1134,7 @@
 
     // State Variables
     let predictionTimeout;
+    let speakPredictionsEnabled = localStorage.getItem("aac_speak_predictions") === "1";
     let activeBrowserVoiceIndex = localStorage.getItem("aac_browser_voice_index");
     if (activeBrowserVoiceIndex !== null && activeBrowserVoiceIndex !== "") {
       activeBrowserVoiceIndex = parseInt(activeBrowserVoiceIndex, 10);
@@ -1653,6 +1751,7 @@
       editModeBtn.style.display = enabled ? "none" : "inline-flex";
       editModeControls.classList.toggle("open", enabled);
       soundCanvas.classList.toggle("edit-mode", enabled);
+      document.querySelector(".workspace-header")?.classList.toggle("edit-active", enabled);
 
       if (enabled) editSnapshot = JSON.parse(JSON.stringify(topicsList));
       else editSnapshot = null;
@@ -2029,7 +2128,10 @@
     function getText() { return displayInput.value; }
     function setText(val, caret = val.length) {
       displayInput.value = val;
-      try { displayInput.setSelectionRange(caret, caret); } catch (_) {}
+      const len = val.length;
+      const pos = Math.max(0, Math.min(caret, len));
+      try { displayInput.setSelectionRange(pos, pos); } catch (_) {}
+      savedDisplaySelection = { start: pos, end: pos };
       updatePredictions();
     }
 
@@ -2106,14 +2208,22 @@
 
     predictionButtons.forEach(btn => {
       btn.addEventListener("click", () => {
-        const suggestion = btn.textContent;
+        const suggestion = (btn.textContent || "").trim();
         if (!suggestion) return;
-        const text = getText(); const caret = displayInput.selectionStart || text.length;
+        const text = getText();
+        const caret = displayInput.selectionStart ?? text.length;
         const match = text.substring(0, caret).match(/([a-zA-Z']+)$/);
         const replaceStart = match ? caret - match[1].length : caret;
-        const next = text.substring(0, replaceStart) + suggestion + " " + text.substring(caret);
-        setText(next, replaceStart + suggestion.length + 1);
+        const inserted = suggestion + " ";
+        const next = text.substring(0, replaceStart) + inserted + text.substring(caret);
+        // Place caret at the end of the inserted prediction text
+        const newCaret = replaceStart + inserted.length;
+        setText(next, newCaret);
+        savedDisplaySelection = { start: newCaret, end: newCaret };
         focusDisplayInput();
+        if (speakPredictionsEnabled) {
+          speakPhrase(suggestion, { recordHistory: false });
+        }
       });
     });
 
@@ -2319,22 +2429,39 @@
       }
     }
 
-    async function speakText() {
-      const text = getText().trim();
-      if (!text) return;
+    /**
+     * Speak arbitrary text with current voice settings.
+     * @param {string} text
+     * @param {{ recordHistory?: boolean, showLoading?: boolean, alertOnError?: boolean }} [opts]
+     */
+    async function speakPhrase(text, opts = {}) {
+      const {
+        recordHistory = true,
+        showLoading = false,
+        alertOnError = false
+      } = opts;
+      const phrase = (text || "").trim();
+      if (!phrase) return;
+
       const gainSetting = parseFloat(volumeSlider.value) || 3.0;
       const speed = parseFloat(speedSlider.value) || 1.0;
       const pitchSemitones = getPitchSemitones();
-      setSpeakBtnLoading();
 
       let modelToUse = modelSelect.value;
-      if (text.includes('[') && modelToUse !== "browser_tts") {
+      if (phrase.includes("[") && modelToUse !== "browser_tts") {
         modelToUse = "eleven_v3";
       }
 
+      // Stop any in-progress speech so predictions interrupt cleanly
+      try { window.speechSynthesis.cancel(); } catch (_) {}
+      stopActiveBufferSources();
+
+      if (showLoading) setSpeakBtnLoading();
+      else setSpeakBtnIdle();
+
       try {
         if (modelSelect.value === "browser_tts") {
-          const utterance = new SpeechSynthesisUtterance(text);
+          const utterance = new SpeechSynthesisUtterance(phrase);
           utterance.volume = Math.min(1.0, gainSetting / 5.0);
           utterance.rate = speed;
           utterance.pitch = pitchToUtterance(pitchSemitones);
@@ -2344,17 +2471,20 @@
             : 0;
           utterance.voice = voices[voiceIdx] || null;
           utterance.onend = () => {
-            setSpeakBtnIdle();
-            addToHistory(text, "browser_tts", `voice_${voiceIdx}`, null);
+            if (showLoading) setSpeakBtnIdle();
+            if (recordHistory) addToHistory(phrase, "browser_tts", `voice_${voiceIdx}`, null);
             focusDisplayInput();
+          };
+          utterance.onerror = () => {
+            if (showLoading) setSpeakBtnIdle();
           };
           window.speechSynthesis.speak(utterance);
           focusDisplayInput();
         } else {
           const apiKey = localStorage.getItem("elevenlabs_key");
           if (!apiKey || !activeElevenVoiceId) {
-            alert("Please configure your API Key and select a voice in Settings.");
-            setSpeakBtnIdle();
+            if (alertOnError) alert("Please configure your API Key and select a voice in Settings.");
+            if (showLoading) setSpeakBtnIdle();
             focusDisplayInput();
             return;
           }
@@ -2362,7 +2492,7 @@
             method: "POST",
             headers: { Accept: "audio/mpeg", "Content-Type": "application/json", "xi-api-key": apiKey },
             body: JSON.stringify({
-              text, model_id: modelToUse,
+              text: phrase, model_id: modelToUse,
               voice_settings: { stability: parseFloat(stabilitySlider.value), similarity_boost: parseFloat(similaritySlider.value) }
             })
           });
@@ -2373,21 +2503,27 @@
           audio.playbackRate = speed;
 
           audio.onended = () => {
-            setSpeakBtnIdle();
+            if (showLoading) setSpeakBtnIdle();
             focusDisplayInput();
           };
           playAudioWithGain(audio, gainSetting);
           focusDisplayInput();
 
-          const reader = new FileReader();
-          reader.onloadend = () => addToHistory(text, modelToUse, activeElevenVoiceId, reader.result);
-          reader.readAsDataURL(blob);
+          if (recordHistory) {
+            const reader = new FileReader();
+            reader.onloadend = () => addToHistory(phrase, modelToUse, activeElevenVoiceId, reader.result);
+            reader.readAsDataURL(blob);
+          }
         }
       } catch (_) {
-        alert("Failed to generate speech.");
-        setSpeakBtnIdle();
+        if (alertOnError) alert("Failed to generate speech.");
+        if (showLoading) setSpeakBtnIdle();
         focusDisplayInput();
       }
+    }
+
+    async function speakText() {
+      await speakPhrase(getText(), { recordHistory: true, showLoading: true, alertOnError: true });
     }
 
     function setSpeakBtnIdle() {
@@ -2707,6 +2843,16 @@
       syncSlider(similaritySlider, valSimilarity, "elevenlabs_similarity");
       syncSlider(volumeSlider, valVolume, "elevenlabs_volume");
       syncSlider(speedSlider, valSpeed, "elevenlabs_speed");
+
+      // Speak Predictions toggle
+      const speakPredictionsToggle = document.getElementById("speak-predictions-toggle");
+      if (speakPredictionsToggle) {
+        speakPredictionsToggle.checked = speakPredictionsEnabled;
+        speakPredictionsToggle.addEventListener("change", () => {
+          speakPredictionsEnabled = !!speakPredictionsToggle.checked;
+          localStorage.setItem("aac_speak_predictions", speakPredictionsEnabled ? "1" : "0");
+        });
+      }
 
       // Pitch (discrete semitone steps) — store actual semitone value
       if (pitchSlider && valPitch) {
