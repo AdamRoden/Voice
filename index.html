@@ -44,9 +44,18 @@
 
     /* SIDEBAR TABS */
     .sidebar-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-    .sidebar-tab { flex: 1; padding: 10px 8px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .sidebar-tab { flex: 1; padding: 10px 8px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; border: none; background: none; font-family: inherit; }
       .sidebar-tab:hover { background-color: var(--bg-surface-hover); color: var(--text); }
       .sidebar-tab.active { background-color: var(--bg-surface-active); color: var(--accent); border-bottom: 3px solid var(--accent); }
+    .sidebar-tab-label { white-space: nowrap; }
+
+    /* Collapsed: vertical icon button rail */
+    .sidebar.collapsed .sidebar-header { justify-content: center; padding: 8px 0; }
+    .sidebar.collapsed .sidebar-tabs { flex-direction: column; border-bottom: none; flex: 1; min-height: 0; }
+    .sidebar.collapsed .sidebar-tab { flex: 0 0 auto; width: 100%; padding: 14px 0; border-bottom: 1px solid var(--border); border-radius: 0; gap: 0; }
+      .sidebar.collapsed .sidebar-tab.active { border-bottom: 1px solid var(--border); border-left: 3px solid var(--accent); background-color: var(--bg-surface-active); }
+    .sidebar.collapsed .sidebar-tab-label { display: none; }
+    .sidebar.collapsed .sidebar-content { display: none; }
 
     .sidebar-content { flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; min-height: 0; position: relative; }
 
@@ -54,13 +63,29 @@
       .tab-content.active { display: flex; }
 
     /* Topic Sidebar Items */
-    .topic-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 14px; color: var(--text); transition: background 0.2s; min-height: 32px; justify-content: space-between; }
+    .topic-item { display: flex; flex-direction: column; border-radius: 6px; font-size: 14px; color: var(--text); transition: background 0.2s; margin-bottom: 4px; overflow: hidden; }
       .topic-item:hover { background-color: var(--bg-surface-hover); }
       .topic-item.active { background-color: var(--bg-surface-active); color: var(--accent); font-weight: 600; }
-    .topic-item-content { display: flex; align-items: center; gap: 8px; overflow: hidden; flex: 1; }
+    .topic-item-header { display: flex; align-items: center; gap: 8px; padding: 6px 8px; cursor: pointer; min-height: 32px; justify-content: space-between; width: 100%; }
+    .topic-item-content { display: flex; align-items: center; gap: 8px; overflow: hidden; flex: 1; min-width: 0; }
     .topic-item-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .topic-actions { display: flex; opacity: 0; transition: opacity 0.2s; }
-    .topic-item:hover .topic-actions { opacity: 1; }
+    .topic-actions { display: flex; opacity: 0; transition: opacity 0.2s; flex-shrink: 0; }
+    .topic-item:hover .topic-actions, .topic-item.active .topic-actions { opacity: 1; }
+    .nav-action-btn { background: none; border: none; color: inherit; cursor: pointer; width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; padding: 0; }
+      .nav-action-btn:hover { background-color: var(--bg-surface-hover); color: var(--accent); }
+
+    /* Expanded topic sound-button list */
+    .topic-buttons-list { display: none; flex-direction: column; gap: 2px; padding: 0 6px 8px 12px; border-top: 1px solid var(--border); margin-top: 2px; }
+      .topic-item.active .topic-buttons-list { display: flex; }
+    .topic-sound-item { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--text); cursor: default; min-height: 30px; }
+      .topic-sound-item:hover { background-color: var(--bg-main); }
+    .topic-sound-swatch { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.2); }
+    .topic-sound-symbol { font-size: 16px; flex-shrink: 0; }
+    .topic-sound-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .topic-sound-edit-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; width: 26px; height: 26px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; opacity: 0; transition: opacity 0.15s, background 0.15s; padding: 0; }
+      .topic-sound-item:hover .topic-sound-edit-btn { opacity: 1; }
+      .topic-sound-edit-btn:hover { background-color: var(--bg-surface-hover); color: var(--accent); }
+    .topic-buttons-empty { padding: 8px 6px; font-size: 12px; color: var(--text-secondary); font-weight: 400; }
 
     #add-topic-sidebar-btn { margin-top: 12px; width: 100%; justify-content: center; }
 
@@ -71,8 +96,12 @@
         .sidebar-setting-group select:focus, .sidebar-setting-group input[type="text"]:focus { border-color: var(--accent); }
       .sidebar-setting-group input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; height: 16px; }
     .settings-stack { display: flex; flex-direction: column; gap: 4px; }
+    .setting-divider { border: 0; border-top: 1px solid var(--border); margin: 6px 0; }
 
-    .status-btn { background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 6px 8px; border-radius: 6px; font-size: 13px; cursor: pointer; text-align: left; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; width: 100%; }
+    /* Icon name inputs render the Material Symbol glyph instead of the raw name */
+    .icon-name-input { font-family: 'Material Symbols Outlined' !important; font-size: 28px !important; text-align: center; height: 48px; letter-spacing: normal; font-variation-settings: 'FILL' var(--icon-fill, 0), 'wght' var(--icon-wght, 400), 'GRAD' var(--icon-grad, 0), 'opsz' var(--icon-opsz, 24); -webkit-font-feature-settings: 'liga'; line-height: 1; }
+
+    .status-btn { background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 6px 8px; border-radius: 6px; font-size: 13px; cursor: pointer; text-align: left; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 8px; }
       .status-btn:hover { border-color: var(--accent); }
       .status-btn.missing { border-color: var(--danger); color: var(--danger); }
       .status-btn.saved { border-color: #81c784; color: #81c784; }
@@ -108,20 +137,6 @@
 
     .clear-history-btn { background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 6px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; margin: 6px 4px 0 0; text-align: center; flex-shrink: 0; }
       .clear-history-btn:hover { background: var(--danger-bg); }
-
-    /* Footer & Popup Menu */
-    .sidebar-footer { padding: 8px; border-top: 1px solid var(--border); position: relative; flex-shrink: 0; z-index: 2000; }
-    .gemini-settings-btn { display: flex; align-items: center; justify-content: space-between; padding: 8px; border-radius: 8px; cursor: pointer; color: var(--text); font-size: 15px; font-weight: 600; transition: all 0.2s; min-height: 38px; }
-      .gemini-settings-btn:hover { background-color: var(--bg-surface-hover); }
-    .sidebar.collapsed .gemini-settings-btn { justify-content: center; padding: 8px 0; }
-      .sidebar.collapsed .gemini-settings-btn .nav-label { display: none; }
-
-    .gemini-context-popup { position: absolute; bottom: 52px; left: 8px; width: 220px; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px var(--shadow); display: none; flex-direction: column; gap: 2px; padding: 6px; z-index: 300; }
-      .gemini-context-popup.open { display: flex; }
-    .sidebar.collapsed .gemini-context-popup { left: 56px; bottom: 8px; width: 210px; }
-
-    .popup-menu-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--text); transition: background 0.2s; font-weight: 500; }
-      .popup-menu-item:hover { background-color: var(--bg-surface-hover); }
 
     /* ==================== MAIN WORKSPACE ==================== */
     .app-main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 8px; overflow: hidden; height: 100%; }
@@ -175,7 +190,10 @@
       .sound-button.swap-target { border-color: #81c784; box-shadow: 0 0 0 3px rgba(129, 199, 132, 0.4); transform: scale(1.02); }
       .sound-button.overwrite-target { animation: wiggle 0.4s infinite ease-in-out; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(138, 180, 248, 0.5); }
 
+    .sound-button-inner { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; overflow: hidden; pointer-events: none; }
+    .sound-button-symbol { font-size: 18px; flex-shrink: 0; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
     .sound-button-label { width: 100%; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
+    .sound-button-inner .sound-button-label { width: auto; flex: 1; min-width: 0; }
     .sound-button-edit-btn { position: absolute; left: 6px; top: 50%; transform: translateY(-50%); width: 24px; height: 24px; border: 1px solid rgba(255,255,255,0.4); border-radius: 6px; background-color: rgba(0,0,0,0.45); color: white; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 5; transition: background 0.2s; }
     .sound-canvas.edit-mode .sound-button .sound-button-edit-btn { display: flex; }
     .sound-button-edit-btn:hover { background-color: rgba(0,0,0,0.8); }
@@ -300,56 +318,57 @@
 
     <!-- Sidebar Tabs -->
     <div class="sidebar-tabs" id="sidebar-tabs">
-      <div class="sidebar-tab active" data-tab="topics" id="tab-topics">
+      <button class="sidebar-tab active" data-tab="topics" id="tab-topics" type="button" title="Topics">
         <span class="material-symbols-outlined icon-medium">folder</span>
-        <span>Topics</span>
-      </div>
-      <div class="sidebar-tab" data-tab="settings" id="tab-settings">
+        <span class="sidebar-tab-label">Topics</span>
+      </button>
+      <button class="sidebar-tab" data-tab="settings" id="tab-settings" type="button" title="Audio">
         <span class="material-symbols-outlined icon-medium">tune</span>
-        <span>Audio</span>
-      </div>
-      <div class="sidebar-tab" data-tab="history" id="tab-history">
+        <span class="sidebar-tab-label">Audio</span>
+      </button>
+      <button class="sidebar-tab" data-tab="history" id="tab-history" type="button" title="History">
         <span class="material-symbols-outlined icon-medium">history</span>
-        <span>History</span>
-      </div>
+        <span class="sidebar-tab-label">History</span>
+      </button>
     </div>
 
     <div class="sidebar-content" id="sidebar-content">
       <!-- Topics Tab Content -->
       <div id="tab-content-topics" class="tab-content active">
         <div id="topics-list"></div>
-        <button class="tool-btn" id="add-topic-sidebar-btn">
+        <button class="tool-btn" id="add-topic-sidebar-btn" type="button">
           <span class="material-symbols-outlined icon-medium">add</span> New Topic
         </button>
       </div>
 
-      <!-- Audio Settings Tab Content -->
+      <!-- Audio Settings Tab Content (mirrors speech.html Settings) -->
       <div id="tab-content-settings" class="tab-content">
-        <!-- Theme Picker Directly inside Settings Tab -->
         <div class="sidebar-setting-group">
-          <label>Theme Appearance</label>
-          <div class="theme-picker-group">
-            <button class="theme-btn" data-theme="light" onclick="applyTheme('light')" type="button"><span class="material-symbols-outlined icon-small">light_mode</span> Light</button>
-            <button class="theme-btn" data-theme="dark" onclick="applyTheme('dark')" type="button"><span class="material-symbols-outlined icon-small">dark_mode</span> Dark</button>
-            <button class="theme-btn" data-theme="system" onclick="applyTheme('system')" type="button"><span class="material-symbols-outlined icon-small">computer</span> System</button>
+          <label>Voice Model</label>
+          <select id="model-select">
+            <option value="eleven_v3">Eleven v3</option>
+            <option value="eleven_multilingual_v2">Eleven Multilingual v2</option>
+            <option value="eleven_flash_v2">Eleven Flash v2</option>
+            <option value="browser_tts">Local Browser (Utterance)</option>
+          </select>
+        </div>
+
+        <div class="settings-stack" id="group-browser-voice">
+          <div class="sidebar-setting-group">
+            <label>Browser Voice</label>
+            <button class="status-btn" id="open-browser-voices" type="button">
+              <span class="status-btn-text" id="selected-browser-name">Select Voice...</span>
+              <span class="material-symbols-outlined icon-small">chevron_right</span>
+            </button>
           </div>
         </div>
 
-        <div class="sidebar-setting-group">
-          <label><span>Font Size</span><span id="font-display">24px</span></label>
-          <div class="font-controls">
-            <button class="font-btn" id="font-down" type="button">A-</button>
-            <button class="font-btn" id="font-up" type="button">A+</button>
-          </div>
-        </div>
-        <div class="sidebar-setting-group" id="group-browser-voice">
-          <label>Browser Voice</label>
-          <button class="status-btn" id="open-browser-voices" type="button">
-            <span class="status-btn-text" id="selected-browser-name">Select Voice...</span>
-            <span class="material-symbols-outlined icon-small">chevron_right</span>
-          </button>
-        </div>
         <div class="settings-stack" id="group-eleven-settings">
+          <div class="sidebar-setting-group">
+            <button id="api-key-btn" class="status-btn missing" type="button">
+              <span class="status-btn-text"><span class="material-symbols-outlined icon-small icon-btn-margin">key</span>Missing API Key (Click to Add)</span>
+            </button>
+          </div>
           <div class="sidebar-setting-group">
             <label>ElevenLabs Voice</label>
             <button class="status-btn" id="open-eleven-voices" type="button">
@@ -357,6 +376,7 @@
               <span class="material-symbols-outlined icon-small">chevron_right</span>
             </button>
           </div>
+          <hr class="setting-divider">
           <div class="sidebar-setting-group">
             <label><span>Stability</span><span id="val-stability">0.50</span></label>
             <input type="range" id="stability-slider" min="0.0" max="1.0" step="0.05" value="0.5">
@@ -366,6 +386,9 @@
             <input type="range" id="similarity-slider" min="0.0" max="1.0" step="0.05" value="0.75">
           </div>
         </div>
+
+        <hr class="setting-divider">
+
         <div class="sidebar-setting-group">
           <label><span>Volume Gain</span><span id="val-volume">3.00</span></label>
           <input type="range" id="volume-slider" min="1" max="5" step="0.5" value="3">
@@ -373,6 +396,27 @@
         <div class="sidebar-setting-group">
           <label><span>Speech Speed</span><span id="val-speed">1.00</span></label>
           <input type="range" id="speed-slider" min="0.5" max="2.0" step="0.1" value="1.0">
+        </div>
+
+        <hr class="setting-divider">
+
+        <div class="sidebar-setting-group">
+          <label><span>Font Size</span><span id="font-display">24px</span></label>
+          <div class="font-controls">
+            <button class="font-btn" id="font-down" type="button">A-</button>
+            <button class="font-btn" id="font-up" type="button">A+</button>
+          </div>
+        </div>
+
+        <hr class="setting-divider">
+
+        <div class="sidebar-setting-group">
+          <label>Theme Appearance</label>
+          <div class="theme-picker-group">
+            <button class="theme-btn" data-theme="light" onclick="applyTheme('light')" type="button"><span class="material-symbols-outlined icon-small">light_mode</span> Light</button>
+            <button class="theme-btn" data-theme="dark" onclick="applyTheme('dark')" type="button"><span class="material-symbols-outlined icon-small">dark_mode</span> Dark</button>
+            <button class="theme-btn" data-theme="system" onclick="applyTheme('system')" type="button"><span class="material-symbols-outlined icon-small">computer</span> System</button>
+          </div>
         </div>
       </div>
 
@@ -384,28 +428,6 @@
         </div>
         <div class="history-list" id="audio-history"></div>
         <button class="clear-history-btn" id="clear-history-btn" type="button">Clear All History</button>
-      </div>
-    </div>
-
-    <!-- Footer with Context Popup -->
-    <div class="sidebar-footer">
-      <div class="gemini-settings-btn" id="footer-settings-btn" title="Engine & Settings">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span class="material-symbols-outlined" id="nav-icon-settings">settings</span>
-          <span class="nav-label" id="nav-label-settings">Settings & API</span>
-        </div>
-        <span class="material-symbols-outlined icon-small">expand_less</span>
-      </div>
-
-      <div class="gemini-context-popup" id="gemini-context-popup">
-        <div class="popup-menu-item" onclick="openModal('modal-engine')">
-          <span class="material-symbols-outlined icon-medium">record_voice_over</span>
-          <span>Voice Engine & API Key</span>
-        </div>
-        <div class="popup-menu-item" onclick="switchSidebarTab('settings')">
-          <span class="material-symbols-outlined icon-medium">tune</span>
-          <span>Audio Control Sliders</span>
-        </div>
       </div>
     </div>
   </aside>
@@ -487,25 +509,6 @@
   <!-- ==================== MODALS & POPUPS ==================== -->
   <div class="modal-overlay" id="modal-overlay"></div>
 
-  <!-- Voice Engine Modal -->
-  <div class="modal" id="modal-engine">
-    <div class="modal-title">Voice Engine & API Key</div>
-    <div class="sidebar-setting-group">
-      <label>Voice Engine Model</label>
-      <select id="model-select">
-        <option value="browser_tts">Local Browser (Utterance)</option>
-        <option value="eleven_flash_v2">Eleven Flash v2</option>
-        <option value="eleven_multilingual_v2">Eleven Multilingual v2</option>
-        <option value="eleven_v3">Eleven v3</option>
-      </select>
-    </div>
-    <div class="sidebar-setting-group">
-      <label>ElevenLabs API Key</label>
-      <button id="api-key-btn" class="status-btn missing" type="button">Show / Edit API Key</button>
-    </div>
-    <div class="modal-buttons"><button class="modal-btn primary" onclick="closeModals()">Done</button></div>
-  </div>
-
   <!-- Assign Choice Modal -->
   <div class="modal" id="modal-assign-choice">
     <div class="modal-title">Assign Speech Audio</div>
@@ -525,7 +528,7 @@
     </div>
     <div class="sidebar-setting-group">
       <label>Material Symbol Icon</label>
-      <input type="text" id="topic-icon-input" class="modal-input input-margin-bottom" maxlength="24">
+      <input type="text" id="topic-icon-input" class="modal-input icon-name-input input-margin-bottom" maxlength="48" spellcheck="false" autocomplete="off" aria-label="Topic icon">
       <button class="status-btn btn-center" onclick="openIconStudio('topic-icon-input')" type="button"><span class="material-symbols-outlined icon-small icon-btn-margin">search</span> Open Icon Studio Picker...</button>
     </div>
     <div class="sidebar-setting-group">
@@ -545,6 +548,11 @@
     <div class="sidebar-setting-group">
       <label>Label</label>
       <input type="text" id="button-label-input" class="modal-input" placeholder="Button label" maxlength="30">
+    </div>
+    <div class="sidebar-setting-group">
+      <label>Symbol (optional)</label>
+      <input type="text" id="button-symbol-input" class="modal-input icon-name-input input-margin-bottom" maxlength="48" spellcheck="false" autocomplete="off" placeholder="" aria-label="Button symbol">
+      <button class="status-btn btn-center" onclick="openIconStudio('button-symbol-input')" type="button"><span class="material-symbols-outlined icon-small icon-btn-margin">search</span> Open Icon Studio Picker...</button>
     </div>
     <div class="sidebar-setting-group">
       <label>Color</label>
@@ -742,6 +750,7 @@
     let editSnapshot = null;
     let draggingButton = null;
     let editingButtonId = null;
+    let editingButtonTopicId = null;
     let editingTopicId = null;
     let targetStudioInputId = null;
     let selectedStudioIcon = null;
@@ -756,9 +765,11 @@
     function normalizeButton(btn, index = 0) {
       const col = Number.isFinite(btn.col) ? btn.col : (Number.isFinite(btn.x) ? Math.max(0, Math.floor(btn.x / 100)) : (index % DEFAULT_GRID_COLS));
       const row = Number.isFinite(btn.row) ? btn.row : (Number.isFinite(btn.y) ? Math.max(0, Math.floor(btn.y / 80)) : Math.floor(index / DEFAULT_GRID_COLS));
+      const rawSymbol = btn.symbol || btn.icon || "";
       return {
         id: btn.id || generateId(),
         label: btn.label || "Button",
+        symbol: SYMBOL_MIGRATION_MAP[rawSymbol] || rawSymbol || "",
         color: btn.color || COLOR_PALETTE[index % COLOR_PALETTE.length],
         audioData: btn.audioData || null,
         col, row,
@@ -801,8 +812,11 @@
     }
 
     // ==================== SIDEBAR TABS ====================
-    function switchSidebarTab(tab) {
+    function switchSidebarTab(tab, expandIfCollapsed = false) {
       currentSidebarTab = tab;
+      if (expandIfCollapsed && sidebar.classList.contains("collapsed")) {
+        sidebar.classList.remove("collapsed");
+      }
       document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       const content = document.getElementById(`tab-content-${tab}`);
@@ -812,29 +826,27 @@
     }
 
     document.querySelectorAll('.sidebar-tab').forEach(tab => {
-      tab.addEventListener('click', () => switchSidebarTab(tab.dataset.tab));
+      tab.addEventListener('click', () => {
+        const wasCollapsed = sidebar.classList.contains("collapsed");
+        switchSidebarTab(tab.dataset.tab, wasCollapsed);
+      });
     });
 
     document.getElementById("toggle-sidebar-btn").addEventListener("click", () => {
       sidebar.classList.toggle("collapsed");
     });
 
-    document.getElementById("footer-settings-btn").addEventListener("click", (e) => {
-      e.stopPropagation();
-      document.getElementById("gemini-context-popup").classList.toggle("open");
-    });
-
-    document.addEventListener("click", (e) => {
-      if (!e.target.closest("#footer-settings-btn") && !e.target.closest("#gemini-context-popup")) {
-        document.getElementById("gemini-context-popup").classList.remove("open");
-      }
-    });
-
     // ==================== GOOGLE FONTS ICON STUDIO ====================
+    let iconStudioReturnModalId = null;
+
     function openIconStudio(targetInputId) {
       targetStudioInputId = targetInputId;
       const currentVal = document.getElementById(targetInputId)?.value || "chat";
-      selectedStudioIcon = SYMBOL_MIGRATION_MAP[currentVal] || currentVal;
+      selectedStudioIcon = SYMBOL_MIGRATION_MAP[currentVal] || currentVal || "chat";
+
+      // Remember which edit modal to restore after picking an icon
+      const openParent = document.querySelector(".modal.open:not(#icon-studio-modal)");
+      iconStudioReturnModalId = openParent ? openParent.id : null;
 
       initialIconStyles = { fill: iconFill, wght: iconWght, grad: iconGrad, opsz: iconOpsz };
       document.getElementById("icon-search-input").value = "";
@@ -852,7 +864,15 @@
         iconOpsz = initialIconStyles.opsz;
         applyGlobalIconStyles();
       }
-      closeModals();
+      const returnTo = iconStudioReturnModalId;
+      iconStudioReturnModalId = null;
+      if (returnTo) {
+        document.querySelectorAll(".modal").forEach(m => m.classList.remove("open"));
+        document.getElementById(returnTo)?.classList.add("open");
+        modalOverlay.classList.add("open");
+      } else {
+        closeModals();
+      }
     }
 
     function renderIconStudioGrid(query) {
@@ -913,29 +933,67 @@
       if (tabsEl) tabsEl.innerHTML = "";
 
       topicsList.forEach(topic => {
+        const isActive = topic.id === activeTopicId;
         const item = document.createElement("div");
-        item.className = `topic-item ${topic.id === activeTopicId ? "active" : ""}`;
-        item.innerHTML = `
+        item.className = `topic-item ${isActive ? "active" : ""}`;
+
+        const header = document.createElement("div");
+        header.className = "topic-item-header";
+        header.innerHTML = `
           <div class="topic-item-content">
             <span class="material-symbols-outlined icon-medium" style="color: ${topic.color};">${topic.icon || "folder"}</span>
             <span class="topic-item-name">${topic.name}</span>
           </div>
           <div class="topic-actions">
-            <button class="nav-action-btn edit-topic-btn" title="Edit Topic Settings">
+            <button class="nav-action-btn edit-topic-btn" type="button" title="Edit Topic Settings">
               <span class="material-symbols-outlined icon-small">edit</span>
             </button>
           </div>
         `;
-        item.addEventListener("click", (e) => {
+        header.addEventListener("click", (e) => {
           if (e.target.closest(".edit-topic-btn")) { e.stopPropagation(); openTopicEditModal(topic.id); return; }
           switchTopic(topic.id);
         });
+        item.appendChild(header);
+
+        // Active topic expands to list its sound buttons
+        if (isActive) {
+          const buttonsList = document.createElement("div");
+          buttonsList.className = "topic-buttons-list";
+          const buttons = Array.isArray(topic.buttons) ? topic.buttons : [];
+          if (buttons.length === 0) {
+            buttonsList.innerHTML = `<div class="topic-buttons-empty">No sound buttons yet</div>`;
+          } else {
+            buttons.forEach(btn => {
+              const row = document.createElement("div");
+              row.className = "topic-sound-item";
+              const symbolHtml = btn.symbol
+                ? `<span class="material-symbols-outlined topic-sound-symbol">${btn.symbol}</span>`
+                : "";
+              row.innerHTML = `
+                <span class="topic-sound-swatch" style="background-color: ${btn.color || "#8ab4f8"};"></span>
+                ${symbolHtml}
+                <span class="topic-sound-label">${btn.label || "Button"}</span>
+                <button class="topic-sound-edit-btn" type="button" title="Edit button">
+                  <span class="material-symbols-outlined icon-small">edit</span>
+                </button>
+              `;
+              row.querySelector(".topic-sound-edit-btn").addEventListener("click", (e) => {
+                e.stopPropagation();
+                openButtonEditModal(btn.id, topic.id);
+              });
+              buttonsList.appendChild(row);
+            });
+          }
+          item.appendChild(buttonsList);
+        }
+
         listEl.appendChild(item);
 
         if (tabsEl) {
           const tabEl = document.createElement("button");
           tabEl.type = "button";
-          tabEl.className = `workspace-tab ${topic.id === activeTopicId ? "active" : ""}`;
+          tabEl.className = `workspace-tab ${isActive ? "active" : ""}`;
           tabEl.innerHTML = `
             <span class="material-symbols-outlined icon-medium" style="color: ${topic.color};">${topic.icon || "folder"}</span>
             <span class="topic-item-name">${topic.name}</span>
@@ -1072,7 +1130,11 @@
     }
 
     editModeBtn.addEventListener("click", () => setEditMode(true));
-    document.getElementById("save-edit-btn").addEventListener("click", () => { saveTopicsList(); setEditMode(false); });
+    document.getElementById("save-edit-btn").addEventListener("click", () => {
+      saveTopicsList();
+      setEditMode(false);
+      renderTopics();
+    });
     document.getElementById("cancel-edit-btn").addEventListener("click", () => {
       if (editSnapshot) topicsList = normalizeTopicsList(editSnapshot);
       setEditMode(false); renderTopics(); renderSoundButtons();
@@ -1093,9 +1155,15 @@
         btnEl.style.gridRow = `${btnData.row + 1} / span ${btnData.rowSpan}`;
         btnEl.style.backgroundColor = btnData.color || "#3f3f4e";
 
+        const symbolPart = btnData.symbol
+          ? `<span class="material-symbols-outlined sound-button-symbol">${btnData.symbol}</span>`
+          : "";
         btnEl.innerHTML = `
-          <div class="sound-button-label">${btnData.label || "Button"}</div>
-          <button class="sound-button-edit-btn" title="Edit Button"><span class="material-symbols-outlined icon-small">edit</span></button>
+          <div class="sound-button-inner">
+            ${symbolPart}
+            <div class="sound-button-label">${btnData.label || "Button"}</div>
+          </div>
+          <button class="sound-button-edit-btn" type="button" title="Edit Button"><span class="material-symbols-outlined icon-small">edit</span></button>
         `;
 
         if (isEditMode) {
@@ -1119,18 +1187,23 @@
       });
     }
 
-    function openButtonEditModal(btnId) {
-      const tab = getActiveTopic();
+    function openButtonEditModal(btnId, topicId = null) {
+      const tab = topicId
+        ? topicsList.find(t => t.id === topicId)
+        : getActiveTopic();
       const btn = tab?.buttons.find(b => b.id === btnId);
-      if (!btn) return;
+      if (!btn || !tab) return;
       editingButtonId = btnId;
-      document.getElementById("button-label-input").value = btn.label;
+      editingButtonTopicId = tab.id;
+      document.getElementById("button-label-input").value = btn.label || "";
+      document.getElementById("button-symbol-input").value = btn.symbol || "";
 
       const picker = document.getElementById("button-color-picker");
       picker.innerHTML = "";
+      const btnHex = normalizeToHex(btn.color);
       COLOR_PALETTE.forEach(col => {
         const opt = document.createElement("div");
-        opt.className = `color-option ${btn.color === col ? "selected" : ""}`;
+        opt.className = `color-option ${btnHex === normalizeToHex(col) ? "selected" : ""}`;
         opt.style.backgroundColor = col;
         opt.addEventListener("click", () => {
           picker.querySelectorAll(".color-option").forEach(o => o.classList.remove("selected"));
@@ -1138,24 +1211,55 @@
         });
         picker.appendChild(opt);
       });
+
+      const customOpt = document.createElement("div");
+      customOpt.className = "color-option custom";
+      if (btnHex && !COLOR_PALETTE.some(c => normalizeToHex(c) === btnHex)) customOpt.classList.add("selected");
+      const colorInput = document.createElement("input");
+      colorInput.type = "color";
+      colorInput.className = "color-picker-input";
+      colorInput.value = btnHex || "#3f3f4e";
+      customOpt.style.backgroundColor = colorInput.value;
+      colorInput.addEventListener("input", (e) => {
+        customOpt.style.backgroundColor = e.target.value;
+        picker.querySelectorAll(".color-option").forEach(o => o.classList.remove("selected"));
+        customOpt.classList.add("selected");
+      });
+      customOpt.addEventListener("click", () => {
+        picker.querySelectorAll(".color-option").forEach(o => o.classList.remove("selected"));
+        customOpt.classList.add("selected");
+        colorInput.focus();
+      });
+      customOpt.appendChild(colorInput);
+      picker.appendChild(customOpt);
+
       openModal("button-edit-modal");
     }
 
     document.getElementById("save-button-edit").addEventListener("click", () => {
-      const tab = getActiveTopic();
+      const tab = topicsList.find(t => t.id === editingButtonTopicId) || getActiveTopic();
       const btn = tab?.buttons.find(b => b.id === editingButtonId);
       if (!btn) return;
       btn.label = document.getElementById("button-label-input").value.trim() || "Button";
+      const rawSymbol = document.getElementById("button-symbol-input").value.trim();
+      btn.symbol = SYMBOL_MIGRATION_MAP[rawSymbol] || rawSymbol || "";
       const selCol = document.querySelector("#button-color-picker .color-option.selected");
       if (selCol) btn.color = selCol.style.backgroundColor;
-      renderSoundButtons(); closeModals();
+      if (!isEditMode) saveTopicsList();
+      renderTopics();
+      renderSoundButtons();
+      closeModals();
     });
 
     document.getElementById("delete-button-edit").addEventListener("click", () => {
-      const tab = getActiveTopic();
+      const tab = topicsList.find(t => t.id === editingButtonTopicId) || getActiveTopic();
       if (!tab) return;
       tab.buttons = tab.buttons.filter(b => b.id !== editingButtonId);
-      repackSequentialGrid(tab); renderSoundButtons(); closeModals();
+      repackSequentialGrid(tab);
+      if (!isEditMode) saveTopicsList();
+      renderTopics();
+      renderSoundButtons();
+      closeModals();
     });
 
     function repackSequentialGrid(tab) {
@@ -1284,7 +1388,7 @@
       }, activeTab.buttons.length));
 
       repackSequentialGrid(activeTab);
-      saveTopicsList(); renderSoundButtons(); closeModals();
+      saveTopicsList(); renderTopics(); renderSoundButtons(); closeModals();
     });
 
     document.getElementById("choice-overwrite-btn").addEventListener("click", () => {
@@ -1310,6 +1414,7 @@
       btn.label = lastGeneratedAudio.text.substring(0, 24) || "Speech";
       saveTopicsList();
       setOverwriteMode(false);
+      renderTopics();
     }
 
     // ==================== HISTORY (No Inline Relabeling) ====================
@@ -1575,12 +1680,13 @@
       document.querySelectorAll(".modal").forEach(m => m.classList.remove("open"));
       document.getElementById(modalId)?.classList.add("open");
       modalOverlay.classList.add("open");
-      document.getElementById("gemini-context-popup").classList.remove("open");
     }
     function closeModals() {
       document.querySelectorAll(".modal").forEach(m => m.classList.remove("open"));
       modalOverlay.classList.remove("open");
-      editingButtonId = null; editingTopicId = null;
+      editingButtonId = null;
+      editingButtonTopicId = null;
+      editingTopicId = null;
     }
     modalOverlay.addEventListener("click", closeModals);
 
@@ -1604,39 +1710,56 @@
     modelSelect.addEventListener("change", (e) => { localStorage.setItem("elevenlabs_model", e.target.value); updateSettingsVisibility(); });
 
     // ==================== VOICES & API KEY MANAGEMENT ====================
-    function loadBrowserVoices(filter = '') {
+    const previewText = "This is a preview.";
+    let elevenVoicesCache = [];
+    let voiceSearchTimeout = null;
+
+    function getVoiceSearchQuery() {
+      return (document.getElementById("voice-search-input").value || "").toLowerCase().trim();
+    }
+
+    function loadBrowserVoices() {
       const voices = window.speechSynthesis.getVoices();
       const list = document.getElementById("voice-list-browser");
       list.innerHTML = "";
 
-      const q = filter.toLowerCase().trim();
-      const filtered = voices.filter(v => v.name.toLowerCase().includes(q) || v.lang.toLowerCase().includes(q));
+      const q = getVoiceSearchQuery();
+      const filtered = voices
+        .map((voice, index) => ({ voice, index }))
+        .filter(({ voice }) => voice.name.toLowerCase().includes(q) || voice.lang.toLowerCase().includes(q));
 
-      filtered.forEach((voice) => {
-        const originalIdx = voices.indexOf(voice);
-        if (String(activeBrowserVoiceIndex) === String(originalIdx)) {
-          document.getElementById("selected-browser-name").textContent = voice.name;
-        }
+      if (String(activeBrowserVoiceIndex) !== "" && voices[activeBrowserVoiceIndex]) {
+        document.getElementById("selected-browser-name").textContent = voices[activeBrowserVoiceIndex].name;
+      }
+
+      if (filtered.length === 0) {
+        list.innerHTML = `<div class="history-empty-notice">No voices found</div>`;
+        return;
+      }
+
+      filtered.forEach(({ voice, index }) => {
         const item = document.createElement("div");
-        item.className = `voice-item ${String(activeBrowserVoiceIndex) === String(originalIdx) ? "selected" : ""}`;
+        item.className = `voice-item ${String(activeBrowserVoiceIndex) === String(index) ? "selected" : ""}`;
         item.innerHTML = `
           <span class="voice-item-name">${voice.name} (${voice.lang})</span>
           <button class="voice-preview-btn" type="button" title="Preview Voice">
-            <span class="material-symbols-outlined voice-preview-icon">play_arrow</span> Preview
+            <span class="material-symbols-outlined icon-small">play_arrow</span>
           </button>
         `;
-        item.addEventListener("click", () => {
-          activeBrowserVoiceIndex = originalIdx;
-          localStorage.setItem("aac_browser_voice_index", originalIdx);
+        item.addEventListener("click", (e) => {
+          if (e.target.closest("button")) return;
+          activeBrowserVoiceIndex = index;
+          localStorage.setItem("aac_browser_voice_index", index);
           document.getElementById("selected-browser-name").textContent = voice.name;
-          loadBrowserVoices(document.getElementById("voice-search-input").value);
+          document.querySelectorAll("#voice-list-browser .voice-item").forEach(el => el.classList.remove("selected"));
+          item.classList.add("selected");
+          setTimeout(() => document.getElementById("voices-panel").classList.remove("open"), 200);
         });
 
-        const previewBtn = item.querySelector(".voice-preview-btn");
-        previewBtn.addEventListener("click", (e) => {
+        item.querySelector(".voice-preview-btn").addEventListener("click", (e) => {
           e.stopPropagation();
           window.speechSynthesis.cancel();
-          const utterance = new SpeechSynthesisUtterance("Hello, this is a local voice preview.");
+          const utterance = new SpeechSynthesisUtterance(previewText);
           utterance.voice = voice;
           utterance.rate = parseFloat(speedSlider.value) || 1.0;
           utterance.volume = Math.min(1.0, (parseFloat(volumeSlider.value) || 3.0) / 5.0);
@@ -1646,84 +1769,106 @@
       });
     }
 
-    async function loadElevenLabsVoices(filter = '') {
+    async function fetchElevenVoices(apiKey) {
+      if (!apiKey) {
+        elevenVoicesCache = [];
+        renderElevenVoiceList();
+        return;
+      }
       const list = document.getElementById("voice-list-eleven");
-      const apiKey = localStorage.getItem("elevenlabs_key");
       list.innerHTML = `<div class="history-empty-notice">Loading ElevenLabs voices...</div>`;
 
       try {
-        const headers = { Accept: "application/json" };
-        if (apiKey) headers["xi-api-key"] = apiKey;
-        const res = await fetch("https://api.elevenlabs.io/v1/voices", { headers });
+        const res = await fetch("https://api.elevenlabs.io/v1/voices", {
+          headers: { Accept: "application/json", "xi-api-key": apiKey }
+        });
         if (!res.ok) throw new Error("Could not fetch ElevenLabs voices");
         const data = await res.json();
-        let voices = data.voices || [];
-
-        if (filter) {
-          const f = filter.toLowerCase().trim();
-          voices = voices.filter(v => v.name.toLowerCase().includes(f) || (v.category || '').toLowerCase().includes(f));
-        }
-
-        list.innerHTML = "";
-
-        if (voices.length === 0) {
-          list.innerHTML = `<div class="history-empty-notice">No matching voices found.</div>`;
-          return;
-        }
-
-        voices.forEach(voice => {
-          if (activeElevenVoiceId === voice.voice_id) document.getElementById("selected-eleven-name").textContent = voice.name;
-          const item = document.createElement("div");
-          item.className = `voice-item ${activeElevenVoiceId === voice.voice_id ? "selected" : ""}`;
-          item.innerHTML = `
-            <span class="voice-item-name">${voice.name} (${voice.category || "General"})</span>
-            <button class="voice-preview-btn" type="button" title="Preview Voice">
-              <span class="material-symbols-outlined voice-preview-icon">play_arrow</span>
-            </button>
-          `;
-
-          item.addEventListener("click", () => {
-            activeElevenVoiceId = voice.voice_id;
-            localStorage.setItem("elevenlabs_voice", activeElevenVoiceId);
-            document.getElementById("selected-eleven-name").textContent = voice.name;
-            loadElevenLabsVoices(document.getElementById("voice-search-input").value);
-          });
-
-          const previewBtn = item.querySelector(".voice-preview-btn");
-          previewBtn.addEventListener("click", async (e) => {
-            e.stopPropagation();
-            previewBtn.disabled = true;
-            const icon = previewBtn.querySelector(".voice-preview-icon");
-            if (icon) icon.textContent = "hourglass_empty";
-
-            try {
-              const gainSetting = parseFloat(volumeSlider.value) || 3.0;
-              if (voice.preview_url) {
-                const audio = new Audio(voice.preview_url);
-                playAudioWithGain(audio, gainSetting);
-              } else if (apiKey) {
-                const synRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice.voice_id}`, {
-                  method: "POST",
-                  headers: { Accept: "audio/mpeg", "Content-Type": "application/json", "xi-api-key": apiKey },
-                  body: JSON.stringify({ text: "Hello, this is a cloud voice preview.", model_id: modelSelect.value || "eleven_v3" })
-                });
-                if (!synRes.ok) throw new Error();
-                const blob = await synRes.blob();
-                const audio = new Audio(URL.createObjectURL(blob));
-                playAudioWithGain(audio, gainSetting);
-              }
-            } catch (_) {
-              alert("Could not preview voice.");
-            } finally {
-              previewBtn.disabled = false;
-              if (icon) icon.textContent = "play_arrow";
-            }
-          });
-          list.appendChild(item);
-        });
+        elevenVoicesCache = data.voices || [];
+        renderElevenVoiceList();
       } catch (_) {
+        elevenVoicesCache = [];
         list.innerHTML = `<div class="history-empty-notice">Could not load voices. Check API Key.</div>`;
       }
+    }
+
+    function renderElevenVoiceList() {
+      const list = document.getElementById("voice-list-eleven");
+      const q = getVoiceSearchQuery();
+      const filtered = elevenVoicesCache.filter(v =>
+        v.name.toLowerCase().includes(q) || (v.category || "").toLowerCase().includes(q)
+      );
+      list.innerHTML = "";
+
+      const selected = elevenVoicesCache.find(v => v.voice_id === activeElevenVoiceId);
+      if (selected) document.getElementById("selected-eleven-name").textContent = selected.name;
+
+      if (!elevenVoicesCache.length) {
+        list.innerHTML = `<div class="history-empty-notice">Enter an API Key to load voices...</div>`;
+        return;
+      }
+      if (filtered.length === 0) {
+        list.innerHTML = `<div class="history-empty-notice">No matching voices found.</div>`;
+        return;
+      }
+
+      filtered.forEach(voice => {
+        const item = document.createElement("div");
+        item.className = `voice-item ${activeElevenVoiceId === voice.voice_id ? "selected" : ""}`;
+        item.innerHTML = `
+          <span class="voice-item-name">${voice.name} (${voice.category || "General"})</span>
+          <button class="voice-preview-btn" type="button" title="Preview Voice">
+            <span class="material-symbols-outlined icon-small">play_arrow</span>
+          </button>
+        `;
+
+        item.addEventListener("click", (e) => {
+          if (e.target.closest("button")) return;
+          activeElevenVoiceId = voice.voice_id;
+          localStorage.setItem("elevenlabs_voice", activeElevenVoiceId);
+          document.getElementById("selected-eleven-name").textContent = voice.name;
+          document.querySelectorAll("#voice-list-eleven .voice-item").forEach(el => el.classList.remove("selected"));
+          item.classList.add("selected");
+          setTimeout(() => document.getElementById("voices-panel").classList.remove("open"), 200);
+        });
+
+        const previewBtn = item.querySelector(".voice-preview-btn");
+        previewBtn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          const icon = previewBtn.querySelector(".material-symbols-outlined");
+          icon.textContent = "hourglass_top";
+          previewBtn.disabled = true;
+          const apiKey = localStorage.getItem("elevenlabs_key");
+          const previewModel = modelSelect.value === "browser_tts" ? "eleven_v3" : modelSelect.value;
+
+          try {
+            if (!apiKey) throw new Error("No API key");
+            // Synthesize a short sample (more reliable than preview_url + WebAudio CORS issues)
+            const synRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice.voice_id}`, {
+              method: "POST",
+              headers: { Accept: "audio/mpeg", "Content-Type": "application/json", "xi-api-key": apiKey },
+              body: JSON.stringify({ text: previewText, model_id: previewModel })
+            });
+            if (!synRes.ok) throw new Error("API Error");
+            const blob = await synRes.blob();
+            const audio = new Audio(URL.createObjectURL(blob));
+            audio.onended = () => {
+              icon.textContent = "play_arrow";
+              previewBtn.disabled = false;
+            };
+            audio.onerror = () => {
+              icon.textContent = "play_arrow";
+              previewBtn.disabled = false;
+            };
+            await audio.play();
+          } catch (_) {
+            alert("Could not preview voice.");
+            icon.textContent = "play_arrow";
+            previewBtn.disabled = false;
+          }
+        });
+        list.appendChild(item);
+      });
     }
 
     document.getElementById("open-browser-voices").addEventListener("click", () => {
@@ -1738,7 +1883,9 @@
       document.getElementById("voice-list-eleven").classList.add("active");
       document.getElementById("voice-list-browser").classList.remove("active");
       document.getElementById("voice-search-input").value = "";
-      loadElevenLabsVoices();
+      const apiKey = localStorage.getItem("elevenlabs_key");
+      if (elevenVoicesCache.length) renderElevenVoiceList();
+      else fetchElevenVoices(apiKey);
       document.getElementById("voices-panel").classList.add("open");
     });
 
@@ -1746,23 +1893,32 @@
       document.getElementById("voices-panel").classList.remove("open");
     });
 
-    document.getElementById("voice-search-input").addEventListener("input", (e) => {
-      if (document.getElementById("voice-list-browser").classList.contains("active")) {
-        loadBrowserVoices(e.target.value);
-      } else {
-        loadElevenLabsVoices(e.target.value);
-      }
+    document.getElementById("voice-search-input").addEventListener("input", () => {
+      clearTimeout(voiceSearchTimeout);
+      voiceSearchTimeout = setTimeout(() => {
+        if (document.getElementById("voice-list-browser").classList.contains("active")) loadBrowserVoices();
+        if (document.getElementById("voice-list-eleven").classList.contains("active")) renderElevenVoiceList();
+      }, 200);
     });
 
     const apiKeyBtn = document.getElementById("api-key-btn");
     function updateApiKeyStatus() {
-      const key = localStorage.getItem("elevenlabs_key");
+      const key = localStorage.getItem("elevenlabs_key") || "";
+      const label = apiKeyBtn.querySelector(".status-btn-text");
       if (key) {
-        apiKeyBtn.textContent = `API Key: ••••••••${key.slice(-4)}`;
-        apiKeyBtn.className = "status-btn saved";
+        if (label) {
+          label.innerHTML = `<span class="material-symbols-outlined icon-small icon-btn-margin">key</span>API Key Saved (••••${key.slice(-4)})`;
+        }
+        apiKeyBtn.classList.remove("missing");
+        apiKeyBtn.classList.add("saved");
+        fetchElevenVoices(key);
       } else {
-        apiKeyBtn.textContent = "Set API Key (Required for Cloud)...";
-        apiKeyBtn.className = "status-btn missing";
+        if (label) {
+          label.innerHTML = `<span class="material-symbols-outlined icon-small icon-btn-margin">key</span>Missing API Key (Click to Add)`;
+        }
+        apiKeyBtn.classList.remove("saved");
+        apiKeyBtn.classList.add("missing");
+        elevenVoicesCache = [];
       }
     }
 
@@ -1772,7 +1928,6 @@
       if (updated !== null) {
         localStorage.setItem("elevenlabs_key", updated.trim());
         updateApiKeyStatus();
-        loadElevenLabsVoices();
       }
     });
 
