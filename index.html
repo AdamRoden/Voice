@@ -313,6 +313,7 @@
       .modal-btn.danger { background-color: transparent; color: var(--danger); border: 1px solid var(--danger); }
         .modal-btn.danger:hover { background-color: var(--danger-bg); }
       .modal-btn:active { filter: brightness(0.95); }
+    a.modal-btn { text-decoration: none; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
 
     .modal-choice-group { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
     .choice-btn-create { padding: 12px; font-weight: 600; color: var(--accent); border-color: var(--accent); }
@@ -681,6 +682,10 @@
           <label><span>Speech Speed</span><span id="val-speed">1.00</span></label>
           <input type="range" id="speed-slider" min="0.5" max="2.0" step="0.1" value="1.0">
         </div>
+        <div class="sidebar-setting-group">
+          <label><span>Pitch</span><span id="val-pitch">0</span></label>
+          <input type="range" id="pitch-slider" min="-12" max="12" step="1" value="0">
+        </div>
 
         <hr class="setting-divider">
 
@@ -862,6 +867,21 @@
     </div>
   </div>
 
+  <!-- ElevenLabs API Key Modal -->
+  <div class="modal" id="api-key-modal">
+    <div class="modal-title">ElevenLabs API Key</div>
+    <div class="modal-description">Get more voices with ElevenLabs.</div>
+    <div class="modal-choice-group">
+      <a class="modal-btn primary" href="https://elevenlabs.io/app/sign-up" target="_blank" rel="noopener noreferrer">Create Free Account</a>
+      <a class="modal-btn secondary" href="https://elevenlabs.io/app/developers/api-keys" target="_blank" rel="noopener noreferrer">Create Unrestricted Key</a>
+    </div>
+    <input type="text" id="api-key-input" class="modal-input" placeholder="Paste key here" autocomplete="off" spellcheck="false" autocapitalize="off">
+    <div class="modal-buttons">
+      <button class="modal-btn primary" id="save-api-key-btn" type="button">Save</button>
+      <button class="modal-btn secondary" type="button" onclick="closeModals()">Cancel</button>
+    </div>
+  </div>
+
   <!-- Google Fonts Icon Studio Modal -->
   <div class="modal icon-studio-modal-box" id="icon-studio-modal">
     <div class="modal-title">Google Fonts Icon Studio</div>
@@ -924,6 +944,7 @@
     <div id="voice-list-eleven" class="voice-list"></div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/tone@14.8.49/build/Tone.js"></script>
   <script>
     // ==================== STATE & PALETTE CONFIG ====================
     const rootStyle = window.getComputedStyle(document.documentElement);
@@ -1000,10 +1021,12 @@
     const modelSelect = document.getElementById("model-select");
     const volumeSlider = document.getElementById("volume-slider");
     const speedSlider = document.getElementById("speed-slider");
+    const pitchSlider = document.getElementById("pitch-slider");
     const stabilitySlider = document.getElementById("stability-slider");
     const similaritySlider = document.getElementById("similarity-slider");
     const valVolume = document.getElementById("val-volume");
     const valSpeed = document.getElementById("val-speed");
+    const valPitch = document.getElementById("val-pitch");
     const valStability = document.getElementById("val-stability");
     const valSimilarity = document.getElementById("val-similarity");
     const fontDisplay = document.getElementById("font-display");
@@ -1022,13 +1045,63 @@
     let currentTheme = localStorage.getItem("aac_theme") || "system";
     let customAccentColor = localStorage.getItem("aac_accent_color") || "";
 
-    /** Return keyboard focus to the main text display after actions. */
+    /** Saved caret in #display-input so programmatic refocus restores it. */
+    let savedDisplaySelection = { start: null, end: null };
+    let activeToneNodes = [];
+
+    function saveDisplaySelection() {
+      // On blur, activeElement has already left the textarea; still read selection from it.
+      try {
+        savedDisplaySelection = {
+          start: displayInput.selectionStart,
+          end: displayInput.selectionEnd
+        };
+      } catch (_) {}
+    }
+
+    function getPitchSemitones() {
+      const v = parseFloat(pitchSlider?.value);
+      return Number.isFinite(v) ? v : 0;
+    }
+
+    function formatPitchLabel(v) {
+      const n = parseFloat(v) || 0;
+      if (n > 0) return `+${n}`;
+      return String(n);
+    }
+
+    /** Map pitch semitones to speechSynthesis.pitch (0–2, default 1). */
+    function pitchToUtterance(semitones) {
+      return clamp(Math.pow(2, (semitones || 0) / 12), 0.1, 2);
+    }
+
+    /** Return keyboard focus to the main text display and restore caret. */
     function focusDisplayInput() {
       requestAnimationFrame(() => {
-        try { displayInput.focus({ preventScroll: true }); }
-        catch (_) { try { displayInput.focus(); } catch (__) {} }
+        try {
+          displayInput.focus({ preventScroll: true });
+          const len = displayInput.value.length;
+          let start = savedDisplaySelection.start;
+          let end = savedDisplaySelection.end;
+          if (start == null || end == null) {
+            start = end = len;
+          } else {
+            start = Math.max(0, Math.min(start, len));
+            end = Math.max(0, Math.min(end, len));
+          }
+          displayInput.setSelectionRange(start, end);
+        } catch (_) {
+          try { displayInput.focus(); } catch (__) {}
+        }
       });
     }
+
+    displayInput.addEventListener("blur", saveDisplaySelection);
+    displayInput.addEventListener("selectionchange", saveDisplaySelection);
+    // selectionchange fires on document in some browsers
+    document.addEventListener("selectionchange", () => {
+      if (document.activeElement === displayInput) saveDisplaySelection();
+    });
 
     let iconFill = parseInt(localStorage.getItem("aac_icon_fill"), 10) || 0;
     let iconWght = parseInt(localStorage.getItem("aac_icon_wght"), 10) || 400;
@@ -1179,7 +1252,7 @@
       return !sidebar.classList.contains("collapsed");
     }
 
-    function setSidebarOpen(open) {
+    function setSidebarOpen(open, { restoreFocus = true } = {}) {
       if (isMobileLayout()) {
         sidebar.classList.toggle("mobile-open", open);
         // On mobile, keep "collapsed" unused for layout; drawer is full content
@@ -1202,6 +1275,7 @@
         }
         document.body.classList.remove("sidebar-drawer-open");
       }
+      if (restoreFocus) focusDisplayInput();
     }
 
     function closeMobileSidebar() {
@@ -1211,7 +1285,7 @@
     function switchSidebarTab(tab, expandIfCollapsed = false) {
       currentSidebarTab = tab;
       if (expandIfCollapsed && !isSidebarOpen()) {
-        setSidebarOpen(true);
+        setSidebarOpen(true, { restoreFocus: false });
       }
       document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -1219,6 +1293,7 @@
       if (content) content.classList.add('active');
 
       if (tab === 'history') renderHistory();
+      focusDisplayInput();
     }
 
     document.querySelectorAll('.sidebar-tab').forEach(tab => {
@@ -2030,34 +2105,70 @@
     });
 
     // ==================== AUDIO PLAYBACK ====================
+    function disposeToneNodes() {
+      activeToneNodes.forEach(node => {
+        try { if (node.stop) node.stop(); } catch (_) {}
+        try { if (node.dispose) node.dispose(); } catch (_) {}
+      });
+      activeToneNodes = [];
+    }
+
     function playAudioData(audioData) {
       if (audioData) {
         const audio = new Audio(audioData);
         const gainSetting = parseFloat(volumeSlider.value) || 3.0;
+        const speed = parseFloat(speedSlider.value) || 1.0;
+        audio.playbackRate = speed;
         playAudioWithGain(audio, gainSetting);
       }
       focusDisplayInput();
     }
 
-    function playAudioWithGain(audioElement, gainValue) {
-      try {
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        if (AudioContextClass) {
-          if (!window.sharedAudioContext) window.sharedAudioContext = new AudioContextClass();
-          const ctx = window.sharedAudioContext;
-          if (ctx.state === 'suspended') ctx.resume();
+    /**
+     * Play HTMLAudioElement through Tone.js Gain + PitchShift (semitones).
+     * Falls back to element volume when Tone is unavailable.
+     */
+    async function playAudioWithGain(audioElement, gainValue) {
+      const pitchSemitones = getPitchSemitones();
+      const playbackRate = audioElement.playbackRate || 1;
+      const onEnded = typeof audioElement.onended === "function" ? audioElement.onended.bind(audioElement) : null;
+      const url = audioElement.src;
 
-          const source = ctx.createMediaElementSource(audioElement);
-          const gainNode = ctx.createGain();
-          gainNode.gain.value = gainValue;
-          source.connect(gainNode);
-          gainNode.connect(ctx.destination);
-          audioElement.play().catch(() => {});
-          return;
+      const fallbackPlay = () => {
+        audioElement.volume = Math.min(1.0, gainValue / 5.0);
+        audioElement.playbackRate = playbackRate;
+        if (onEnded) audioElement.onended = onEnded;
+        audioElement.play().catch(() => {});
+      };
+
+      if (typeof Tone === "undefined" || !url) {
+        fallbackPlay();
+        return;
+      }
+
+      try {
+        await Tone.start();
+        disposeToneNodes();
+
+        const gainNode = new Tone.Gain(gainValue).toDestination();
+        const pitchShift = new Tone.PitchShift({ pitch: pitchSemitones }).connect(gainNode);
+        const player = new Tone.Player({ url, playbackRate }).connect(pitchShift);
+        activeToneNodes = [player, pitchShift, gainNode];
+
+        await Tone.loaded();
+        player.start();
+
+        const dur = (player.buffer?.duration || 0) / (playbackRate || 1);
+        if (onEnded) {
+          if (dur > 0) {
+            setTimeout(() => { try { onEnded(); } catch (_) {} }, dur * 1000 + 40);
+          } else {
+            try { onEnded(); } catch (_) {}
+          }
         }
-      } catch (err) {}
-      audioElement.volume = Math.min(1.0, gainValue / 5.0);
-      audioElement.play().catch(() => {});
+      } catch (err) {
+        fallbackPlay();
+      }
     }
 
     async function speakText() {
@@ -2065,6 +2176,7 @@
       if (!text) return;
       const gainSetting = parseFloat(volumeSlider.value) || 3.0;
       const speed = parseFloat(speedSlider.value) || 1.0;
+      const pitchSemitones = getPitchSemitones();
       setSpeakBtnLoading();
 
       let modelToUse = modelSelect.value;
@@ -2077,6 +2189,7 @@
           const utterance = new SpeechSynthesisUtterance(text);
           utterance.volume = Math.min(1.0, gainSetting / 5.0);
           utterance.rate = speed;
+          utterance.pitch = pitchToUtterance(pitchSemitones);
           const voices = window.speechSynthesis.getVoices();
           const voiceIdx = (activeBrowserVoiceIndex !== "" && voices[activeBrowserVoiceIndex])
             ? activeBrowserVoiceIndex
@@ -2246,6 +2359,7 @@
           utterance.voice = voice;
           utterance.rate = parseFloat(speedSlider.value) || 1.0;
           utterance.volume = Math.min(1.0, (parseFloat(volumeSlider.value) || 3.0) / 5.0);
+          utterance.pitch = pitchToUtterance(getPitchSemitones());
           window.speechSynthesis.speak(utterance);
         });
         list.appendChild(item);
@@ -2338,6 +2452,7 @@
             if (!synRes.ok) throw new Error("API Error");
             const blob = await synRes.blob();
             const audio = new Audio(URL.createObjectURL(blob));
+            audio.playbackRate = parseFloat(speedSlider.value) || 1.0;
             audio.onended = () => {
               icon.textContent = "play_arrow";
               previewBtn.disabled = false;
@@ -2346,7 +2461,8 @@
               icon.textContent = "play_arrow";
               previewBtn.disabled = false;
             };
-            await audio.play();
+            const gainSetting = parseFloat(volumeSlider.value) || 3.0;
+            playAudioWithGain(audio, gainSetting);
           } catch (_) {
             alert("Could not preview voice.");
             icon.textContent = "play_arrow";
@@ -2389,6 +2505,8 @@
     });
 
     const apiKeyBtn = document.getElementById("api-key-btn");
+    const apiKeyInput = document.getElementById("api-key-input");
+
     function updateApiKeyStatus() {
       const key = localStorage.getItem("elevenlabs_key") || "";
       const label = apiKeyBtn.querySelector(".status-btn-text");
@@ -2409,12 +2527,27 @@
       }
     }
 
-    apiKeyBtn.addEventListener("click", () => {
-      const current = localStorage.getItem("elevenlabs_key") || "";
-      const updated = prompt("Enter your ElevenLabs API Key:", current);
-      if (updated !== null) {
-        localStorage.setItem("elevenlabs_key", updated.trim());
-        updateApiKeyStatus();
+    function openApiKeyModal() {
+      if (apiKeyInput) apiKeyInput.value = localStorage.getItem("elevenlabs_key") || "";
+      openModal("api-key-modal");
+      requestAnimationFrame(() => {
+        try { apiKeyInput?.focus(); } catch (_) {}
+      });
+    }
+
+    function saveApiKeyFromModal() {
+      const updated = (apiKeyInput?.value || "").trim();
+      localStorage.setItem("elevenlabs_key", updated);
+      updateApiKeyStatus();
+      closeModals();
+    }
+
+    apiKeyBtn.addEventListener("click", openApiKeyModal);
+    document.getElementById("save-api-key-btn")?.addEventListener("click", saveApiKeyFromModal);
+    apiKeyInput?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        saveApiKeyFromModal();
       }
     });
 
@@ -2426,11 +2559,23 @@
       syncSlider(similaritySlider, valSimilarity, "elevenlabs_similarity");
       syncSlider(volumeSlider, valVolume, "elevenlabs_volume");
       syncSlider(speedSlider, valSpeed, "elevenlabs_speed");
+
+      // Pitch (semitones) — custom label formatting
+      if (pitchSlider && valPitch) {
+        const savedPitch = localStorage.getItem("aac_pitch");
+        if (savedPitch !== null) pitchSlider.value = savedPitch;
+        valPitch.textContent = formatPitchLabel(pitchSlider.value);
+        pitchSlider.addEventListener("input", (e) => {
+          valPitch.textContent = formatPitchLabel(e.target.value);
+          localStorage.setItem("aac_pitch", e.target.value);
+        });
+      }
+
       updateSettingsVisibility();
       updateApiKeyStatus();
 
       // Mobile: start with drawer closed so the workspace is full-width
-      if (isMobileLayout()) setSidebarOpen(false);
+      if (isMobileLayout()) setSidebarOpen(false, { restoreFocus: false });
 
       const accentPicker = document.getElementById("accent-color-picker");
       if (accentPicker) {
