@@ -216,13 +216,18 @@
       100% { transform: rotate(-1deg) scale(1); }
     }
 
-    .sound-button { position: relative; background-color: var(--key-bg); border: 1px solid var(--border); border-radius: 10px; padding: 0 8px; cursor: pointer; user-select: none; -webkit-user-select: none; transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; color: #fff; overflow: hidden; width: 100%; min-height: 52px; height: 52px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); -webkit-touch-callout: none; }
+    .sound-button { position: relative; background-color: var(--key-bg); border: 1px solid var(--border); border-radius: 10px; padding: 0 8px; cursor: pointer; user-select: none; -webkit-user-select: none; transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease, background-color 0.12s ease; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; color: #fff; overflow: hidden; width: 100%; min-height: 52px; height: 52px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); -webkit-touch-callout: none; box-sizing: border-box; }
       .sound-button:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 4px 10px var(--shadow); }
       .sound-button:active { transform: scale(0.97); box-shadow: none; }
       .sound-button.edit-mode:not(.dragging) { animation: wiggle 0.25s infinite ease-in-out; cursor: grab; padding-left: 32px; }
       .sound-button.dragging { opacity: 0.85; cursor: grabbing; z-index: 50; transform: scale(1.05); box-shadow: 0 10px 25px var(--shadow); animation: none; }
       .sound-button.swap-target { border-color: #81c784; box-shadow: 0 0 0 3px rgba(129, 199, 132, 0.4); transform: scale(1.02); }
       .sound-button.overwrite-target { animation: wiggle 0.4s infinite ease-in-out; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 50%, transparent); }
+      /* Utterance (live TTS) buttons: regenerate on press — outline style */
+      .sound-button.utterance-button { background-color: transparent !important; border-width: 3px; border-style: solid; text-shadow: none; }
+        .sound-button.utterance-button:hover { background-color: color-mix(in srgb, currentColor 12%, transparent) !important; border-color: currentColor; }
+        .sound-button.utterance-button .sound-button-symbol,
+        .sound-button.utterance-button .sound-button-label { text-shadow: none; }
 
     .sound-button-inner { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; overflow: hidden; pointer-events: none; }
     .sound-button-symbol { font-size: 18px; flex-shrink: 0; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
@@ -677,13 +682,9 @@
       <span class="logo-text">AAC Workspace</span>
     </div>
 
-    <!-- Sidebar Tabs -->
+    <!-- Sidebar Tabs: Settings (default) | History | Topics -->
     <div class="sidebar-tabs" id="sidebar-tabs">
-      <button class="sidebar-tab active" data-tab="topics" id="tab-topics" type="button" title="Topics">
-        <span class="material-symbols-outlined icon-medium">folder</span>
-        <span class="sidebar-tab-label">Topics</span>
-      </button>
-      <button class="sidebar-tab" data-tab="settings" id="tab-settings" type="button" title="Settings">
+      <button class="sidebar-tab active" data-tab="settings" id="tab-settings" type="button" title="Settings">
         <span class="material-symbols-outlined icon-medium">tune</span>
         <span class="sidebar-tab-label">Settings</span>
       </button>
@@ -691,19 +692,15 @@
         <span class="material-symbols-outlined icon-medium">history</span>
         <span class="sidebar-tab-label">History</span>
       </button>
+      <button class="sidebar-tab" data-tab="topics" id="tab-topics" type="button" title="Topics">
+        <span class="material-symbols-outlined icon-medium">folder</span>
+        <span class="sidebar-tab-label">Topics</span>
+      </button>
     </div>
 
     <div class="sidebar-content" id="sidebar-content">
-      <!-- Topics Tab Content -->
-      <div id="tab-content-topics" class="tab-content active">
-        <button class="tool-btn" id="add-topic-sidebar-btn" type="button">
-          <span class="material-symbols-outlined icon-medium">add</span> New Topic
-        </button>
-        <div id="topics-list"></div>
-      </div>
-
-      <!-- Settings Tab Content -->
-      <div id="tab-content-settings" class="tab-content">
+      <!-- Settings Tab Content (default) -->
+      <div id="tab-content-settings" class="tab-content active">
         <div class="sidebar-setting-group">
           <label>Voice Model</label>
           <select id="model-select">
@@ -814,6 +811,14 @@
         </div>
         <div class="history-list" id="audio-history"></div>
         <button class="clear-history-btn" id="clear-history-btn" type="button">Clear All History</button>
+      </div>
+
+      <!-- Topics Tab Content -->
+      <div id="tab-content-topics" class="tab-content">
+        <button class="tool-btn" id="add-topic-sidebar-btn" type="button">
+          <span class="material-symbols-outlined icon-medium">add</span> New Topic
+        </button>
+        <div id="topics-list"></div>
       </div>
     </div>
   </aside>
@@ -1056,7 +1061,18 @@
     const DEFAULT_GRID_COLS = 4;
     const DEFAULT_GRID_ROWS = 2;
     const DEFAULT_STARTERS = ["Hey!", "I want", "Yes", "No", "Please", "Thank you"];
-    const COMMON_FOLLOWUPS = ["to", "the", "and", "a", "of", "in", "is", "it", "that", "for", "you", "my", "more", "help"];
+    const COMMON_FOLLOWUPS = ["to", "the", "and", "a", "of", "in", "is", "it", "that", "for", "you", "my", "more", "help", "want", "need", "like", "go", "please", "some", "this", "with", "can", "not"];
+    /** Offline AAC-ish word list for prefix fill when Datamuse is slow/offline */
+    const LOCAL_PREFIX_WORDS = [
+      "I", "want", "need", "like", "please", "help", "water", "food", "go", "stop", "more", "yes", "no",
+      "thank", "you", "my", "the", "and", "to", "a", "of", "in", "is", "it", "that", "for", "with", "can",
+      "will", "would", "could", "should", "not", "here", "there", "this", "what", "where", "when", "how",
+      "who", "why", "feel", "am", "are", "was", "were", "do", "does", "did", "get", "got", "make", "see",
+      "know", "think", "say", "tell", "come", "take", "give", "look", "use", "find", "work", "call", "try",
+      "ask", "love", "hurt", "hungry", "thirsty", "tired", "happy", "sad", "angry", "scared", "bathroom",
+      "home", "mom", "dad", "friend", "play", "watch", "listen", "read", "write", "open", "close", "wait",
+      "stop", "start", "again", "finished", "sorry", "hello", "goodbye", "good", "bad", "big", "small"
+    ];
 
     const SYMBOL_MIGRATION_MAP = {
       "📁": "folder", "💬": "chat", "🕒": "history", "⚙️": "settings", "☰": "menu", "▼": "expand_more",
@@ -1134,6 +1150,7 @@
 
     // State Variables
     let predictionTimeout;
+    let predictionRequestId = 0;
     let speakPredictionsEnabled = localStorage.getItem("aac_speak_predictions") === "1";
     let activeBrowserVoiceIndex = localStorage.getItem("aac_browser_voice_index");
     if (activeBrowserVoiceIndex !== null && activeBrowserVoiceIndex !== "") {
@@ -1263,7 +1280,7 @@
     let selectedStudioIcon = null;
     let lastGeneratedAudio = null;
 
-    let currentSidebarTab = "topics";
+    let currentSidebarTab = "settings";
 
     // ==================== UTILITY FUNCTIONS ====================
     function generateId() { return Math.random().toString(36).substr(2, 9); }
@@ -1273,16 +1290,36 @@
       const col = Number.isFinite(btn.col) ? btn.col : (Number.isFinite(btn.x) ? Math.max(0, Math.floor(btn.x / 100)) : (index % DEFAULT_GRID_COLS));
       const row = Number.isFinite(btn.row) ? btn.row : (Number.isFinite(btn.y) ? Math.max(0, Math.floor(btn.y / 80)) : Math.floor(index / DEFAULT_GRID_COLS));
       const rawSymbol = btn.symbol || btn.icon || "";
+      const utteranceText = (btn.utteranceText || "").trim() || null;
+      // utteranceText alone means regenerate on play; prefer that over a stale clip
       return {
         id: btn.id || generateId(),
         label: btn.label || "Button",
         symbol: SYMBOL_MIGRATION_MAP[rawSymbol] || rawSymbol || "",
         color: btn.color || COLOR_PALETTE[index % COLOR_PALETTE.length],
-        audioData: btn.audioData || null,
+        audioData: utteranceText ? null : (btn.audioData || null),
+        utteranceText,
         col, row,
         colSpan: clamp(btn.colSpan || 1, 1, 12),
         rowSpan: clamp(btn.rowSpan || 1, 1, 8)
       };
+    }
+
+    /** Browser-TTS / utterance history or action payload (text regenerated on play). */
+    function isUtteranceSource(item) {
+      if (!item) return false;
+      if ((item.utteranceText || "").trim()) return true;
+      if (item.model === "browser_tts" && (item.text || "").trim() && !item.audioData) return true;
+      return false;
+    }
+
+    function getUtteranceText(item) {
+      if (!item) return "";
+      return ((item.utteranceText || item.text || "") + "").trim();
+    }
+
+    function canUseGeneratedActions(item) {
+      return !!(item && (item.audioData || isUtteranceSource(item)));
     }
 
     function normalizeTopicsList(rawList) {
@@ -1778,12 +1815,20 @@
       soundCanvas.innerHTML = "";
 
       activeTab.buttons.forEach(btnData => {
+        const isUtteranceBtn = !!(btnData.utteranceText || "").trim();
+        const btnColor = btnData.color || "#3f3f4e";
         const btnEl = document.createElement("div");
-        btnEl.className = `sound-button${isEditMode ? " edit-mode" : ""}${isOverwriteMode ? " overwrite-target" : ""}`;
+        btnEl.className = `sound-button${isEditMode ? " edit-mode" : ""}${isOverwriteMode ? " overwrite-target" : ""}${isUtteranceBtn ? " utterance-button" : ""}`;
         btnEl.id = `btn-${btnData.id}`;
         btnEl.style.gridColumn = `${btnData.col + 1} / span ${btnData.colSpan}`;
         btnEl.style.gridRow = `${btnData.row + 1} / span ${btnData.rowSpan}`;
-        btnEl.style.backgroundColor = btnData.color || "#3f3f4e";
+        if (isUtteranceBtn) {
+          btnEl.style.backgroundColor = "transparent";
+          btnEl.style.borderColor = btnColor;
+          btnEl.style.color = btnColor;
+        } else {
+          btnEl.style.backgroundColor = btnColor;
+        }
 
         const symbolPart = btnData.symbol
           ? `<span class="material-symbols-outlined sound-button-symbol">${btnData.symbol}</span>`
@@ -1811,7 +1856,7 @@
         } else if (isOverwriteMode) {
           btnEl.addEventListener("click", () => executeOverwrite(btnData.id));
         } else {
-          btnEl.addEventListener("click", () => playAudioData(btnData.audioData));
+          btnEl.addEventListener("click", () => playButtonSpeech(btnData));
         }
         soundCanvas.appendChild(btnEl);
       });
@@ -1999,27 +2044,42 @@
     document.addEventListener("touchcancel", handleEnd);
 
     // ==================== ASSIGN & OVERWRITE ====================
+    function applyGeneratedSpeechToButton(btn, source) {
+      if (!btn || !source) return;
+      const phrase = (source.text || getUtteranceText(source) || "").trim();
+      btn.label = phrase.substring(0, 24) || "Speech";
+      if (isUtteranceSource(source)) {
+        btn.utteranceText = phrase;
+        btn.audioData = null;
+      } else {
+        btn.audioData = source.audioData || null;
+        btn.utteranceText = null;
+      }
+    }
+
     document.getElementById("textarea-assign-btn").addEventListener("click", () => {
-      if (!lastGeneratedAudio || !lastGeneratedAudio.audioData) return;
+      if (!canUseGeneratedActions(lastGeneratedAudio)) return;
       openModal("modal-assign-choice");
     });
 
     document.getElementById("choice-create-new-btn").addEventListener("click", () => {
-      if (!lastGeneratedAudio) return;
+      if (!canUseGeneratedActions(lastGeneratedAudio)) return;
       const activeTab = getActiveTopic();
       if (!activeTab) return;
 
+      const phrase = (lastGeneratedAudio.text || getUtteranceText(lastGeneratedAudio) || "").trim();
+      const isUtt = isUtteranceSource(lastGeneratedAudio);
       activeTab.buttons.push(normalizeButton({
         id: generateId(),
-        label: lastGeneratedAudio.text.substring(0, 24) || "Speech",
-        audioData: lastGeneratedAudio.audioData,
+        label: phrase.substring(0, 24) || "Speech",
+        audioData: isUtt ? null : lastGeneratedAudio.audioData,
+        utteranceText: isUtt ? phrase : null,
         col: activeTab.buttons.length % activeTab.gridCols,
         row: Math.floor(activeTab.buttons.length / activeTab.gridCols)
       }, activeTab.buttons.length));
 
       repackSequentialGrid(activeTab);
       saveTopicsList(); renderTopics(); renderSoundButtons(); closeModals();
-      // focus handled by closeModals
     });
 
     document.getElementById("choice-overwrite-btn").addEventListener("click", () => {
@@ -2039,25 +2099,30 @@
     });
 
     function executeOverwrite(btnId) {
-      if (!lastGeneratedAudio || !lastGeneratedAudio.audioData) return;
+      if (!canUseGeneratedActions(lastGeneratedAudio)) return;
       const tab = getActiveTopic();
       const btn = tab?.buttons.find(b => b.id === btnId);
       if (!btn) return;
 
-      btn.audioData = lastGeneratedAudio.audioData;
-      btn.label = lastGeneratedAudio.text.substring(0, 24) || "Speech";
+      applyGeneratedSpeechToButton(btn, lastGeneratedAudio);
       saveTopicsList();
       setOverwriteMode(false);
       renderTopics();
+      renderSoundButtons();
       focusDisplayInput();
     }
 
     // ==================== HISTORY (No Inline Relabeling) ====================
     function addToHistory(textSpoken, model, voiceId, audioBlob) {
+      const isUtt = model === "browser_tts" && !audioBlob;
       const item = {
         id: generateId(),
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        text: textSpoken, model, voiceId, audioData: audioBlob
+        text: textSpoken,
+        model,
+        voiceId,
+        audioData: audioBlob || null,
+        utteranceText: isUtt ? textSpoken : null
       };
       audioHistory.unshift(item);
       if (audioHistory.length > 50) audioHistory.pop();
@@ -2079,10 +2144,11 @@
       filtered.forEach(item => {
         const el = document.createElement("div");
         el.className = "history-item";
+        const isUtt = isUtteranceSource(item);
         el.innerHTML = `
           <div class="history-item-header">
             <span class="history-item-text">${item.text}</span>
-            <span class="history-item-meta">${item.timestamp}</span>
+            <span class="history-item-meta">${item.timestamp}${isUtt ? " · live TTS" : ""}</span>
           </div>
           <div class="history-actions">
             <button class="history-btn replay-btn" type="button"><span class="material-symbols-outlined icon-small">play_arrow</span> Play</button>
@@ -2092,14 +2158,21 @@
         `;
 
         el.querySelector(".replay-btn").addEventListener("click", () => {
-          if (!item.audioData) { alert("Browser TTS audio cannot be replayed directly from history."); return; }
-          playAudioData(item.audioData);
+          playStoredSpeech(item);
         });
         el.querySelector(".restore-btn").addEventListener("click", () => {
           setText(item.text);
-          if (item.model) modelSelect.value = item.model;
-          if (item.voiceId && item.model !== "browser_tts") { activeElevenVoiceId = item.voiceId; localStorage.setItem("elevenlabs_voice", activeElevenVoiceId); }
-          setGeneratedAudioActions(item); focusDisplayInput();
+          if (item.model) {
+            modelSelect.value = item.model;
+            try { localStorage.setItem("elevenlabs_model", item.model); } catch (_) {}
+            modelSelect.dispatchEvent(new Event("change"));
+          }
+          if (item.voiceId && item.model !== "browser_tts") {
+            activeElevenVoiceId = item.voiceId;
+            localStorage.setItem("elevenlabs_voice", activeElevenVoiceId);
+          }
+          setGeneratedAudioActions(item);
+          focusDisplayInput();
         });
         el.querySelector(".delete-btn").addEventListener("click", () => {
           audioHistory = audioHistory.filter(h => h.id !== item.id); saveHistory(); renderHistory();
@@ -2116,11 +2189,11 @@
 
     function setGeneratedAudioActions(historyItem) {
       lastGeneratedAudio = historyItem;
-      audioActionsBar.classList.toggle("active", !!(lastGeneratedAudio && lastGeneratedAudio.audioData));
+      audioActionsBar.classList.toggle("active", canUseGeneratedActions(lastGeneratedAudio));
     }
 
     document.getElementById("textarea-replay-btn").addEventListener("click", () => {
-      if (lastGeneratedAudio && lastGeneratedAudio.audioData) playAudioData(lastGeneratedAudio.audioData);
+      if (canUseGeneratedActions(lastGeneratedAudio)) playStoredSpeech(lastGeneratedAudio);
       else focusDisplayInput();
     });
 
@@ -2144,16 +2217,59 @@
       }
     }
 
+    /** Caret for predictions — avoid selectionStart||length (0 is a valid caret). */
+    function getPredictionCaret() {
+      if (document.activeElement === displayInput && typeof displayInput.selectionStart === "number") {
+        return displayInput.selectionStart;
+      }
+      if (savedDisplaySelection.start != null && Number.isFinite(savedDisplaySelection.start)) {
+        return savedDisplaySelection.start;
+      }
+      return getText().length;
+    }
+
+    function parseDatamuseScore(item, rank) {
+      const tags = item.tags || [];
+      for (const t of tags) {
+        if (typeof t === "string" && t.startsWith("f:")) {
+          const n = parseFloat(t.slice(2));
+          if (Number.isFinite(n)) return n;
+        }
+      }
+      if (Number.isFinite(item.score)) return item.score;
+      return Math.max(0, 1000 - rank);
+    }
+
+    function localPrefixSuggestions(prefix, limit = 6) {
+      if (!prefix) return [];
+      const p = prefix.toLowerCase();
+      const out = [];
+      const seen = new Set();
+      for (const w of LOCAL_PREFIX_WORDS) {
+        const lower = w.toLowerCase();
+        if (lower === p) continue;
+        if (!lower.startsWith(p)) continue;
+        if (seen.has(lower)) continue;
+        seen.add(lower);
+        out.push(w);
+        if (out.length >= limit) break;
+      }
+      return out;
+    }
+
     async function updatePredictions() {
       // Hide generated action bar if modified text diverges from last spoken audio
-      if (lastGeneratedAudio && getText().trim() !== lastGeneratedAudio.text) {
+      if (lastGeneratedAudio && getText().trim() !== (lastGeneratedAudio.text || "").trim()) {
         audioActionsBar.classList.remove("active");
+      } else if (canUseGeneratedActions(lastGeneratedAudio)) {
+        audioActionsBar.classList.add("active");
       }
 
-      const textUpToCaret = getText().substring(0, displayInput.selectionStart || getText().length);
+      const textUpToCaret = getText().substring(0, getPredictionCaret());
       clearTimeout(predictionTimeout);
 
       if (!textUpToCaret.trim()) {
+        predictionRequestId++;
         predictionButtons.forEach((btn, i) => {
           btn.textContent = DEFAULT_STARTERS[i] || "";
           autoscaleButtonText(btn);
@@ -2165,34 +2281,95 @@
       const endsWithSpace = /\s$/.test(textUpToCaret);
       let lastWord = "", activePrefix = "";
 
-      if (endsWithSpace) { if (words.length > 0) lastWord = words[words.length - 1].replace(/[^a-zA-Z']/g, ""); }
-      else if (words.length > 0) {
+      if (endsWithSpace) {
+        if (words.length > 0) lastWord = words[words.length - 1].replace(/[^a-zA-Z']/g, "");
+      } else if (words.length > 0) {
         activePrefix = words[words.length - 1].replace(/[^a-zA-Z']/g, "");
         if (words.length > 1) lastWord = words[words.length - 2].replace(/[^a-zA-Z']/g, "");
       }
 
+      // Instant local fill while network request is in flight
+      if (activePrefix) {
+        const instant = localPrefixSuggestions(activePrefix, 6);
+        if (instant.length) {
+          predictionButtons.forEach((btn, i) => {
+            btn.textContent = instant[i] || "";
+            autoscaleButtonText(btn);
+          });
+        }
+      }
+
+      const reqId = ++predictionRequestId;
       predictionTimeout = setTimeout(async () => {
-        let suggestions = [];
+        const scored = new Map(); // lower -> { word, score }
+
+        const addWord = (word, score) => {
+          const w = (word || "").trim();
+          if (!w || /\s/.test(w)) return; // single tokens only for the strip
+          const lower = w.toLowerCase();
+          if (activePrefix) {
+            if (!lower.startsWith(activePrefix.toLowerCase())) return;
+            if (lower === activePrefix.toLowerCase()) return;
+          }
+          const prev = scored.get(lower);
+          if (!prev || score > prev.score) scored.set(lower, { word: w, score });
+        };
+
         try {
           const urls = [];
-          if (lastWord && activePrefix) urls.push(`https://api.datamuse.com/words?lc=${encodeURIComponent(lastWord)}&sp=${encodeURIComponent(activePrefix)}*&max=10&md=f`);
-          else if (lastWord) urls.push(`https://api.datamuse.com/words?lc=${encodeURIComponent(lastWord)}&sp=*&max=10&md=f`);
-          else if (activePrefix) urls.push(`https://api.datamuse.com/sug?s=${encodeURIComponent(activePrefix)}&max=10&md=f`);
+          // Spelling autocomplete (strong for mid-word)
+          if (activePrefix) {
+            urls.push(`https://api.datamuse.com/sug?s=${encodeURIComponent(activePrefix)}&max=12`);
+          }
+          // Context-aware completions after a previous word
+          if (lastWord && activePrefix) {
+            urls.push(`https://api.datamuse.com/words?lc=${encodeURIComponent(lastWord)}&sp=${encodeURIComponent(activePrefix)}*&max=12&md=f`);
+          } else if (lastWord && endsWithSpace) {
+            // Next-word suggestions (left-context); avoid sp=* which is noisy
+            urls.push(`https://api.datamuse.com/words?lc=${encodeURIComponent(lastWord)}&max=12&md=f`);
+          } else if (activePrefix && !lastWord) {
+            urls.push(`https://api.datamuse.com/words?sp=${encodeURIComponent(activePrefix)}*&max=12&md=f`);
+          }
 
           if (urls.length > 0) {
             const res = await Promise.all(urls.map(u => fetch(u).catch(() => null)));
+            if (reqId !== predictionRequestId) return;
             const jsons = await Promise.all(res.map(r => (r && r.ok ? r.json() : [])));
-            const seen = new Set();
-            jsons.forEach(data => {
-              data.forEach(item => { if (!seen.has(item.word)) { seen.add(item.word); suggestions.push(item.word); } });
+            jsons.forEach((data, urlIdx) => {
+              if (!Array.isArray(data)) return;
+              data.forEach((item, rank) => {
+                const boost = urlIdx === 0 && activePrefix ? 0 : 40; // slight boost for context endpoints
+                addWord(item.word, parseDatamuseScore(item, rank) + boost);
+              });
             });
           }
         } catch (_) {}
 
+        if (reqId !== predictionRequestId) return;
+
+        let suggestions = [...scored.values()]
+          .sort((a, b) => b.score - a.score)
+          .map(s => s.word);
+
         const seenWords = new Set(suggestions.map(s => s.toLowerCase()));
+
+        // Local AAC prefix fill
+        if (activePrefix) {
+          for (const fb of localPrefixSuggestions(activePrefix, 12)) {
+            if (suggestions.length >= 6) break;
+            const fl = fb.toLowerCase();
+            if (seenWords.has(fl)) continue;
+            seenWords.add(fl);
+            suggestions.push(fb);
+          }
+        }
+
         const fallbackPool = endsWithSpace ? COMMON_FOLLOWUPS : DEFAULT_STARTERS;
         for (const fb of fallbackPool) {
           if (suggestions.length >= 6) break;
+          const fl = fb.toLowerCase().replace(/[^a-z']/g, "");
+          if (activePrefix && fl && !fl.startsWith(activePrefix.toLowerCase())) continue;
+          if (activePrefix && fl === activePrefix.toLowerCase()) continue;
           if (!seenWords.has(fb.toLowerCase())) {
             seenWords.add(fb.toLowerCase());
             suggestions.push(fb);
@@ -2203,7 +2380,7 @@
           btn.textContent = suggestions[i] || "";
           autoscaleButtonText(btn);
         });
-      }, 200);
+      }, 180);
     }
 
     predictionButtons.forEach(btn => {
@@ -2262,6 +2439,41 @@
         const speed = parseFloat(speedSlider.value) || 1.0;
         audio.playbackRate = speed;
         playAudioWithGain(audio, gainSetting);
+      }
+      focusDisplayInput();
+    }
+
+    /** Replay history/action item: clip if present, else regenerate utterance with active voice. */
+    function playStoredSpeech(item) {
+      if (!item) {
+        focusDisplayInput();
+        return;
+      }
+      if (isUtteranceSource(item)) {
+        speakPhrase(getUtteranceText(item), { recordHistory: false, showLoading: false, alertOnError: false });
+        return;
+      }
+      if (item.audioData) {
+        playAudioData(item.audioData);
+        return;
+      }
+      focusDisplayInput();
+    }
+
+    /** Play a sound button: stored clip or on-the-fly utterance regen. */
+    function playButtonSpeech(btn) {
+      if (!btn) {
+        focusDisplayInput();
+        return;
+      }
+      const utt = (btn.utteranceText || "").trim();
+      if (utt) {
+        speakPhrase(utt, { recordHistory: false, showLoading: false, alertOnError: false });
+        return;
+      }
+      if (btn.audioData) {
+        playAudioData(btn.audioData);
+        return;
       }
       focusDisplayInput();
     }
@@ -2927,6 +3139,7 @@
 
       renderTopics();
       renderSoundButtons();
+      switchSidebarTab("settings");
       updatePredictions();
       // Avoid auto-focus on mobile (opens keyboard immediately)
       if (!isMobileLayout()) focusDisplayInput();
