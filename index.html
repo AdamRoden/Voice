@@ -133,6 +133,9 @@
       .status-btn:active { background-color: var(--bg-surface-hover); }
       .status-btn.missing { border-color: var(--danger); color: var(--danger); }
       .status-btn.saved { border-color: #81c784; color: #81c784; }
+      .status-btn.saved,
+      .status-btn.ready { border-color: #81c784; color: #81c784; }
+      .status-btn[style*="pointer-events: none"]:hover { border-color: var(--border); }
     .status-btn-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     .font-controls { display: flex; gap: 6px; align-items: center; }
@@ -218,12 +221,18 @@
     }
 
     .sound-button { position: relative; background-color: var(--key-bg); border: 1px solid var(--border); border-radius: 10px; padding: 0 8px; cursor: pointer; user-select: none; -webkit-user-select: none; transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; color: #fff; overflow: hidden; width: 100%; min-height: 52px; height: 52px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); -webkit-touch-callout: none; }
+    .sound-button { position: relative; background-color: var(--key-bg); border: 1px solid var(--border); border-radius: 10px; padding: 0 8px; cursor: pointer; user-select: none; -webkit-user-select: none; transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease, background-color 0.12s ease; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; color: #fff; overflow: hidden; width: 100%; min-height: 52px; height: 52px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); -webkit-touch-callout: none; box-sizing: border-box; }
       .sound-button:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 4px 10px var(--shadow); }
       .sound-button:active { transform: scale(0.97); box-shadow: none; }
       .sound-button.edit-mode:not(.dragging) { animation: wiggle 0.25s infinite ease-in-out; cursor: grab; padding-left: 32px; }
       .sound-button.dragging { opacity: 0.85; cursor: grabbing; z-index: 50; transform: scale(1.05); box-shadow: 0 10px 25px var(--shadow); animation: none; }
       .sound-button.swap-target { border-color: #81c784; box-shadow: 0 0 0 3px rgba(129, 199, 132, 0.4); transform: scale(1.02); }
       .sound-button.overwrite-target { animation: wiggle 0.4s infinite ease-in-out; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 50%, transparent); }
+      /* Utterance (browser TTS) buttons: regenerate speech on press — outline style */
+      .sound-button.utterance-button { background-color: transparent !important; border-width: 3px; border-style: solid; text-shadow: none; }
+        .sound-button.utterance-button:hover { background-color: color-mix(in srgb, currentColor 12%, transparent) !important; }
+        .sound-button.utterance-button .sound-button-symbol,
+        .sound-button.utterance-button .sound-button-label { text-shadow: none; }
 
     .sound-button-inner { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; overflow: hidden; pointer-events: none; }
     .sound-button-symbol { font-size: 18px; flex-shrink: 0; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
@@ -496,13 +505,14 @@
         <span class="sidebar-tab-label">Topics</span>
       </button>
       <button class="sidebar-tab" data-tab="settings" id="tab-settings" type="button" title="Settings">
-        <span class="material-symbols-outlined icon-medium">tune</span>
-        <span class="sidebar-tab-label">Settings</span>
-      </button>
-      <button class="sidebar-tab" data-tab="history" id="tab-history" type="button" title="History">
-        <span class="material-symbols-outlined icon-medium">history</span>
-        <span class="sidebar-tab-label">History</span>
-      </button>
+        <button class="sidebar-tab active" data-tab="settings" id="tab-settings" type="button" title="Settings">
+          <span class="material-symbols-outlined icon-medium">tune</span>
+          <span class="sidebar-tab-label">Settings</span>
+        </button>
+        <button class="sidebar-tab" data-tab="history" id="tab-history" type="button" title="History">
+          <span class="material-symbols-outlined icon-medium">history</span>
+          <span class="sidebar-tab-label">History</span>
+        </button>
     </div>
 
     <div class="sidebar-content" id="sidebar-content">
@@ -510,124 +520,138 @@
       <div id="tab-content-topics" class="tab-content active">
         <button class="tool-btn" id="add-topic-sidebar-btn" type="button">
           <span class="material-symbols-outlined icon-medium">add</span> New Topic
-        </button>
-        <div id="topics-list"></div>
+          <button class="sidebar-tab" data-tab="topics" id="tab-topics" type="button" title="Topics">
+            <span class="material-symbols-outlined icon-medium">folder</span>
+            <span class="sidebar-tab-label">Topics</span>
+          </button>
+          <div id="topics-list"></div>
       </div>
 
       <!-- Settings Tab Content -->
       <div id="tab-content-settings" class="tab-content">
-        <div class="sidebar-setting-group">
-          <label>Voice Model</label>
-          <select id="model-select">
-            <option value="browser_tts">Local Browser (Utterance)</option>
-            <option value="eleven_v3">Eleven v3</option>
-            <option value="eleven_multilingual_v2">Eleven Multilingual v2</option>
-            <option value="eleven_flash_v2">Eleven Flash v2</option>
-          </select>
-        </div>
+        <div class="sidebar-content" id="sidebar-content">
+          <!-- Settings Tab Content (default) -->
+          <div id="tab-content-settings" class="tab-content active">
+            <div class="sidebar-setting-group">
+              <label>Voice Model</label>
+              <select id="model-select">
+                <option value="browser_tts">Local Browser (Utterance)</option>
+                <option value="eleven_v3">Eleven v3</option>
+                <option value="eleven_multilingual_v2">Eleven Multilingual v2</option>
+                <option value="eleven_flash_v2">Eleven Flash v2</option>
+              </select>
+            </div>
 
-        <div class="settings-stack" id="group-browser-voice">
-          <div class="sidebar-setting-group">
-            <label>Browser Voice</label>
-            <button class="status-btn" id="open-browser-voices" type="button">
-              <span class="status-btn-text" id="selected-browser-name">Select Voice...</span>
-              <span class="material-symbols-outlined icon-small">chevron_right</span>
+            <div class="settings-stack" id="group-browser-voice">
+              <div class="sidebar-setting-group">
+                <label>Browser Voice</label>
+                <button class="status-btn" id="open-browser-voices" type="button">
+                  <span class="status-btn-text" id="selected-browser-name">Select Voice...</span>
+                  <span class="material-symbols-outlined icon-small">chevron_right</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="settings-stack" id="group-eleven-settings">
+              <div class="sidebar-setting-group">
+                <button id="api-key-btn" class="status-btn missing" type="button">
+                  <span class="status-btn-text"><span class="material-symbols-outlined icon-small icon-btn-margin">key</span>Missing API Key (Click to Add)</span>
+                </button>
+              </div>
+              <div class="sidebar-setting-group">
+                <label>ElevenLabs Voice</label>
+                <button class="status-btn" id="open-eleven-voices" type="button">
+                  <span class="status-btn-text" id="selected-eleven-name">Select Voice...</span>
+                  <span class="material-symbols-outlined icon-small">chevron_right</span>
+                </button>
+              </div>
+              <hr class="setting-divider">
+              <div class="sidebar-setting-group">
+                <label><span>Stability</span><span id="val-stability">0.50</span></label>
+                <input type="range" id="stability-slider" min="0.0" max="1.0" step="0.05" value="0.5">
+              </div>
+              <div class="sidebar-setting-group">
+                <label><span>Similarity</span><span id="val-similarity">0.75</span></label>
+                <input type="range" id="similarity-slider" min="0.0" max="1.0" step="0.05" value="0.75">
+              </div>
+            </div>
+
+            <hr class="setting-divider">
+
+            <div class="sidebar-setting-group">
+              <label><span>Volume Gain</span><span id="val-volume">3.00</span></label>
+              <input type="range" id="volume-slider" min="1" max="5" step="0.5" value="3">
+            </div>
+            <div class="sidebar-setting-group">
+              <label><span>Speech Speed</span><span id="val-speed">1.00</span></label>
+              <input type="range" id="speed-slider" min="0.5" max="2.0" step="0.1" value="1.0">
+            </div>
+            <div class="sidebar-setting-group">
+              <label><span>Pitch</span><span id="val-pitch">0</span></label>
+              <input type="range" id="pitch-slider" min="0" max="14" step="1" value="7" list="pitch-ticks" aria-valuetext="0">
+              <datalist id="pitch-ticks">
+                <option value="0" label="-12"></option>
+                <option value="7" label="0"></option>
+                <option value="14" label="12"></option>
+              </datalist>
+            </div>
+
+            <hr class="setting-divider">
+
+            <div class="sidebar-setting-group">
+              <label class="toggle-setting" for="speak-predictions-toggle">
+                <span>Speak Predictions</span>
+                <input type="checkbox" id="speak-predictions-toggle" aria-label="Speak predictions when inserted">
+              </label>
+            </div>
+
+            <hr class="setting-divider">
+
+            <div class="sidebar-setting-group">
+              <label><span>Font Size</span><span id="font-display">24px</span></label>
+              <div class="font-controls">
+                <button class="font-btn" id="font-down" type="button">A-</button>
+                <button class="font-btn" id="font-up" type="button">A+</button>
+              </div>
+            </div>
+
+            <hr class="setting-divider">
+
+            <div class="sidebar-setting-group">
+              <label>Theme Appearance</label>
+              <div class="theme-picker-group">
+                <button class="theme-btn" data-theme="light" onclick="applyTheme('light')" type="button"><span class="material-symbols-outlined icon-small">light_mode</span> Light</button>
+                <button class="theme-btn" data-theme="dark" onclick="applyTheme('dark')" type="button"><span class="material-symbols-outlined icon-small">dark_mode</span> Dark</button>
+                <button class="theme-btn" data-theme="system" onclick="applyTheme('system')" type="button"><span class="material-symbols-outlined icon-small">computer</span> System</button>
+              </div>
+            </div>
+            <div class="sidebar-setting-group">
+              <label>Accent Color</label>
+              <div class="accent-color-row">
+                <input type="color" id="accent-color-picker" value="#8ab4f8" title="Custom accent color">
+                <button class="font-btn" id="accent-color-reset" type="button" title="Reset to theme default">Reset</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- History Tab Content -->
+          <div id="tab-content-history" class="tab-content">
+            <div class="history-search-box">
+              <span class="material-symbols-outlined search-icon">search</span>
+              <input type="text" id="history-search-input" placeholder="Search speech history...">
+            </div>
+            <div class="history-list" id="audio-history"></div>
+            <button class="clear-history-btn" id="clear-history-btn" type="button">Clear All History</button>
+          </div>
+
+          <!-- Topics Tab Content -->
+          <div id="tab-content-topics" class="tab-content">
+            <button class="tool-btn" id="add-topic-sidebar-btn" type="button">
+              <span class="material-symbols-outlined icon-medium">add</span> New Topic
             </button>
+            <div id="topics-list"></div>
           </div>
         </div>
-
-        <div class="settings-stack" id="group-eleven-settings">
-          <div class="sidebar-setting-group">
-            <button id="api-key-btn" class="status-btn missing" type="button">
-              <span class="status-btn-text"><span class="material-symbols-outlined icon-small icon-btn-margin">key</span>Missing API Key (Click to Add)</span>
-            </button>
-          </div>
-          <div class="sidebar-setting-group">
-            <label>ElevenLabs Voice</label>
-            <button class="status-btn" id="open-eleven-voices" type="button">
-              <span class="status-btn-text" id="selected-eleven-name">Select Voice...</span>
-              <span class="material-symbols-outlined icon-small">chevron_right</span>
-            </button>
-          </div>
-          <hr class="setting-divider">
-          <div class="sidebar-setting-group">
-            <label><span>Stability</span><span id="val-stability">0.50</span></label>
-            <input type="range" id="stability-slider" min="0.0" max="1.0" step="0.05" value="0.5">
-          </div>
-          <div class="sidebar-setting-group">
-            <label><span>Similarity</span><span id="val-similarity">0.75</span></label>
-            <input type="range" id="similarity-slider" min="0.0" max="1.0" step="0.05" value="0.75">
-          </div>
-        </div>
-
-        <hr class="setting-divider">
-
-        <div class="sidebar-setting-group">
-          <label><span>Volume Gain</span><span id="val-volume">3.00</span></label>
-          <input type="range" id="volume-slider" min="1" max="5" step="0.5" value="3">
-        </div>
-        <div class="sidebar-setting-group">
-          <label><span>Speech Speed</span><span id="val-speed">1.00</span></label>
-          <input type="range" id="speed-slider" min="0.5" max="2.0" step="0.1" value="1.0">
-        </div>
-        <div class="sidebar-setting-group">
-          <label><span>Pitch</span><span id="val-pitch">0</span></label>
-          <input type="range" id="pitch-slider" min="0" max="14" step="1" value="7" list="pitch-ticks" aria-valuetext="0">
-          <datalist id="pitch-ticks">
-            <option value="0" label="-12"></option>
-            <option value="7" label="0"></option>
-            <option value="14" label="12"></option>
-          </datalist>
-        </div>
-
-        <hr class="setting-divider">
-
-        <div class="sidebar-setting-group">
-          <label class="toggle-setting" for="speak-predictions-toggle">
-            <span>Speak Predictions</span>
-            <input type="checkbox" id="speak-predictions-toggle" aria-label="Speak predictions when inserted">
-          </label>
-        </div>
-
-        <hr class="setting-divider">
-
-        <div class="sidebar-setting-group">
-          <label><span>Font Size</span><span id="font-display">24px</span></label>
-          <div class="font-controls">
-            <button class="font-btn" id="font-down" type="button">A-</button>
-            <button class="font-btn" id="font-up" type="button">A+</button>
-          </div>
-        </div>
-
-        <hr class="setting-divider">
-
-        <div class="sidebar-setting-group">
-          <label>Theme Appearance</label>
-          <div class="theme-picker-group">
-            <button class="theme-btn" data-theme="light" onclick="applyTheme('light')" type="button"><span class="material-symbols-outlined icon-small">light_mode</span> Light</button>
-            <button class="theme-btn" data-theme="dark" onclick="applyTheme('dark')" type="button"><span class="material-symbols-outlined icon-small">dark_mode</span> Dark</button>
-            <button class="theme-btn" data-theme="system" onclick="applyTheme('system')" type="button"><span class="material-symbols-outlined icon-small">computer</span> System</button>
-          </div>
-        </div>
-        <div class="sidebar-setting-group">
-          <label>Accent Color</label>
-          <div class="accent-color-row">
-            <input type="color" id="accent-color-picker" value="#8ab4f8" title="Custom accent color">
-            <button class="font-btn" id="accent-color-reset" type="button" title="Reset to theme default">Reset</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- History Tab Content -->
-      <div id="tab-content-history" class="tab-content">
-        <div class="history-search-box">
-          <span class="material-symbols-outlined search-icon">search</span>
-          <input type="text" id="history-search-input" placeholder="Search speech history...">
-        </div>
-        <div class="history-list" id="audio-history"></div>
-        <button class="clear-history-btn" id="clear-history-btn" type="button">Clear All History</button>
-      </div>
-    </div>
   </aside>
 
   <!-- ==================== MAIN WORKSPACE ==================== -->
@@ -1075,7 +1099,7 @@
     let selectedStudioIcon = null;
     let lastGeneratedAudio = null;
 
-    let currentSidebarTab = "topics";
+    let currentSidebarTab = "settings";
 
     // ==================== UTILITY FUNCTIONS ====================
     function generateId() { return Math.random().toString(36).substr(2, 9); }
@@ -1085,16 +1109,37 @@
       const col = Number.isFinite(btn.col) ? btn.col : (Number.isFinite(btn.x) ? Math.max(0, Math.floor(btn.x / 100)) : (index % DEFAULT_GRID_COLS));
       const row = Number.isFinite(btn.row) ? btn.row : (Number.isFinite(btn.y) ? Math.max(0, Math.floor(btn.y / 80)) : Math.floor(index / DEFAULT_GRID_COLS));
       const rawSymbol = btn.symbol || btn.icon || "";
+      const utteranceText = (btn.utteranceText || "").trim() || null;
+      // Prefer stored clip when both exist; utteranceText alone means regenerate on play
       return {
         id: btn.id || generateId(),
         label: btn.label || "Button",
         symbol: SYMBOL_MIGRATION_MAP[rawSymbol] || rawSymbol || "",
         color: btn.color || COLOR_PALETTE[index % COLOR_PALETTE.length],
         audioData: btn.audioData || null,
+        audioData: utteranceText ? null : (btn.audioData || null),
+        utteranceText,
         col, row,
         colSpan: clamp(btn.colSpan || 1, 1, 12),
         rowSpan: clamp(btn.rowSpan || 1, 1, 8)
       };
+    }
+
+    /** Browser-TTS / utterance history or action payload (text regenerated on play). */
+    function isUtteranceSource(item) {
+      if (!item) return false;
+      if ((item.utteranceText || "").trim()) return true;
+      if (item.model === "browser_tts" && (item.text || "").trim() && !item.audioData) return true;
+      return false;
+    }
+
+    function getUtteranceText(item) {
+      if (!item) return "";
+      return ((item.utteranceText || item.text || "") + "").trim();
+    }
+
+    function canUseGeneratedActions(item) {
+      return !!(item && (item.audioData || isUtteranceSource(item)));
     }
 
     function normalizeTopicsList(rawList) {
@@ -1590,12 +1635,22 @@
       soundCanvas.innerHTML = "";
 
       activeTab.buttons.forEach(btnData => {
+        const isUtteranceBtn = !!(btnData.utteranceText || "").trim();
+        const btnColor = btnData.color || "#3f3f4e";
         const btnEl = document.createElement("div");
         btnEl.className = `sound-button${isEditMode ? " edit-mode" : ""}${isOverwriteMode ? " overwrite-target" : ""}`;
+        btnEl.className = `sound-button${isEditMode ? " edit-mode" : ""}${isOverwriteMode ? " overwrite-target" : ""}${isUtteranceBtn ? " utterance-button" : ""}`;
         btnEl.id = `btn-${btnData.id}`;
         btnEl.style.gridColumn = `${btnData.col + 1} / span ${btnData.colSpan}`;
         btnEl.style.gridRow = `${btnData.row + 1} / span ${btnData.rowSpan}`;
         btnEl.style.backgroundColor = btnData.color || "#3f3f4e";
+        if (isUtteranceBtn) {
+          btnEl.style.backgroundColor = "transparent";
+          btnEl.style.borderColor = btnColor;
+          btnEl.style.color = btnColor;
+        } else {
+          btnEl.style.backgroundColor = btnColor;
+        }
 
         const symbolPart = btnData.symbol
           ? `<span class="material-symbols-outlined sound-button-symbol">${btnData.symbol}</span>`
@@ -1624,6 +1679,7 @@
           btnEl.addEventListener("click", () => executeOverwrite(btnData.id));
         } else {
           btnEl.addEventListener("click", () => playAudioData(btnData.audioData));
+          btnEl.addEventListener("click", () => playButtonSpeech(btnData));
         }
         soundCanvas.appendChild(btnEl);
       });
@@ -1811,20 +1867,40 @@
     document.addEventListener("touchcancel", handleEnd);
 
     // ==================== ASSIGN & OVERWRITE ====================
+    function applyGeneratedSpeechToButton(btn, source) {
+      if (!btn || !source) return;
+      const phrase = (source.text || getUtteranceText(source) || "").trim();
+      btn.label = phrase.substring(0, 24) || "Speech";
+      if (isUtteranceSource(source)) {
+        btn.utteranceText = phrase;
+        btn.audioData = null;
+      } else {
+        btn.audioData = source.audioData || null;
+        btn.utteranceText = null;
+      }
+    }
+
     document.getElementById("textarea-assign-btn").addEventListener("click", () => {
       if (!lastGeneratedAudio || !lastGeneratedAudio.audioData) return;
+      if (!canUseGeneratedActions(lastGeneratedAudio)) return;
       openModal("modal-assign-choice");
     });
 
     document.getElementById("choice-create-new-btn").addEventListener("click", () => {
       if (!lastGeneratedAudio) return;
+      if (!canUseGeneratedActions(lastGeneratedAudio)) return;
       const activeTab = getActiveTopic();
       if (!activeTab) return;
 
+      const phrase = (lastGeneratedAudio.text || getUtteranceText(lastGeneratedAudio) || "").trim();
+      const isUtt = isUtteranceSource(lastGeneratedAudio);
       activeTab.buttons.push(normalizeButton({
         id: generateId(),
         label: lastGeneratedAudio.text.substring(0, 24) || "Speech",
         audioData: lastGeneratedAudio.audioData,
+        label: phrase.substring(0, 24) || "Speech",
+        audioData: isUtt ? null : lastGeneratedAudio.audioData,
+        utteranceText: isUtt ? phrase : null,
         col: activeTab.buttons.length % activeTab.gridCols,
         row: Math.floor(activeTab.buttons.length / activeTab.gridCols)
       }, activeTab.buttons.length));
@@ -1852,15 +1928,18 @@
 
     function executeOverwrite(btnId) {
       if (!lastGeneratedAudio || !lastGeneratedAudio.audioData) return;
+      if (!canUseGeneratedActions(lastGeneratedAudio)) return;
       const tab = getActiveTopic();
       const btn = tab?.buttons.find(b => b.id === btnId);
       if (!btn) return;
 
       btn.audioData = lastGeneratedAudio.audioData;
       btn.label = lastGeneratedAudio.text.substring(0, 24) || "Speech";
+      applyGeneratedSpeechToButton(btn, lastGeneratedAudio);
       saveTopicsList();
       setOverwriteMode(false);
       renderTopics();
+      renderSoundButtons();
       focusDisplayInput();
     }
 
@@ -1869,7 +1948,7 @@
       const item = {
         id: generateId(),
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        text: textSpoken, model, voiceId, audioData: audioBlob
+        text: textSpoken, model, voiceId, audioData: audioBlob || null
       };
       audioHistory.unshift(item);
       if (audioHistory.length > 50) audioHistory.pop();
@@ -1891,10 +1970,12 @@
       filtered.forEach(item => {
         const el = document.createElement("div");
         el.className = "history-item";
+        const isUtt = isUtteranceSource(item);
         el.innerHTML = `
           <div class="history-item-header">
             <span class="history-item-text">${item.text}</span>
             <span class="history-item-meta">${item.timestamp}</span>
+            <span class="history-item-meta">${item.timestamp}${isUtt ? " · live TTS" : ""}</span>
           </div>
           <div class="history-actions">
             <button class="history-btn replay-btn" type="button"><span class="material-symbols-outlined icon-small">play_arrow</span> Play</button>
@@ -1906,11 +1987,21 @@
         el.querySelector(".replay-btn").addEventListener("click", () => {
           if (!item.audioData) { alert("Browser TTS audio cannot be replayed directly from history."); return; }
           playAudioData(item.audioData);
+          playStoredSpeech(item);
         });
         el.querySelector(".restore-btn").addEventListener("click", () => {
           setText(item.text);
           if (item.model) modelSelect.value = item.model;
           if (item.voiceId && item.model !== "browser_tts") { activeElevenVoiceId = item.voiceId; localStorage.setItem("elevenlabs_voice", activeElevenVoiceId); }
+          if (item.model) {
+            modelSelect.value = item.model;
+            try { localStorage.setItem("elevenlabs_model", item.model); } catch (_) {}
+            modelSelect.dispatchEvent(new Event("change"));
+          }
+          if (item.voiceId && item.model !== "browser_tts") {
+            activeElevenVoiceId = item.voiceId;
+            localStorage.setItem("elevenlabs_voice", activeElevenVoiceId);
+          }
           setGeneratedAudioActions(item); focusDisplayInput();
         });
         el.querySelector(".delete-btn").addEventListener("click", () => {
@@ -1929,10 +2020,12 @@
     function setGeneratedAudioActions(historyItem) {
       lastGeneratedAudio = historyItem;
       audioActionsBar.classList.toggle("active", !!(lastGeneratedAudio && lastGeneratedAudio.audioData));
+      audioActionsBar.classList.toggle("active", canUseGeneratedActions(lastGeneratedAudio));
     }
 
     document.getElementById("textarea-replay-btn").addEventListener("click", () => {
       if (lastGeneratedAudio && lastGeneratedAudio.audioData) playAudioData(lastGeneratedAudio.audioData);
+      if (canUseGeneratedActions(lastGeneratedAudio)) playStoredSpeech(lastGeneratedAudio);
       else focusDisplayInput();
     });
 
@@ -1981,11 +2074,11 @@
       else if (words.length > 0) {
         activePrefix = words[words.length - 1].replace(/[^a-zA-Z']/g, "");
         if (words.length > 1) lastWord = words[words.length - 2].replace(/[^a-zA-Z']/g, "");
-      }
+    }
 
       predictionTimeout = setTimeout(async () => {
-        let suggestions = [];
-        try {
+      let suggestions = [];
+      try {
           const urls = [];
           if (lastWord && activePrefix) urls.push(`https://api.datamuse.com/words?lc=${encodeURIComponent(lastWord)}&sp=${encodeURIComponent(activePrefix)}*&max=6`);
           else if (lastWord) urls.push(`https://api.datamuse.com/words?lc=${encodeURIComponent(lastWord)}&sp=*&max=6`);
@@ -1998,7 +2091,7 @@
             jsons.forEach(data => {
               data.forEach(item => { if (!seen.has(item.word)) { seen.add(item.word); suggestions.push(item.word); } });
             });
-          }
+      }
         } catch (_) {}
 
         const seenWords = new Set(suggestions.map(s => s.toLowerCase()));
@@ -2009,7 +2102,7 @@
             seenWords.add(fb.toLowerCase());
             suggestions.push(fb);
           }
-        }
+    }
 
         predictionButtons.forEach((btn, i) => {
           btn.textContent = suggestions[i] || "";
@@ -2282,6 +2375,10 @@
             ? activeBrowserVoiceIndex
             : 0;
           utterance.voice = voices[voiceIdx] || null;
+          // Save generative text immediately so Assign/Replay work without a clip
+          if (recordHistory) {
+            addToHistory(phrase, "browser_tts", `voice_${voiceIdx}`, null);
+          }
           utterance.onend = () => {
             if (showLoading) setSpeakBtnIdle();
             if (recordHistory) addToHistory(phrase, "browser_tts", `voice_${voiceIdx}`, null);
@@ -2739,6 +2836,7 @@
 
       renderTopics();
       renderSoundButtons();
+      switchSidebarTab("settings");
       updatePredictions();
       // Avoid auto-focus on mobile (opens keyboard immediately)
       if (!isMobileLayout()) focusDisplayInput();
