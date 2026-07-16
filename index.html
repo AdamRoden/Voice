@@ -131,9 +131,7 @@
       .status-btn:hover { border-color: var(--accent); }
       .status-btn:active { background-color: var(--bg-surface-hover); }
       .status-btn.missing { border-color: var(--danger); color: var(--danger); }
-      .status-btn.saved,
-      .status-btn.ready { border-color: #81c784; color: #81c784; }
-      .status-btn[style*="pointer-events: none"]:hover { border-color: var(--border); }
+      .status-btn.saved { border-color: #81c784; color: #81c784; }
     .status-btn-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     .font-controls { display: flex; gap: 6px; align-items: center; }
@@ -813,17 +811,6 @@
           </div>
         </div>
 
-        <hr class="setting-divider">
-
-        <div class="sidebar-setting-group">
-          <label>Word Predictions (SmolLM2)</label>
-          <div class="status-btn" id="smollm-status" style="cursor: default; pointer-events: none;" title="On-device prediction model status">
-            <span class="status-btn-text" id="smollm-status-text">
-              <span class="material-symbols-outlined icon-small icon-btn-margin">psychology</span>
-              Loading SmolLM2-135M…
-            </span>
-          </div>
-        </div>
       </div>
 
       <!-- History Tab Content -->
@@ -1086,6 +1073,122 @@
     const DEFAULT_STARTERS = ["Hey!", "I want", "Yes", "No", "Please", "Thank you"];
     const COMMON_FOLLOWUPS = ["to", "the", "and", "a", "of", "in", "is", "it", "that", "for", "you", "my", "more", "help"];
 
+    /**
+     * AAC-oriented core vocabulary with relative frequencies (higher = more common).
+     * Used for prefix completion and unigram ranking (offline, instant).
+     */
+    const CORE_VOCAB = [
+      ["I", 120], ["you", 110], ["the", 100], ["a", 95], ["to", 95], ["want", 92], ["need", 88],
+      ["please", 86], ["yes", 85], ["no", 85], ["help", 84], ["thank", 82], ["thanks", 80],
+      ["my", 80], ["is", 78], ["it", 78], ["and", 76], ["for", 74], ["of", 72], ["in", 70],
+      ["that", 70], ["this", 68], ["have", 68], ["am", 66], ["are", 66], ["can", 66], ["will", 64],
+      ["go", 64], ["get", 62], ["like", 62], ["more", 60], ["some", 58], ["not", 58], ["don't", 56],
+      ["I'm", 56], ["me", 56], ["we", 54], ["they", 52], ["he", 50], ["she", 50], ["with", 50],
+      ["on", 48], ["at", 48], ["from", 46], ["about", 46], ["what", 52], ["where", 50], ["when", 48],
+      ["who", 46], ["how", 50], ["why", 44], ["which", 40], ["because", 42], ["if", 40], ["but", 42],
+      ["or", 40], ["so", 42], ["then", 38], ["now", 48], ["today", 46], ["tomorrow", 44], ["yesterday", 40],
+      ["here", 48], ["there", 44], ["home", 50], ["school", 42], ["work", 42], ["bathroom", 48],
+      ["water", 50], ["food", 50], ["eat", 50], ["drink", 48], ["hungry", 48], ["thirsty", 46],
+      ["tired", 44], ["hurt", 46], ["sick", 44], ["pain", 42], ["happy", 44], ["sad", 42], ["mad", 40],
+      ["good", 50], ["bad", 44], ["ok", 48], ["okay", 46], ["fine", 42], ["great", 40], ["sorry", 48],
+      ["hello", 50], ["hi", 48], ["hey", 46], ["bye", 44], ["goodbye", 42], ["see", 40], ["look", 40],
+      ["listen", 36], ["come", 44], ["stop", 44], ["wait", 44], ["open", 40], ["close", 38], ["give", 42],
+      ["take", 40], ["put", 38], ["make", 40], ["do", 48], ["did", 40], ["done", 40], ["finish", 36],
+      ["start", 36], ["again", 42], ["all", 42], ["one", 40], ["two", 36], ["three", 34], ["first", 34],
+      ["last", 34], ["next", 38], ["big", 38], ["little", 38], ["hot", 40], ["cold", 40], ["up", 40],
+      ["down", 38], ["in", 40], ["out", 42], ["on", 40], ["off", 38], ["left", 36], ["right", 36],
+      ["mom", 44], ["dad", 44], ["friend", 42], ["teacher", 36], ["doctor", 36], ["nurse", 32],
+      ["family", 38], ["people", 36], ["someone", 36], ["something", 40], ["anything", 34], ["nothing", 34],
+      ["time", 42], ["day", 40], ["night", 38], ["morning", 40], ["afternoon", 34], ["evening", 34],
+      ["phone", 40], ["call", 40], ["text", 36], ["message", 36], ["computer", 32], ["music", 36],
+      ["TV", 34], ["movie", 32], ["book", 34], ["game", 36], ["play", 42], ["watch", 38], ["read", 36],
+      ["write", 34], ["draw", 32], ["color", 30], ["outside", 36], ["inside", 34], ["park", 32],
+      ["car", 38], ["bus", 32], ["walk", 38], ["ride", 34], ["store", 34], ["buy", 36], ["money", 34],
+      ["please", 50], ["help", 50], ["break", 34], ["rest", 36], ["sleep", 40], ["bed", 36], ["chair", 30],
+      ["table", 28], ["door", 34], ["window", 28], ["light", 32], ["clothes", 32], ["shoes", 30],
+      ["shirt", 28], ["pants", 28], ["jacket", 28], ["wash", 34], ["clean", 34], ["dirty", 30],
+      ["medicine", 36], ["pill", 30], ["appointment", 32], ["hospital", 32], ["emergency", 34],
+      ["love", 42], ["miss", 36], ["feel", 40], ["think", 38], ["know", 42], ["remember", 34],
+      ["forget", 30], ["try", 36], ["ready", 38], ["later", 40], ["soon", 36], ["always", 34],
+      ["never", 32], ["maybe", 40], ["sure", 38], ["really", 36], ["very", 36], ["too", 34],
+      ["also", 32], ["just", 36], ["only", 32], ["much", 34], ["many", 32], ["few", 28],
+      ["another", 34], ["other", 34], ["same", 32], ["different", 30], ["new", 34], ["old", 30],
+      ["favorite", 34], ["best", 32], ["worst", 26], ["better", 32], ["worse", 26],
+      ["bathroom", 50], ["toilet", 40], ["shower", 34], ["bath", 32], ["brush", 30], ["teeth", 32],
+      ["hair", 28], ["hand", 30], ["head", 30], ["stomach", 32], ["back", 34], ["leg", 28], ["arm", 28],
+      ["hungry", 48], ["thirsty", 46], ["snack", 36], ["breakfast", 36], ["lunch", 36], ["dinner", 36],
+      ["fruit", 30], ["apple", 28], ["banana", 28], ["bread", 28], ["cheese", 28], ["meat", 28],
+      ["chicken", 28], ["pizza", 30], ["sandwich", 30], ["soup", 28], ["salad", 26], ["cookie", 28],
+      ["juice", 34], ["milk", 34], ["coffee", 32], ["tea", 30], ["soda", 28], ["ice", 28],
+      ["want to", 20], ["I want", 20], ["I need", 20], ["I am", 18], ["can you", 18], ["thank you", 22],
+      ["excuse me", 18], ["I'm sorry", 18], ["I don't", 16], ["I can't", 16], ["how are", 14]
+    ];
+
+    /** Built-in bigrams: previous word (lower) → { nextWord: weight } */
+    const CORE_BIGRAMS = {
+      i: { want: 50, need: 45, am: 40, have: 35, like: 32, love: 28, feel: 26, think: 24, know: 22, can: 20, will: 18, don't: 30, can't: 22 },
+      i'm: { hungry: 40, thirsty: 38, tired: 36, sorry: 34, fine: 28, ok: 26, ready: 24, cold: 22, hot: 20, sad: 22, happy: 22, hurt: 24 },
+      want: { to: 55, a: 35, the: 28, some: 30, more: 28, my: 20, it: 18, that: 16, help: 20 },
+      need: { to: 50, a: 35, the: 28, some: 30, help: 40, more: 25, my: 18, water: 22, food: 20 },
+      to: { go: 40, get: 35, eat: 30, drink: 28, play: 26, see: 24, be: 22, have: 20, make: 18, do: 22, the: 16, a: 14, sleep: 20, rest: 18 },
+      go: { to: 45, home: 35, out: 28, outside: 24, now: 20, please: 16, there: 14, back: 18 },
+      can: { you: 50, i: 30, we: 22, not: 18, help: 16 },
+      you: { can: 30, are: 28, please: 26, help: 24, want: 20, need: 18, like: 16, know: 14 },
+      please: { help: 40, stop: 28, wait: 26, open: 20, close: 18, come: 18, give: 16, get: 14 },
+      thank: { you: 60 },
+      thanks: { for: 30, a: 12 },
+      the: { bathroom: 30, door: 20, water: 18, food: 16, phone: 16, light: 14, car: 14, movie: 12, same: 10 },
+      a: { snack: 24, break: 22, drink: 20, minute: 18, little: 16, book: 14, game: 14, rest: 16 },
+      some: { water: 35, food: 30, help: 28, more: 22, time: 18, juice: 16, milk: 14 },
+      more: { please: 30, water: 25, food: 22, time: 20, help: 18 },
+      feel: { good: 28, bad: 26, sick: 24, tired: 22, happy: 20, sad: 18, better: 20, ok: 16 },
+      am: { hungry: 30, thirsty: 28, tired: 26, fine: 22, ready: 20, sorry: 18, cold: 16, hot: 14 },
+      are: { you: 40, we: 20, they: 14, there: 12 },
+      how: { are: 40, is: 22, do: 18, much: 16, about: 14 },
+      what: { is: 30, do: 25, time: 22, about: 18, can: 14 },
+      where: { is: 40, are: 22, can: 16 },
+      when: { is: 28, can: 22, do: 16 },
+      do: { you: 40, not: 22, it: 16, that: 14 },
+      don't: { know: 30, want: 28, like: 22, understand: 18, feel: 14 },
+      can't: { find: 22, go: 18, do: 16, hear: 14, see: 14 },
+      my: { name: 22, head: 20, stomach: 20, back: 18, phone: 16, mom: 16, dad: 14, friend: 14, turn: 12 },
+      get: { me: 28, some: 24, the: 18, up: 16, ready: 14, out: 12 },
+      give: { me: 40, you: 12 },
+      help: { me: 45, please: 35, with: 20 },
+      like: { to: 30, the: 18, a: 16, it: 14, this: 14 },
+      have: { a: 28, to: 24, some: 20, the: 16, pain: 14 },
+      is: { it: 24, that: 20, this: 18, my: 14, the: 12, ready: 12 },
+      it: { is: 28, hurts: 24, 's: 16, was: 12 },
+      let's: { go: 35, play: 25, eat: 20, see: 16 },
+      see: { you: 30, the: 16, if: 12 },
+      come: { here: 30, on: 22, back: 18, in: 14 },
+      stop: { please: 28, it: 20 },
+      wait: { please: 30, a: 22 },
+      open: { the: 35, my: 12 },
+      close: { the: 35 },
+      turn: { on: 28, off: 28, the: 16 },
+      look: { at: 30, for: 18 },
+      listen: { to: 28 },
+      play: { with: 22, a: 18, the: 16, outside: 14 },
+      eat: { now: 20, some: 22, lunch: 16, dinner: 16, please: 18 },
+      drink: { water: 35, juice: 22, milk: 18, please: 20 },
+      at: { home: 22, school: 20, work: 18, the: 16 },
+      for: { me: 24, you: 18, a: 16, the: 14, help: 12 },
+      with: { me: 28, you: 18, my: 14, the: 12 },
+      of: { the: 22, my: 16, them: 12 },
+      in: { the: 30, my: 18, a: 14 },
+      on: { the: 28, my: 16 },
+      out: { of: 22, please: 14 },
+      up: { please: 20, the: 12 },
+      down: { please: 20 },
+      yes: { please: 30, i: 16 },
+      no: { thank: 28, i: 18, more: 14 },
+      maybe: { later: 28, tomorrow: 18 },
+      later: { please: 20, today: 14 },
+      today: { i: 16, is: 14 },
+      tomorrow: { i: 16, morning: 14 }
+    };
+
     const SYMBOL_MIGRATION_MAP = {
       "📁": "folder", "💬": "chat", "🕒": "history", "⚙️": "settings", "☰": "menu", "▼": "expand_more",
       "❯": "chevron_right", "🔍": "search", "🎨": "palette", "🗣️": "record_voice_over", "✎": "edit",
@@ -1163,16 +1266,9 @@
     // State Variables
     let predictionTimeout = null;
     let predictionRequestId = 0;
-    /** @type {null | ((messages: object[], opts?: object) => Promise<any>)} */
-    let smolGenerator = null;
-    let smolLoadPromise = null;
-    let smolLoadError = null;
-    let smolReady = false;
-    let smolInferBusy = false;
-    /** @type {null | { requestId: number, text: string, endsWithSpace: boolean, prefix: string }} */
-    let smolInferPending = null;
-    const SMOLLM_MODEL_ID = "HuggingFaceTB/SmolLM2-135M-Instruct";
-    const TRANSFORMERS_CDN = "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1/+esm";
+    /** Personal language model: learned from speech history & buttons (persisted). */
+    let userUnigrams = Object.create(null); // lowerWord -> count
+    let userBigrams = Object.create(null);  // "prev\tnext" -> count
     let speakPredictionsEnabled = localStorage.getItem("aac_speak_predictions") === "1";
     let activeBrowserVoiceIndex = localStorage.getItem("aac_browser_voice_index");
     if (activeBrowserVoiceIndex !== null && activeBrowserVoiceIndex !== "") {
@@ -1942,6 +2038,7 @@
       btn.symbol = SYMBOL_MIGRATION_MAP[rawSymbol] || rawSymbol || "";
       const selCol = document.querySelector("#button-color-picker .color-option.selected");
       if (selCol) btn.color = selCol.style.backgroundColor;
+      if (btn.label) learnFromText(btn.label, 2);
       if (!isEditMode) saveTopicsList();
       renderTopics();
       renderSoundButtons();
@@ -2077,6 +2174,7 @@
         btn.audioData = source.audioData || null;
         btn.utteranceText = null;
       }
+      if (phrase) learnFromText(phrase, 2);
     }
 
     document.getElementById("textarea-assign-btn").addEventListener("click", () => {
@@ -2100,6 +2198,7 @@
         row: Math.floor(activeTab.buttons.length / activeTab.gridCols)
       }, activeTab.buttons.length));
 
+      if (phrase) learnFromText(phrase, 2);
       repackSequentialGrid(activeTab);
       saveTopicsList(); renderTopics(); renderSoundButtons(); closeModals();
       // focus handled by closeModals
@@ -2145,6 +2244,8 @@
       audioHistory.unshift(item);
       if (audioHistory.length > 50) audioHistory.pop();
       saveHistory(); renderHistory(); setGeneratedAudioActions(item);
+      // Personal n-gram model learns from spoken phrases
+      if (textSpoken) learnFromText(textSpoken, 1);
     }
 
     function renderHistory() {
@@ -2214,7 +2315,7 @@
       else focusDisplayInput();
     });
 
-    // ==================== TEXT & PREDICTIONS (SmolLM2-135M) ====================
+    // ==================== TEXT & PREDICTIONS (dictionary + n-gram + history + Datamuse) ====================
     function getText() { return displayInput.value; }
     function setText(val, caret = val.length) {
       displayInput.value = val;
@@ -2240,6 +2341,15 @@
       return (word || "").replace(/[^a-zA-Z']/g, "");
     }
 
+    function tokenizePredictionText(text) {
+      return (text || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9'\s]/g, " ")
+        .split(/\s+/)
+        .map(w => w.replace(/^'+|'+$/g, ""))
+        .filter(w => w.length > 0);
+    }
+
     function autoscaleButtonText(btn) {
       btn.style.fontSize = "16px";
       let size = 16;
@@ -2256,184 +2366,280 @@
       });
     }
 
-    function setSmolStatus(message, { ok = false, error = false } = {}) {
-      const el = document.getElementById("smollm-status-text");
-      const wrap = document.getElementById("smollm-status");
-      if (!el) return;
-      const icon = error ? "error" : (ok ? "check_circle" : "psychology");
-      el.innerHTML = `<span class="material-symbols-outlined icon-small icon-btn-margin">${icon}</span>${message}`;
-      if (wrap) {
-        wrap.classList.toggle("missing", !!error);
-        wrap.classList.toggle("ready", !!ok);
+    function loadUserLangModel() {
+      try {
+        const raw = JSON.parse(localStorage.getItem("aac_lang_model") || "{}");
+        userUnigrams = Object.create(null);
+        userBigrams = Object.create(null);
+        if (raw && typeof raw.unigrams === "object" && raw.unigrams) {
+          Object.assign(userUnigrams, raw.unigrams);
+        }
+        if (raw && typeof raw.bigrams === "object" && raw.bigrams) {
+          Object.assign(userBigrams, raw.bigrams);
+        }
+      } catch (_) {
+        userUnigrams = Object.create(null);
+        userBigrams = Object.create(null);
       }
+    }
+
+    function pruneUserLangModel() {
+      const uniKeys = Object.keys(userUnigrams);
+      if (uniKeys.length > 800) {
+        uniKeys
+          .sort((a, b) => (userUnigrams[b] || 0) - (userUnigrams[a] || 0))
+          .slice(600)
+          .forEach(k => { delete userUnigrams[k]; });
+      }
+      const biKeys = Object.keys(userBigrams);
+      if (biKeys.length > 1200) {
+        biKeys
+          .sort((a, b) => (userBigrams[b] || 0) - (userBigrams[a] || 0))
+          .slice(900)
+          .forEach(k => { delete userBigrams[k]; });
+      }
+    }
+
+    function saveUserLangModel() {
+      pruneUserLangModel();
+      try {
+        localStorage.setItem("aac_lang_model", JSON.stringify({
+          unigrams: userUnigrams,
+          bigrams: userBigrams
+        }));
+      } catch (_) {}
+    }
+
+    /** Learn unigrams/bigrams from free text (history, speech, buttons). */
+    function learnFromText(text, weight = 1, persist = true) {
+      const words = tokenizePredictionText(text);
+      if (!words.length) return;
+      const w = Math.max(1, weight | 0);
+      for (let i = 0; i < words.length; i++) {
+        const word = words[i];
+        userUnigrams[word] = (userUnigrams[word] || 0) + w;
+        if (i > 0) {
+          const key = `${words[i - 1]}\t${word}`;
+          userBigrams[key] = (userBigrams[key] || 0) + w;
+        }
+      }
+      if (persist) saveUserLangModel();
+    }
+
+    /** One-time seed from existing history + buttons so predictions personalize immediately. */
+    function seedUserLangModelIfNeeded() {
+      loadUserLangModel();
+      if (localStorage.getItem("aac_lang_seeded") === "1") return;
+      if (Array.isArray(audioHistory)) {
+        audioHistory.forEach(item => {
+          if (item && item.text) learnFromText(item.text, 1, false);
+        });
+      }
+      if (Array.isArray(topicsList)) {
+        topicsList.forEach(topic => {
+          (topic.buttons || []).forEach(btn => {
+            if (btn && btn.label) learnFromText(btn.label, 2, false);
+            if (btn && btn.utteranceText) learnFromText(btn.utteranceText, 2, false);
+          });
+        });
+      }
+      try { localStorage.setItem("aac_lang_seeded", "1"); } catch (_) {}
+      saveUserLangModel();
+    }
+
+    // Core vocab lookup: lower -> { display, freq }
+    const coreVocabMap = Object.create(null);
+    CORE_VOCAB.forEach(([word, freq]) => {
+      if (!word) return;
+      const key = word.toLowerCase();
+      const prev = coreVocabMap[key];
+      if (!prev || freq > prev.freq) {
+        coreVocabMap[key] = { display: word, freq: freq || 1 };
+      }
+    });
+
+    function displayFormFor(wordLower) {
+      if (coreVocabMap[wordLower]) return coreVocabMap[wordLower].display;
+      // Preserve simple capitalization for user words
+      if (wordLower.length <= 2) return wordLower;
+      return wordLower;
+    }
+
+    function scoreUnigram(wordLower) {
+      const core = coreVocabMap[wordLower] ? coreVocabMap[wordLower].freq : 0;
+      const user = userUnigrams[wordLower] || 0;
+      return core + user * 12;
+    }
+
+    function scoreBigram(prevLower, nextLower) {
+      let score = 0;
+      const core = CORE_BIGRAMS[prevLower];
+      if (core && core[nextLower] != null) score += core[nextLower];
+      const key = `${prevLower}\t${nextLower}`;
+      if (userBigrams[key]) score += userBigrams[key] * 14;
+      return score;
     }
 
     /**
-     * Load SmolLM2-135M-Instruct once via Transformers.js (WebGPU if available, else WASM).
-     * Cached in IndexedDB by the library for subsequent visits.
+     * Local prefix completions: dictionary + user history unigrams.
+     * Instant, offline.
      */
-    function ensureSmolLM() {
-      if (smolGenerator) return Promise.resolve(smolGenerator);
-      if (smolLoadPromise) return smolLoadPromise;
+    function localPrefixCompletions(prefix, limit = 12) {
+      const p = (prefix || "").toLowerCase();
+      if (!p) return [];
+      const scores = new Map(); // lower -> score
 
-      smolLoadPromise = (async () => {
-        setSmolStatus("Downloading SmolLM2-135M…");
-        const { pipeline, env } = await import(/* @vite-ignore */ TRANSFORMERS_CDN);
-        env.allowLocalModels = false;
-        env.useBrowserCache = true;
-
-        const hasWebGPU = typeof navigator !== "undefined" && !!navigator.gpu;
-        const progress_callback = (data) => {
-          if (!data) return;
-          if (data.status === "progress" && data.total) {
-            const pct = Math.round((data.loaded / data.total) * 100);
-            const file = (data.file || "").split("/").pop() || "model";
-            setSmolStatus(`Loading ${file} (${pct}%)`);
-          } else if (data.status === "initiate" || data.status === "download") {
-            const file = (data.file || "").split("/").pop() || "model files";
-            setSmolStatus(`Fetching ${file}…`);
-          } else if (data.status === "done") {
-            setSmolStatus("Preparing model…");
-          }
-        };
-
-        const tryLoad = async (device, dtype) => {
-          const opts = { progress_callback };
-          if (device) opts.device = device;
-          if (dtype) opts.dtype = dtype;
-          return pipeline("text-generation", SMOLLM_MODEL_ID, opts);
-        };
-
-        try {
-          if (hasWebGPU) {
-            try {
-              smolGenerator = await tryLoad("webgpu", "q4f16");
-            } catch (_) {
-              smolGenerator = await tryLoad("webgpu", "q4");
-            }
-          } else {
-            try {
-              smolGenerator = await tryLoad("wasm", "q4");
-            } catch (_) {
-              smolGenerator = await tryLoad("wasm", "fp32");
-            }
-          }
-        } catch (primaryErr) {
-          // Last resort: library defaults
-          try {
-            smolGenerator = await tryLoad(undefined, undefined);
-          } catch (fallbackErr) {
-            smolLoadError = fallbackErr || primaryErr;
-            smolLoadPromise = null;
-            setSmolStatus("SmolLM2 failed to load — using offline list", { error: true });
-            throw smolLoadError;
-          }
-        }
-
-        smolReady = true;
-        smolLoadError = null;
-        const deviceLabel = hasWebGPU ? "WebGPU" : "WASM";
-        setSmolStatus(`SmolLM2-135M ready (${deviceLabel})`, { ok: true });
-        return smolGenerator;
-      })();
-
-      return smolLoadPromise;
-    }
-
-    function extractGeneratedContent(output) {
-      if (!output || !output[0]) return "";
-      const gen = output[0].generated_text;
-      if (Array.isArray(gen)) {
-        const last = gen[gen.length - 1];
-        if (last && typeof last.content === "string") return last.content;
-        return gen.map(m => (m && m.content) || "").join("\n");
-      }
-      if (typeof gen === "string") return gen;
-      if (gen && typeof gen.content === "string") return gen.content;
-      return "";
-    }
-
-    function parseSmolSuggestions(rawText, prefix) {
-      if (!rawText) return [];
-      // Prefer line-based list; also split common separators
-      let parts = rawText
-        .split(/\r?\n/)
-        .flatMap(line => line.split(/[,;|]/))
-        .map(s => s.trim())
-        .map(s => s.replace(/^[\d]+[\.\)\:\-]\s*/, ""))
-        .map(s => s.replace(/^[\-\*\•]\s*/, ""))
-        .map(s => s.replace(/^["'`]+|["'`]+$/g, ""))
-        .map(s => s.replace(/\s+/g, " ").trim())
-        .filter(s => s.length > 0 && s.length <= 40);
-
-      // Drop chatty meta lines
-      parts = parts.filter(s => {
-        const lower = s.toLowerCase();
-        if (/^(here|sure|of course|suggestions?|the user|i suggest)/.test(lower)) return false;
-        if (s.split(/\s+/).length > 5) return false;
-        return true;
+      Object.keys(coreVocabMap).forEach(key => {
+        if (!key.startsWith(p)) return;
+        // Prefer single-word completions for the strip (phrases allowed if they start with prefix as whole entry)
+        scores.set(key, (scores.get(key) || 0) + scoreUnigram(key) + (key === p ? -5 : 0));
       });
 
+      Object.keys(userUnigrams).forEach(key => {
+        if (!key.startsWith(p)) return;
+        scores.set(key, (scores.get(key) || 0) + scoreUnigram(key) + 5);
+      });
+
+      return [...scores.entries()]
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .slice(0, limit)
+        .map(([w]) => displayFormFor(w));
+    }
+
+    /**
+     * Local next-word suggestions given previous word (n-grams + unigram fill).
+     */
+    function localNextWordSuggestions(prevWord, limit = 10) {
+      const prev = (prevWord || "").toLowerCase();
+      const scores = new Map();
+
+      if (prev) {
+        const core = CORE_BIGRAMS[prev];
+        if (core) {
+          Object.entries(core).forEach(([next, wt]) => {
+            scores.set(next, (scores.get(next) || 0) + wt + scoreUnigram(next) * 0.15);
+          });
+        }
+        Object.keys(userBigrams).forEach(key => {
+          const tab = key.indexOf("\t");
+          if (tab < 0) return;
+          const a = key.slice(0, tab);
+          const b = key.slice(tab + 1);
+          if (a !== prev) return;
+          scores.set(b, (scores.get(b) || 0) + (userBigrams[key] || 0) * 14 + scoreUnigram(b) * 0.15);
+        });
+      }
+
+      // Unigram fill when bigrams are sparse
+      if (scores.size < limit) {
+        Object.keys(coreVocabMap).forEach(key => {
+          if (scores.has(key)) return;
+          // Skip multi-word phrase entries for next-word fill
+          if (key.includes(" ")) return;
+          scores.set(key, scoreUnigram(key) * 0.25);
+        });
+        Object.keys(userUnigrams).forEach(key => {
+          if (key.includes(" ")) return;
+          scores.set(key, Math.max(scores.get(key) || 0, scoreUnigram(key) * 0.4));
+        });
+      }
+
+      return [...scores.entries()]
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .slice(0, limit)
+        .map(([w]) => displayFormFor(w));
+    }
+
+    function mergeSuggestionLists(primary, secondary, prefix, limit = 6) {
       const prefixLower = (prefix || "").toLowerCase();
       const seen = new Set();
       const out = [];
-      for (const p of parts) {
-        const key = p.toLowerCase();
-        if (seen.has(key)) continue;
-        if (prefixLower && !key.startsWith(prefixLower) && !key.includes(" " + prefixLower)) {
-          // Allow phrase suggestions that complete the prefix as first word
+      const push = (raw) => {
+        if (!raw) return;
+        const s = String(raw).trim();
+        if (!s || s.length > 40) return;
+        // Single word or short phrase
+        if (s.split(/\s+/).length > 3) return;
+        const key = s.toLowerCase();
+        if (seen.has(key)) return;
+        if (prefixLower) {
           const first = key.split(/\s+/)[0];
-          if (!first.startsWith(prefixLower)) continue;
+          if (!first.startsWith(prefixLower)) return;
         }
         seen.add(key);
-        out.push(p);
-        if (out.length >= 6) break;
-      }
-      return out;
+        out.push(s);
+      };
+      primary.forEach(push);
+      secondary.forEach(push);
+      return out.slice(0, limit);
     }
 
     function fillWithFallbacks(suggestions, endsWithSpace, prefix) {
       const pool = endsWithSpace ? COMMON_FOLLOWUPS : DEFAULT_STARTERS;
-      const seen = new Set(suggestions.map(s => s.toLowerCase()));
-      const prefixLower = (prefix || "").toLowerCase();
-      for (const fb of pool) {
-        if (suggestions.length >= 6) break;
-        const key = fb.toLowerCase();
-        if (seen.has(key)) continue;
-        if (prefixLower && !key.startsWith(prefixLower)) continue;
-        seen.add(key);
-        suggestions.push(fb);
-      }
-      if (suggestions.length === 0 && prefix) suggestions.push(prefix);
-      return suggestions;
+      const out = mergeSuggestionLists(suggestions || [], pool, prefix, 6);
+      if (out.length === 0 && prefix) return [prefix];
+      return out;
     }
 
-    async function generateSmolSuggestions(textUpToCaret, endsWithSpace, activePrefix) {
-      const generator = await ensureSmolLM();
-      const context = textUpToCaret.trim().slice(-240);
-      const system = "You are an AAC word predictor for people with speech disabilities. Reply with exactly 6 short suggestions for what to type next. One suggestion per line. Each is a single word or a short phrase of at most 3 words. No numbers, no bullets, no quotes, no explanation.";
-      let user;
-      if (!context) {
-        user = "The text box is empty. Suggest 6 useful conversation starters.";
-      } else if (endsWithSpace || !activePrefix) {
-        user = `The user has typed:\n"${context}"\n\nSuggest 6 natural next words or short phrases.`;
-      } else {
-        user = `The user is typing:\n"${context}"\n\nThe incomplete word/prefix is: "${activePrefix}"\nSuggest 6 completions that start with that prefix (full words or short phrases).`;
+    /** Instant local ranking (dictionary + n-grams + personal history). */
+    function buildLocalSuggestions(textUpToCaret, endsWithSpace, activePrefix, lastWord) {
+      let local = [];
+      if (activePrefix) {
+        local = localPrefixCompletions(activePrefix, 12);
+      } else if (endsWithSpace || lastWord) {
+        local = localNextWordSuggestions(lastWord, 12);
       }
+      return fillWithFallbacks(local, endsWithSpace, activePrefix);
+    }
 
-      const messages = [
-        { role: "system", content: system },
-        { role: "user", content: user }
-      ];
+    /**
+     * Datamuse hybrid layer: spelling completions + context-aware next words.
+     * Merged on top of local results; fails soft when offline.
+     */
+    async function fetchDatamuseSuggestions(activePrefix, lastWord, endsWithSpace) {
+      const urls = [];
+      if (activePrefix) {
+        urls.push(`https://api.datamuse.com/sug?s=${encodeURIComponent(activePrefix)}&max=12`);
+        if (lastWord) {
+          urls.push(`https://api.datamuse.com/words?lc=${encodeURIComponent(lastWord)}&sp=${encodeURIComponent(activePrefix)}*&max=10&md=f`);
+        } else {
+          urls.push(`https://api.datamuse.com/words?sp=${encodeURIComponent(activePrefix)}*&max=10&md=f`);
+        }
+      } else if (lastWord && endsWithSpace) {
+        urls.push(`https://api.datamuse.com/words?lc=${encodeURIComponent(lastWord)}&max=12&md=f`);
+      }
+      if (!urls.length) return [];
 
-      const output = await generator(messages, {
-        max_new_tokens: 48,
-        temperature: 0.35,
-        top_p: 0.9,
-        do_sample: true
-      });
-
-      return parseSmolSuggestions(extractGeneratedContent(output), activePrefix);
+      try {
+        const res = await Promise.all(urls.map(u => fetch(u).catch(() => null)));
+        const jsons = await Promise.all(res.map(r => (r && r.ok ? r.json().catch(() => []) : [])));
+        const seen = new Set();
+        const out = [];
+        const prefixLower = (activePrefix || "").toLowerCase();
+        for (const data of jsons) {
+          if (!Array.isArray(data)) continue;
+          // Prefer higher frequency / score first when available
+          const sorted = data.slice().sort((a, b) => {
+            const fa = parseFloat((a.tags || []).find(t => String(t).startsWith("f:"))?.slice(2)) || a.score || 0;
+            const fb = parseFloat((b.tags || []).find(t => String(t).startsWith("f:"))?.slice(2)) || b.score || 0;
+            return fb - fa;
+          });
+          for (const item of sorted) {
+            const w = item && item.word != null ? String(item.word).trim() : "";
+            if (!w || w.includes(" ")) continue; // single words for strip
+            const key = w.toLowerCase();
+            if (seen.has(key)) continue;
+            if (prefixLower && !key.startsWith(prefixLower)) continue;
+            seen.add(key);
+            out.push(w);
+            if (out.length >= 12) break;
+          }
+          if (out.length >= 12) break;
+        }
+        return out;
+      } catch (_) {
+        return [];
+      }
     }
 
     async function updatePredictions() {
@@ -2454,71 +2660,41 @@
 
       const words = textUpToCaret.trim().split(/\s+/).filter(w => w.length > 0);
       const endsWithSpace = /\s$/.test(textUpToCaret);
+      let lastWord = "";
       let activePrefix = "";
-      if (!endsWithSpace && words.length > 0) {
+
+      if (endsWithSpace) {
+        if (words.length > 0) lastWord = sanitizeWordToken(words[words.length - 1]);
+      } else if (words.length > 0) {
         activePrefix = sanitizeWordToken(words[words.length - 1]);
+        if (words.length > 1) lastWord = sanitizeWordToken(words[words.length - 2]);
       }
+
+      // A) Instant local: dictionary + n-grams + personal history
+      const localNow = buildLocalSuggestions(textUpToCaret, endsWithSpace, activePrefix, lastWord);
+      setPredictionButtons(localNow);
 
       const reqPrefix = activePrefix;
+      const reqLastWord = lastWord;
       const reqEndsWithSpace = endsWithSpace;
-      const reqText = textUpToCaret;
 
-      // Immediate offline placeholders while the model thinks / loads
-      setPredictionButtons(
-        fillWithFallbacks([], reqEndsWithSpace, reqPrefix).slice(0, 6)
-      );
-
-      predictionTimeout = setTimeout(() => {
+      // B) Debounced Datamuse merge for richer prefix / next-word completions
+      predictionTimeout = setTimeout(async () => {
         const requestId = ++predictionRequestId;
-        queueSmolInference(requestId, reqText, reqEndsWithSpace, reqPrefix);
-      }, 320);
-    }
+        let remote = [];
+        try {
+          remote = await fetchDatamuseSuggestions(reqPrefix, reqLastWord, reqEndsWithSpace);
+        } catch (_) {
+          remote = [];
+        }
+        if (requestId !== predictionRequestId) return;
 
-    /** Serialize on-device inference; keep only the latest pending request. */
-    function queueSmolInference(requestId, text, endsWithSpace, prefix) {
-      smolInferPending = { requestId, text, endsWithSpace, prefix };
-      pumpSmolInference();
-    }
-
-    async function pumpSmolInference() {
-      if (smolInferBusy) return;
-      const job = smolInferPending;
-      if (!job) return;
-      // Drop superseded jobs
-      if (job.requestId !== predictionRequestId) {
-        smolInferPending = null;
-        return;
-      }
-      smolInferPending = null;
-      smolInferBusy = true;
-      let suggestions = [];
-      try {
-        suggestions = await generateSmolSuggestions(job.text, job.endsWithSpace, job.prefix);
-      } catch (_) {
-        suggestions = [];
-      } finally {
-        smolInferBusy = false;
-      }
-
-      if (job.requestId !== predictionRequestId) {
-        // A newer keystroke arrived; process it next
-        pumpSmolInference();
-        return;
-      }
-
-      suggestions = fillWithFallbacks(suggestions, job.endsWithSpace, job.prefix);
-      setPredictionButtons(suggestions.slice(0, 6));
-
-      // Process any request queued while we were busy
-      if (smolInferPending) pumpSmolInference();
-    }
-
-    /** Warm the model in the background so first predictions are faster. */
-    function preloadSmolLM() {
-      ensureSmolLM().then(() => {
-        // Refresh suggestions once ready if the user already typed something
-        if (getText().trim()) updatePredictions();
-      }).catch(() => {});
+        // Prefer local order first, then Datamuse fill
+        const local = buildLocalSuggestions(textUpToCaret, reqEndsWithSpace, reqPrefix, reqLastWord);
+        const merged = mergeSuggestionLists(local, remote, reqPrefix, 6);
+        const finalList = fillWithFallbacks(merged, reqEndsWithSpace, reqPrefix);
+        setPredictionButtons(finalList);
+      }, 180);
     }
 
     predictionButtons.forEach(btn => {
@@ -2527,15 +2703,35 @@
         if (!suggestion) return;
         const text = getText();
         const caret = getDisplayCaret();
-        const match = text.substring(0, caret).match(/([a-zA-Z']+)$/);
+        const before = text.substring(0, caret);
+        const wordsBefore = before.trim().split(/\s+/).filter(w => w.length > 0);
+        const endsWithSpace = /\s$/.test(before);
+        let prevForLearn = "";
+        if (endsWithSpace && wordsBefore.length) {
+          prevForLearn = sanitizeWordToken(wordsBefore[wordsBefore.length - 1]).toLowerCase();
+        } else if (wordsBefore.length > 1) {
+          prevForLearn = sanitizeWordToken(wordsBefore[wordsBefore.length - 2]).toLowerCase();
+        }
+
+        const match = before.match(/([a-zA-Z']+)$/);
         const replaceStart = match ? caret - match[1].length : caret;
         const inserted = suggestion + " ";
         const next = text.substring(0, replaceStart) + inserted + text.substring(caret);
-        // Place caret at the end of the inserted prediction text
         const newCaret = replaceStart + inserted.length;
         setText(next, newCaret);
         savedDisplaySelection = { start: newCaret, end: newCaret };
         focusDisplayInput();
+
+        // Learn accepted prediction (personal n-gram model)
+        const sugTok = tokenizePredictionText(suggestion);
+        if (sugTok.length) {
+          if (prevForLearn) {
+            const key = `${prevForLearn}\t${sugTok[0]}`;
+            userBigrams[key] = (userBigrams[key] || 0) + 2;
+          }
+          learnFromText(suggestion, 2);
+        }
+
         if (speakPredictionsEnabled) {
           speakPhrase(suggestion, { recordHistory: false });
         }
@@ -3297,9 +3493,9 @@
       renderSoundButtons();
       // Default sidebar tab: Settings (leftmost)
       switchSidebarTab("settings");
+      // Local dictionary + n-gram model (optional Datamuse merge while typing)
+      seedUserLangModelIfNeeded();
       updatePredictions();
-      // Warm SmolLM2-135M in the background (Transformers.js / ONNX)
-      preloadSmolLM();
       // Avoid auto-focus on mobile (opens keyboard immediately)
       if (!isMobileLayout()) focusDisplayInput();
     }
