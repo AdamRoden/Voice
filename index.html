@@ -2175,9 +2175,9 @@
         let suggestions = [];
         try {
           const urls = [];
-          if (lastWord && activePrefix) urls.push(`https://api.datamuse.com/words?lc=${encodeURIComponent(lastWord)}&sp=${encodeURIComponent(activePrefix)}*&max=10&md=f`);
-          else if (lastWord) urls.push(`https://api.datamuse.com/words?lc=${encodeURIComponent(lastWord)}&sp=*&max=10&md=f`);
-          else if (activePrefix) urls.push(`https://api.datamuse.com/sug?s=${encodeURIComponent(activePrefix)}&max=10&md=f`);
+          if (lastWord && activePrefix) urls.push(`https://api.datamuse.com/words?lc=${encodeURIComponent(lastWord)}&sp=${encodeURIComponent(activePrefix)}*&max=6`);
+          else if (lastWord) urls.push(`https://api.datamuse.com/words?lc=${encodeURIComponent(lastWord)}&sp=*&max=6`);
+          else if (activePrefix) urls.push(`https://api.datamuse.com/sug?s=${encodeURIComponent(activePrefix)}&max=6`);
 
           if (urls.length > 0) {
             const res = await Promise.all(urls.map(u => fetch(u).catch(() => null)));
