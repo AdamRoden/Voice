@@ -131,7 +131,9 @@
       .status-btn:hover { border-color: var(--accent); }
       .status-btn:active { background-color: var(--bg-surface-hover); }
       .status-btn.missing { border-color: var(--danger); color: var(--danger); }
-      .status-btn.saved { border-color: #81c784; color: #81c784; }
+      .status-btn.saved,
+      .status-btn.ready { border-color: #81c784; color: #81c784; }
+      .status-btn[style*="pointer-events: none"]:hover { border-color: var(--border); }
     .status-btn-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     .font-controls { display: flex; gap: 6px; align-items: center; }
@@ -216,13 +218,27 @@
       100% { transform: rotate(-1deg) scale(1); }
     }
 
-    .sound-button { position: relative; background-color: var(--key-bg); border: 1px solid var(--border); border-radius: 10px; padding: 0 8px; cursor: pointer; user-select: none; -webkit-user-select: none; transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; color: #fff; overflow: hidden; width: 100%; min-height: 52px; height: 52px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); -webkit-touch-callout: none; }
+    .sound-button { position: relative; background-color: var(--key-bg); border: 1px solid var(--border); border-radius: 10px; padding: 0 8px; cursor: pointer; user-select: none; -webkit-user-select: none; transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease, background-color 0.12s ease; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; color: #fff; overflow: hidden; width: 100%; min-height: 52px; height: 52px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); -webkit-touch-callout: none; box-sizing: border-box; }
       .sound-button:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 4px 10px var(--shadow); }
       .sound-button:active { transform: scale(0.97); box-shadow: none; }
       .sound-button.edit-mode:not(.dragging) { animation: wiggle 0.25s infinite ease-in-out; cursor: grab; padding-left: 32px; }
       .sound-button.dragging { opacity: 0.85; cursor: grabbing; z-index: 50; transform: scale(1.05); box-shadow: 0 10px 25px var(--shadow); animation: none; }
       .sound-button.swap-target { border-color: #81c784; box-shadow: 0 0 0 3px rgba(129, 199, 132, 0.4); transform: scale(1.02); }
       .sound-button.overwrite-target { animation: wiggle 0.4s infinite ease-in-out; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 50%, transparent); }
+      /* Utterance (browser TTS) buttons: regenerate speech on press — outline style */
+      .sound-button.utterance-button {
+        background-color: transparent !important;
+        border-width: 3px;
+        border-style: solid;
+        text-shadow: none;
+      }
+      .sound-button.utterance-button:hover {
+        background-color: color-mix(in srgb, currentColor 12%, transparent) !important;
+      }
+      .sound-button.utterance-button .sound-button-symbol,
+      .sound-button.utterance-button .sound-button-label {
+        text-shadow: none;
+      }
 
     .sound-button-inner { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; overflow: hidden; pointer-events: none; }
     .sound-button-symbol { font-size: 18px; flex-shrink: 0; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
@@ -677,13 +693,9 @@
       <span class="logo-text">AAC Workspace</span>
     </div>
 
-    <!-- Sidebar Tabs -->
+    <!-- Sidebar Tabs: Settings (default) · History · Topics -->
     <div class="sidebar-tabs" id="sidebar-tabs">
-      <button class="sidebar-tab active" data-tab="topics" id="tab-topics" type="button" title="Topics">
-        <span class="material-symbols-outlined icon-medium">folder</span>
-        <span class="sidebar-tab-label">Topics</span>
-      </button>
-      <button class="sidebar-tab" data-tab="settings" id="tab-settings" type="button" title="Settings">
+      <button class="sidebar-tab active" data-tab="settings" id="tab-settings" type="button" title="Settings">
         <span class="material-symbols-outlined icon-medium">tune</span>
         <span class="sidebar-tab-label">Settings</span>
       </button>
@@ -691,19 +703,15 @@
         <span class="material-symbols-outlined icon-medium">history</span>
         <span class="sidebar-tab-label">History</span>
       </button>
+      <button class="sidebar-tab" data-tab="topics" id="tab-topics" type="button" title="Topics">
+        <span class="material-symbols-outlined icon-medium">folder</span>
+        <span class="sidebar-tab-label">Topics</span>
+      </button>
     </div>
 
     <div class="sidebar-content" id="sidebar-content">
-      <!-- Topics Tab Content -->
-      <div id="tab-content-topics" class="tab-content active">
-        <button class="tool-btn" id="add-topic-sidebar-btn" type="button">
-          <span class="material-symbols-outlined icon-medium">add</span> New Topic
-        </button>
-        <div id="topics-list"></div>
-      </div>
-
-      <!-- Settings Tab Content -->
-      <div id="tab-content-settings" class="tab-content">
+      <!-- Settings Tab Content (default) -->
+      <div id="tab-content-settings" class="tab-content active">
         <div class="sidebar-setting-group">
           <label>Voice Model</label>
           <select id="model-select">
@@ -804,6 +812,18 @@
             <button class="font-btn" id="accent-color-reset" type="button" title="Reset to theme default">Reset</button>
           </div>
         </div>
+
+        <hr class="setting-divider">
+
+        <div class="sidebar-setting-group">
+          <label>Word Predictions (SmolLM2)</label>
+          <div class="status-btn" id="smollm-status" style="cursor: default; pointer-events: none;" title="On-device prediction model status">
+            <span class="status-btn-text" id="smollm-status-text">
+              <span class="material-symbols-outlined icon-small icon-btn-margin">psychology</span>
+              Loading SmolLM2-135M…
+            </span>
+          </div>
+        </div>
       </div>
 
       <!-- History Tab Content -->
@@ -814,6 +834,14 @@
         </div>
         <div class="history-list" id="audio-history"></div>
         <button class="clear-history-btn" id="clear-history-btn" type="button">Clear All History</button>
+      </div>
+
+      <!-- Topics Tab Content -->
+      <div id="tab-content-topics" class="tab-content">
+        <button class="tool-btn" id="add-topic-sidebar-btn" type="button">
+          <span class="material-symbols-outlined icon-medium">add</span> New Topic
+        </button>
+        <div id="topics-list"></div>
       </div>
     </div>
   </aside>
@@ -1133,7 +1161,18 @@
     const fontDisplay = document.getElementById("font-display");
 
     // State Variables
-    let predictionTimeout;
+    let predictionTimeout = null;
+    let predictionRequestId = 0;
+    /** @type {null | ((messages: object[], opts?: object) => Promise<any>)} */
+    let smolGenerator = null;
+    let smolLoadPromise = null;
+    let smolLoadError = null;
+    let smolReady = false;
+    let smolInferBusy = false;
+    /** @type {null | { requestId: number, text: string, endsWithSpace: boolean, prefix: string }} */
+    let smolInferPending = null;
+    const SMOLLM_MODEL_ID = "HuggingFaceTB/SmolLM2-135M-Instruct";
+    const TRANSFORMERS_CDN = "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1/+esm";
     let speakPredictionsEnabled = localStorage.getItem("aac_speak_predictions") === "1";
     let activeBrowserVoiceIndex = localStorage.getItem("aac_browser_voice_index");
     if (activeBrowserVoiceIndex !== null && activeBrowserVoiceIndex !== "") {
@@ -1263,7 +1302,7 @@
     let selectedStudioIcon = null;
     let lastGeneratedAudio = null;
 
-    let currentSidebarTab = "topics";
+    let currentSidebarTab = "settings";
 
     // ==================== UTILITY FUNCTIONS ====================
     function generateId() { return Math.random().toString(36).substr(2, 9); }
@@ -1273,16 +1312,36 @@
       const col = Number.isFinite(btn.col) ? btn.col : (Number.isFinite(btn.x) ? Math.max(0, Math.floor(btn.x / 100)) : (index % DEFAULT_GRID_COLS));
       const row = Number.isFinite(btn.row) ? btn.row : (Number.isFinite(btn.y) ? Math.max(0, Math.floor(btn.y / 80)) : Math.floor(index / DEFAULT_GRID_COLS));
       const rawSymbol = btn.symbol || btn.icon || "";
+      const utteranceText = (btn.utteranceText || "").trim() || null;
+      // Prefer stored clip when both exist; utteranceText alone means regenerate on play
       return {
         id: btn.id || generateId(),
         label: btn.label || "Button",
         symbol: SYMBOL_MIGRATION_MAP[rawSymbol] || rawSymbol || "",
         color: btn.color || COLOR_PALETTE[index % COLOR_PALETTE.length],
-        audioData: btn.audioData || null,
+        audioData: utteranceText ? null : (btn.audioData || null),
+        utteranceText,
         col, row,
         colSpan: clamp(btn.colSpan || 1, 1, 12),
         rowSpan: clamp(btn.rowSpan || 1, 1, 8)
       };
+    }
+
+    /** Browser-TTS / utterance history or action payload (text regenerated on play). */
+    function isUtteranceSource(item) {
+      if (!item) return false;
+      if ((item.utteranceText || "").trim()) return true;
+      if (item.model === "browser_tts" && (item.text || "").trim() && !item.audioData) return true;
+      return false;
+    }
+
+    function getUtteranceText(item) {
+      if (!item) return "";
+      return ((item.utteranceText || item.text || "") + "").trim();
+    }
+
+    function canUseGeneratedActions(item) {
+      return !!(item && (item.audioData || isUtteranceSource(item)));
     }
 
     function normalizeTopicsList(rawList) {
@@ -1778,12 +1837,20 @@
       soundCanvas.innerHTML = "";
 
       activeTab.buttons.forEach(btnData => {
+        const isUtteranceBtn = !!(btnData.utteranceText || "").trim();
+        const btnColor = btnData.color || "#3f3f4e";
         const btnEl = document.createElement("div");
-        btnEl.className = `sound-button${isEditMode ? " edit-mode" : ""}${isOverwriteMode ? " overwrite-target" : ""}`;
+        btnEl.className = `sound-button${isEditMode ? " edit-mode" : ""}${isOverwriteMode ? " overwrite-target" : ""}${isUtteranceBtn ? " utterance-button" : ""}`;
         btnEl.id = `btn-${btnData.id}`;
         btnEl.style.gridColumn = `${btnData.col + 1} / span ${btnData.colSpan}`;
         btnEl.style.gridRow = `${btnData.row + 1} / span ${btnData.rowSpan}`;
-        btnEl.style.backgroundColor = btnData.color || "#3f3f4e";
+        if (isUtteranceBtn) {
+          btnEl.style.backgroundColor = "transparent";
+          btnEl.style.borderColor = btnColor;
+          btnEl.style.color = btnColor;
+        } else {
+          btnEl.style.backgroundColor = btnColor;
+        }
 
         const symbolPart = btnData.symbol
           ? `<span class="material-symbols-outlined sound-button-symbol">${btnData.symbol}</span>`
@@ -1811,7 +1878,7 @@
         } else if (isOverwriteMode) {
           btnEl.addEventListener("click", () => executeOverwrite(btnData.id));
         } else {
-          btnEl.addEventListener("click", () => playAudioData(btnData.audioData));
+          btnEl.addEventListener("click", () => playButtonSpeech(btnData));
         }
         soundCanvas.appendChild(btnEl);
       });
@@ -1999,20 +2066,36 @@
     document.addEventListener("touchcancel", handleEnd);
 
     // ==================== ASSIGN & OVERWRITE ====================
+    function applyGeneratedSpeechToButton(btn, source) {
+      if (!btn || !source) return;
+      const phrase = (source.text || getUtteranceText(source) || "").trim();
+      btn.label = phrase.substring(0, 24) || "Speech";
+      if (isUtteranceSource(source)) {
+        btn.utteranceText = phrase;
+        btn.audioData = null;
+      } else {
+        btn.audioData = source.audioData || null;
+        btn.utteranceText = null;
+      }
+    }
+
     document.getElementById("textarea-assign-btn").addEventListener("click", () => {
-      if (!lastGeneratedAudio || !lastGeneratedAudio.audioData) return;
+      if (!canUseGeneratedActions(lastGeneratedAudio)) return;
       openModal("modal-assign-choice");
     });
 
     document.getElementById("choice-create-new-btn").addEventListener("click", () => {
-      if (!lastGeneratedAudio) return;
+      if (!canUseGeneratedActions(lastGeneratedAudio)) return;
       const activeTab = getActiveTopic();
       if (!activeTab) return;
 
+      const phrase = (lastGeneratedAudio.text || getUtteranceText(lastGeneratedAudio) || "").trim();
+      const isUtt = isUtteranceSource(lastGeneratedAudio);
       activeTab.buttons.push(normalizeButton({
         id: generateId(),
-        label: lastGeneratedAudio.text.substring(0, 24) || "Speech",
-        audioData: lastGeneratedAudio.audioData,
+        label: phrase.substring(0, 24) || "Speech",
+        audioData: isUtt ? null : lastGeneratedAudio.audioData,
+        utteranceText: isUtt ? phrase : null,
         col: activeTab.buttons.length % activeTab.gridCols,
         row: Math.floor(activeTab.buttons.length / activeTab.gridCols)
       }, activeTab.buttons.length));
@@ -2039,16 +2122,16 @@
     });
 
     function executeOverwrite(btnId) {
-      if (!lastGeneratedAudio || !lastGeneratedAudio.audioData) return;
+      if (!canUseGeneratedActions(lastGeneratedAudio)) return;
       const tab = getActiveTopic();
       const btn = tab?.buttons.find(b => b.id === btnId);
       if (!btn) return;
 
-      btn.audioData = lastGeneratedAudio.audioData;
-      btn.label = lastGeneratedAudio.text.substring(0, 24) || "Speech";
+      applyGeneratedSpeechToButton(btn, lastGeneratedAudio);
       saveTopicsList();
       setOverwriteMode(false);
       renderTopics();
+      renderSoundButtons();
       focusDisplayInput();
     }
 
@@ -2057,7 +2140,7 @@
       const item = {
         id: generateId(),
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        text: textSpoken, model, voiceId, audioData: audioBlob
+        text: textSpoken, model, voiceId, audioData: audioBlob || null
       };
       audioHistory.unshift(item);
       if (audioHistory.length > 50) audioHistory.pop();
@@ -2079,10 +2162,11 @@
       filtered.forEach(item => {
         const el = document.createElement("div");
         el.className = "history-item";
+        const isUtt = isUtteranceSource(item);
         el.innerHTML = `
           <div class="history-item-header">
             <span class="history-item-text">${item.text}</span>
-            <span class="history-item-meta">${item.timestamp}</span>
+            <span class="history-item-meta">${item.timestamp}${isUtt ? " · live TTS" : ""}</span>
           </div>
           <div class="history-actions">
             <button class="history-btn replay-btn" type="button"><span class="material-symbols-outlined icon-small">play_arrow</span> Play</button>
@@ -2092,13 +2176,19 @@
         `;
 
         el.querySelector(".replay-btn").addEventListener("click", () => {
-          if (!item.audioData) { alert("Browser TTS audio cannot be replayed directly from history."); return; }
-          playAudioData(item.audioData);
+          playStoredSpeech(item);
         });
         el.querySelector(".restore-btn").addEventListener("click", () => {
           setText(item.text);
-          if (item.model) modelSelect.value = item.model;
-          if (item.voiceId && item.model !== "browser_tts") { activeElevenVoiceId = item.voiceId; localStorage.setItem("elevenlabs_voice", activeElevenVoiceId); }
+          if (item.model) {
+            modelSelect.value = item.model;
+            try { localStorage.setItem("elevenlabs_model", item.model); } catch (_) {}
+            modelSelect.dispatchEvent(new Event("change"));
+          }
+          if (item.voiceId && item.model !== "browser_tts") {
+            activeElevenVoiceId = item.voiceId;
+            localStorage.setItem("elevenlabs_voice", activeElevenVoiceId);
+          }
           setGeneratedAudioActions(item); focusDisplayInput();
         });
         el.querySelector(".delete-btn").addEventListener("click", () => {
@@ -2116,15 +2206,15 @@
 
     function setGeneratedAudioActions(historyItem) {
       lastGeneratedAudio = historyItem;
-      audioActionsBar.classList.toggle("active", !!(lastGeneratedAudio && lastGeneratedAudio.audioData));
+      audioActionsBar.classList.toggle("active", canUseGeneratedActions(lastGeneratedAudio));
     }
 
     document.getElementById("textarea-replay-btn").addEventListener("click", () => {
-      if (lastGeneratedAudio && lastGeneratedAudio.audioData) playAudioData(lastGeneratedAudio.audioData);
+      if (canUseGeneratedActions(lastGeneratedAudio)) playStoredSpeech(lastGeneratedAudio);
       else focusDisplayInput();
     });
 
-    // ==================== TEXT & PREDICTIONS ====================
+    // ==================== TEXT & PREDICTIONS (SmolLM2-135M) ====================
     function getText() { return displayInput.value; }
     function setText(val, caret = val.length) {
       displayInput.value = val;
@@ -2133,6 +2223,21 @@
       try { displayInput.setSelectionRange(pos, pos); } catch (_) {}
       savedDisplaySelection = { start: pos, end: pos };
       updatePredictions();
+    }
+
+    /** Caret for predictions — avoid selectionStart||length (0 is valid) and blur reset. */
+    function getDisplayCaret() {
+      if (document.activeElement === displayInput && typeof displayInput.selectionStart === "number") {
+        return displayInput.selectionStart;
+      }
+      if (typeof savedDisplaySelection.start === "number") {
+        return Math.max(0, Math.min(savedDisplaySelection.start, getText().length));
+      }
+      return getText().length;
+    }
+
+    function sanitizeWordToken(word) {
+      return (word || "").replace(/[^a-zA-Z']/g, "");
     }
 
     function autoscaleButtonText(btn) {
@@ -2144,66 +2249,276 @@
       }
     }
 
+    function setPredictionButtons(suggestions) {
+      predictionButtons.forEach((btn, i) => {
+        btn.textContent = suggestions[i] || "";
+        autoscaleButtonText(btn);
+      });
+    }
+
+    function setSmolStatus(message, { ok = false, error = false } = {}) {
+      const el = document.getElementById("smollm-status-text");
+      const wrap = document.getElementById("smollm-status");
+      if (!el) return;
+      const icon = error ? "error" : (ok ? "check_circle" : "psychology");
+      el.innerHTML = `<span class="material-symbols-outlined icon-small icon-btn-margin">${icon}</span>${message}`;
+      if (wrap) {
+        wrap.classList.toggle("missing", !!error);
+        wrap.classList.toggle("ready", !!ok);
+      }
+    }
+
+    /**
+     * Load SmolLM2-135M-Instruct once via Transformers.js (WebGPU if available, else WASM).
+     * Cached in IndexedDB by the library for subsequent visits.
+     */
+    function ensureSmolLM() {
+      if (smolGenerator) return Promise.resolve(smolGenerator);
+      if (smolLoadPromise) return smolLoadPromise;
+
+      smolLoadPromise = (async () => {
+        setSmolStatus("Downloading SmolLM2-135M…");
+        const { pipeline, env } = await import(/* @vite-ignore */ TRANSFORMERS_CDN);
+        env.allowLocalModels = false;
+        env.useBrowserCache = true;
+
+        const hasWebGPU = typeof navigator !== "undefined" && !!navigator.gpu;
+        const progress_callback = (data) => {
+          if (!data) return;
+          if (data.status === "progress" && data.total) {
+            const pct = Math.round((data.loaded / data.total) * 100);
+            const file = (data.file || "").split("/").pop() || "model";
+            setSmolStatus(`Loading ${file} (${pct}%)`);
+          } else if (data.status === "initiate" || data.status === "download") {
+            const file = (data.file || "").split("/").pop() || "model files";
+            setSmolStatus(`Fetching ${file}…`);
+          } else if (data.status === "done") {
+            setSmolStatus("Preparing model…");
+          }
+        };
+
+        const tryLoad = async (device, dtype) => {
+          const opts = { progress_callback };
+          if (device) opts.device = device;
+          if (dtype) opts.dtype = dtype;
+          return pipeline("text-generation", SMOLLM_MODEL_ID, opts);
+        };
+
+        try {
+          if (hasWebGPU) {
+            try {
+              smolGenerator = await tryLoad("webgpu", "q4f16");
+            } catch (_) {
+              smolGenerator = await tryLoad("webgpu", "q4");
+            }
+          } else {
+            try {
+              smolGenerator = await tryLoad("wasm", "q4");
+            } catch (_) {
+              smolGenerator = await tryLoad("wasm", "fp32");
+            }
+          }
+        } catch (primaryErr) {
+          // Last resort: library defaults
+          try {
+            smolGenerator = await tryLoad(undefined, undefined);
+          } catch (fallbackErr) {
+            smolLoadError = fallbackErr || primaryErr;
+            smolLoadPromise = null;
+            setSmolStatus("SmolLM2 failed to load — using offline list", { error: true });
+            throw smolLoadError;
+          }
+        }
+
+        smolReady = true;
+        smolLoadError = null;
+        const deviceLabel = hasWebGPU ? "WebGPU" : "WASM";
+        setSmolStatus(`SmolLM2-135M ready (${deviceLabel})`, { ok: true });
+        return smolGenerator;
+      })();
+
+      return smolLoadPromise;
+    }
+
+    function extractGeneratedContent(output) {
+      if (!output || !output[0]) return "";
+      const gen = output[0].generated_text;
+      if (Array.isArray(gen)) {
+        const last = gen[gen.length - 1];
+        if (last && typeof last.content === "string") return last.content;
+        return gen.map(m => (m && m.content) || "").join("\n");
+      }
+      if (typeof gen === "string") return gen;
+      if (gen && typeof gen.content === "string") return gen.content;
+      return "";
+    }
+
+    function parseSmolSuggestions(rawText, prefix) {
+      if (!rawText) return [];
+      // Prefer line-based list; also split common separators
+      let parts = rawText
+        .split(/\r?\n/)
+        .flatMap(line => line.split(/[,;|]/))
+        .map(s => s.trim())
+        .map(s => s.replace(/^[\d]+[\.\)\:\-]\s*/, ""))
+        .map(s => s.replace(/^[\-\*\•]\s*/, ""))
+        .map(s => s.replace(/^["'`]+|["'`]+$/g, ""))
+        .map(s => s.replace(/\s+/g, " ").trim())
+        .filter(s => s.length > 0 && s.length <= 40);
+
+      // Drop chatty meta lines
+      parts = parts.filter(s => {
+        const lower = s.toLowerCase();
+        if (/^(here|sure|of course|suggestions?|the user|i suggest)/.test(lower)) return false;
+        if (s.split(/\s+/).length > 5) return false;
+        return true;
+      });
+
+      const prefixLower = (prefix || "").toLowerCase();
+      const seen = new Set();
+      const out = [];
+      for (const p of parts) {
+        const key = p.toLowerCase();
+        if (seen.has(key)) continue;
+        if (prefixLower && !key.startsWith(prefixLower) && !key.includes(" " + prefixLower)) {
+          // Allow phrase suggestions that complete the prefix as first word
+          const first = key.split(/\s+/)[0];
+          if (!first.startsWith(prefixLower)) continue;
+        }
+        seen.add(key);
+        out.push(p);
+        if (out.length >= 6) break;
+      }
+      return out;
+    }
+
+    function fillWithFallbacks(suggestions, endsWithSpace, prefix) {
+      const pool = endsWithSpace ? COMMON_FOLLOWUPS : DEFAULT_STARTERS;
+      const seen = new Set(suggestions.map(s => s.toLowerCase()));
+      const prefixLower = (prefix || "").toLowerCase();
+      for (const fb of pool) {
+        if (suggestions.length >= 6) break;
+        const key = fb.toLowerCase();
+        if (seen.has(key)) continue;
+        if (prefixLower && !key.startsWith(prefixLower)) continue;
+        seen.add(key);
+        suggestions.push(fb);
+      }
+      if (suggestions.length === 0 && prefix) suggestions.push(prefix);
+      return suggestions;
+    }
+
+    async function generateSmolSuggestions(textUpToCaret, endsWithSpace, activePrefix) {
+      const generator = await ensureSmolLM();
+      const context = textUpToCaret.trim().slice(-240);
+      const system = "You are an AAC word predictor for people with speech disabilities. Reply with exactly 6 short suggestions for what to type next. One suggestion per line. Each is a single word or a short phrase of at most 3 words. No numbers, no bullets, no quotes, no explanation.";
+      let user;
+      if (!context) {
+        user = "The text box is empty. Suggest 6 useful conversation starters.";
+      } else if (endsWithSpace || !activePrefix) {
+        user = `The user has typed:\n"${context}"\n\nSuggest 6 natural next words or short phrases.`;
+      } else {
+        user = `The user is typing:\n"${context}"\n\nThe incomplete word/prefix is: "${activePrefix}"\nSuggest 6 completions that start with that prefix (full words or short phrases).`;
+      }
+
+      const messages = [
+        { role: "system", content: system },
+        { role: "user", content: user }
+      ];
+
+      const output = await generator(messages, {
+        max_new_tokens: 48,
+        temperature: 0.35,
+        top_p: 0.9,
+        do_sample: true
+      });
+
+      return parseSmolSuggestions(extractGeneratedContent(output), activePrefix);
+    }
+
     async function updatePredictions() {
       // Hide generated action bar if modified text diverges from last spoken audio
-      if (lastGeneratedAudio && getText().trim() !== lastGeneratedAudio.text) {
+      if (lastGeneratedAudio && getText().trim() !== (lastGeneratedAudio.text || "").trim()) {
         audioActionsBar.classList.remove("active");
       }
 
-      const textUpToCaret = getText().substring(0, displayInput.selectionStart || getText().length);
+      const caret = getDisplayCaret();
+      const textUpToCaret = getText().substring(0, caret);
       clearTimeout(predictionTimeout);
 
       if (!textUpToCaret.trim()) {
-        predictionButtons.forEach((btn, i) => {
-          btn.textContent = DEFAULT_STARTERS[i] || "";
-          autoscaleButtonText(btn);
-        });
+        predictionRequestId++;
+        setPredictionButtons(DEFAULT_STARTERS);
         return;
       }
 
       const words = textUpToCaret.trim().split(/\s+/).filter(w => w.length > 0);
       const endsWithSpace = /\s$/.test(textUpToCaret);
-      let lastWord = "", activePrefix = "";
-
-      if (endsWithSpace) { if (words.length > 0) lastWord = words[words.length - 1].replace(/[^a-zA-Z']/g, ""); }
-      else if (words.length > 0) {
-        activePrefix = words[words.length - 1].replace(/[^a-zA-Z']/g, "");
-        if (words.length > 1) lastWord = words[words.length - 2].replace(/[^a-zA-Z']/g, "");
+      let activePrefix = "";
+      if (!endsWithSpace && words.length > 0) {
+        activePrefix = sanitizeWordToken(words[words.length - 1]);
       }
 
-      predictionTimeout = setTimeout(async () => {
-        let suggestions = [];
-        try {
-          const urls = [];
-          if (lastWord && activePrefix) urls.push(`https://api.datamuse.com/words?lc=${encodeURIComponent(lastWord)}&sp=${encodeURIComponent(activePrefix)}*&max=10&md=f`);
-          else if (lastWord) urls.push(`https://api.datamuse.com/words?lc=${encodeURIComponent(lastWord)}&sp=*&max=10&md=f`);
-          else if (activePrefix) urls.push(`https://api.datamuse.com/sug?s=${encodeURIComponent(activePrefix)}&max=10&md=f`);
+      const reqPrefix = activePrefix;
+      const reqEndsWithSpace = endsWithSpace;
+      const reqText = textUpToCaret;
 
-          if (urls.length > 0) {
-            const res = await Promise.all(urls.map(u => fetch(u).catch(() => null)));
-            const jsons = await Promise.all(res.map(r => (r && r.ok ? r.json() : [])));
-            const seen = new Set();
-            jsons.forEach(data => {
-              data.forEach(item => { if (!seen.has(item.word)) { seen.add(item.word); suggestions.push(item.word); } });
-            });
-          }
-        } catch (_) {}
+      // Immediate offline placeholders while the model thinks / loads
+      setPredictionButtons(
+        fillWithFallbacks([], reqEndsWithSpace, reqPrefix).slice(0, 6)
+      );
 
-        const seenWords = new Set(suggestions.map(s => s.toLowerCase()));
-        const fallbackPool = endsWithSpace ? COMMON_FOLLOWUPS : DEFAULT_STARTERS;
-        for (const fb of fallbackPool) {
-          if (suggestions.length >= 6) break;
-          if (!seenWords.has(fb.toLowerCase())) {
-            seenWords.add(fb.toLowerCase());
-            suggestions.push(fb);
-          }
-        }
+      predictionTimeout = setTimeout(() => {
+        const requestId = ++predictionRequestId;
+        queueSmolInference(requestId, reqText, reqEndsWithSpace, reqPrefix);
+      }, 320);
+    }
 
-        predictionButtons.forEach((btn, i) => {
-          btn.textContent = suggestions[i] || "";
-          autoscaleButtonText(btn);
-        });
-      }, 200);
+    /** Serialize on-device inference; keep only the latest pending request. */
+    function queueSmolInference(requestId, text, endsWithSpace, prefix) {
+      smolInferPending = { requestId, text, endsWithSpace, prefix };
+      pumpSmolInference();
+    }
+
+    async function pumpSmolInference() {
+      if (smolInferBusy) return;
+      const job = smolInferPending;
+      if (!job) return;
+      // Drop superseded jobs
+      if (job.requestId !== predictionRequestId) {
+        smolInferPending = null;
+        return;
+      }
+      smolInferPending = null;
+      smolInferBusy = true;
+      let suggestions = [];
+      try {
+        suggestions = await generateSmolSuggestions(job.text, job.endsWithSpace, job.prefix);
+      } catch (_) {
+        suggestions = [];
+      } finally {
+        smolInferBusy = false;
+      }
+
+      if (job.requestId !== predictionRequestId) {
+        // A newer keystroke arrived; process it next
+        pumpSmolInference();
+        return;
+      }
+
+      suggestions = fillWithFallbacks(suggestions, job.endsWithSpace, job.prefix);
+      setPredictionButtons(suggestions.slice(0, 6));
+
+      // Process any request queued while we were busy
+      if (smolInferPending) pumpSmolInference();
+    }
+
+    /** Warm the model in the background so first predictions are faster. */
+    function preloadSmolLM() {
+      ensureSmolLM().then(() => {
+        // Refresh suggestions once ready if the user already typed something
+        if (getText().trim()) updatePredictions();
+      }).catch(() => {});
     }
 
     predictionButtons.forEach(btn => {
@@ -2211,7 +2526,7 @@
         const suggestion = (btn.textContent || "").trim();
         if (!suggestion) return;
         const text = getText();
-        const caret = displayInput.selectionStart ?? text.length;
+        const caret = getDisplayCaret();
         const match = text.substring(0, caret).match(/([a-zA-Z']+)$/);
         const replaceStart = match ? caret - match[1].length : caret;
         const inserted = suggestion + " ";
@@ -2227,9 +2542,18 @@
       });
     });
 
-    displayInput.addEventListener("input", updatePredictions);
-    displayInput.addEventListener("click", updatePredictions);
-    displayInput.addEventListener("keyup", updatePredictions);
+    displayInput.addEventListener("input", () => {
+      saveDisplaySelection();
+      updatePredictions();
+    });
+    displayInput.addEventListener("click", () => {
+      saveDisplaySelection();
+      updatePredictions();
+    });
+    displayInput.addEventListener("keyup", () => {
+      saveDisplaySelection();
+      updatePredictions();
+    });
     document.getElementById("clear-btn").addEventListener("click", () => {
       setText(""); audioActionsBar.classList.remove("active"); focusDisplayInput();
     });
@@ -2262,6 +2586,47 @@
         const speed = parseFloat(speedSlider.value) || 1.0;
         audio.playbackRate = speed;
         playAudioWithGain(audio, gainSetting);
+      }
+      focusDisplayInput();
+    }
+
+    /**
+     * Play a history/actions payload: clip if present, else regenerate utterance
+     * with the currently active voice/settings.
+     */
+    function playStoredSpeech(item) {
+      if (!item) {
+        focusDisplayInput();
+        return;
+      }
+      if (item.audioData) {
+        playAudioData(item.audioData);
+        return;
+      }
+      if (isUtteranceSource(item)) {
+        const phrase = getUtteranceText(item);
+        if (phrase) {
+          speakPhrase(phrase, { recordHistory: false, showLoading: false });
+          return;
+        }
+      }
+      focusDisplayInput();
+    }
+
+    /** Play a sound-board button (clip or on-the-fly utterance). */
+    function playButtonSpeech(btnData) {
+      if (!btnData) {
+        focusDisplayInput();
+        return;
+      }
+      const utt = (btnData.utteranceText || "").trim();
+      if (utt) {
+        speakPhrase(utt, { recordHistory: false, showLoading: false });
+        return;
+      }
+      if (btnData.audioData) {
+        playAudioData(btnData.audioData);
+        return;
       }
       focusDisplayInput();
     }
@@ -2470,9 +2835,12 @@
             ? activeBrowserVoiceIndex
             : 0;
           utterance.voice = voices[voiceIdx] || null;
+          // Save generative text immediately so Assign/Replay work without a clip
+          if (recordHistory) {
+            addToHistory(phrase, "browser_tts", `voice_${voiceIdx}`, null);
+          }
           utterance.onend = () => {
             if (showLoading) setSpeakBtnIdle();
-            if (recordHistory) addToHistory(phrase, "browser_tts", `voice_${voiceIdx}`, null);
             focusDisplayInput();
           };
           utterance.onerror = () => {
@@ -2927,7 +3295,11 @@
 
       renderTopics();
       renderSoundButtons();
+      // Default sidebar tab: Settings (leftmost)
+      switchSidebarTab("settings");
       updatePredictions();
+      // Warm SmolLM2-135M in the background (Transformers.js / ONNX)
+      preloadSmolLM();
       // Avoid auto-focus on mobile (opens keyboard immediately)
       if (!isMobileLayout()) focusDisplayInput();
     }
