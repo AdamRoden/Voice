@@ -39,8 +39,6 @@
 
     .icon-small { font-size: 14px; }
     .icon-medium { font-size: 16px; }
-    .icon-large { font-size: 18px; }
-    .icon-xlarge { font-size: 20px; }
     .icon-btn-margin { margin-right: 4px; }
 
     /* ==================== LEFT SIDEBAR ==================== */
@@ -57,7 +55,6 @@
       .icon-btn:active { background-color: var(--bg-surface-active); }
 
     .mobile-only { display: none !important; }
-    .desktop-only { display: flex; }
 
     .logo-text { font-size: 16px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; opacity: 1; transition: opacity 0.2s; }
     .sidebar.collapsed .logo-text { opacity: 0; pointer-events: none; }
@@ -360,7 +357,6 @@
       body { padding: 0; }
 
       .mobile-only { display: flex !important; }
-      .desktop-hide-label .key-label { display: none; }
 
       .sidebar-backdrop { display: block; }
 
@@ -1053,7 +1049,6 @@
 
   <script>
     // ==================== STATE & PALETTE CONFIG ====================
-    const rootStyle = window.getComputedStyle(document.documentElement);
     const COLOR_PALETTE = [
       "#8ab4f8", "#8e918f", "#333537", "#0b57d0", "#2e7d32", "#d32f2f",
       "#1976d2", "#f57c00", "#c2185b", "#512da8", "#00838f", "#4a90e2", "#8e24aa"
@@ -1073,6 +1068,44 @@
       "home", "mom", "dad", "friend", "play", "watch", "listen", "read", "write", "open", "close", "wait",
       "stop", "start", "again", "finished", "sorry", "hello", "goodbye", "good", "bad", "big", "small"
     ];
+    /** Common next words after a trigger (AAC bigrams). Keys are lowercase. */
+    const LOCAL_BIGRAMS = {
+      i: ["want", "need", "like", "am", "have", "can", "feel", "love", "will", "don't", "didn't", "would"],
+      want: ["to", "a", "some", "more", "the", "my", "you", "it"],
+      need: ["to", "a", "some", "help", "the", "more", "my", "you"],
+      like: ["to", "the", "a", "this", "that", "you", "it", "my"],
+      to: ["go", "be", "have", "get", "see", "eat", "play", "the", "a", "do", "make", "say"],
+      the: ["bathroom", "water", "food", "door", "light", "one", "same", "other"],
+      a: ["little", "lot", "break", "drink", "snack", "minute", "second"],
+      please: ["help", "stop", "wait", "give", "come", "look"],
+      can: ["you", "I", "we", "not", "help", "go", "see"],
+      do: ["you", "not", "it", "that", "this", "I"],
+      dont: ["want", "like", "know", "feel", "need", "go"],
+      feel: ["good", "bad", "happy", "sad", "tired", "sick", "hungry", "better"],
+      am: ["hungry", "thirsty", "tired", "happy", "sad", "okay", "fine", "ready"],
+      is: ["it", "this", "that", "good", "bad", "okay", "ready"],
+      my: ["name", "turn", "home", "mom", "dad", "friend", "body", "head"],
+      go: ["to", "home", "out", "away", "there", "outside"],
+      help: ["me", "please", "with"],
+      thank: ["you"],
+      yes: ["please", "I", "thank"],
+      no: ["thank", "I", "more", "please"],
+      have: ["a", "to", "some", "the", "my"],
+      get: ["me", "the", "a", "some", "up", "out"],
+      for: ["me", "you", "the", "a", "help"],
+      with: ["me", "you", "the", "my", "that"],
+      and: ["I", "the", "a", "then", "also"],
+      of: ["the", "my", "a", "it", "this"],
+      in: ["the", "my", "a", "here", "there"],
+      on: ["the", "my", "a", "it"],
+      it: ["is", "was", "hurts", "helps", "works"],
+      you: ["are", "can", "please", "help", "want"],
+      what: ["is", "do", "are", "time", "happened"],
+      where: ["is", "are", "do"],
+      when: ["is", "do", "can", "will"],
+      how: ["are", "do", "is", "much", "many"],
+      more: ["please", "time", "of", "help", "water", "food"]
+    };
 
     const SYMBOL_MIGRATION_MAP = {
       "📁": "folder", "💬": "chat", "🕒": "history", "⚙️": "settings", "☰": "menu", "▼": "expand_more",
@@ -2067,16 +2100,13 @@
       const activeTab = getActiveTopic();
       if (!activeTab) return;
 
-      const phrase = (lastGeneratedAudio.text || getUtteranceText(lastGeneratedAudio) || "").trim();
-      const isUtt = isUtteranceSource(lastGeneratedAudio);
-      activeTab.buttons.push(normalizeButton({
+      const btn = normalizeButton({
         id: generateId(),
-        label: phrase.substring(0, 24) || "Speech",
-        audioData: isUtt ? null : lastGeneratedAudio.audioData,
-        utteranceText: isUtt ? phrase : null,
         col: activeTab.buttons.length % activeTab.gridCols,
         row: Math.floor(activeTab.buttons.length / activeTab.gridCols)
-      }, activeTab.buttons.length));
+      }, activeTab.buttons.length);
+      applyGeneratedSpeechToButton(btn, lastGeneratedAudio);
+      activeTab.buttons.push(btn);
 
       repackSequentialGrid(activeTab);
       saveTopicsList(); renderTopics(); renderSoundButtons(); closeModals();
@@ -2228,7 +2258,8 @@
       return getText().length;
     }
 
-    function parseDatamuseScore(item, rank) {
+    /** Frequency per million from Datamuse md=f tags (null if missing). */
+    function getDatamuseFreq(item) {
       const tags = item.tags || [];
       for (const t of tags) {
         if (typeof t === "string" && t.startsWith("f:")) {
@@ -2236,8 +2267,17 @@
           if (Number.isFinite(n)) return n;
         }
       }
-      if (Number.isFinite(item.score)) return item.score;
-      return Math.max(0, 1000 - rank);
+      return null;
+    }
+
+    function isAcceptablePredictionToken(word) {
+      const w = (word || "").trim();
+      if (!w || w.length > 24) return false;
+      if (/\s/.test(w)) return false; // strip is single-word
+      if (!/^[A-Za-z][A-Za-z'-]*$/.test(w)) return false;
+      // Skip most multi-hyphen / dotted oddities
+      if ((w.match(/-/g) || []).length > 1) return false;
+      return true;
     }
 
     function localPrefixSuggestions(prefix, limit = 6) {
@@ -2257,6 +2297,113 @@
       return out;
     }
 
+    function localNextWordSuggestions(prevWord, limit = 6) {
+      if (!prevWord) return [];
+      const list = LOCAL_BIGRAMS[prevWord.toLowerCase()] || [];
+      return list.slice(0, limit);
+    }
+
+    function localPrefixWithContext(prefix, prevWord, limit = 6) {
+      if (!prefix) return [];
+      const p = prefix.toLowerCase();
+      const out = [];
+      const seen = new Set();
+      // Prefer bigram followers that match the typed prefix
+      for (const w of localNextWordSuggestions(prevWord, 24)) {
+        const lower = w.toLowerCase();
+        if (lower === p || !lower.startsWith(p) || seen.has(lower)) continue;
+        seen.add(lower);
+        out.push(w);
+        if (out.length >= limit) return out;
+      }
+      for (const w of localPrefixSuggestions(prefix, limit * 2)) {
+        const lower = w.toLowerCase();
+        if (seen.has(lower)) continue;
+        seen.add(lower);
+        out.push(w);
+        if (out.length >= limit) break;
+      }
+      return out;
+    }
+
+    function applySuggestionButtons(suggestions) {
+      predictionButtons.forEach((btn, i) => {
+        btn.textContent = suggestions[i] || "";
+        autoscaleButtonText(btn);
+      });
+    }
+
+    /**
+     * Build Datamuse queries for AAC prediction.
+     * Use rel_bga (frequent followers) for next-word — plain `lc` alone is only a soft hint
+     * and often returns odd/rare words when not paired with other constraints.
+     */
+    function buildDatamuseQueries(lastWord, activePrefix, endsWithSpace) {
+      const queries = [];
+      const lw = (lastWord || "").toLowerCase();
+      const pref = activePrefix || "";
+
+      if (endsWithSpace && lw) {
+        // True next-word: P(w'|w) bigrams
+        queries.push({
+          url: `https://api.datamuse.com/words?rel_bga=${encodeURIComponent(lw)}&max=25&md=f`,
+          kind: "bga"
+        });
+      } else if (pref && lw) {
+        // Mid-word with left context: spelling + frequent follower of previous word
+        queries.push({
+          url: `https://api.datamuse.com/words?sp=${encodeURIComponent(pref)}*&rel_bga=${encodeURIComponent(lw)}&max=20&md=f`,
+          kind: "bga_prefix"
+        });
+        // Spelling + left-context hint (softer, still useful)
+        queries.push({
+          url: `https://api.datamuse.com/words?sp=${encodeURIComponent(pref)}*&lc=${encodeURIComponent(lw)}&max=20&md=f`,
+          kind: "lc_prefix"
+        });
+        // Frequency-ranked spelling as backfill
+        queries.push({
+          url: `https://api.datamuse.com/words?sp=${encodeURIComponent(pref)}*&max=15&md=f`,
+          kind: "sp"
+        });
+      } else if (pref) {
+        queries.push({
+          url: `https://api.datamuse.com/words?sp=${encodeURIComponent(pref)}*&max=20&md=f`,
+          kind: "sp"
+        });
+      }
+      return queries;
+    }
+
+    /** Rank score: frequency-first, strong boost for context sources, deprioritize rare words. */
+    function rankDatamuseItem(item, rank, kind) {
+      const freq = getDatamuseFreq(item);
+      // log1p so very common words win without crushing mid-common ones
+      const freqScore = freq == null ? 0 : Math.log1p(freq) * 40;
+      const rankScore = Math.max(0, 30 - rank); // API order is somewhat meaningful for rel_*
+
+      let kindBoost = 0;
+      if (kind === "bga" || kind === "bga_prefix") kindBoost = 80;
+      else if (kind === "lc_prefix") kindBoost = 45;
+      else if (kind === "sp") kindBoost = 10;
+
+      // Strong penalty for rare words when we know frequency
+      let rarityPenalty = 0;
+      if (freq != null) {
+        if (freq < 0.05) rarityPenalty = 120;
+        else if (freq < 0.5) rarityPenalty = 50;
+        else if (freq < 2) rarityPenalty = 15;
+      } else {
+        // No frequency metadata → treat as weaker than known common words
+        rarityPenalty = 25;
+      }
+
+      // Prefer short everyday tokens slightly (AAC strip)
+      const w = (item.word || "");
+      const lenBonus = w.length > 0 && w.length <= 6 ? 8 : w.length <= 10 ? 3 : 0;
+
+      return freqScore + rankScore + kindBoost + lenBonus - rarityPenalty;
+    }
+
     async function updatePredictions() {
       // Hide generated action bar if modified text diverges from last spoken audio
       if (lastGeneratedAudio && getText().trim() !== (lastGeneratedAudio.text || "").trim()) {
@@ -2270,10 +2417,7 @@
 
       if (!textUpToCaret.trim()) {
         predictionRequestId++;
-        predictionButtons.forEach((btn, i) => {
-          btn.textContent = DEFAULT_STARTERS[i] || "";
-          autoscaleButtonText(btn);
-        });
+        applySuggestionButtons(DEFAULT_STARTERS);
         return;
       }
 
@@ -2288,58 +2432,65 @@
         if (words.length > 1) lastWord = words[words.length - 2].replace(/[^a-zA-Z']/g, "");
       }
 
-      // Instant local fill while network request is in flight
-      if (activePrefix) {
-        const instant = localPrefixSuggestions(activePrefix, 6);
-        if (instant.length) {
-          predictionButtons.forEach((btn, i) => {
-            btn.textContent = instant[i] || "";
-            autoscaleButtonText(btn);
-          });
+      // Instant local suggestions while network request is in flight
+      let instant = [];
+      if (endsWithSpace && lastWord) {
+        instant = localNextWordSuggestions(lastWord, 6);
+        if (instant.length < 6) {
+          for (const fb of COMMON_FOLLOWUPS) {
+            if (instant.length >= 6) break;
+            if (!instant.some(w => w.toLowerCase() === fb.toLowerCase())) instant.push(fb);
+          }
         }
+      } else if (activePrefix) {
+        instant = lastWord
+          ? localPrefixWithContext(activePrefix, lastWord, 6)
+          : localPrefixSuggestions(activePrefix, 6);
       }
+      if (instant.length) applySuggestionButtons(instant);
 
       const reqId = ++predictionRequestId;
       predictionTimeout = setTimeout(async () => {
-        const scored = new Map(); // lower -> { word, score }
+        const scored = new Map(); // lower -> { word, score, freq }
 
-        const addWord = (word, score) => {
-          const w = (word || "").trim();
-          if (!w || /\s/.test(w)) return; // single tokens only for the strip
+        const addWord = (word, score, freq) => {
+          if (!isAcceptablePredictionToken(word)) return;
+          const w = word.trim();
           const lower = w.toLowerCase();
           if (activePrefix) {
-            if (!lower.startsWith(activePrefix.toLowerCase())) return;
-            if (lower === activePrefix.toLowerCase()) return;
+            const p = activePrefix.toLowerCase();
+            if (!lower.startsWith(p) || lower === p) return;
           }
           const prev = scored.get(lower);
-          if (!prev || score > prev.score) scored.set(lower, { word: w, score });
+          if (!prev || score > prev.score) {
+            scored.set(lower, { word: w, score, freq: freq == null ? prev?.freq ?? null : freq });
+          }
         };
 
-        try {
-          const urls = [];
-          // Spelling autocomplete (strong for mid-word)
-          if (activePrefix) {
-            urls.push(`https://api.datamuse.com/sug?s=${encodeURIComponent(activePrefix)}&max=12`);
-          }
-          // Context-aware completions after a previous word
-          if (lastWord && activePrefix) {
-            urls.push(`https://api.datamuse.com/words?lc=${encodeURIComponent(lastWord)}&sp=${encodeURIComponent(activePrefix)}*&max=12&md=f`);
-          } else if (lastWord && endsWithSpace) {
-            // Next-word suggestions (left-context); avoid sp=* which is noisy
-            urls.push(`https://api.datamuse.com/words?lc=${encodeURIComponent(lastWord)}&max=12&md=f`);
-          } else if (activePrefix && !lastWord) {
-            urls.push(`https://api.datamuse.com/words?sp=${encodeURIComponent(activePrefix)}*&max=12&md=f`);
-          }
+        // Seed with local model so AAC phrases always compete
+        if (endsWithSpace && lastWord) {
+          localNextWordSuggestions(lastWord, 12).forEach((w, i) => addWord(w, 200 - i * 5, 100));
+        } else if (activePrefix) {
+          const local = lastWord
+            ? localPrefixWithContext(activePrefix, lastWord, 12)
+            : localPrefixSuggestions(activePrefix, 12);
+          local.forEach((w, i) => addWord(w, 160 - i * 5, 80));
+        }
 
-          if (urls.length > 0) {
-            const res = await Promise.all(urls.map(u => fetch(u).catch(() => null)));
+        try {
+          const queries = buildDatamuseQueries(lastWord, activePrefix, endsWithSpace);
+          if (queries.length > 0) {
+            const res = await Promise.all(queries.map(q => fetch(q.url).catch(() => null)));
             if (reqId !== predictionRequestId) return;
             const jsons = await Promise.all(res.map(r => (r && r.ok ? r.json() : [])));
-            jsons.forEach((data, urlIdx) => {
+            jsons.forEach((data, qi) => {
               if (!Array.isArray(data)) return;
+              const kind = queries[qi].kind;
               data.forEach((item, rank) => {
-                const boost = urlIdx === 0 && activePrefix ? 0 : 40; // slight boost for context endpoints
-                addWord(item.word, parseDatamuseScore(item, rank) + boost);
+                const freq = getDatamuseFreq(item);
+                // Drop very rare words unless this is a prefix match with few options later
+                if (freq != null && freq < 0.08 && kind !== "bga" && kind !== "bga_prefix") return;
+                addWord(item.word, rankDatamuseItem(item, rank, kind), freq);
               });
             });
           }
@@ -2347,40 +2498,37 @@
 
         if (reqId !== predictionRequestId) return;
 
-        let suggestions = [...scored.values()]
-          .sort((a, b) => b.score - a.score)
-          .map(s => s.word);
+        let ranked = [...scored.values()].sort((a, b) => b.score - a.score);
+
+        // Prefer reasonably common words in the top slots when frequency is known
+        const commonEnough = ranked.filter(s => s.freq == null || s.freq >= 0.5);
+        const rest = ranked.filter(s => s.freq != null && s.freq < 0.5);
+        ranked = commonEnough.concat(rest);
+
+        let suggestions = ranked.map(s => s.word);
 
         const seenWords = new Set(suggestions.map(s => s.toLowerCase()));
+        const fallbackPool = endsWithSpace
+          ? [...localNextWordSuggestions(lastWord, 12), ...COMMON_FOLLOWUPS]
+          : (lastWord
+              ? localPrefixWithContext(activePrefix, lastWord, 12)
+              : [...localPrefixSuggestions(activePrefix || "", 12), ...DEFAULT_STARTERS]);
 
-        // Local AAC prefix fill
-        if (activePrefix) {
-          for (const fb of localPrefixSuggestions(activePrefix, 12)) {
-            if (suggestions.length >= 6) break;
-            const fl = fb.toLowerCase();
-            if (seenWords.has(fl)) continue;
-            seenWords.add(fl);
-            suggestions.push(fb);
-          }
-        }
-
-        const fallbackPool = endsWithSpace ? COMMON_FOLLOWUPS : DEFAULT_STARTERS;
         for (const fb of fallbackPool) {
           if (suggestions.length >= 6) break;
-          const fl = fb.toLowerCase().replace(/[^a-z']/g, "");
-          if (activePrefix && fl && !fl.startsWith(activePrefix.toLowerCase())) continue;
-          if (activePrefix && fl === activePrefix.toLowerCase()) continue;
-          if (!seenWords.has(fb.toLowerCase())) {
-            seenWords.add(fb.toLowerCase());
-            suggestions.push(fb);
+          if (!isAcceptablePredictionToken(fb)) continue;
+          const fl = fb.toLowerCase();
+          if (activePrefix) {
+            const p = activePrefix.toLowerCase();
+            if (!fl.startsWith(p) || fl === p) continue;
           }
+          if (seenWords.has(fl)) continue;
+          seenWords.add(fl);
+          suggestions.push(fb);
         }
 
-        predictionButtons.forEach((btn, i) => {
-          btn.textContent = suggestions[i] || "";
-          autoscaleButtonText(btn);
-        });
-      }, 180);
+        applySuggestionButtons(suggestions.slice(0, 6));
+      }, 160);
     }
 
     predictionButtons.forEach(btn => {
