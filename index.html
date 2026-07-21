@@ -93,8 +93,10 @@
       .nav-action-btn:active { background-color: var(--bg-surface-active); }
 
     /* Expanded topic sound-button list */
+    .topic-expand-icon { color: var(--text-secondary); flex-shrink: 0; transition: transform 0.15s ease; }
+    .topic-item.expanded .topic-expand-icon { color: var(--accent); }
     .topic-buttons-list { display: none; flex-direction: column; gap: 2px; padding: 0 6px 8px 12px; border-top: 1px solid var(--border); margin-top: 2px; }
-      .topic-item.active .topic-buttons-list { display: flex; }
+      .topic-item.expanded .topic-buttons-list { display: flex; }
     .topic-sound-item { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--text); cursor: default; min-height: 30px; }
       .topic-sound-item:hover { background-color: var(--bg-main); }
     .topic-sound-swatch { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.2); }
@@ -166,36 +168,25 @@
       .clear-history-btn:hover { background: var(--danger-bg); }
 
     /* ==================== MAIN WORKSPACE ==================== */
-    .app-main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 8px; overflow: hidden; height: 100%; position: relative; }
+    .app-main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 5px; padding: 6px; overflow: hidden; height: 100%; position: relative; }
 
-    /* Workspace Header & Tabs */
-    .workspace-header { display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-surface); padding: 6px 10px; border-radius: 10px; border: 1px solid var(--border); min-height: 48px; flex-shrink: 0; gap: 10px; flex-wrap: wrap; }
+    /* Mobile menu strip (hidden on desktop) */
+    .workspace-header { display: none; align-items: center; background-color: var(--bg-surface); padding: 4px 8px; border-radius: 8px; border: 1px solid var(--border); min-height: 40px; flex-shrink: 0; gap: 8px; }
 
-    .workspace-tabs { display: flex; align-items: center; gap: 6px; overflow-x: auto; flex: 1; min-width: 0; padding: 2px 0; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
-      .workspace-tabs::-webkit-scrollbar { display: none; }
-
-    .workspace-tab { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 8px; background-color: var(--bg-main); border: 1px solid var(--border); color: var(--text-secondary); cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap; transition: all 0.2s; min-height: 40px; height: auto; flex-shrink: 0; }
-      .workspace-tab:hover { background-color: var(--bg-surface-hover); color: var(--text); }
-      .workspace-tab:active { background-color: var(--bg-surface-active); }
-      .workspace-tab.active { background-color: var(--key-active); color: var(--accent); border-color: var(--accent); font-weight: 600; box-shadow: 0 2px 6px var(--shadow); }
-
-    .workspace-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex-shrink: 0; }
     .tool-btn { background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; transition: all 0.2s; white-space: nowrap; min-height: 40px; height: auto; }
       .tool-btn:hover { background-color: var(--key-hover); border-color: var(--text-secondary); }
       .tool-btn:active { background-color: var(--key-active); }
       .tool-btn.primary { background-color: var(--accent); color: #fff; border-color: var(--accent); }
         .tool-btn.primary:hover { background-color: var(--accent-hover); }
 
-    .edit-mode-controls { display: none; align-items: center; gap: 8px; flex-wrap: wrap; }
-      .edit-mode-controls.open { display: flex; }
-    .edit-mode-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-
-    .header-stepper-group { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); background: var(--bg-main); padding: 2px 8px; border-radius: 8px; border: 1px solid var(--border); height: 32px; font-weight: 500; flex-shrink: 0; }
-    .num-control-wrapper { display: flex; align-items: center; gap: 4px; }
-    .num-control-btn { background: var(--key-bg); border: none; color: var(--text); width: 32px; height: 32px; border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    /* Grid size steppers (topic edit modal) */
+    .grid-size-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+    .header-stepper-group { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); background: var(--bg-main); padding: 4px 10px; border-radius: 8px; border: 1px solid var(--border); min-height: 44px; font-weight: 500; flex: 1 1 auto; }
+    .num-control-wrapper { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+    .num-control-btn { background: var(--key-bg); border: none; color: var(--text); width: 36px; height: 36px; border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
       .num-control-btn:hover { background: var(--key-hover); }
       .num-control-btn:active { background: var(--key-active); }
-    .num-control-val { font-weight: 600; color: var(--text); min-width: 16px; text-align: center; font-size: 13px; }
+    .num-control-val { font-weight: 600; color: var(--text); min-width: 20px; text-align: center; font-size: 14px; }
 
     /* Overwrite Banner */
     .overwrite-banner { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background-color: var(--accent); color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 14px; font-weight: 600; display: none; align-items: center; gap: 10px; box-shadow: 0 6px 20px var(--shadow); z-index: 30; max-width: calc(100% - 24px); flex-wrap: wrap; justify-content: center; text-align: center; }
@@ -203,9 +194,8 @@
     .overwrite-cancel-btn { background: rgba(0,0,0,0.25); border: none; color: #fff; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; transition: background 0.2s; min-height: 36px; }
       .overwrite-cancel-btn:hover { background: rgba(0,0,0,0.4); }
 
-    /* Sound Button Grid Canvas */
-    .sound-canvas { flex: 0 0 auto; max-height: 44vh; max-height: 44dvh; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px; display: grid; gap: 6px; padding: 8px; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; transition: border-color 0.2s; position: relative; }
-      .sound-canvas.edit-mode { border: 2px dashed var(--accent); touch-action: none; }
+    /* Sound Button Grid Canvas — height fits grid content */
+    .sound-canvas { flex: 0 0 auto; width: 100%; height: auto; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; display: grid; gap: 4px; padding: 5px; overflow: hidden; transition: border-color 0.2s; position: relative; }
 
     @keyframes wiggle {
       0% { transform: rotate(-1deg) scale(1); }
@@ -213,53 +203,50 @@
       100% { transform: rotate(-1deg) scale(1); }
     }
 
-    .sound-button { position: relative; background-color: var(--key-bg); border: 1px solid var(--border); border-radius: 10px; padding: 0 8px; cursor: pointer; user-select: none; -webkit-user-select: none; transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease, background-color 0.12s ease; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; color: #fff; overflow: hidden; width: 100%; min-height: 52px; height: 52px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); -webkit-touch-callout: none; box-sizing: border-box; }
+    .sound-button { position: relative; background-color: var(--key-bg); border: 1px solid var(--border); border-radius: 8px; padding: 0 6px; cursor: pointer; user-select: none; -webkit-user-select: none; transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease, background-color 0.12s ease; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: #fff; overflow: hidden; width: 100%; min-height: 44px; height: 44px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); -webkit-touch-callout: none; box-sizing: border-box; }
       .sound-button:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 4px 10px var(--shadow); }
       .sound-button:active { transform: scale(0.97); box-shadow: none; }
-      .sound-button.edit-mode:not(.dragging) { animation: wiggle 0.25s infinite ease-in-out; cursor: grab; padding-left: 32px; }
-      .sound-button.dragging { opacity: 0.85; cursor: grabbing; z-index: 50; transform: scale(1.05); box-shadow: 0 10px 25px var(--shadow); animation: none; }
-      .sound-button.swap-target { border-color: #81c784; box-shadow: 0 0 0 3px rgba(129, 199, 132, 0.4); transform: scale(1.02); }
       .sound-button.overwrite-target { animation: wiggle 0.4s infinite ease-in-out; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 50%, transparent); }
       /* Utterance (live TTS) buttons: regenerate on press — outline style */
-      .sound-button.utterance-button { background-color: transparent !important; border-width: 3px; border-style: solid; text-shadow: none; }
+      .sound-button.utterance-button { background-color: transparent !important; border-width: 2px; border-style: solid; text-shadow: none; }
         .sound-button.utterance-button:hover { background-color: color-mix(in srgb, currentColor 12%, transparent) !important; border-color: currentColor; }
         .sound-button.utterance-button .sound-button-symbol,
         .sound-button.utterance-button .sound-button-label { text-shadow: none; }
 
-    .sound-button-inner { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; overflow: hidden; pointer-events: none; }
-    .sound-button-symbol { font-size: 18px; flex-shrink: 0; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+    .sound-button-inner { display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; overflow: hidden; pointer-events: none; }
+    .sound-button-symbol { font-size: 16px; flex-shrink: 0; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
     .sound-button-label { width: 100%; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
     .sound-button-inner .sound-button-label { width: auto; flex: 1; min-width: 0; }
-    .sound-button-edit-btn { position: absolute; left: 6px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border: 1px solid rgba(255,255,255,0.4); border-radius: 8px; background-color: rgba(0,0,0,0.45); color: white; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 5; transition: background 0.2s; }
-    .sound-canvas.edit-mode .sound-button .sound-button-edit-btn { display: flex; }
-    .sound-button-edit-btn:hover { background-color: rgba(0,0,0,0.8); }
 
-    /* Bottom Dock & Prediction Toolbar */
-    .bottom-dock { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
-    .toolbar { display: flex; gap: 6px; align-items: stretch; min-height: 50px; }
-    .predictions-wrapper { display: flex; flex: 1; gap: 6px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
-      .predictions-wrapper::-webkit-scrollbar { display: none; }
+    /* Toolbar dock: insert row + Speak | Display | Clear (compact) */
+    .bottom-dock { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
+    .toolbar { display: flex; gap: 3px; align-items: flex-start; min-height: 34px; }
+    .insert-toolbar { min-height: 32px; align-items: center; }
 
-    .key { background-color: var(--key-bg); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 16px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.15s; padding: 0 12px; white-space: nowrap; min-height: 50px; height: 50px; }
+    .key { background-color: var(--key-bg); border: 1px solid var(--border); border-radius: 7px; color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 3px; transition: all 0.15s; padding: 0; white-space: nowrap; min-height: 34px; height: 34px; width: 34px; min-width: 34px; flex-shrink: 0; }
       .key:hover { background-color: var(--key-hover); border-color: var(--text-secondary); }
       .key:active { background-color: var(--key-active); transform: scale(0.97); }
 
-      .key.prediction-btn { flex: 1; min-width: 72px; color: var(--accent); font-weight: 600; overflow: hidden; text-overflow: ellipsis; padding: 0 6px; }
-
-      .key.tts-btn { background-color: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; min-width: 100px; }
+      .key.tts-btn { background-color: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
         .key.tts-btn:hover { background-color: var(--accent-hover); }
-      .key.clear-btn { background-color: transparent; color: var(--danger); border-color: var(--danger); min-width: 80px; }
+      .key.clear-btn { background-color: transparent; color: var(--danger); border-color: var(--danger); }
         .key.clear-btn:hover { background-color: var(--danger-bg); }
-    .key-label { display: inline; }
+      .key.insert-btn { background-color: var(--key-bg); color: var(--accent); border-color: var(--accent); font-weight: 600; height: 32px; min-height: 32px; width: 32px; min-width: 32px; }
+        .key.insert-btn:hover { background-color: var(--key-hover); border-color: var(--accent-hover); color: var(--accent-hover); }
+    .key-label { display: none; }
+    .key .material-symbols-outlined { font-size: 18px; }
 
-    /* Text Area & Floating Audio Action Bar */
-    .textarea-wrapper { flex: 1 1 auto; display: flex; flex-direction: column; position: relative; min-height: 100px; height: 100%; }
-    .display-textarea { width: 100%; height: 100%; flex: 1; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; line-height: 1.4; color: var(--text); font-size: 24px; resize: none; outline: none; white-space: pre-wrap; word-break: break-word; transition: border-color 0.2s; -webkit-overflow-scrolling: touch; }
+    .insert-input { flex: 1 1 auto; min-width: 0; height: 32px; min-height: 32px; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 7px; padding: 4px 8px; color: var(--text); font-size: 14px; outline: none; transition: border-color 0.2s; }
+      .insert-input:focus { border-color: var(--accent); }
+      .insert-input::placeholder { color: var(--text-secondary); }
+
+    /* Inline autosizing display text (between Speak and Clear) */
+    .display-textarea { flex: 1 1 auto; min-width: 0; width: auto; height: auto; min-height: 34px; max-height: min(30vh, 180px); background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 7px; padding: 6px 8px; line-height: 1.3; color: var(--text); font-size: 18px; resize: none; outline: none; white-space: pre-wrap; word-break: break-word; transition: border-color 0.2s; -webkit-overflow-scrolling: touch; overflow-y: auto; field-sizing: content; }
       .display-textarea:focus { border-color: var(--accent); }
 
-    .audio-actions-bar { position: absolute; bottom: max(12px, env(safe-area-inset-bottom, 0px)); right: 12px; display: none; align-items: center; gap: 8px; background-color: var(--bg-main); border: 1px solid var(--border); padding: 6px 10px; border-radius: 10px; box-shadow: 0 6px 16px var(--shadow); z-index: 20; flex-wrap: wrap; max-width: calc(100% - 24px); }
+    .audio-actions-bar { display: none; align-items: center; gap: 4px; background-color: var(--bg-main); border: 1px solid var(--border); padding: 3px 6px; border-radius: 7px; box-shadow: 0 4px 12px var(--shadow); z-index: 20; flex-wrap: wrap; width: 100%; }
       .audio-actions-bar.active { display: flex; }
-    .audio-action-btn { background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; gap: 6px; min-height: 40px; }
+    .audio-action-btn { background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; gap: 3px; min-height: 30px; }
       .audio-action-btn:hover { background-color: var(--key-hover); }
       .audio-action-btn:active { background-color: var(--key-active); }
       .audio-action-btn.play { color: var(--accent); border-color: var(--accent); }
@@ -417,133 +404,55 @@
       }
 
       .workspace-header {
-        flex-wrap: nowrap;
+        display: flex;
         gap: 6px;
         padding: 6px 8px;
         border-radius: 12px;
-        align-items: center;
-      }
-      .workspace-header .workspace-tabs { order: 2; flex: 1; }
-      .workspace-header .workspace-actions { order: 3; }
-      .workspace-header .mobile-menu-btn { order: 1; flex-shrink: 0; }
-
-      .workspace-tab {
-        padding: 8px 10px;
-        gap: 6px;
-        font-size: 12px;
-        max-width: 42vw;
-      }
-      .workspace-tab .topic-item-name {
-        max-width: 28vw;
-      }
-
-      .tool-btn .tool-btn-label { display: none; }
-      .tool-btn { padding: 8px 10px; min-width: 40px; justify-content: center; }
-
-      /* Edit mode: keep Save/Cancel on-screen (full-width second row) */
-      .workspace-header.edit-active {
-        flex-wrap: wrap;
-        align-items: stretch;
-      }
-      .workspace-header.edit-active .workspace-tabs {
-        display: none;
-      }
-      .workspace-header.edit-active .workspace-actions {
-        order: 3;
-        flex: 1 1 100%;
-        width: 100%;
-        min-width: 0;
-        justify-content: stretch;
-      }
-      .edit-mode-controls {
-        width: 100%;
-        justify-content: flex-start;
-        gap: 6px;
-      }
-      .edit-mode-controls.open {
-        display: flex;
-        flex-wrap: wrap;
-      }
-      .edit-mode-controls .header-stepper-group {
-        flex: 1 1 auto;
-        min-width: 0;
-        justify-content: center;
-      }
-      .edit-mode-actions {
-        flex: 1 1 100%;
-        width: 100%;
-        display: flex;
-        gap: 6px;
-      }
-      .edit-mode-actions .tool-btn {
-        flex: 1;
-        min-width: 0;
-        justify-content: center;
-        padding: 10px 8px;
       }
 
       .sound-canvas {
-        max-height: 34dvh;
-        gap: 5px;
-        padding: 6px;
-        border-radius: 12px;
+        gap: 4px;
+        padding: 4px;
+        border-radius: 8px;
       }
       .sound-button {
-        height: 56px;
-        min-height: 56px;
-        font-size: 15px;
-        border-radius: 12px;
-      }
-
-      .toolbar {
-        gap: 5px;
-      }
-      .key {
         height: 48px;
         min-height: 48px;
-        border-radius: 12px;
-        padding: 0 10px;
-        font-size: 15px;
-      }
-      .key.tts-btn, .key.clear-btn {
-        min-width: 48px;
-        padding: 0 12px;
-        flex-shrink: 0;
-      }
-      .key.prediction-btn {
-        min-width: 64px;
         font-size: 14px;
+        border-radius: 8px;
       }
 
-      .textarea-wrapper {
-        min-height: 88px;
-        /* Keep action bar in normal flow so it is never clipped off-screen */
-        overflow: visible;
+      .bottom-dock { gap: 3px; }
+      .toolbar { gap: 3px; }
+      .key {
+        height: 36px;
+        min-height: 36px;
+        width: 36px;
+        min-width: 36px;
+      }
+      .key.insert-btn {
+        height: 32px;
+        min-height: 32px;
+        width: 32px;
+        min-width: 32px;
+      }
+      .insert-input {
+        height: 32px;
+        min-height: 32px;
+        font-size: 14px;
+        padding: 4px 8px;
       }
       .display-textarea {
-        font-size: 20px;
-        padding: 12px;
-        border-radius: 12px;
-        /* Share height with in-flow action bar (avoid height:100% overflow) */
-        height: auto;
-        flex: 1 1 auto;
-        min-height: 0;
+        font-size: 16px;
+        padding: 6px 8px;
+        min-height: 36px;
+        max-height: min(26vh, 150px);
       }
 
-      /* In-flow action bar on mobile (always visible when active) */
       .audio-actions-bar {
-        position: static;
-        left: auto;
-        right: auto;
-        bottom: auto;
-        max-width: 100%;
-        width: 100%;
-        margin-top: 6px;
-        flex-shrink: 0;
-        justify-content: stretch;
         box-shadow: none;
+        justify-content: stretch;
       }
-      .audio-actions-bar.active { display: flex; }
       .audio-action-btn { flex: 1; justify-content: center; min-width: 0; }
 
       /* Bottom-sheet style modals — body scrolls, footer stays pinned */
@@ -623,28 +532,27 @@
     }
 
     @media (max-width: 480px) {
-      .sound-canvas { max-height: 30dvh; }
-      .sound-button { height: 52px; min-height: 52px; font-size: 14px; }
-      .key.prediction-btn { min-width: 56px; font-size: 13px; }
-      .key-label { display: none; }
-      .key.tts-btn, .key.clear-btn { min-width: 48px; width: 48px; padding: 0; }
-      .display-textarea { font-size: 18px; }
-      .workspace-tab .topic-item-name { max-width: 22vw; }
+      .sound-button { height: 44px; min-height: 44px; font-size: 13px; }
+      .key { height: 34px; min-height: 34px; width: 34px; min-width: 34px; }
+      .key.insert-btn { height: 30px; min-height: 30px; width: 30px; min-width: 30px; }
+      .insert-input { height: 30px; min-height: 30px; }
+      .display-textarea { font-size: 15px; min-height: 34px; }
       .theme-btn { flex-direction: column; gap: 2px; font-size: 11px; padding: 8px 2px; }
-      .audio-action-btn { font-size: 12px; padding: 8px; }
-      .edit-mode-controls .header-stepper-group { font-size: 12px; padding: 2px 6px; }
-      .edit-mode-actions .tool-btn { font-size: 13px; }
+      .audio-action-btn { font-size: 11px; padding: 4px 6px; }
     }
 
     /* Short landscape phones */
     @media (max-height: 500px) and (orientation: landscape) {
-      .sound-canvas { max-height: 28dvh; }
-      .textarea-wrapper { min-height: 64px; }
-      .key { height: 42px; min-height: 42px; }
-      .display-textarea { font-size: 16px; }
+      .app-main { gap: 3px; padding: 4px; }
+      .bottom-dock { gap: 2px; }
+      .key { height: 30px; min-height: 30px; width: 30px; min-width: 30px; }
+      .key.insert-btn, .insert-input { height: 28px; min-height: 28px; }
+      .key.insert-btn { width: 28px; min-width: 28px; }
+      .display-textarea { font-size: 14px; min-height: 30px; max-height: min(22vh, 90px); padding: 4px 6px; }
+      .sound-button { height: 40px; min-height: 40px; font-size: 12px; }
       .sidebar { width: min(280px, 70vw); }
-      .audio-actions-bar { margin-top: 4px; padding: 4px 8px; }
-      .audio-action-btn { min-height: 36px; font-size: 12px; }
+      .audio-actions-bar { padding: 2px 4px; }
+      .audio-action-btn { min-height: 28px; font-size: 11px; }
     }
 
     /* Prefer reduced motion */
@@ -764,15 +672,6 @@
         <hr class="setting-divider">
 
         <div class="sidebar-setting-group">
-          <label class="toggle-setting" for="speak-predictions-toggle">
-            <span>Speak Predictions</span>
-            <input type="checkbox" id="speak-predictions-toggle" aria-label="Speak predictions when inserted">
-          </label>
-        </div>
-
-        <hr class="setting-divider">
-
-        <div class="sidebar-setting-group">
           <label><span>Font Size</span><span id="font-display">24px</span></label>
           <div class="font-controls">
             <button class="font-btn" id="font-down" type="button">A-</button>
@@ -825,37 +724,6 @@
       <button class="icon-btn mobile-only mobile-menu-btn" id="mobile-menu-btn" type="button" title="Open menu" aria-label="Open menu">
         <span class="material-symbols-outlined">menu</span>
       </button>
-      <div class="workspace-tabs" id="workspace-tabs"></div>
-
-      <div class="workspace-actions">
-        <button class="tool-btn" id="edit-mode-btn" type="button">
-          <span class="material-symbols-outlined icon-small">edit</span>
-          <span class="tool-btn-label">Edit Buttons</span>
-        </button>
-
-        <div class="edit-mode-controls" id="edit-mode-controls">
-          <div class="header-stepper-group">
-            <span>Cols:</span>
-            <div class="num-control-wrapper">
-              <button class="num-control-btn" type="button" onclick="stepGridDimensions(-1, 0)">-</button>
-              <span class="num-control-val" id="header-cols-val">4</span>
-              <button class="num-control-btn" type="button" onclick="stepGridDimensions(1, 0)">+</button>
-            </div>
-          </div>
-          <div class="header-stepper-group">
-            <span>Rows:</span>
-            <div class="num-control-wrapper">
-              <button class="num-control-btn" type="button" onclick="stepGridDimensions(0, -1)">-</button>
-              <span class="num-control-val" id="header-rows-val">2</span>
-              <button class="num-control-btn" type="button" onclick="stepGridDimensions(0, 1)">+</button>
-            </div>
-          </div>
-          <div class="edit-mode-actions">
-            <button class="tool-btn primary" id="save-edit-btn" type="button">Save</button>
-            <button class="tool-btn" id="cancel-edit-btn" type="button">Cancel</button>
-          </div>
-        </div>
-      </div>
     </div>
 
     <div class="overwrite-banner" id="overwrite-banner">
@@ -867,28 +735,24 @@
     <div class="sound-canvas" id="sound-canvas"></div>
 
     <div class="bottom-dock">
+      <div class="toolbar insert-toolbar" id="insert-toolbar">
+        <button class="key insert-btn" id="insert-tag-btn" type="button" aria-label="Insert tag">
+          <span class="material-symbols-outlined icon-medium">add</span>
+          <span class="key-label">Insert</span>
+        </button>
+        <input type="text" class="insert-input" id="insert-tag-input" placeholder="Tag to insert..." autocomplete="off" spellcheck="false" aria-label="Tag text">
+      </div>
       <div class="toolbar" id="toolbar">
         <button class="key tts-btn" id="speak-btn" type="button" aria-label="Speak">
           <span class="material-symbols-outlined icon-medium">volume_up</span>
           <span class="key-label">Speak</span>
         </button>
-        <div class="predictions-wrapper" id="predictions-wrapper">
-          <button class="key prediction-btn" type="button"></button>
-          <button class="key prediction-btn" type="button"></button>
-          <button class="key prediction-btn" type="button"></button>
-          <button class="key prediction-btn" type="button"></button>
-          <button class="key prediction-btn" type="button"></button>
-          <button class="key prediction-btn" type="button"></button>
-        </div>
+        <textarea class="display-textarea" id="display-input" spellcheck="true" autocomplete="off" autocapitalize="sentences" placeholder="Type here..." rows="1" aria-label="Display text"></textarea>
         <button class="key clear-btn" id="clear-btn" type="button" aria-label="Clear">
           <span class="material-symbols-outlined icon-medium">delete</span>
           <span class="key-label">Clear</span>
         </button>
       </div>
-    </div>
-
-    <div class="textarea-wrapper">
-      <textarea class="display-textarea" id="display-input" spellcheck="true" autocomplete="off" autocapitalize="sentences" placeholder="Type here..."></textarea>
 
       <div class="audio-actions-bar" id="generated-audio-actions">
         <button class="audio-action-btn play" id="textarea-replay-btn" type="button">
@@ -932,6 +796,27 @@
       <div class="sidebar-setting-group">
         <label>Color Accent</label>
         <div class="modal-color-picker" id="topic-color-picker"></div>
+      </div>
+      <div class="sidebar-setting-group">
+        <label>Grid Size</label>
+        <div class="grid-size-controls">
+          <div class="header-stepper-group">
+            <span>Cols</span>
+            <div class="num-control-wrapper">
+              <button class="num-control-btn" type="button" onclick="stepModalGrid(-1, 0)" aria-label="Fewer columns">-</button>
+              <span class="num-control-val" id="topic-cols-val">4</span>
+              <button class="num-control-btn" type="button" onclick="stepModalGrid(1, 0)" aria-label="More columns">+</button>
+            </div>
+          </div>
+          <div class="header-stepper-group">
+            <span>Rows</span>
+            <div class="num-control-wrapper">
+              <button class="num-control-btn" type="button" onclick="stepModalGrid(0, -1)" aria-label="Fewer rows">-</button>
+              <span class="num-control-val" id="topic-rows-val">2</span>
+              <button class="num-control-btn" type="button" onclick="stepModalGrid(0, 1)" aria-label="More rows">+</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <div class="modal-buttons">
@@ -1055,57 +940,6 @@
     ];
     const DEFAULT_GRID_COLS = 4;
     const DEFAULT_GRID_ROWS = 2;
-    const DEFAULT_STARTERS = ["Hey!", "I want", "Yes", "No", "Please", "Thank you"];
-    const COMMON_FOLLOWUPS = ["to", "the", "and", "a", "of", "in", "is", "it", "that", "for", "you", "my", "more", "help", "want", "need", "like", "go", "please", "some", "this", "with", "can", "not"];
-    /** Offline AAC-ish word list for prefix fill when Datamuse is slow/offline */
-    const LOCAL_PREFIX_WORDS = [
-      "I", "want", "need", "like", "please", "help", "water", "food", "go", "stop", "more", "yes", "no",
-      "thank", "you", "my", "the", "and", "to", "a", "of", "in", "is", "it", "that", "for", "with", "can",
-      "will", "would", "could", "should", "not", "here", "there", "this", "what", "where", "when", "how",
-      "who", "why", "feel", "am", "are", "was", "were", "do", "does", "did", "get", "got", "make", "see",
-      "know", "think", "say", "tell", "come", "take", "give", "look", "use", "find", "work", "call", "try",
-      "ask", "love", "hurt", "hungry", "thirsty", "tired", "happy", "sad", "angry", "scared", "bathroom",
-      "home", "mom", "dad", "friend", "play", "watch", "listen", "read", "write", "open", "close", "wait",
-      "stop", "start", "again", "finished", "sorry", "hello", "goodbye", "good", "bad", "big", "small"
-    ];
-    /** Common next words after a trigger (AAC bigrams). Keys are lowercase. */
-    const LOCAL_BIGRAMS = {
-      i: ["want", "need", "like", "am", "have", "can", "feel", "love", "will", "don't", "didn't", "would"],
-      want: ["to", "a", "some", "more", "the", "my", "you", "it"],
-      need: ["to", "a", "some", "help", "the", "more", "my", "you"],
-      like: ["to", "the", "a", "this", "that", "you", "it", "my"],
-      to: ["go", "be", "have", "get", "see", "eat", "play", "the", "a", "do", "make", "say"],
-      the: ["bathroom", "water", "food", "door", "light", "one", "same", "other"],
-      a: ["little", "lot", "break", "drink", "snack", "minute", "second"],
-      please: ["help", "stop", "wait", "give", "come", "look"],
-      can: ["you", "I", "we", "not", "help", "go", "see"],
-      do: ["you", "not", "it", "that", "this", "I"],
-      dont: ["want", "like", "know", "feel", "need", "go"],
-      feel: ["good", "bad", "happy", "sad", "tired", "sick", "hungry", "better"],
-      am: ["hungry", "thirsty", "tired", "happy", "sad", "okay", "fine", "ready"],
-      is: ["it", "this", "that", "good", "bad", "okay", "ready"],
-      my: ["name", "turn", "home", "mom", "dad", "friend", "body", "head"],
-      go: ["to", "home", "out", "away", "there", "outside"],
-      help: ["me", "please", "with"],
-      thank: ["you"],
-      yes: ["please", "I", "thank"],
-      no: ["thank", "I", "more", "please"],
-      have: ["a", "to", "some", "the", "my"],
-      get: ["me", "the", "a", "some", "up", "out"],
-      for: ["me", "you", "the", "a", "help"],
-      with: ["me", "you", "the", "my", "that"],
-      and: ["I", "the", "a", "then", "also"],
-      of: ["the", "my", "a", "it", "this"],
-      in: ["the", "my", "a", "here", "there"],
-      on: ["the", "my", "a", "it"],
-      it: ["is", "was", "hurts", "helps", "works"],
-      you: ["are", "can", "please", "help", "want"],
-      what: ["is", "do", "are", "time", "happened"],
-      where: ["is", "are", "do"],
-      when: ["is", "do", "can", "will"],
-      how: ["are", "do", "is", "much", "many"],
-      more: ["please", "time", "of", "help", "water", "food"]
-    };
 
     const SYMBOL_MIGRATION_MAP = {
       "📁": "folder", "💬": "chat", "🕒": "history", "⚙️": "settings", "☰": "menu", "▼": "expand_more",
@@ -1160,10 +994,7 @@
     // DOM References
     const sidebar = document.getElementById("sidebar");
     const displayInput = document.getElementById("display-input");
-    const predictionButtons = document.querySelectorAll(".prediction-btn");
     const soundCanvas = document.getElementById("sound-canvas");
-    const editModeBtn = document.getElementById("edit-mode-btn");
-    const editModeControls = document.getElementById("edit-mode-controls");
     const modalOverlay = document.getElementById("modal-overlay");
     const speakBtn = document.getElementById("speak-btn");
     const audioActionsBar = document.getElementById("generated-audio-actions");
@@ -1182,9 +1013,6 @@
     const fontDisplay = document.getElementById("font-display");
 
     // State Variables
-    let predictionTimeout;
-    let predictionRequestId = 0;
-    let speakPredictionsEnabled = localStorage.getItem("aac_speak_predictions") === "1";
     let activeBrowserVoiceIndex = localStorage.getItem("aac_browser_voice_index");
     if (activeBrowserVoiceIndex !== null && activeBrowserVoiceIndex !== "") {
       activeBrowserVoiceIndex = parseInt(activeBrowserVoiceIndex, 10);
@@ -1302,13 +1130,13 @@
     if (!topicsList.find(t => t.id === activeTopicId)) activeTopicId = topicsList[0].id;
 
     let audioHistory = JSON.parse(localStorage.getItem("aac_history")) || [];
-    let isEditMode = false;
     let isOverwriteMode = false;
-    let editSnapshot = null;
-    let draggingButton = null;
     let editingButtonId = null;
     let editingButtonTopicId = null;
     let editingTopicId = null;
+    /** Draft grid size while the topic edit modal is open */
+    let modalGridCols = DEFAULT_GRID_COLS;
+    let modalGridRows = DEFAULT_GRID_ROWS;
     let targetStudioInputId = null;
     let selectedStudioIcon = null;
     let lastGeneratedAudio = null;
@@ -1620,22 +1448,30 @@
       closeIconStudio(true);
     });
 
-    // ==================== TOPICS NAVIGATION & WORKSPACE TABS ====================
+    // ==================== TOPICS NAVIGATION ====================
+    /** Topic ids currently expanded in the Topics sidebar list (independent of active topic). */
+    let expandedTopicIds = new Set([activeTopicId]);
+
     function renderTopics() {
       const listEl = document.getElementById("topics-list");
-      const tabsEl = document.getElementById("workspace-tabs");
       listEl.innerHTML = "";
-      if (tabsEl) tabsEl.innerHTML = "";
+
+      // Drop expand state for topics that no longer exist
+      expandedTopicIds = new Set([...expandedTopicIds].filter(id => topicsList.some(t => t.id === id)));
 
       topicsList.forEach(topic => {
         const isActive = topic.id === activeTopicId;
+        const isExpanded = expandedTopicIds.has(topic.id);
         const item = document.createElement("div");
-        item.className = `topic-item ${isActive ? "active" : ""}`;
+        item.className = `topic-item${isActive ? " active" : ""}${isExpanded ? " expanded" : ""}`;
 
         const header = document.createElement("div");
         header.className = "topic-item-header";
+        header.setAttribute("role", "button");
+        header.setAttribute("aria-expanded", isExpanded ? "true" : "false");
         header.innerHTML = `
           <div class="topic-item-content">
+            <span class="material-symbols-outlined topic-expand-icon icon-small">${isExpanded ? "expand_more" : "chevron_right"}</span>
             <span class="material-symbols-outlined icon-medium" style="color: ${topic.color};">${topic.icon || "folder"}</span>
             <span class="topic-item-name">${topic.name}</span>
           </div>
@@ -1647,12 +1483,12 @@
         `;
         header.addEventListener("click", (e) => {
           if (e.target.closest(".edit-topic-btn")) { e.stopPropagation(); openTopicEditModal(topic.id); return; }
-          switchTopic(topic.id);
+          toggleTopicExpanded(topic.id);
         });
         item.appendChild(header);
 
-        // Active topic expands to list its sound buttons
-        if (isActive) {
+        // Expanded topics list their sound buttons
+        if (isExpanded) {
           const buttonsList = document.createElement("div");
           buttonsList.className = "topic-buttons-list";
           const buttons = Array.isArray(topic.buttons) ? topic.buttons : [];
@@ -1684,35 +1520,45 @@
         }
 
         listEl.appendChild(item);
-
-        if (tabsEl) {
-          const tabEl = document.createElement("button");
-          tabEl.type = "button";
-          tabEl.className = `workspace-tab ${isActive ? "active" : ""}`;
-          tabEl.innerHTML = `
-            <span class="material-symbols-outlined icon-medium" style="color: ${topic.color};">${topic.icon || "folder"}</span>
-            <span class="topic-item-name">${topic.name}</span>
-          `;
-          tabEl.addEventListener("click", () => switchTopic(topic.id));
-          tabsEl.appendChild(tabEl);
-        }
       });
-      updateWorkspaceHeader();
+    }
+
+    /** Toggle a topic's expanded state; expanding also activates it for the workspace. */
+    function toggleTopicExpanded(id) {
+      if (expandedTopicIds.has(id)) {
+        expandedTopicIds.delete(id);
+        renderTopics();
+        return;
+      }
+      expandedTopicIds.add(id);
+      if (activeTopicId !== id) {
+        activeTopicId = id;
+        localStorage.setItem("aac_active_tab", activeTopicId);
+        renderSoundButtons();
+      }
+      renderTopics();
     }
 
     function switchTopic(id) {
       activeTopicId = id;
-      if (!isEditMode) localStorage.setItem("aac_active_tab", activeTopicId);
+      localStorage.setItem("aac_active_tab", activeTopicId);
+      expandedTopicIds.add(id);
       renderTopics(); renderSoundButtons();
       closeMobileSidebar();
       focusDisplayInput();
     }
 
-    function updateWorkspaceHeader() {
-      const active = getActiveTopic();
-      if (!active) return;
-      document.getElementById("header-cols-val").textContent = active.gridCols;
-      document.getElementById("header-rows-val").textContent = active.gridRows;
+    function syncModalGridLabels() {
+      const colsEl = document.getElementById("topic-cols-val");
+      const rowsEl = document.getElementById("topic-rows-val");
+      if (colsEl) colsEl.textContent = String(modalGridCols);
+      if (rowsEl) rowsEl.textContent = String(modalGridRows);
+    }
+
+    function stepModalGrid(deltaCols, deltaRows) {
+      modalGridCols = clamp(modalGridCols + deltaCols, 1, 12);
+      modalGridRows = clamp(modalGridRows + deltaRows, 1, 8);
+      syncModalGridLabels();
     }
 
     document.getElementById("add-topic-sidebar-btn").addEventListener("click", () => {
@@ -1743,6 +1589,9 @@
       editingTopicId = topicId;
       document.getElementById("topic-name-input").value = topic.name;
       document.getElementById("topic-icon-input").value = topic.icon || "folder";
+      modalGridCols = clamp(parseInt(topic.gridCols, 10) || DEFAULT_GRID_COLS, 1, 12);
+      modalGridRows = clamp(parseInt(topic.gridRows, 10) || DEFAULT_GRID_ROWS, 1, 8);
+      syncModalGridLabels();
 
       const colorPicker = document.getElementById("topic-color-picker");
       colorPicker.innerHTML = "";
@@ -1793,6 +1642,9 @@
       topic.icon = SYMBOL_MIGRATION_MAP[rawIco] || rawIco || "folder";
       const selCol = document.querySelector("#topic-color-picker .color-option.selected");
       if (selCol) topic.color = selCol.style.backgroundColor;
+      topic.gridCols = clamp(modalGridCols, 1, 12);
+      topic.gridRows = clamp(modalGridRows, 1, 8);
+      repackSequentialGrid(topic);
       saveTopicsList(); renderTopics(); renderSoundButtons(); closeModals();
     });
 
@@ -1804,54 +1656,40 @@
       saveTopicsList(); renderTopics(); renderSoundButtons(); closeModals();
     });
 
-    function stepGridDimensions(deltaCols, deltaRows) {
-      const active = getActiveTopic();
-      if (!active) return;
-      active.gridCols = clamp(active.gridCols + deltaCols, 1, 12);
-      active.gridRows = clamp(active.gridRows + deltaRows, 1, 8);
-      repackSequentialGrid(active);
-      updateWorkspaceHeader();
-      renderSoundButtons();
+    // ==================== SOUND BUTTON GRID ====================
+    /** Size the canvas height to grid rows / button content (and set fixed track sizes). */
+    function autosizeSoundCanvas(activeTab) {
+      if (!soundCanvas || !activeTab) return;
+      const cols = Math.max(1, activeTab.gridCols || 1);
+      let contentRows = 0;
+      (activeTab.buttons || []).forEach(b => {
+        contentRows = Math.max(contentRows, (b.row || 0) + (b.rowSpan || 1));
+      });
+      const rows = Math.max(1, activeTab.gridRows || 1, contentRows);
+      const rowH = isMobileLayout() ? 48 : 44;
+      const styles = getComputedStyle(soundCanvas);
+      const gap = parseFloat(styles.rowGap || styles.gap) || (isMobileLayout() ? 4 : 4);
+      const padY = (parseFloat(styles.paddingTop) || 0) + (parseFloat(styles.paddingBottom) || 0);
+      const borderY = (parseFloat(styles.borderTopWidth) || 0) + (parseFloat(styles.borderBottomWidth) || 0);
+      const height = padY + borderY + rows * rowH + Math.max(0, rows - 1) * gap;
+
+      soundCanvas.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+      soundCanvas.style.gridTemplateRows = `repeat(${rows}, ${rowH}px)`;
+      soundCanvas.style.gridAutoRows = `${rowH}px`;
+      soundCanvas.style.height = `${height}px`;
     }
-
-    // ==================== EDIT MODE & MOBILE TOUCH SWAPPING ====================
-    function setEditMode(enabled) {
-      isEditMode = enabled;
-      if (enabled && isOverwriteMode) setOverwriteMode(false);
-      editModeBtn.style.display = enabled ? "none" : "inline-flex";
-      editModeControls.classList.toggle("open", enabled);
-      soundCanvas.classList.toggle("edit-mode", enabled);
-      document.querySelector(".workspace-header")?.classList.toggle("edit-active", enabled);
-
-      if (enabled) editSnapshot = JSON.parse(JSON.stringify(topicsList));
-      else editSnapshot = null;
-      renderSoundButtons();
-    }
-
-    editModeBtn.addEventListener("click", () => setEditMode(true));
-    document.getElementById("save-edit-btn").addEventListener("click", () => {
-      saveTopicsList();
-      setEditMode(false);
-      renderTopics();
-    });
-    document.getElementById("cancel-edit-btn").addEventListener("click", () => {
-      if (editSnapshot) topicsList = normalizeTopicsList(editSnapshot);
-      setEditMode(false); renderTopics(); renderSoundButtons();
-    });
 
     function renderSoundButtons() {
       const activeTab = getActiveTopic();
       if (!activeTab) return;
-      soundCanvas.style.gridTemplateColumns = `repeat(${activeTab.gridCols}, minmax(0, 1fr))`;
-      const rowH = isMobileLayout() ? 56 : 52;
-      soundCanvas.style.gridAutoRows = `${rowH}px`;
+      autosizeSoundCanvas(activeTab);
       soundCanvas.innerHTML = "";
 
       activeTab.buttons.forEach(btnData => {
         const isUtteranceBtn = !!(btnData.utteranceText || "").trim();
         const btnColor = btnData.color || "#3f3f4e";
         const btnEl = document.createElement("div");
-        btnEl.className = `sound-button${isEditMode ? " edit-mode" : ""}${isOverwriteMode ? " overwrite-target" : ""}${isUtteranceBtn ? " utterance-button" : ""}`;
+        btnEl.className = `sound-button${isOverwriteMode ? " overwrite-target" : ""}${isUtteranceBtn ? " utterance-button" : ""}`;
         btnEl.id = `btn-${btnData.id}`;
         btnEl.style.gridColumn = `${btnData.col + 1} / span ${btnData.colSpan}`;
         btnEl.style.gridRow = `${btnData.row + 1} / span ${btnData.rowSpan}`;
@@ -1871,22 +1709,9 @@
             ${symbolPart}
             <div class="sound-button-label">${btnData.label || "Button"}</div>
           </div>
-          <button class="sound-button-edit-btn" type="button" title="Edit Button"><span class="material-symbols-outlined icon-small">edit</span></button>
         `;
 
-        if (isEditMode) {
-          btnEl.querySelector(".sound-button-edit-btn").addEventListener("click", (e) => {
-            e.stopPropagation(); openButtonEditModal(btnData.id);
-          });
-          btnEl.addEventListener("mousedown", (e) => {
-            if (e.button !== 0 || e.target.closest(".sound-button-edit-btn")) return;
-            startDrag(e, btnData.id);
-          });
-          btnEl.addEventListener("touchstart", (e) => {
-            if (e.target.closest(".sound-button-edit-btn")) return;
-            startDrag(e, btnData.id);
-          }, { passive: false });
-        } else if (isOverwriteMode) {
+        if (isOverwriteMode) {
           btnEl.addEventListener("click", () => executeOverwrite(btnData.id));
         } else {
           btnEl.addEventListener("click", () => playButtonSpeech(btnData));
@@ -1953,7 +1778,7 @@
       btn.symbol = SYMBOL_MIGRATION_MAP[rawSymbol] || rawSymbol || "";
       const selCol = document.querySelector("#button-color-picker .color-option.selected");
       if (selCol) btn.color = selCol.style.backgroundColor;
-      if (!isEditMode) saveTopicsList();
+      saveTopicsList();
       renderTopics();
       renderSoundButtons();
       closeModals();
@@ -1964,7 +1789,7 @@
       if (!tab) return;
       tab.buttons = tab.buttons.filter(b => b.id !== editingButtonId);
       repackSequentialGrid(tab);
-      if (!isEditMode) saveTopicsList();
+      saveTopicsList();
       renderTopics();
       renderSoundButtons();
       closeModals();
@@ -1979,102 +1804,6 @@
         if (col >= tab.gridCols) { col = 0; row++; }
       });
     }
-
-    function getCellFromPoint(clientX, clientY) {
-      const tab = getActiveTopic();
-      if (!tab) return { col: 0, row: 0 };
-      const rect = soundCanvas.getBoundingClientRect();
-      const x = clamp(clientX - rect.left, 0, Math.max(0, rect.width - 1));
-      const y = clamp(clientY - rect.top, 0, Math.max(0, rect.height - 1));
-      return {
-        col: clamp(Math.floor((x / rect.width) * tab.gridCols), 0, tab.gridCols - 1),
-        row: clamp(Math.floor((y / rect.height) * Math.max(1, tab.gridRows)), 0, Math.max(0, tab.gridRows - 1))
-      };
-    }
-
-    function startDrag(e, btnId) {
-      if (!isEditMode) return;
-      const tab = getActiveTopic();
-      const btnEl = document.getElementById(`btn-${btnId}`);
-      if (!tab || !btnEl) return;
-
-      draggingButton = { id: btnId, element: btnEl };
-      btnEl.classList.add("dragging");
-      if (e.type === "touchstart") e.preventDefault();
-    }
-
-    function handleMove(clientX, clientY) {
-      if (!isEditMode || !draggingButton) return;
-      const tab = getActiveTopic();
-      if (!tab) return;
-
-      const cell = getCellFromPoint(clientX, clientY);
-      const draggedBtn = tab.buttons.find(b => b.id === draggingButton.id);
-      if (!draggedBtn) return;
-
-      const targetBtn = tab.buttons.find(b => b.col === cell.col && b.row === cell.row && b.id !== draggedBtn.id);
-      soundCanvas.querySelectorAll(".sound-button").forEach(el => el.classList.remove("swap-target"));
-
-      if (targetBtn) {
-        const targetEl = document.getElementById(`btn-${targetBtn.id}`);
-        if (targetEl) {
-          const r = targetEl.getBoundingClientRect();
-          const relX = (clientX - r.left) / r.width;
-          const relY = (clientY - r.top) / r.height;
-
-          // Target hover zone triggers a position swap
-          if (relX > 0.15 && relX < 0.85 && relY > 0.15 && relY < 0.85) {
-            targetEl.classList.add("swap-target");
-            draggingButton.swapTargetId = targetBtn.id;
-            return;
-          }
-        }
-      }
-
-      draggingButton.swapTargetId = null;
-      const targetIndex = clamp(cell.row * tab.gridCols + cell.col, 0, tab.buttons.length - 1);
-      const currentIndex = tab.buttons.findIndex(b => b.id === draggingButton.id);
-      if (currentIndex !== -1 && currentIndex !== targetIndex) {
-        const [removed] = tab.buttons.splice(currentIndex, 1);
-        tab.buttons.splice(targetIndex, 0, removed);
-        repackSequentialGrid(tab);
-        tab.buttons.forEach(b => {
-          const el = document.getElementById(`btn-${b.id}`);
-          if (el) {
-            el.style.gridColumn = `${b.col + 1} / span ${b.colSpan}`;
-            el.style.gridRow = `${b.row + 1} / span ${b.rowSpan}`;
-          }
-        });
-      }
-    }
-
-    document.addEventListener("mousemove", (e) => handleMove(e.clientX, e.clientY));
-    document.addEventListener("touchmove", (e) => {
-      if (!draggingButton || !e.touches[0]) return;
-      handleMove(e.touches[0].clientX, e.touches[0].clientY);
-    }, { passive: false });
-
-    function handleEnd() {
-      if (draggingButton) {
-        const tab = getActiveTopic();
-        if (draggingButton.swapTargetId && tab) {
-          const b1 = tab.buttons.find(b => b.id === draggingButton.id);
-          const b2 = tab.buttons.find(b => b.id === draggingButton.swapTargetId);
-          if (b1 && b2) {
-            const tempCol = b1.col, tempRow = b1.row;
-            b1.col = b2.col; b1.row = b2.row;
-            b2.col = tempCol; b2.row = tempRow;
-          }
-        }
-        draggingButton.element.classList.remove("dragging");
-        draggingButton = null;
-        renderSoundButtons();
-      }
-    }
-
-    document.addEventListener("mouseup", handleEnd);
-    document.addEventListener("touchend", handleEnd);
-    document.addEventListener("touchcancel", handleEnd);
 
     // ==================== ASSIGN & OVERWRITE ====================
     function applyGeneratedSpeechToButton(btn, source) {
@@ -2227,7 +1956,7 @@
       else focusDisplayInput();
     });
 
-    // ==================== TEXT & PREDICTIONS ====================
+    // ==================== TEXT DISPLAY ====================
     function getText() { return displayInput.value; }
     function setText(val, caret = val.length) {
       displayInput.value = val;
@@ -2235,332 +1964,78 @@
       const pos = Math.max(0, Math.min(caret, len));
       try { displayInput.setSelectionRange(pos, pos); } catch (_) {}
       savedDisplaySelection = { start: pos, end: pos };
-      updatePredictions();
+      autosizeDisplayInput();
+      syncGeneratedAudioActions();
     }
 
-    function autoscaleButtonText(btn) {
-      btn.style.fontSize = "16px";
-      let size = 16;
-      while (btn.scrollWidth > btn.clientWidth && size > 11) {
-        size--;
-        btn.style.fontSize = `${size}px`;
-      }
-    }
-
-    /** Caret for predictions — avoid selectionStart||length (0 is a valid caret). */
-    function getPredictionCaret() {
+    /** Caret/selection for insert — prefer live selection, else saved, else end. */
+    function getDisplayCaretRange() {
+      const len = getText().length;
       if (document.activeElement === displayInput && typeof displayInput.selectionStart === "number") {
-        return displayInput.selectionStart;
+        return {
+          start: displayInput.selectionStart,
+          end: typeof displayInput.selectionEnd === "number" ? displayInput.selectionEnd : displayInput.selectionStart
+        };
       }
-      if (savedDisplaySelection.start != null && Number.isFinite(savedDisplaySelection.start)) {
-        return savedDisplaySelection.start;
+      let start = savedDisplaySelection.start;
+      let end = savedDisplaySelection.end;
+      if (start == null || !Number.isFinite(start)) start = len;
+      if (end == null || !Number.isFinite(end)) end = start;
+      start = Math.max(0, Math.min(start, len));
+      end = Math.max(0, Math.min(end, len));
+      return { start, end };
+    }
+
+    /** Insert `[tag] ` into the display at the saved caret (replaces selection if any). */
+    function insertBracketTag() {
+      const insertInput = document.getElementById("insert-tag-input");
+      const raw = (insertInput?.value || "").trim();
+      if (!raw) return;
+      const insert = `[${raw}] `;
+      const text = getText();
+      const { start, end } = getDisplayCaretRange();
+      const next = text.substring(0, start) + insert + text.substring(end);
+      const newCaret = start + insert.length;
+      setText(next, newCaret);
+      focusDisplayInput();
+    }
+
+    document.getElementById("insert-tag-btn")?.addEventListener("click", insertBracketTag);
+    document.getElementById("insert-tag-input")?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        insertBracketTag();
       }
-      return getText().length;
+    });
+
+    /** Grow/shrink the display field to fit its content (capped by CSS max-height). */
+    function autosizeDisplayInput() {
+      if (!displayInput) return;
+      displayInput.style.height = "auto";
+      displayInput.style.height = `${displayInput.scrollHeight}px`;
     }
 
-    /** Frequency per million from Datamuse md=f tags (null if missing). */
-    function getDatamuseFreq(item) {
-      const tags = item.tags || [];
-      for (const t of tags) {
-        if (typeof t === "string" && t.startsWith("f:")) {
-          const n = parseFloat(t.slice(2));
-          if (Number.isFinite(n)) return n;
-        }
-      }
-      return null;
-    }
-
-    function isAcceptablePredictionToken(word) {
-      const w = (word || "").trim();
-      if (!w || w.length > 24) return false;
-      if (/\s/.test(w)) return false; // strip is single-word
-      if (!/^[A-Za-z][A-Za-z'-]*$/.test(w)) return false;
-      // Skip most multi-hyphen / dotted oddities
-      if ((w.match(/-/g) || []).length > 1) return false;
-      return true;
-    }
-
-    function localPrefixSuggestions(prefix, limit = 6) {
-      if (!prefix) return [];
-      const p = prefix.toLowerCase();
-      const out = [];
-      const seen = new Set();
-      for (const w of LOCAL_PREFIX_WORDS) {
-        const lower = w.toLowerCase();
-        if (lower === p) continue;
-        if (!lower.startsWith(p)) continue;
-        if (seen.has(lower)) continue;
-        seen.add(lower);
-        out.push(w);
-        if (out.length >= limit) break;
-      }
-      return out;
-    }
-
-    function localNextWordSuggestions(prevWord, limit = 6) {
-      if (!prevWord) return [];
-      const list = LOCAL_BIGRAMS[prevWord.toLowerCase()] || [];
-      return list.slice(0, limit);
-    }
-
-    function localPrefixWithContext(prefix, prevWord, limit = 6) {
-      if (!prefix) return [];
-      const p = prefix.toLowerCase();
-      const out = [];
-      const seen = new Set();
-      // Prefer bigram followers that match the typed prefix
-      for (const w of localNextWordSuggestions(prevWord, 24)) {
-        const lower = w.toLowerCase();
-        if (lower === p || !lower.startsWith(p) || seen.has(lower)) continue;
-        seen.add(lower);
-        out.push(w);
-        if (out.length >= limit) return out;
-      }
-      for (const w of localPrefixSuggestions(prefix, limit * 2)) {
-        const lower = w.toLowerCase();
-        if (seen.has(lower)) continue;
-        seen.add(lower);
-        out.push(w);
-        if (out.length >= limit) break;
-      }
-      return out;
-    }
-
-    function applySuggestionButtons(suggestions) {
-      predictionButtons.forEach((btn, i) => {
-        btn.textContent = suggestions[i] || "";
-        autoscaleButtonText(btn);
-      });
-    }
-
-    /**
-     * Build Datamuse queries for AAC prediction.
-     * Use rel_bga (frequent followers) for next-word — plain `lc` alone is only a soft hint
-     * and often returns odd/rare words when not paired with other constraints.
-     */
-    function buildDatamuseQueries(lastWord, activePrefix, endsWithSpace) {
-      const queries = [];
-      const lw = (lastWord || "").toLowerCase();
-      const pref = activePrefix || "";
-
-      if (endsWithSpace && lw) {
-        // True next-word: P(w'|w) bigrams
-        queries.push({
-          url: `https://api.datamuse.com/words?rel_bga=${encodeURIComponent(lw)}&max=25&md=f`,
-          kind: "bga"
-        });
-      } else if (pref && lw) {
-        // Mid-word with left context: spelling + frequent follower of previous word
-        queries.push({
-          url: `https://api.datamuse.com/words?sp=${encodeURIComponent(pref)}*&rel_bga=${encodeURIComponent(lw)}&max=20&md=f`,
-          kind: "bga_prefix"
-        });
-        // Spelling + left-context hint (softer, still useful)
-        queries.push({
-          url: `https://api.datamuse.com/words?sp=${encodeURIComponent(pref)}*&lc=${encodeURIComponent(lw)}&max=20&md=f`,
-          kind: "lc_prefix"
-        });
-        // Frequency-ranked spelling as backfill
-        queries.push({
-          url: `https://api.datamuse.com/words?sp=${encodeURIComponent(pref)}*&max=15&md=f`,
-          kind: "sp"
-        });
-      } else if (pref) {
-        queries.push({
-          url: `https://api.datamuse.com/words?sp=${encodeURIComponent(pref)}*&max=20&md=f`,
-          kind: "sp"
-        });
-      }
-      return queries;
-    }
-
-    /** Rank score: frequency-first, strong boost for context sources, deprioritize rare words. */
-    function rankDatamuseItem(item, rank, kind) {
-      const freq = getDatamuseFreq(item);
-      // log1p so very common words win without crushing mid-common ones
-      const freqScore = freq == null ? 0 : Math.log1p(freq) * 40;
-      const rankScore = Math.max(0, 30 - rank); // API order is somewhat meaningful for rel_*
-
-      let kindBoost = 0;
-      if (kind === "bga" || kind === "bga_prefix") kindBoost = 80;
-      else if (kind === "lc_prefix") kindBoost = 45;
-      else if (kind === "sp") kindBoost = 10;
-
-      // Strong penalty for rare words when we know frequency
-      let rarityPenalty = 0;
-      if (freq != null) {
-        if (freq < 0.05) rarityPenalty = 120;
-        else if (freq < 0.5) rarityPenalty = 50;
-        else if (freq < 2) rarityPenalty = 15;
-      } else {
-        // No frequency metadata → treat as weaker than known common words
-        rarityPenalty = 25;
-      }
-
-      // Prefer short everyday tokens slightly (AAC strip)
-      const w = (item.word || "");
-      const lenBonus = w.length > 0 && w.length <= 6 ? 8 : w.length <= 10 ? 3 : 0;
-
-      return freqScore + rankScore + kindBoost + lenBonus - rarityPenalty;
-    }
-
-    async function updatePredictions() {
-      // Hide generated action bar if modified text diverges from last spoken audio
+    /** Show/hide Replay & Assign when text still matches last spoken audio. */
+    function syncGeneratedAudioActions() {
       if (lastGeneratedAudio && getText().trim() !== (lastGeneratedAudio.text || "").trim()) {
         audioActionsBar.classList.remove("active");
       } else if (canUseGeneratedActions(lastGeneratedAudio)) {
         audioActionsBar.classList.add("active");
       }
-
-      const textUpToCaret = getText().substring(0, getPredictionCaret());
-      clearTimeout(predictionTimeout);
-
-      if (!textUpToCaret.trim()) {
-        predictionRequestId++;
-        applySuggestionButtons(DEFAULT_STARTERS);
-        return;
-      }
-
-      const words = textUpToCaret.trim().split(/\s+/).filter(w => w.length > 0);
-      const endsWithSpace = /\s$/.test(textUpToCaret);
-      let lastWord = "", activePrefix = "";
-
-      if (endsWithSpace) {
-        if (words.length > 0) lastWord = words[words.length - 1].replace(/[^a-zA-Z']/g, "");
-      } else if (words.length > 0) {
-        activePrefix = words[words.length - 1].replace(/[^a-zA-Z']/g, "");
-        if (words.length > 1) lastWord = words[words.length - 2].replace(/[^a-zA-Z']/g, "");
-      }
-
-      // Instant local suggestions while network request is in flight
-      let instant = [];
-      if (endsWithSpace && lastWord) {
-        instant = localNextWordSuggestions(lastWord, 6);
-        if (instant.length < 6) {
-          for (const fb of COMMON_FOLLOWUPS) {
-            if (instant.length >= 6) break;
-            if (!instant.some(w => w.toLowerCase() === fb.toLowerCase())) instant.push(fb);
-          }
-        }
-      } else if (activePrefix) {
-        instant = lastWord
-          ? localPrefixWithContext(activePrefix, lastWord, 6)
-          : localPrefixSuggestions(activePrefix, 6);
-      }
-      if (instant.length) applySuggestionButtons(instant);
-
-      const reqId = ++predictionRequestId;
-      predictionTimeout = setTimeout(async () => {
-        const scored = new Map(); // lower -> { word, score, freq }
-
-        const addWord = (word, score, freq) => {
-          if (!isAcceptablePredictionToken(word)) return;
-          const w = word.trim();
-          const lower = w.toLowerCase();
-          if (activePrefix) {
-            const p = activePrefix.toLowerCase();
-            if (!lower.startsWith(p) || lower === p) return;
-          }
-          const prev = scored.get(lower);
-          if (!prev || score > prev.score) {
-            scored.set(lower, { word: w, score, freq: freq == null ? prev?.freq ?? null : freq });
-          }
-        };
-
-        // Seed with local model so AAC phrases always compete
-        if (endsWithSpace && lastWord) {
-          localNextWordSuggestions(lastWord, 12).forEach((w, i) => addWord(w, 200 - i * 5, 100));
-        } else if (activePrefix) {
-          const local = lastWord
-            ? localPrefixWithContext(activePrefix, lastWord, 12)
-            : localPrefixSuggestions(activePrefix, 12);
-          local.forEach((w, i) => addWord(w, 160 - i * 5, 80));
-        }
-
-        try {
-          const queries = buildDatamuseQueries(lastWord, activePrefix, endsWithSpace);
-          if (queries.length > 0) {
-            const res = await Promise.all(queries.map(q => fetch(q.url).catch(() => null)));
-            if (reqId !== predictionRequestId) return;
-            const jsons = await Promise.all(res.map(r => (r && r.ok ? r.json() : [])));
-            jsons.forEach((data, qi) => {
-              if (!Array.isArray(data)) return;
-              const kind = queries[qi].kind;
-              data.forEach((item, rank) => {
-                const freq = getDatamuseFreq(item);
-                // Drop very rare words unless this is a prefix match with few options later
-                if (freq != null && freq < 0.08 && kind !== "bga" && kind !== "bga_prefix") return;
-                addWord(item.word, rankDatamuseItem(item, rank, kind), freq);
-              });
-            });
-          }
-        } catch (_) {}
-
-        if (reqId !== predictionRequestId) return;
-
-        let ranked = [...scored.values()].sort((a, b) => b.score - a.score);
-
-        // Prefer reasonably common words in the top slots when frequency is known
-        const commonEnough = ranked.filter(s => s.freq == null || s.freq >= 0.5);
-        const rest = ranked.filter(s => s.freq != null && s.freq < 0.5);
-        ranked = commonEnough.concat(rest);
-
-        let suggestions = ranked.map(s => s.word);
-
-        const seenWords = new Set(suggestions.map(s => s.toLowerCase()));
-        const fallbackPool = endsWithSpace
-          ? [...localNextWordSuggestions(lastWord, 12), ...COMMON_FOLLOWUPS]
-          : (lastWord
-              ? localPrefixWithContext(activePrefix, lastWord, 12)
-              : [...localPrefixSuggestions(activePrefix || "", 12), ...DEFAULT_STARTERS]);
-
-        for (const fb of fallbackPool) {
-          if (suggestions.length >= 6) break;
-          if (!isAcceptablePredictionToken(fb)) continue;
-          const fl = fb.toLowerCase();
-          if (activePrefix) {
-            const p = activePrefix.toLowerCase();
-            if (!fl.startsWith(p) || fl === p) continue;
-          }
-          if (seenWords.has(fl)) continue;
-          seenWords.add(fl);
-          suggestions.push(fb);
-        }
-
-        applySuggestionButtons(suggestions.slice(0, 6));
-      }, 160);
     }
 
-    predictionButtons.forEach(btn => {
-      btn.addEventListener("click", () => {
-        const suggestion = (btn.textContent || "").trim();
-        if (!suggestion) return;
-        const text = getText();
-        const caret = displayInput.selectionStart ?? text.length;
-        const match = text.substring(0, caret).match(/([a-zA-Z']+)$/);
-        const replaceStart = match ? caret - match[1].length : caret;
-        const inserted = suggestion + " ";
-        const next = text.substring(0, replaceStart) + inserted + text.substring(caret);
-        // Place caret at the end of the inserted prediction text
-        const newCaret = replaceStart + inserted.length;
-        setText(next, newCaret);
-        savedDisplaySelection = { start: newCaret, end: newCaret };
-        focusDisplayInput();
-        if (speakPredictionsEnabled) {
-          speakPhrase(suggestion, { recordHistory: false });
-        }
-      });
+    displayInput.addEventListener("input", () => {
+      autosizeDisplayInput();
+      syncGeneratedAudioActions();
     });
-
-    displayInput.addEventListener("input", updatePredictions);
-    displayInput.addEventListener("click", updatePredictions);
-    displayInput.addEventListener("keyup", updatePredictions);
     document.getElementById("clear-btn").addEventListener("click", () => {
       setText(""); audioActionsBar.classList.remove("active"); focusDisplayInput();
     });
 
     window.addEventListener("resize", () => {
-      predictionButtons.forEach(btn => autoscaleButtonText(btn));
+      autosizeDisplayInput();
+      const active = getActiveTopic();
+      if (active) autosizeSoundCanvas(active);
     });
 
     // ==================== AUDIO PLAYBACK ====================
@@ -2812,7 +2287,7 @@
         modelToUse = "eleven_v3";
       }
 
-      // Stop any in-progress speech so predictions interrupt cleanly
+      // Stop any in-progress speech so a new phrase starts cleanly
       try { window.speechSynthesis.cancel(); } catch (_) {}
       stopActiveBufferSources();
 
@@ -3204,16 +2679,6 @@
       syncSlider(volumeSlider, valVolume, "elevenlabs_volume");
       syncSlider(speedSlider, valSpeed, "elevenlabs_speed");
 
-      // Speak Predictions toggle
-      const speakPredictionsToggle = document.getElementById("speak-predictions-toggle");
-      if (speakPredictionsToggle) {
-        speakPredictionsToggle.checked = speakPredictionsEnabled;
-        speakPredictionsToggle.addEventListener("change", () => {
-          speakPredictionsEnabled = !!speakPredictionsToggle.checked;
-          localStorage.setItem("aac_speak_predictions", speakPredictionsEnabled ? "1" : "0");
-        });
-      }
-
       // Pitch (discrete semitone steps) — store actual semitone value
       if (pitchSlider && valPitch) {
         const savedPitch = localStorage.getItem("aac_pitch");
@@ -3249,12 +2714,14 @@
 
       displayInput.style.fontSize = `${currentFontSize}px`;
       fontDisplay.textContent = `${currentFontSize}px`;
+      autosizeDisplayInput();
 
       document.getElementById("font-down").addEventListener("click", () => {
         currentFontSize = Math.max(16, currentFontSize - 2);
         displayInput.style.fontSize = `${currentFontSize}px`;
         fontDisplay.textContent = `${currentFontSize}px`;
         localStorage.setItem("aac_font_size", currentFontSize);
+        autosizeDisplayInput();
       });
 
       document.getElementById("font-up").addEventListener("click", () => {
@@ -3262,6 +2729,7 @@
         displayInput.style.fontSize = `${currentFontSize}px`;
         fontDisplay.textContent = `${currentFontSize}px`;
         localStorage.setItem("aac_font_size", currentFontSize);
+        autosizeDisplayInput();
       });
 
       if (window.speechSynthesis) {
@@ -3288,7 +2756,7 @@
       renderTopics();
       renderSoundButtons();
       switchSidebarTab("settings");
-      updatePredictions();
+      autosizeDisplayInput();
       // Avoid auto-focus on mobile (opens keyboard immediately)
       if (!isMobileLayout()) focusDisplayInput();
     }
