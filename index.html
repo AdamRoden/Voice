@@ -14,9 +14,10 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   <style>
     /* ==================== THEME VARIABLES & ROOT ==================== */
-    :root, :root[data-theme="dark"] { --bg-main: #131314; --bg-surface: #1e1f20; --bg-surface-hover: #282a2c; --bg-surface-active: #333537; --border: #333537; --accent: #8ab4f8; --accent-hover: #aecbfa; --text: #e3e3e3; --text-secondary: #8e918f; --display-bg: #1e1f20; --key-bg: #282a2c; --key-hover: #333537; --key-active: #444746; --danger: #f2b8b5; --danger-bg: #601410; --shadow: rgba(0, 0, 0, 0.4); --icon-fill: 0; --icon-wght: 400; --icon-grad: 0; --icon-opsz: 24; --safe-top: env(safe-area-inset-top, 0px); --safe-right: env(safe-area-inset-right, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px); --safe-left: env(safe-area-inset-left, 0px); --app-height: 100dvh; color-scheme: dark; }
+    :root { --sound-row-height: 44px; }
+    :root, :root[data-theme="dark"] { --bg-main: #131314; --bg-surface: #1e1f20; --bg-surface-hover: #282a2c; --bg-surface-active: #333537; --border: #333537; --accent: #8ab4f8; --accent-hover: #aecbfa; --text: #e3e3e3; --text-secondary: #8e918f; --key-bg: #282a2c; --key-hover: #333537; --key-active: #444746; --danger: #f2b8b5; --danger-bg: #601410; --shadow: rgba(0, 0, 0, 0.4); --icon-fill: 0; --icon-wght: 400; --icon-grad: 0; --icon-opsz: 24; --safe-top: env(safe-area-inset-top, 0px); --safe-right: env(safe-area-inset-right, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px); --safe-left: env(safe-area-inset-left, 0px); color-scheme: dark; }
 
-      :root[data-theme="light"] { --bg-main: #f0f4f9; --bg-surface: #ffffff; --bg-surface-hover: #e9eef6; --bg-surface-active: #dde3ea; --border: #c4c7c5; --accent: #0b57d0; --accent-hover: #0842a0; --text: #1f1f1f; --text-secondary: #444746; --display-bg: #ffffff; --key-bg: #e9eef6; --key-hover: #dde3ea; --key-active: #c4c7c5; --danger: #b3261e; --danger-bg: #f9dedc; --shadow: rgba(0, 0, 0, 0.15); color-scheme: light; }
+      :root[data-theme="light"] { --bg-main: #f0f4f9; --bg-surface: #ffffff; --bg-surface-hover: #e9eef6; --bg-surface-active: #dde3ea; --border: #c4c7c5; --accent: #0b57d0; --accent-hover: #0842a0; --text: #1f1f1f; --text-secondary: #444746; --key-bg: #e9eef6; --key-hover: #dde3ea; --key-active: #c4c7c5; --danger: #b3261e; --danger-bg: #f9dedc; --shadow: rgba(0, 0, 0, 0.15); color-scheme: light; }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
 
@@ -176,8 +177,6 @@
     .tool-btn { background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; transition: all 0.2s; white-space: nowrap; min-height: 40px; height: auto; }
       .tool-btn:hover { background-color: var(--key-hover); border-color: var(--text-secondary); }
       .tool-btn:active { background-color: var(--key-active); }
-      .tool-btn.primary { background-color: var(--accent); color: #fff; border-color: var(--accent); }
-        .tool-btn.primary:hover { background-color: var(--accent-hover); }
 
     /* Grid size steppers (topic edit modal) */
     .grid-size-controls { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -188,8 +187,31 @@
       .num-control-btn:active { background: var(--key-active); }
     .num-control-val { font-weight: 600; color: var(--text); min-width: 20px; text-align: center; font-size: 14px; }
 
-    /* Overwrite Banner */
-    .overwrite-banner { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background-color: var(--accent); color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 14px; font-weight: 600; display: none; align-items: center; gap: 10px; box-shadow: 0 6px 20px var(--shadow); z-index: 30; max-width: calc(100% - 24px); flex-wrap: wrap; justify-content: center; text-align: center; }
+    /* Bottom dock + overwrite banner share the same top edge */
+    .bottom-dock-wrap { position: relative; flex-shrink: 0; width: 100%; }
+    .overwrite-banner {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: var(--accent);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 6px 20px var(--shadow);
+      z-index: 30;
+      max-width: 100%;
+      width: max-content;
+      flex-wrap: wrap;
+      justify-content: center;
+      text-align: center;
+      box-sizing: border-box;
+    }
       .overwrite-banner.active { display: flex; }
     .overwrite-cancel-btn { background: rgba(0,0,0,0.25); border: none; color: #fff; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; transition: background 0.2s; min-height: 36px; }
       .overwrite-cancel-btn:hover { background: rgba(0,0,0,0.4); }
@@ -203,7 +225,7 @@
       100% { transform: rotate(-1deg) scale(1); }
     }
 
-    .sound-button { position: relative; background-color: var(--key-bg); border: 1px solid var(--border); border-radius: 8px; padding: 0 6px; cursor: pointer; user-select: none; -webkit-user-select: none; transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease, background-color 0.12s ease; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: #fff; overflow: hidden; width: 100%; min-height: 44px; height: 44px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); -webkit-touch-callout: none; box-sizing: border-box; }
+    .sound-button { position: relative; background-color: var(--key-bg); border: 1px solid var(--border); border-radius: 8px; padding: 0 6px; cursor: pointer; user-select: none; -webkit-user-select: none; transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease, background-color 0.12s ease; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: #fff; overflow: hidden; width: 100%; min-height: var(--sound-row-height, 44px); height: var(--sound-row-height, 44px); text-shadow: 0 1px 2px rgba(0,0,0,0.5); -webkit-touch-callout: none; box-sizing: border-box; }
       .sound-button:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 4px 10px var(--shadow); }
       .sound-button:active { transform: scale(0.97); box-shadow: none; }
       .sound-button.overwrite-target { animation: wiggle 0.4s infinite ease-in-out; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 50%, transparent); }
@@ -218,43 +240,110 @@
     .sound-button-label { width: 100%; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
     .sound-button-inner .sound-button-label { width: auto; flex: 1; min-width: 0; }
 
-    /* Toolbar dock: insert row + Speak | Display | Clear (compact) */
+    /* Toolbar dock: tag row (matches sound rows) + Speak | Display | Clear */
     .bottom-dock { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
-    .toolbar { display: flex; gap: 3px; align-items: flex-start; min-height: 34px; }
-    .insert-toolbar { min-height: 32px; align-items: center; }
+    .toolbar { display: flex; gap: 3px; align-items: flex-start; min-height: var(--display-ctrl-size, var(--display-font-size, 24px)); }
+    .insert-toolbar {
+      height: var(--sound-row-height, 44px);
+      min-height: var(--sound-row-height, 44px);
+      align-items: center;
+      flex-wrap: nowrap;
+    }
 
     .key { background-color: var(--key-bg); border: 1px solid var(--border); border-radius: 7px; color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 3px; transition: all 0.15s; padding: 0; white-space: nowrap; min-height: 34px; height: 34px; width: 34px; min-width: 34px; flex-shrink: 0; }
       .key:hover { background-color: var(--key-hover); border-color: var(--text-secondary); }
       .key:active { background-color: var(--key-active); transform: scale(0.97); }
 
+      /* Speak / Clear: square, sized to display-input height */
+      .key.tts-btn,
+      .key.clear-btn {
+        height: var(--display-ctrl-size, var(--display-font-size, 24px));
+        min-height: var(--display-ctrl-size, var(--display-font-size, 24px));
+        width: var(--display-ctrl-size, var(--display-font-size, 24px));
+        min-width: var(--display-ctrl-size, var(--display-font-size, 24px));
+        max-height: var(--display-ctrl-size, var(--display-font-size, 24px));
+        max-width: var(--display-ctrl-size, var(--display-font-size, 24px));
+        align-self: flex-start;
+      }
       .key.tts-btn { background-color: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
         .key.tts-btn:hover { background-color: var(--accent-hover); }
       .key.clear-btn { background-color: transparent; color: var(--danger); border-color: var(--danger); }
         .key.clear-btn:hover { background-color: var(--danger-bg); }
-      .key.insert-btn { background-color: var(--key-bg); color: var(--accent); border-color: var(--accent); font-weight: 600; height: 32px; min-height: 32px; width: 32px; min-width: 32px; }
+      /* Add-tag matches sound button row height */
+      .key.insert-btn {
+        background-color: var(--key-bg);
+        color: var(--accent);
+        border-color: var(--accent);
+        font-weight: 600;
+        height: var(--sound-row-height, 44px);
+        min-height: var(--sound-row-height, 44px);
+        width: var(--sound-row-height, 44px);
+        min-width: var(--sound-row-height, 44px);
+        border-radius: 8px;
+      }
         .key.insert-btn:hover { background-color: var(--key-hover); border-color: var(--accent-hover); color: var(--accent-hover); }
-    .key-label { display: none; }
     .key .material-symbols-outlined { font-size: 18px; }
+    .key.tts-btn .material-symbols-outlined,
+    .key.clear-btn .material-symbols-outlined {
+      font-size: calc(var(--display-ctrl-size, var(--display-font-size, 24px)) * 0.45);
+    }
+    .key.insert-btn .material-symbols-outlined {
+      font-size: calc(var(--sound-row-height, 44px) * 0.45);
+    }
 
-    .insert-input { flex: 1 1 auto; min-width: 0; height: 32px; min-height: 32px; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 7px; padding: 4px 8px; color: var(--text); font-size: 14px; outline: none; transition: border-color 0.2s; }
+    .insert-input {
+      flex: 1 1 auto;
+      min-width: 0;
+      height: var(--sound-row-height, 44px);
+      min-height: var(--sound-row-height, 44px);
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0 10px;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
       .insert-input:focus { border-color: var(--accent); }
       .insert-input::placeholder { color: var(--text-secondary); }
 
-    /* Inline autosizing display text (between Speak and Clear) */
-    .display-textarea { flex: 1 1 auto; min-width: 0; width: auto; height: auto; min-height: 34px; max-height: min(30vh, 180px); background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 7px; padding: 6px 8px; line-height: 1.3; color: var(--text); font-size: 18px; resize: none; outline: none; white-space: pre-wrap; word-break: break-word; transition: border-color 0.2s; -webkit-overflow-scrolling: touch; overflow-y: auto; field-sizing: content; }
+    /* Inline autosizing display text (between Speak and Clear) — font size from Settings */
+    .display-textarea { flex: 1 1 auto; min-width: 0; width: auto; height: auto; min-height: var(--display-ctrl-size, var(--display-font-size, 24px)); max-height: min(30vh, 180px); background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 7px; padding: 6px 8px; line-height: 1.3; color: var(--text); font-size: var(--display-font-size, 24px); resize: none; outline: none; white-space: pre-wrap; word-break: break-word; transition: border-color 0.2s, min-height 0.05s; -webkit-overflow-scrolling: touch; overflow-y: auto; field-sizing: content; box-sizing: border-box; }
       .display-textarea:focus { border-color: var(--accent); }
 
-    .audio-actions-bar { display: none; align-items: center; gap: 4px; background-color: var(--bg-main); border: 1px solid var(--border); padding: 3px 6px; border-radius: 7px; box-shadow: 0 4px 12px var(--shadow); z-index: 20; flex-wrap: wrap; width: 100%; }
-      .audio-actions-bar.active { display: flex; }
-    .audio-action-btn { background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; gap: 3px; min-height: 30px; }
+    /* Replay / Assign live in the tag row (hidden until audio is available) */
+    .audio-actions-inline {
+      display: none;
+      align-items: stretch;
+      gap: 3px;
+      flex-shrink: 0;
+      height: var(--sound-row-height, 44px);
+    }
+      .audio-actions-inline.active { display: flex; }
+    .audio-action-btn {
+      background-color: var(--key-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      height: 100%;
+      min-height: 0;
+      white-space: nowrap;
+      flex: 0 1 auto;
+      min-width: 0;
+    }
       .audio-action-btn:hover { background-color: var(--key-hover); }
       .audio-action-btn:active { background-color: var(--key-active); }
       .audio-action-btn.play { color: var(--accent); border-color: var(--accent); }
-
-    /* Toggle-style setting row */
-    .toggle-setting { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; cursor: pointer; font-size: 13px; color: var(--text); font-weight: 500; min-height: 44px; }
-    .toggle-setting span { color: var(--text); }
-    .toggle-setting input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
 
     /* ==================== MODALS & POPUPS ==================== */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; height: 100dvh; background: rgba(0, 0, 0, 0.65); opacity: 0; pointer-events: none; transition: opacity 0.2s ease; z-index: 2000; -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
@@ -315,6 +404,43 @@
     .choice-btn-create { padding: 12px; font-weight: 600; color: var(--accent); border-color: var(--accent); }
     .choice-btn-overwrite { padding: 12px; font-weight: 600; }
     .btn-center { justify-content: center; }
+
+    /* Insert-tag modal: grid of saved tags */
+    .tag-insert-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 8px;
+    }
+    .tag-insert-btn {
+      background-color: var(--key-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 10px 8px;
+      min-height: 44px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.15s, border-color 0.15s;
+      word-break: break-word;
+    }
+      .tag-insert-btn:hover { background-color: var(--key-hover); border-color: var(--accent); color: var(--accent); }
+      .tag-insert-btn:active { background-color: var(--key-active); }
+    .tag-insert-empty {
+      grid-column: 1 / -1;
+      padding: 16px;
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+    .tag-list-input {
+      min-height: 72px;
+      resize: vertical;
+      font-size: 14px;
+      line-height: 1.4;
+      font-family: inherit;
+    }
 
     /* Voices Drawer (Left Side Positioned with Right Shadow) */
     .voices-panel { position: fixed; top: 0; left: -360px; width: min(360px, 100vw); height: 100%; height: 100dvh; background-color: var(--bg-surface); border-right: 1px solid var(--border); box-shadow: 8px 0 24px var(--shadow); transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 16px; padding-top: max(16px, env(safe-area-inset-top, 0px)); padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 12px; overflow: hidden; z-index: 1500; }
@@ -415,9 +541,8 @@
         padding: 4px;
         border-radius: 8px;
       }
+      :root { --sound-row-height: 48px; }
       .sound-button {
-        height: 48px;
-        min-height: 48px;
         font-size: 14px;
         border-radius: 8px;
       }
@@ -430,30 +555,21 @@
         width: 36px;
         min-width: 36px;
       }
-      .key.insert-btn {
-        height: 32px;
-        min-height: 32px;
-        width: 32px;
-        min-width: 32px;
-      }
-      .insert-input {
-        height: 32px;
-        min-height: 32px;
-        font-size: 14px;
-        padding: 4px 8px;
+      /* Speak / Clear track measured display height */
+      .key.tts-btn,
+      .key.clear-btn {
+        height: var(--display-ctrl-size, var(--display-font-size, 24px));
+        min-height: var(--display-ctrl-size, var(--display-font-size, 24px));
+        width: var(--display-ctrl-size, var(--display-font-size, 24px));
+        min-width: var(--display-ctrl-size, var(--display-font-size, 24px));
+        max-height: var(--display-ctrl-size, var(--display-font-size, 24px));
+        max-width: var(--display-ctrl-size, var(--display-font-size, 24px));
       }
       .display-textarea {
-        font-size: 16px;
         padding: 6px 8px;
-        min-height: 36px;
         max-height: min(26vh, 150px);
       }
-
-      .audio-actions-bar {
-        box-shadow: none;
-        justify-content: stretch;
-      }
-      .audio-action-btn { flex: 1; justify-content: center; min-width: 0; }
+      .audio-action-btn { font-size: 12px; padding: 0 8px; }
 
       /* Bottom-sheet style modals — body scrolls, footer stays pinned */
       .modal {
@@ -525,34 +641,50 @@
       .topic-item-header { min-height: 44px; padding: 8px; }
 
       .overwrite-banner {
-        top: max(8px, env(safe-area-inset-top, 0px));
-        width: calc(100% - 16px);
+        width: 100%;
+        max-width: 100%;
         font-size: 13px;
       }
     }
 
     @media (max-width: 480px) {
-      .sound-button { height: 44px; min-height: 44px; font-size: 13px; }
+      :root { --sound-row-height: 44px; }
+      .sound-button { font-size: 13px; }
       .key { height: 34px; min-height: 34px; width: 34px; min-width: 34px; }
-      .key.insert-btn { height: 30px; min-height: 30px; width: 30px; min-width: 30px; }
-      .insert-input { height: 30px; min-height: 30px; }
-      .display-textarea { font-size: 15px; min-height: 34px; }
+      .key.tts-btn,
+      .key.clear-btn {
+        height: var(--display-ctrl-size, var(--display-font-size, 24px));
+        min-height: var(--display-ctrl-size, var(--display-font-size, 24px));
+        width: var(--display-ctrl-size, var(--display-font-size, 24px));
+        min-width: var(--display-ctrl-size, var(--display-font-size, 24px));
+        max-height: var(--display-ctrl-size, var(--display-font-size, 24px));
+        max-width: var(--display-ctrl-size, var(--display-font-size, 24px));
+      }
       .theme-btn { flex-direction: column; gap: 2px; font-size: 11px; padding: 8px 2px; }
-      .audio-action-btn { font-size: 11px; padding: 4px 6px; }
+      .audio-action-btn { font-size: 11px; padding: 0 6px; }
+      .audio-action-btn .audio-action-label { display: none; }
     }
 
     /* Short landscape phones */
     @media (max-height: 500px) and (orientation: landscape) {
+      :root { --sound-row-height: 40px; }
       .app-main { gap: 3px; padding: 4px; }
       .bottom-dock { gap: 2px; }
       .key { height: 30px; min-height: 30px; width: 30px; min-width: 30px; }
-      .key.insert-btn, .insert-input { height: 28px; min-height: 28px; }
-      .key.insert-btn { width: 28px; min-width: 28px; }
-      .display-textarea { font-size: 14px; min-height: 30px; max-height: min(22vh, 90px); padding: 4px 6px; }
-      .sound-button { height: 40px; min-height: 40px; font-size: 12px; }
+      .key.tts-btn,
+      .key.clear-btn {
+        height: var(--display-ctrl-size, var(--display-font-size, 24px));
+        min-height: var(--display-ctrl-size, var(--display-font-size, 24px));
+        width: var(--display-ctrl-size, var(--display-font-size, 24px));
+        min-width: var(--display-ctrl-size, var(--display-font-size, 24px));
+        max-height: var(--display-ctrl-size, var(--display-font-size, 24px));
+        max-width: var(--display-ctrl-size, var(--display-font-size, 24px));
+      }
+      .display-textarea { max-height: min(22vh, 90px); padding: 4px 6px; }
+      .sound-button { font-size: 12px; }
       .sidebar { width: min(280px, 70vw); }
-      .audio-actions-bar { padding: 2px 4px; }
-      .audio-action-btn { min-height: 28px; font-size: 11px; }
+      .audio-action-btn { font-size: 11px; padding: 0 6px; }
+      .audio-action-btn .audio-action-label { display: none; }
     }
 
     /* Prefer reduced motion */
@@ -651,6 +783,13 @@
 
         <hr class="setting-divider">
 
+        <div class="sidebar-setting-group" id="group-output-device">
+          <label>Speaker / Output Device</label>
+          <select id="output-device-select" aria-describedby="output-device-hint">
+            <option value="">System default</option>
+          </select>
+          <div class="modal-description" id="output-device-hint">Loading speakers…</div>
+        </div>
         <div class="sidebar-setting-group">
           <label><span>Volume Gain</span><span id="val-volume">3.00</span></label>
           <input type="range" id="volume-slider" min="1" max="5" step="0.5" value="3">
@@ -726,41 +865,40 @@
       </button>
     </div>
 
-    <div class="overwrite-banner" id="overwrite-banner">
-      <span class="material-symbols-outlined icon-medium">touch_app</span>
-      <span>Click any button on the grid below to overwrite its audio & label!</span>
-      <button class="overwrite-cancel-btn" id="cancel-overwrite-btn" type="button">Cancel</button>
-    </div>
-
     <div class="sound-canvas" id="sound-canvas"></div>
 
-    <div class="bottom-dock">
-      <div class="toolbar insert-toolbar" id="insert-toolbar">
-        <button class="key insert-btn" id="insert-tag-btn" type="button" aria-label="Insert tag">
-          <span class="material-symbols-outlined icon-medium">add</span>
-          <span class="key-label">Insert</span>
-        </button>
-        <input type="text" class="insert-input" id="insert-tag-input" placeholder="Tag to insert..." autocomplete="off" spellcheck="false" aria-label="Tag text">
+    <div class="bottom-dock-wrap">
+      <div class="overwrite-banner" id="overwrite-banner">
+        <span class="material-symbols-outlined icon-medium">touch_app</span>
+        <span>Click any button on the grid below to overwrite its audio & label!</span>
+        <button class="overwrite-cancel-btn" id="cancel-overwrite-btn" type="button">Cancel</button>
       </div>
-      <div class="toolbar" id="toolbar">
-        <button class="key tts-btn" id="speak-btn" type="button" aria-label="Speak">
-          <span class="material-symbols-outlined icon-medium">volume_up</span>
-          <span class="key-label">Speak</span>
-        </button>
-        <textarea class="display-textarea" id="display-input" spellcheck="true" autocomplete="off" autocapitalize="sentences" placeholder="Type here..." rows="1" aria-label="Display text"></textarea>
-        <button class="key clear-btn" id="clear-btn" type="button" aria-label="Clear">
-          <span class="material-symbols-outlined icon-medium">delete</span>
-          <span class="key-label">Clear</span>
-        </button>
-      </div>
-
-      <div class="audio-actions-bar" id="generated-audio-actions">
-        <button class="audio-action-btn play" id="textarea-replay-btn" type="button">
-          <span class="material-symbols-outlined icon-small">play_arrow</span> Replay Audio
-        </button>
-        <button class="audio-action-btn" id="textarea-assign-btn" type="button">
-          <span class="material-symbols-outlined icon-small">push_pin</span> Assign to Button
-        </button>
+      <div class="bottom-dock">
+        <div class="toolbar insert-toolbar" id="insert-toolbar">
+          <button class="key insert-btn" id="insert-tag-btn" type="button" aria-label="Insert tag">
+            <span class="material-symbols-outlined icon-medium">add</span>
+          </button>
+          <input type="text" class="insert-input" id="insert-tag-input" placeholder="Tag to insert..." autocomplete="off" spellcheck="false" aria-label="Tag text">
+          <div class="audio-actions-inline" id="generated-audio-actions">
+            <button class="audio-action-btn play" id="textarea-replay-btn" type="button" title="Replay Audio">
+              <span class="material-symbols-outlined icon-small">play_arrow</span>
+              <span class="audio-action-label">Replay Audio</span>
+            </button>
+            <button class="audio-action-btn" id="textarea-assign-btn" type="button" title="Assign to Button">
+              <span class="material-symbols-outlined icon-small">push_pin</span>
+              <span class="audio-action-label">Assign to Button</span>
+            </button>
+          </div>
+        </div>
+        <div class="toolbar" id="toolbar">
+          <button class="key tts-btn" id="speak-btn" type="button" aria-label="Speak">
+            <span class="material-symbols-outlined icon-medium">volume_up</span>
+          </button>
+          <textarea class="display-textarea" id="display-input" spellcheck="true" autocomplete="off" autocapitalize="sentences" placeholder="Type here..." rows="1" aria-label="Display text"></textarea>
+          <button class="key clear-btn" id="clear-btn" type="button" aria-label="Clear">
+            <span class="material-symbols-outlined icon-medium">delete</span>
+          </button>
+        </div>
       </div>
     </div>
   </main>
@@ -778,6 +916,22 @@
       </div>
     </div>
     <div class="modal-buttons"><button class="modal-btn secondary" onclick="closeModals()">Cancel</button></div>
+  </div>
+
+  <!-- Insert Tag Modal -->
+  <div class="modal" id="tag-insert-modal">
+    <div class="modal-title">Insert Tag</div>
+    <div class="modal-scroll">
+      <div class="modal-description">Tap a tag to insert it into the display text.</div>
+      <div class="tag-insert-grid" id="tag-insert-grid"></div>
+      <div class="sidebar-setting-group">
+        <label>Saved tags (comma-separated)</label>
+        <textarea id="saved-tags-input" class="modal-input tag-list-input" rows="3" spellcheck="false" autocomplete="off" aria-label="Saved tags list"></textarea>
+      </div>
+    </div>
+    <div class="modal-buttons">
+      <button class="modal-btn secondary" type="button" onclick="closeModals()">Close</button>
+    </div>
   </div>
 
   <!-- Edit Topic Meta Modal -->
@@ -842,6 +996,20 @@
       <div class="sidebar-setting-group">
         <label>Color</label>
         <div class="modal-color-picker" id="button-color-picker"></div>
+      </div>
+      <div class="sidebar-setting-group">
+        <label>Position in list</label>
+        <div class="grid-size-controls">
+          <div class="header-stepper-group">
+            <span>Index</span>
+            <div class="num-control-wrapper">
+              <button class="num-control-btn" type="button" id="button-index-down" aria-label="Earlier in list">-</button>
+              <span class="num-control-val" id="button-index-val">1</span>
+              <button class="num-control-btn" type="button" id="button-index-up" aria-label="Later in list">+</button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-description" id="button-index-hint">1 of 1</div>
       </div>
     </div>
     <div class="modal-buttons">
@@ -1021,6 +1189,8 @@
       activeBrowserVoiceIndex = "";
     }
     let activeElevenVoiceId = localStorage.getItem("elevenlabs_voice") || "";
+    /** Audio output deviceId for setSinkId ("" = system default). */
+    let activeOutputDeviceId = localStorage.getItem("aac_output_device") || "";
     let currentFontSize = parseInt(localStorage.getItem("aac_font_size"), 10) || 24;
     let currentTheme = localStorage.getItem("aac_theme") || "system";
     let customAccentColor = localStorage.getItem("aac_accent_color") || "";
@@ -1097,8 +1267,7 @@
     }
 
     displayInput.addEventListener("blur", saveDisplaySelection);
-    displayInput.addEventListener("selectionchange", saveDisplaySelection);
-    // selectionchange fires on document in some browsers
+    // selectionchange is a document-level event
     document.addEventListener("selectionchange", () => {
       if (document.activeElement === displayInput) saveDisplaySelection();
     });
@@ -1133,6 +1302,9 @@
     let isOverwriteMode = false;
     let editingButtonId = null;
     let editingButtonTopicId = null;
+    /** 1-based position draft while the button edit modal is open */
+    let modalButtonIndex = 1;
+    let modalButtonIndexMax = 1;
     let editingTopicId = null;
     /** Draft grid size while the topic edit modal is open */
     let modalGridCols = DEFAULT_GRID_COLS;
@@ -1140,8 +1312,6 @@
     let targetStudioInputId = null;
     let selectedStudioIcon = null;
     let lastGeneratedAudio = null;
-
-    let currentSidebarTab = "settings";
 
     // ==================== UTILITY FUNCTIONS ====================
     function generateId() { return Math.random().toString(36).substr(2, 9); }
@@ -1281,7 +1451,6 @@
           sidebarBackdrop.classList.toggle("open", open);
           sidebarBackdrop.setAttribute("aria-hidden", open ? "false" : "true");
         }
-        document.body.classList.toggle("sidebar-drawer-open", open);
         if (mobileMenuBtn) {
           mobileMenuBtn.setAttribute("aria-label", open ? "Close menu" : "Open menu");
           mobileMenuBtn.setAttribute("title", open ? "Close menu" : "Open menu");
@@ -1293,7 +1462,6 @@
           sidebarBackdrop.classList.remove("open");
           sidebarBackdrop.setAttribute("aria-hidden", "true");
         }
-        document.body.classList.remove("sidebar-drawer-open");
       }
       if (restoreFocus) focusDisplayInput();
     }
@@ -1303,7 +1471,6 @@
     }
 
     function switchSidebarTab(tab, expandIfCollapsed = false) {
-      currentSidebarTab = tab;
       if (expandIfCollapsed && !isSidebarOpen()) {
         setSidebarOpen(true, { restoreFocus: false });
       }
@@ -1312,7 +1479,8 @@
       const content = document.getElementById(`tab-content-${tab}`);
       if (content) content.classList.add('active');
 
-      if (tab === 'history') renderHistory();
+      if (tab === "history") renderHistory();
+      if (tab === "settings") refreshOutputDevices();
       focusDisplayInput();
     }
 
@@ -1353,7 +1521,6 @@
         // Leaving mobile: restore desktop rail as expanded
         sidebar.classList.remove("mobile-open");
         if (sidebarBackdrop) sidebarBackdrop.classList.remove("open");
-        document.body.classList.remove("sidebar-drawer-open");
         sidebar.classList.remove("collapsed");
       }
     });
@@ -1666,7 +1833,8 @@
         contentRows = Math.max(contentRows, (b.row || 0) + (b.rowSpan || 1));
       });
       const rows = Math.max(1, activeTab.gridRows || 1, contentRows);
-      const rowH = isMobileLayout() ? 48 : 44;
+      const rowHCss = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sound-row-height"));
+      const rowH = Number.isFinite(rowHCss) && rowHCss > 0 ? rowHCss : (isMobileLayout() ? 48 : 44);
       const styles = getComputedStyle(soundCanvas);
       const gap = parseFloat(styles.rowGap || styles.gap) || (isMobileLayout() ? 4 : 4);
       const padY = (parseFloat(styles.paddingTop) || 0) + (parseFloat(styles.paddingBottom) || 0);
@@ -1720,6 +1888,37 @@
       });
     }
 
+    function syncModalButtonIndexLabels() {
+      const valEl = document.getElementById("button-index-val");
+      const hintEl = document.getElementById("button-index-hint");
+      if (valEl) valEl.textContent = String(modalButtonIndex);
+      if (hintEl) {
+        hintEl.textContent = modalButtonIndexMax <= 0
+          ? "No buttons"
+          : `${modalButtonIndex} of ${modalButtonIndexMax} (1 = first)`;
+      }
+      const downBtn = document.getElementById("button-index-down");
+      const upBtn = document.getElementById("button-index-up");
+      if (downBtn) downBtn.disabled = modalButtonIndex <= 1;
+      if (upBtn) upBtn.disabled = modalButtonIndex >= modalButtonIndexMax;
+    }
+
+    function stepModalButtonIndex(delta) {
+      if (modalButtonIndexMax <= 0) return;
+      modalButtonIndex = clamp(modalButtonIndex + delta, 1, modalButtonIndexMax);
+      syncModalButtonIndexLabels();
+    }
+
+    function moveButtonToIndex(tab, btnId, zeroBasedIndex) {
+      if (!tab || !Array.isArray(tab.buttons)) return;
+      const from = tab.buttons.findIndex(b => b.id === btnId);
+      if (from < 0) return;
+      const to = clamp(zeroBasedIndex, 0, tab.buttons.length - 1);
+      if (from === to) return;
+      const [item] = tab.buttons.splice(from, 1);
+      tab.buttons.splice(to, 0, item);
+    }
+
     function openButtonEditModal(btnId, topicId = null) {
       const tab = topicId
         ? topicsList.find(t => t.id === topicId)
@@ -1730,6 +1929,11 @@
       editingButtonTopicId = tab.id;
       document.getElementById("button-label-input").value = btn.label || "";
       document.getElementById("button-symbol-input").value = btn.symbol || "";
+
+      const currentIdx = tab.buttons.findIndex(b => b.id === btnId);
+      modalButtonIndexMax = Math.max(1, tab.buttons.length);
+      modalButtonIndex = currentIdx >= 0 ? currentIdx + 1 : 1;
+      syncModalButtonIndexLabels();
 
       const picker = document.getElementById("button-color-picker");
       picker.innerHTML = "";
@@ -1769,15 +1973,20 @@
       openModal("button-edit-modal");
     }
 
+    document.getElementById("button-index-down")?.addEventListener("click", () => stepModalButtonIndex(-1));
+    document.getElementById("button-index-up")?.addEventListener("click", () => stepModalButtonIndex(1));
+
     document.getElementById("save-button-edit").addEventListener("click", () => {
       const tab = topicsList.find(t => t.id === editingButtonTopicId) || getActiveTopic();
       const btn = tab?.buttons.find(b => b.id === editingButtonId);
-      if (!btn) return;
+      if (!btn || !tab) return;
       btn.label = document.getElementById("button-label-input").value.trim() || "Button";
       const rawSymbol = document.getElementById("button-symbol-input").value.trim();
       btn.symbol = SYMBOL_MIGRATION_MAP[rawSymbol] || rawSymbol || "";
       const selCol = document.querySelector("#button-color-picker .color-option.selected");
       if (selCol) btn.color = selCol.style.backgroundColor;
+      moveButtonToIndex(tab, editingButtonId, modalButtonIndex - 1);
+      repackSequentialGrid(tab);
       saveTopicsList();
       renderTopics();
       renderSoundButtons();
@@ -1957,6 +2166,31 @@
     });
 
     // ==================== TEXT DISPLAY ====================
+    /**
+     * Size Speak/Clear as squares matching the display field's one-line height
+     * (font + line-height + padding + border). Multi-line growth does not enlarge buttons.
+     */
+    function syncSpeakClearToDisplayHeight() {
+      if (!displayInput) return;
+      const styles = getComputedStyle(displayInput);
+      const padY = (parseFloat(styles.paddingTop) || 0) + (parseFloat(styles.paddingBottom) || 0);
+      const borderY = (parseFloat(styles.borderTopWidth) || 0) + (parseFloat(styles.borderBottomWidth) || 0);
+      let lineH = parseFloat(styles.lineHeight);
+      if (!Number.isFinite(lineH) || styles.lineHeight === "normal") {
+        lineH = currentFontSize * 1.3;
+      }
+      const size = Math.max(24, Math.ceil(lineH + padY + borderY));
+      document.documentElement.style.setProperty("--display-ctrl-size", `${size}px`);
+    }
+
+    /** Apply Settings font size to the display field; Speak/Clear follow display height. */
+    function applyDisplayFontSize() {
+      const px = `${currentFontSize}px`;
+      document.documentElement.style.setProperty("--display-font-size", px);
+      if (fontDisplay) fontDisplay.textContent = px;
+      autosizeDisplayInput();
+    }
+
     function getText() { return displayInput.value; }
     function setText(val, caret = val.length) {
       displayInput.value = val;
@@ -1986,10 +2220,98 @@
       return { start, end };
     }
 
+    // ==================== SAVED TAGS (insert modal) ====================
+    const DEFAULT_SAVED_TAGS = [
+      "laugh", "evil laugh", "whispers", "yells", "sings", "sighs",
+      "applause", "burp", "fart", "strong english accent"
+    ];
+    const SAVED_TAGS_STORAGE_KEY = "aac_saved_tags";
+    let savedTagsList = loadSavedTags();
+    let savedTagsInputTimer = null;
+
+    function parseTagsList(str) {
+      return String(str || "")
+        .split(",")
+        .map(t => t.trim())
+        .filter(Boolean);
+    }
+
+    function loadSavedTags() {
+      try {
+        const raw = localStorage.getItem(SAVED_TAGS_STORAGE_KEY);
+        if (raw == null || raw === "") return [...DEFAULT_SAVED_TAGS];
+        const parsed = parseTagsList(raw);
+        return parsed.length ? parsed : [...DEFAULT_SAVED_TAGS];
+      } catch (_) {
+        return [...DEFAULT_SAVED_TAGS];
+      }
+    }
+
+    function persistSavedTags(tags) {
+      savedTagsList = Array.isArray(tags) ? tags.slice() : [];
+      try {
+        localStorage.setItem(SAVED_TAGS_STORAGE_KEY, savedTagsList.join(", "));
+      } catch (_) {}
+    }
+
+    function tagsListToText(tags) {
+      return (tags || []).join(", ");
+    }
+
+    function renderTagInsertGrid(tags) {
+      const grid = document.getElementById("tag-insert-grid");
+      if (!grid) return;
+      grid.innerHTML = "";
+      const list = Array.isArray(tags) ? tags : [];
+      if (list.length === 0) {
+        grid.innerHTML = `<div class="tag-insert-empty">No saved tags. Add some below (comma-separated).</div>`;
+        return;
+      }
+      list.forEach(tag => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "tag-insert-btn";
+        btn.textContent = tag;
+        btn.title = `Insert [${tag}]`;
+        btn.addEventListener("click", () => {
+          insertBracketTag(tag);
+          closeModals();
+        });
+        grid.appendChild(btn);
+      });
+    }
+
+    function openTagInsertModal() {
+      savedTagsList = loadSavedTags();
+      const input = document.getElementById("saved-tags-input");
+      if (input) input.value = tagsListToText(savedTagsList);
+      renderTagInsertGrid(savedTagsList);
+      openModal("tag-insert-modal");
+    }
+
+    function onSavedTagsInputChange() {
+      const input = document.getElementById("saved-tags-input");
+      if (!input) return;
+      const tags = parseTagsList(input.value);
+      renderTagInsertGrid(tags);
+      clearTimeout(savedTagsInputTimer);
+      savedTagsInputTimer = setTimeout(() => {
+        persistSavedTags(tags);
+      }, 250);
+    }
+
+    document.getElementById("saved-tags-input")?.addEventListener("input", onSavedTagsInputChange);
+    document.getElementById("saved-tags-input")?.addEventListener("change", () => {
+      const input = document.getElementById("saved-tags-input");
+      if (!input) return;
+      persistSavedTags(parseTagsList(input.value));
+      renderTagInsertGrid(savedTagsList);
+    });
+
     /** Insert `[tag] ` into the display at the saved caret (replaces selection if any). */
-    function insertBracketTag() {
+    function insertBracketTag(rawOverride) {
       const insertInput = document.getElementById("insert-tag-input");
-      const raw = (insertInput?.value || "").trim();
+      const raw = (rawOverride != null ? String(rawOverride) : (insertInput?.value || "")).trim();
       if (!raw) return;
       const insert = `[${raw}] `;
       const text = getText();
@@ -2000,7 +2322,7 @@
       focusDisplayInput();
     }
 
-    document.getElementById("insert-tag-btn")?.addEventListener("click", insertBracketTag);
+    document.getElementById("insert-tag-btn")?.addEventListener("click", () => openTagInsertModal());
     document.getElementById("insert-tag-input")?.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
@@ -2011,6 +2333,7 @@
     /** Grow/shrink the display field to fit its content (capped by CSS max-height). */
     function autosizeDisplayInput() {
       if (!displayInput) return;
+      syncSpeakClearToDisplayHeight();
       displayInput.style.height = "auto";
       displayInput.style.height = `${displayInput.scrollHeight}px`;
     }
@@ -2039,10 +2362,122 @@
     });
 
     // ==================== AUDIO PLAYBACK ====================
+    function canSelectOutputDevice() {
+      const mediaOk = typeof HTMLMediaElement !== "undefined"
+        && typeof HTMLMediaElement.prototype.setSinkId === "function";
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      const ctxOk = !!(Ctx && typeof Ctx.prototype.setSinkId === "function");
+      return !!(navigator.mediaDevices && navigator.mediaDevices.enumerateDevices && (mediaOk || ctxOk));
+    }
+
+    function updateOutputDeviceHint(outputCount = 0) {
+      const hint = document.getElementById("output-device-hint");
+      if (!hint) return;
+      if (!canSelectOutputDevice()) {
+        hint.textContent = "Output device selection is not supported in this browser.";
+        return;
+      }
+      if (outputCount === 0) {
+        hint.textContent = "No speakers found. Connect a device or use system default.";
+        return;
+      }
+      hint.textContent = "Applies to ElevenLabs clips and sound-button playback. Browser TTS uses the system default speaker.";
+    }
+
+    async function refreshOutputDevices() {
+      const select = document.getElementById("output-device-select");
+      if (!select) return;
+
+      if (!navigator.mediaDevices || typeof navigator.mediaDevices.enumerateDevices !== "function") {
+        select.innerHTML = `<option value="">Not supported</option>`;
+        select.disabled = true;
+        updateOutputDeviceHint(0);
+        const hint = document.getElementById("output-device-hint");
+        if (hint) hint.textContent = "Output device selection is not supported in this browser.";
+        return;
+      }
+
+      if (!canSelectOutputDevice()) {
+        select.disabled = true;
+        updateOutputDeviceHint(0);
+        return;
+      }
+
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const outputs = devices.filter(d => d.kind === "audiooutput");
+        const previous = activeOutputDeviceId;
+
+        select.innerHTML = "";
+        const defOpt = document.createElement("option");
+        defOpt.value = "";
+        defOpt.textContent = "System default";
+        select.appendChild(defOpt);
+
+        outputs.forEach((device, index) => {
+          const opt = document.createElement("option");
+          opt.value = device.deviceId;
+          opt.textContent = device.label || `Speaker ${index + 1}`;
+          select.appendChild(opt);
+        });
+
+        const stillThere = previous && [...select.options].some(o => o.value === previous);
+        if (stillThere) {
+          select.value = previous;
+        } else {
+          select.value = "";
+          if (previous) {
+            activeOutputDeviceId = "";
+            try { localStorage.removeItem("aac_output_device"); } catch (_) {}
+            applyOutputDeviceToAudioGraph("").catch(() => {});
+          }
+        }
+        select.disabled = false;
+        updateOutputDeviceHint(outputs.length);
+      } catch (_) {
+        select.innerHTML = `<option value="">System default</option>`;
+        select.disabled = false;
+        updateOutputDeviceHint(0);
+        const hint = document.getElementById("output-device-hint");
+        if (hint) hint.textContent = "Could not list speakers. Check browser permissions.";
+      }
+    }
+
+    async function applyOutputDeviceToAudioGraph(deviceId) {
+      const id = deviceId || "";
+      const ctx = window.sharedAudioContext;
+      if (ctx && typeof ctx.setSinkId === "function") {
+        try {
+          await ctx.setSinkId(id);
+        } catch (_) {}
+      }
+    }
+
+    async function applySinkToMediaElement(el) {
+      if (!el || typeof el.setSinkId !== "function") return;
+      try {
+        await el.setSinkId(activeOutputDeviceId || "");
+      } catch (_) {}
+    }
+
+    async function setActiveOutputDevice(deviceId) {
+      activeOutputDeviceId = deviceId || "";
+      try {
+        if (activeOutputDeviceId) localStorage.setItem("aac_output_device", activeOutputDeviceId);
+        else localStorage.removeItem("aac_output_device");
+      } catch (_) {}
+      await applyOutputDeviceToAudioGraph(activeOutputDeviceId);
+    }
+
     function getSharedAudioContext() {
       const Ctx = window.AudioContext || window.webkitAudioContext;
       if (!Ctx) return null;
-      if (!window.sharedAudioContext) window.sharedAudioContext = new Ctx();
+      if (!window.sharedAudioContext) {
+        window.sharedAudioContext = new Ctx();
+        if (typeof window.sharedAudioContext.setSinkId === "function" && activeOutputDeviceId) {
+          window.sharedAudioContext.setSinkId(activeOutputDeviceId).catch(() => {});
+        }
+      }
       return window.sharedAudioContext;
     }
 
@@ -2203,7 +2638,7 @@
       const onEnded = typeof audioElement.onended === "function" ? audioElement.onended.bind(audioElement) : null;
       const url = audioElement.src;
 
-      const fallbackPlay = () => {
+      const fallbackPlay = async () => {
         // Fallback cannot pitch without changing speed; keep speed only.
         audioElement.volume = Math.min(1.0, gainValue / 5.0);
         try {
@@ -2213,22 +2648,26 @@
         } catch (_) {}
         audioElement.playbackRate = speed;
         if (onEnded) audioElement.onended = onEnded;
+        await applySinkToMediaElement(audioElement);
         audioElement.play().catch(() => {});
       };
 
       if (!url) {
-        fallbackPlay();
+        await fallbackPlay();
         return;
       }
 
       const ctx = getSharedAudioContext();
       if (!ctx) {
-        fallbackPlay();
+        await fallbackPlay();
         return;
       }
 
       try {
         if (ctx.state === "suspended") await ctx.resume();
+        if (typeof ctx.setSinkId === "function") {
+          try { await ctx.setSinkId(activeOutputDeviceId || ""); } catch (_) {}
+        }
         stopActiveBufferSources();
 
         const response = await fetch(url);
@@ -2260,7 +2699,7 @@
         activeBufferSources.push(source);
         source.start(0);
       } catch (err) {
-        fallbackPlay();
+        await fallbackPlay();
       }
     }
 
@@ -2362,7 +2801,7 @@
     }
 
     function setSpeakBtnIdle() {
-      speakBtn.innerHTML = '<span class="material-symbols-outlined icon-medium">volume_up</span><span class="key-label">Speak</span>';
+      speakBtn.innerHTML = '<span class="material-symbols-outlined icon-medium">volume_up</span>';
       speakBtn.disabled = false;
     }
     function setSpeakBtnLoading() {
@@ -2700,6 +3139,18 @@
       updateSettingsVisibility();
       updateApiKeyStatus();
 
+      // Speaker / output device picker
+      const outputSelect = document.getElementById("output-device-select");
+      if (outputSelect) {
+        outputSelect.addEventListener("change", (e) => {
+          setActiveOutputDevice(e.target.value).catch(() => {});
+        });
+      }
+      refreshOutputDevices();
+      if (navigator.mediaDevices && typeof navigator.mediaDevices.addEventListener === "function") {
+        navigator.mediaDevices.addEventListener("devicechange", () => refreshOutputDevices());
+      }
+
       // Mobile: start with drawer closed so the workspace is full-width
       if (isMobileLayout()) setSidebarOpen(false, { restoreFocus: false });
 
@@ -2712,24 +3163,18 @@
         applyAccentColor("");
       });
 
-      displayInput.style.fontSize = `${currentFontSize}px`;
-      fontDisplay.textContent = `${currentFontSize}px`;
-      autosizeDisplayInput();
+      applyDisplayFontSize();
 
       document.getElementById("font-down").addEventListener("click", () => {
         currentFontSize = Math.max(16, currentFontSize - 2);
-        displayInput.style.fontSize = `${currentFontSize}px`;
-        fontDisplay.textContent = `${currentFontSize}px`;
         localStorage.setItem("aac_font_size", currentFontSize);
-        autosizeDisplayInput();
+        applyDisplayFontSize();
       });
 
       document.getElementById("font-up").addEventListener("click", () => {
         currentFontSize = Math.min(48, currentFontSize + 2);
-        displayInput.style.fontSize = `${currentFontSize}px`;
-        fontDisplay.textContent = `${currentFontSize}px`;
         localStorage.setItem("aac_font_size", currentFontSize);
-        autosizeDisplayInput();
+        applyDisplayFontSize();
       });
 
       if (window.speechSynthesis) {
@@ -2737,10 +3182,9 @@
         loadBrowserVoices();
       }
 
-      // Keep layout height in sync with mobile browser chrome / keyboard when possible
+      // Keep body height in sync with mobile browser chrome / keyboard when possible
       const setAppHeight = () => {
         const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-        document.documentElement.style.setProperty("--app-height", `${h}px`);
         if (isMobileLayout()) {
           document.body.style.height = `${h}px`;
         } else {
