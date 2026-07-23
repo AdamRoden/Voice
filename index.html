@@ -225,15 +225,74 @@
       100% { transform: rotate(-1deg) scale(1); }
     }
 
-    .sound-button { position: relative; background-color: var(--key-bg); border: 1px solid var(--border); border-radius: 8px; padding: 0 6px; cursor: pointer; user-select: none; -webkit-user-select: none; transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease, background-color 0.12s ease; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: #fff; overflow: hidden; width: 100%; min-height: var(--sound-row-height, 44px); height: var(--sound-row-height, 44px); text-shadow: 0 1px 2px rgba(0,0,0,0.5); -webkit-touch-callout: none; box-sizing: border-box; }
+    .sound-button { position: relative; background-color: var(--key-bg); border: 1px solid var(--border); border-radius: 8px; padding: 0; cursor: default; user-select: none; -webkit-user-select: none; transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease, background-color 0.12s ease; display: flex; align-items: stretch; justify-content: flex-start; font-size: 14px; font-weight: 600; color: #fff; overflow: hidden; width: 100%; min-height: var(--sound-row-height, 44px); height: var(--sound-row-height, 44px); text-shadow: 0 1px 2px rgba(0,0,0,0.5); -webkit-touch-callout: none; box-sizing: border-box; }
       .sound-button:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 4px 10px var(--shadow); }
-      .sound-button:active { transform: scale(0.97); box-shadow: none; }
-      .sound-button.overwrite-target { animation: wiggle 0.4s infinite ease-in-out; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 50%, transparent); }
+      .sound-button.overwrite-target { animation: wiggle 0.4s infinite ease-in-out; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 50%, transparent); cursor: pointer; }
       /* Utterance (live TTS) buttons: regenerate on press — outline style */
       .sound-button.utterance-button { background-color: transparent !important; border-width: 2px; border-style: solid; text-shadow: none; }
         .sound-button.utterance-button:hover { background-color: color-mix(in srgb, currentColor 12%, transparent) !important; border-color: currentColor; }
         .sound-button.utterance-button .sound-button-symbol,
         .sound-button.utterance-button .sound-button-label { text-shadow: none; }
+        .sound-button.utterance-button .sound-button-play {
+          background: color-mix(in srgb, currentColor 14%, transparent);
+          border-right-color: color-mix(in srgb, currentColor 35%, transparent);
+          color: inherit;
+          text-shadow: none;
+        }
+        .sound-button.utterance-button .sound-button-play:hover {
+          background: color-mix(in srgb, currentColor 24%, transparent);
+        }
+
+    /* Large play control (left) + label body (restore text like history) */
+    .sound-button-play {
+      flex: 0 0 auto;
+      width: calc(var(--sound-row-height, 44px) * 1.6);
+      min-width: calc(var(--sound-row-height, 44px) * 1.6);
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-right: 1px solid rgba(255, 255, 255, 0.28);
+      background: rgba(0, 0, 0, 0.22);
+      color: inherit;
+      cursor: pointer;
+      padding: 0;
+      margin: 0;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+      transition: background-color 0.12s ease;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+      .sound-button-play:hover { background: rgba(0, 0, 0, 0.36); }
+      .sound-button-play:active { background: rgba(0, 0, 0, 0.48); transform: scale(0.96); }
+      .sound-button-play .material-symbols-outlined {
+        font-size: calc(var(--sound-row-height, 44px) * 0.55);
+        line-height: 1;
+      }
+
+    .sound-button-body {
+      flex: 1 1 auto;
+      min-width: 0;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 0 8px;
+      cursor: pointer;
+      overflow: hidden;
+      border: none;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      font-weight: 600;
+      text-shadow: inherit;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+      .sound-button-body:hover { background: rgba(255, 255, 255, 0.08); }
+      .sound-button-body:active { background: rgba(0, 0, 0, 0.12); }
 
     .sound-button-inner { display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; overflow: hidden; pointer-events: none; }
     .sound-button-symbol { font-size: 16px; flex-shrink: 0; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
@@ -254,21 +313,20 @@
       .key:hover { background-color: var(--key-hover); border-color: var(--text-secondary); }
       .key:active { background-color: var(--key-active); transform: scale(0.97); }
 
-      /* Speak / Clear: square, sized to display-input height */
-      .key.tts-btn,
-      .key.clear-btn {
-        height: var(--display-ctrl-size, var(--display-font-size, 24px));
-        min-height: var(--display-ctrl-size, var(--display-font-size, 24px));
-        width: var(--display-ctrl-size, var(--display-font-size, 24px));
-        min-width: var(--display-ctrl-size, var(--display-font-size, 24px));
-        max-height: var(--display-ctrl-size, var(--display-font-size, 24px));
-        max-width: var(--display-ctrl-size, var(--display-font-size, 24px));
+      /* Speak / Clear / Recycle: square, sized to display-input height */
+      .key.display-ctrl {
+        --_dc: var(--display-ctrl-size, var(--display-font-size, 24px));
+        height: var(--_dc); min-height: var(--_dc); max-height: var(--_dc);
+        width: var(--_dc); min-width: var(--_dc); max-width: var(--_dc);
         align-self: flex-start;
       }
       .key.tts-btn { background-color: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
         .key.tts-btn:hover { background-color: var(--accent-hover); }
       .key.clear-btn { background-color: transparent; color: var(--danger); border-color: var(--danger); }
         .key.clear-btn:hover { background-color: var(--danger-bg); }
+      .key.recycle-btn { background-color: transparent; color: var(--accent); border-color: var(--accent); }
+        .key.recycle-btn:hover { background-color: color-mix(in srgb, var(--accent) 16%, transparent); }
+        .key.recycle-btn:active { background-color: color-mix(in srgb, var(--accent) 24%, transparent); }
       /* Add-tag matches sound button row height */
       .key.insert-btn {
         background-color: var(--key-bg);
@@ -283,8 +341,7 @@
       }
         .key.insert-btn:hover { background-color: var(--key-hover); border-color: var(--accent-hover); color: var(--accent-hover); }
     .key .material-symbols-outlined { font-size: 18px; }
-    .key.tts-btn .material-symbols-outlined,
-    .key.clear-btn .material-symbols-outlined {
+    .key.display-ctrl .material-symbols-outlined {
       font-size: calc(var(--display-ctrl-size, var(--display-font-size, 24px)) * 0.45);
     }
     .key.insert-btn .material-symbols-outlined {
@@ -555,16 +612,6 @@
         width: 36px;
         min-width: 36px;
       }
-      /* Speak / Clear track measured display height */
-      .key.tts-btn,
-      .key.clear-btn {
-        height: var(--display-ctrl-size, var(--display-font-size, 24px));
-        min-height: var(--display-ctrl-size, var(--display-font-size, 24px));
-        width: var(--display-ctrl-size, var(--display-font-size, 24px));
-        min-width: var(--display-ctrl-size, var(--display-font-size, 24px));
-        max-height: var(--display-ctrl-size, var(--display-font-size, 24px));
-        max-width: var(--display-ctrl-size, var(--display-font-size, 24px));
-      }
       .display-textarea {
         padding: 6px 8px;
         max-height: min(26vh, 150px);
@@ -651,15 +698,6 @@
       :root { --sound-row-height: 44px; }
       .sound-button { font-size: 13px; }
       .key { height: 34px; min-height: 34px; width: 34px; min-width: 34px; }
-      .key.tts-btn,
-      .key.clear-btn {
-        height: var(--display-ctrl-size, var(--display-font-size, 24px));
-        min-height: var(--display-ctrl-size, var(--display-font-size, 24px));
-        width: var(--display-ctrl-size, var(--display-font-size, 24px));
-        min-width: var(--display-ctrl-size, var(--display-font-size, 24px));
-        max-height: var(--display-ctrl-size, var(--display-font-size, 24px));
-        max-width: var(--display-ctrl-size, var(--display-font-size, 24px));
-      }
       .theme-btn { flex-direction: column; gap: 2px; font-size: 11px; padding: 8px 2px; }
       .audio-action-btn { font-size: 11px; padding: 0 6px; }
       .audio-action-btn .audio-action-label { display: none; }
@@ -671,15 +709,6 @@
       .app-main { gap: 3px; padding: 4px; }
       .bottom-dock { gap: 2px; }
       .key { height: 30px; min-height: 30px; width: 30px; min-width: 30px; }
-      .key.tts-btn,
-      .key.clear-btn {
-        height: var(--display-ctrl-size, var(--display-font-size, 24px));
-        min-height: var(--display-ctrl-size, var(--display-font-size, 24px));
-        width: var(--display-ctrl-size, var(--display-font-size, 24px));
-        min-width: var(--display-ctrl-size, var(--display-font-size, 24px));
-        max-height: var(--display-ctrl-size, var(--display-font-size, 24px));
-        max-width: var(--display-ctrl-size, var(--display-font-size, 24px));
-      }
       .display-textarea { max-height: min(22vh, 90px); padding: 4px 6px; }
       .sound-button { font-size: 12px; }
       .sidebar { width: min(280px, 70vw); }
@@ -701,7 +730,7 @@
       .topic-actions { opacity: 1; }
       .topic-sound-edit-btn { opacity: 1; }
       .sound-button:hover { transform: none; box-shadow: none; }
-      .sound-button:active { transform: scale(0.97); }
+      .sound-button-play:active { transform: scale(0.96); }
     }
   </style>
 </head>
@@ -798,15 +827,6 @@
           <label><span>Speech Speed</span><span id="val-speed">1.00</span></label>
           <input type="range" id="speed-slider" min="0.5" max="2.0" step="0.1" value="1.0">
         </div>
-        <div class="sidebar-setting-group">
-          <label><span>Pitch</span><span id="val-pitch">0</span></label>
-          <input type="range" id="pitch-slider" min="0" max="14" step="1" value="7" list="pitch-ticks" aria-valuetext="0">
-          <datalist id="pitch-ticks">
-            <option value="0" label="-12"></option>
-            <option value="7" label="0"></option>
-            <option value="14" label="12"></option>
-          </datalist>
-        </div>
 
         <hr class="setting-divider">
 
@@ -891,12 +911,15 @@
           </div>
         </div>
         <div class="toolbar" id="toolbar">
-          <button class="key tts-btn" id="speak-btn" type="button" aria-label="Speak">
+          <button class="key tts-btn display-ctrl" id="speak-btn" type="button" aria-label="Speak">
             <span class="material-symbols-outlined icon-medium">volume_up</span>
           </button>
           <textarea class="display-textarea" id="display-input" spellcheck="true" autocomplete="off" autocapitalize="sentences" placeholder="Type here..." rows="1" aria-label="Display text"></textarea>
-          <button class="key clear-btn" id="clear-btn" type="button" aria-label="Clear">
+          <button class="key clear-btn display-ctrl" id="clear-btn" type="button" aria-label="Clear" title="Clear text (not saved)">
             <span class="material-symbols-outlined icon-medium">delete</span>
+          </button>
+          <button class="key recycle-btn display-ctrl" id="recycle-btn" type="button" aria-label="Recycle display text" title="Recycle text: at bat → in the hole → on deck → at bat">
+            <span class="material-symbols-outlined icon-medium">recycling</span>
           </button>
         </div>
       </div>
@@ -1042,7 +1065,7 @@
     <div class="modal-scroll">
       <div class="icon-studio-search">
         <span class="material-symbols-outlined search-ico">search</span>
-        <input type="text" id="icon-search-input" placeholder="Search Material Symbols (e.g., chat, home, favorite)...">
+        <input type="text" id="icon-search-input" placeholder="Search fonts.google.com/icons (e.g. chat, recycle, home)..." autocomplete="off" spellcheck="false">
       </div>
 
       <div class="studio-live-controls">
@@ -1116,84 +1139,138 @@
       "☀️": "light_mode", "🌙": "dark_mode", "💻": "computer", "🔄": "refresh", "⭐": "star", "🏠": "home"
     };
 
-    const ICON_DATABASE = [
-      { ico: "chat", name: "chat message talk speech bubble communication" },
-      { ico: "folder", name: "folder topic category directory storage" },
-      { ico: "history", name: "time clock history watch schedule recent" },
-      { ico: "settings", name: "settings gear cog preferences options" },
-      { ico: "volume_up", name: "speaker audio sound volume play music" },
-      { ico: "home", name: "home house building living residence" },
-      { ico: "star", name: "star favorite rating important badge" },
-      { ico: "restaurant", name: "food burger eat dining restaurant meal" },
-      { ico: "local_pizza", name: "pizza slice Italian food dinner" },
-      { ico: "local_cafe", name: "coffee tea drink cup beverage morning" },
-      { ico: "directions_car", name: "car vehicle travel drive transport automobile" },
-      { ico: "flight", name: "airplane flight travel vacation fly" },
-      { ico: "sports_esports", name: "game play controller fun hobby entertainment" },
-      { ico: "medical_services", name: "doctor medical hospital stethoscope health illness" },
-      { ico: "medication", name: "pill medicine drug prescription pharmacy health" },
-      { ico: "shopping_cart", name: "shopping cart store groceries market buy" },
-      { ico: "music_note", name: "music note song audio melody rhythm" },
-      { ico: "lightbulb", name: "idea lightbulb bright thought electricity" },
-      { ico: "pets", name: "pets dog cat animal paw footprint" },
-      { ico: "call", name: "phone call contact telephone dial" },
-      { ico: "favorite", name: "heart love like care feeling emotion" },
-      { ico: "sentiment_satisfied", name: "happy smile face joy glad emotion good" },
-      { ico: "sentiment_dissatisfied", name: "sad cry tears upset unhappy feeling" },
-      { ico: "bed", name: "sleep tired nap rest bed exhausted" },
-      { ico: "priority_high", name: "exclamation alert attention warning important" },
-      { ico: "help", name: "question ask help query doubt what" },
-      { ico: "workspace_premium", name: "glowing star bright excellent winner" },
-      { ico: "celebration", name: "party celebration congrats birthday festive" },
-      { ico: "visibility", name: "eyes look see watch observe vision" },
-      { ico: "hearing", name: "ear listen hear sound deaf auditory" },
-      { ico: "psychology", name: "brain mind think psychology intelligence idea" },
-      { ico: "bolt", name: "lightning fast power energy electric speed" },
-      { ico: "trophy", name: "trophy win award achievement success goal" },
-      { ico: "edit", name: "note write pencil text edit document" },
-      { ico: "push_pin", name: "pin tack location assign fix remember" },
-      { ico: "delete", name: "trash garbage delete remove dispose clear" },
-      { ico: "key", name: "key lock password access security safe" },
-      { ico: "directions_walk", name: "walk pedestrian go step move exercise" },
-      { ico: "thumb_up", name: "thumbs up yes approve like good okay" },
-      { ico: "thumb_down", name: "thumbs down no disapprove bad reject" }
+    /**
+     * Offline fallback when Google Fonts icon metadata cannot be fetched
+     * (CORS, offline, file://). Same shape as catalog entries from fonts.google.com.
+     */
+    const ICON_DATABASE_FALLBACK = [
+      { ico: "chat", name: "chat message talk speech bubble communication", popularity: 1e6 },
+      { ico: "folder", name: "folder topic category directory storage", popularity: 9e5 },
+      { ico: "history", name: "time clock history watch schedule recent", popularity: 9e5 },
+      { ico: "settings", name: "settings gear cog preferences options", popularity: 9e5 },
+      { ico: "volume_up", name: "speaker audio sound volume play music", popularity: 9e5 },
+      { ico: "home", name: "home house building living residence", popularity: 9e5 },
+      { ico: "star", name: "star favorite rating important badge", popularity: 9e5 },
+      { ico: "restaurant", name: "food burger eat dining restaurant meal", popularity: 8e5 },
+      { ico: "local_pizza", name: "pizza slice Italian food dinner", popularity: 8e5 },
+      { ico: "local_cafe", name: "coffee tea drink cup beverage morning", popularity: 8e5 },
+      { ico: "directions_car", name: "car vehicle travel drive transport automobile", popularity: 8e5 },
+      { ico: "flight", name: "airplane flight travel vacation fly", popularity: 8e5 },
+      { ico: "sports_esports", name: "game play controller fun hobby entertainment", popularity: 8e5 },
+      { ico: "medical_services", name: "doctor medical hospital stethoscope health illness", popularity: 8e5 },
+      { ico: "medication", name: "pill medicine drug prescription pharmacy health", popularity: 8e5 },
+      { ico: "shopping_cart", name: "shopping cart store groceries market buy", popularity: 8e5 },
+      { ico: "music_note", name: "music note song audio melody rhythm", popularity: 8e5 },
+      { ico: "lightbulb", name: "idea lightbulb bright thought electricity", popularity: 8e5 },
+      { ico: "pets", name: "pets dog cat animal paw footprint", popularity: 8e5 },
+      { ico: "call", name: "phone call contact telephone dial", popularity: 8e5 },
+      { ico: "favorite", name: "heart love like care feeling emotion", popularity: 8e5 },
+      { ico: "sentiment_satisfied", name: "happy smile face joy glad emotion good", popularity: 8e5 },
+      { ico: "sentiment_dissatisfied", name: "sad cry tears upset unhappy feeling", popularity: 8e5 },
+      { ico: "bed", name: "sleep tired nap rest bed exhausted", popularity: 8e5 },
+      { ico: "priority_high", name: "exclamation alert attention warning important", popularity: 8e5 },
+      { ico: "help", name: "question ask help query doubt what", popularity: 8e5 },
+      { ico: "workspace_premium", name: "glowing star bright excellent winner", popularity: 8e5 },
+      { ico: "celebration", name: "party celebration congrats birthday festive", popularity: 8e5 },
+      { ico: "visibility", name: "eyes look see watch observe vision", popularity: 8e5 },
+      { ico: "hearing", name: "ear listen hear sound deaf auditory", popularity: 8e5 },
+      { ico: "psychology", name: "brain mind think psychology intelligence idea", popularity: 8e5 },
+      { ico: "bolt", name: "lightning fast power energy electric speed", popularity: 8e5 },
+      { ico: "trophy", name: "trophy win award achievement success goal", popularity: 8e5 },
+      { ico: "edit", name: "note write pencil text edit document", popularity: 8e5 },
+      { ico: "push_pin", name: "pin tack location assign fix remember", popularity: 8e5 },
+      { ico: "delete", name: "trash garbage delete remove dispose clear", popularity: 8e5 },
+      { ico: "key", name: "key lock password access security safe", popularity: 8e5 },
+      { ico: "directions_walk", name: "walk pedestrian go step move exercise", popularity: 8e5 },
+      { ico: "thumb_up", name: "thumbs up yes approve like good okay", popularity: 8e5 },
+      { ico: "thumb_down", name: "thumbs down no disapprove bad reject", popularity: 8e5 },
+      { ico: "recycling", name: "recycle reuse environment arrows", popularity: 8e5 }
     ];
 
-    // DOM References
-    const sidebar = document.getElementById("sidebar");
-    const displayInput = document.getElementById("display-input");
-    const soundCanvas = document.getElementById("sound-canvas");
-    const modalOverlay = document.getElementById("modal-overlay");
-    const speakBtn = document.getElementById("speak-btn");
-    const audioActionsBar = document.getElementById("generated-audio-actions");
+    // ==================== CORE HELPERS ====================
+    const $ = (id) => document.getElementById(id);
+    const $$ = (sel, root = document) => root.querySelectorAll(sel);
+    const trim = (v) => (v == null ? "" : String(v)).trim();
+    const generateId = () => Math.random().toString(36).slice(2, 11);
+    const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
+    const lsGet = (key, fallback = null) => {
+      try { const v = localStorage.getItem(key); return v == null ? fallback : v; } catch (_) { return fallback; }
+    };
+    const lsSet = (key, val) => { try { localStorage.setItem(key, val); } catch (_) {} };
+    const lsDel = (key) => { try { localStorage.removeItem(key); } catch (_) {} };
+    const lsGetJson = (key, fallback) => {
+      try {
+        const raw = localStorage.getItem(key);
+        if (raw == null || raw === "") return fallback;
+        return JSON.parse(raw);
+      } catch (_) { return fallback; }
+    };
+    const blobToDataUrl = (blob) => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+    /** Race a promise against a timeout without leaving unhandled rejections. */
+    const withTimeout = (promise, ms, label = "timeout") => {
+      let timer = null;
+      let settled = false;
+      return new Promise((resolve, reject) => {
+        const settle = (fn, value) => {
+          if (settled) return;
+          settled = true;
+          if (timer != null) clearTimeout(timer);
+          fn(value);
+        };
+        timer = setTimeout(() => settle(reject, new Error(label)), ms);
+        Promise.resolve(promise).then(
+          (v) => settle(resolve, v),
+          (e) => settle(reject, e)
+        );
+      });
+    };
+    const escapeHtml = (s) => String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+    const asArray = (v) => (Array.isArray(v) ? v : []);
+    const mapSymbol = (raw, fallback = "") => {
+      const s = trim(raw);
+      return SYMBOL_MIGRATION_MAP[s] || s || fallback;
+    };
 
-    const modelSelect = document.getElementById("model-select");
-    const volumeSlider = document.getElementById("volume-slider");
-    const speedSlider = document.getElementById("speed-slider");
-    const pitchSlider = document.getElementById("pitch-slider");
-    const stabilitySlider = document.getElementById("stability-slider");
-    const similaritySlider = document.getElementById("similarity-slider");
-    const valVolume = document.getElementById("val-volume");
-    const valSpeed = document.getElementById("val-speed");
-    const valPitch = document.getElementById("val-pitch");
-    const valStability = document.getElementById("val-stability");
-    const valSimilarity = document.getElementById("val-similarity");
-    const fontDisplay = document.getElementById("font-display");
+    // DOM References
+    const sidebar = $("sidebar");
+    const displayInput = $("display-input");
+    const soundCanvas = $("sound-canvas");
+    const modalOverlay = $("modal-overlay");
+    const speakBtn = $("speak-btn");
+    const audioActionsBar = $("generated-audio-actions");
+    const modelSelect = $("model-select");
+    const volumeSlider = $("volume-slider");
+    const speedSlider = $("speed-slider");
+    const stabilitySlider = $("stability-slider");
+    const similaritySlider = $("similarity-slider");
+    const valVolume = $("val-volume");
+    const valSpeed = $("val-speed");
+    const valStability = $("val-stability");
+    const valSimilarity = $("val-similarity");
+    const fontDisplay = $("font-display");
 
     // State Variables
-    let activeBrowserVoiceIndex = localStorage.getItem("aac_browser_voice_index");
-    if (activeBrowserVoiceIndex !== null && activeBrowserVoiceIndex !== "") {
-      activeBrowserVoiceIndex = parseInt(activeBrowserVoiceIndex, 10);
-      if (Number.isNaN(activeBrowserVoiceIndex)) activeBrowserVoiceIndex = "";
-    } else {
-      activeBrowserVoiceIndex = "";
-    }
-    let activeElevenVoiceId = localStorage.getItem("elevenlabs_voice") || "";
+    let activeBrowserVoiceIndex = (() => {
+      const raw = lsGet("aac_browser_voice_index", "");
+      if (raw === "" || raw == null) return "";
+      const n = parseInt(raw, 10);
+      return Number.isNaN(n) ? "" : n;
+    })();
+    let activeElevenVoiceId = lsGet("elevenlabs_voice", "") || "";
     /** Audio output deviceId for setSinkId ("" = system default). */
-    let activeOutputDeviceId = localStorage.getItem("aac_output_device") || "";
-    let currentFontSize = parseInt(localStorage.getItem("aac_font_size"), 10) || 24;
-    let currentTheme = localStorage.getItem("aac_theme") || "system";
-    let customAccentColor = localStorage.getItem("aac_accent_color") || "";
+    let activeOutputDeviceId = lsGet("aac_output_device", "") || "";
+    let currentFontSize = parseInt(lsGet("aac_font_size", "24"), 10) || 24;
+    let currentTheme = lsGet("aac_theme", "system") || "system";
+    let customAccentColor = lsGet("aac_accent_color", "") || "";
 
     /** Saved caret in #display-input so programmatic refocus restores it. */
     let savedDisplaySelection = { start: null, end: null };
@@ -1208,41 +1285,6 @@
           end: displayInput.selectionEnd
         };
       } catch (_) {}
-    }
-
-    /** Discrete pitch steps (semitones). Slider index maps into this list. */
-    const PITCH_STEPS = [-12, -8, -4, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4, 8, 12];
-
-    function pitchIndexFromSemitones(semitones) {
-      const target = parseFloat(semitones);
-      if (!Number.isFinite(target)) return PITCH_STEPS.indexOf(0);
-      let best = 0;
-      let bestDist = Infinity;
-      for (let i = 0; i < PITCH_STEPS.length; i++) {
-        const d = Math.abs(PITCH_STEPS[i] - target);
-        if (d < bestDist) {
-          bestDist = d;
-          best = i;
-        }
-      }
-      return best;
-    }
-
-    function getPitchSemitones() {
-      const idx = parseInt(pitchSlider?.value, 10);
-      if (!Number.isFinite(idx) || idx < 0 || idx >= PITCH_STEPS.length) return 0;
-      return PITCH_STEPS[idx];
-    }
-
-    function formatPitchLabel(semitones) {
-      const n = parseFloat(semitones) || 0;
-      if (n > 0) return `+${n}`;
-      return String(n);
-    }
-
-    /** Map pitch semitones to speechSynthesis.pitch (0–2, default 1). Independent of rate. */
-    function pitchToUtterance(semitones) {
-      return clamp(Math.pow(2, (semitones || 0) / 12), 0.1, 2);
     }
 
     /** Return keyboard focus to the main text display and restore caret. */
@@ -1272,10 +1314,10 @@
       if (document.activeElement === displayInput) saveDisplaySelection();
     });
 
-    let iconFill = parseInt(localStorage.getItem("aac_icon_fill"), 10) || 0;
-    let iconWght = parseInt(localStorage.getItem("aac_icon_wght"), 10) || 400;
-    let iconGrad = parseInt(localStorage.getItem("aac_icon_grad"), 10) || 0;
-    let iconOpsz = parseInt(localStorage.getItem("aac_icon_opsz"), 10) || 24;
+    let iconFill = parseInt(lsGet("aac_icon_fill", "0"), 10) || 0;
+    let iconWght = parseInt(lsGet("aac_icon_wght", "400"), 10) || 400;
+    let iconGrad = parseInt(lsGet("aac_icon_grad", "0"), 10) || 0;
+    let iconOpsz = parseInt(lsGet("aac_icon_opsz", "24"), 10) || 24;
     let initialIconStyles = {};
 
     function applyGlobalIconStyles() {
@@ -1294,11 +1336,11 @@
       document.getElementById("studio-val-opsz").textContent = iconOpsz;
     }
 
-    let topicsList = normalizeTopicsList(JSON.parse(localStorage.getItem("aac_tabs")) || [{ id: "default", name: "General Chat", icon: "chat", color: "#8ab4f8", buttons: [], gridCols: DEFAULT_GRID_COLS, gridRows: DEFAULT_GRID_ROWS }]);
-    let activeTopicId = localStorage.getItem("aac_active_tab") || topicsList[0].id;
+    let topicsList = normalizeTopicsList(lsGetJson("aac_tabs", null) || [{ id: "default", name: "General Chat", icon: "chat", color: "#8ab4f8", buttons: [], gridCols: DEFAULT_GRID_COLS, gridRows: DEFAULT_GRID_ROWS }]);
+    let activeTopicId = lsGet("aac_active_tab") || topicsList[0].id;
     if (!topicsList.find(t => t.id === activeTopicId)) activeTopicId = topicsList[0].id;
 
-    let audioHistory = JSON.parse(localStorage.getItem("aac_history")) || [];
+    let audioHistory = asArray(lsGetJson("aac_history", []));
     let isOverwriteMode = false;
     let editingButtonId = null;
     let editingButtonTopicId = null;
@@ -1313,44 +1355,93 @@
     let selectedStudioIcon = null;
     let lastGeneratedAudio = null;
 
-    // ==================== UTILITY FUNCTIONS ====================
-    function generateId() { return Math.random().toString(36).substr(2, 9); }
-    function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
-
+    // ==================== DATA NORMALIZATION ====================
     function normalizeButton(btn, index = 0) {
       const col = Number.isFinite(btn.col) ? btn.col : (Number.isFinite(btn.x) ? Math.max(0, Math.floor(btn.x / 100)) : (index % DEFAULT_GRID_COLS));
       const row = Number.isFinite(btn.row) ? btn.row : (Number.isFinite(btn.y) ? Math.max(0, Math.floor(btn.y / 80)) : Math.floor(index / DEFAULT_GRID_COLS));
-      const rawSymbol = btn.symbol || btn.icon || "";
-      const utteranceText = (btn.utteranceText || "").trim() || null;
-      // utteranceText alone means regenerate on play; prefer that over a stale clip
+      const utteranceText = trim(btn.utteranceText) || null;
+      const sourceText = trim(btn.sourceText || utteranceText || btn.text || btn.label) || null;
       return {
         id: btn.id || generateId(),
         label: btn.label || "Button",
-        symbol: SYMBOL_MIGRATION_MAP[rawSymbol] || rawSymbol || "",
+        symbol: mapSymbol(btn.symbol || btn.icon),
         color: btn.color || COLOR_PALETTE[index % COLOR_PALETTE.length],
         audioData: utteranceText ? null : (btn.audioData || null),
         utteranceText,
+        sourceText,
+        effectsBaked: !!btn.effectsBaked,
         col, row,
         colSpan: clamp(btn.colSpan || 1, 1, 12),
         rowSpan: clamp(btn.rowSpan || 1, 1, 8)
       };
     }
 
-    /** Browser-TTS / utterance history or action payload (text regenerated on play). */
+    /**
+     * Canonical speech/history item (history, assign, restore, lastGeneratedAudio).
+     * utteranceText wins over audioData (live regen). effectsBaked only with a clip.
+     */
+    function makeSpeechItem({
+      text = "",
+      model = null,
+      voiceId = null,
+      audioData = null,
+      utteranceText = null,
+      effectsBaked = false,
+      id = null,
+      withTimestamp = false
+    } = {}) {
+      const phrase = trim(text);
+      const utt = trim(utteranceText) || null;
+      const clip = utt ? null : (audioData || null);
+      const item = {
+        id: id || generateId(),
+        text: phrase,
+        model: model || null,
+        voiceId: voiceId || null,
+        audioData: clip,
+        utteranceText: utt,
+        effectsBaked: !!(effectsBaked && clip)
+      };
+      if (withTimestamp) {
+        item.timestamp = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      }
+      return item;
+    }
+
     function isUtteranceSource(item) {
       if (!item) return false;
-      if ((item.utteranceText || "").trim()) return true;
-      if (item.model === "browser_tts" && (item.text || "").trim() && !item.audioData) return true;
-      return false;
+      if (trim(item.utteranceText)) return true;
+      return item.model === "browser_tts" && trim(item.text) && !item.audioData;
     }
 
     function getUtteranceText(item) {
-      if (!item) return "";
-      return ((item.utteranceText || item.text || "") + "").trim();
+      return item ? trim(item.utteranceText || item.text) : "";
+    }
+
+    function getButtonSourceText(btn) {
+      return btn ? trim(btn.sourceText || btn.utteranceText || btn.text || btn.label) : "";
     }
 
     function canUseGeneratedActions(item) {
       return !!(item && (item.audioData || isUtteranceSource(item)));
+    }
+
+    function canAssignFromDisplay() {
+      return trim(getText()).length > 0;
+    }
+
+    function getAssignSource() {
+      const text = trim(getText());
+      if (!text) return null;
+      if (canUseGeneratedActions(lastGeneratedAudio) && trim(lastGeneratedAudio.text) === text) {
+        return lastGeneratedAudio;
+      }
+      return makeSpeechItem({
+        text,
+        utteranceText: text,
+        model: "browser_tts",
+        effectsBaked: false
+      });
     }
 
     function normalizeTopicsList(rawList) {
@@ -1360,7 +1451,7 @@
       return rawList.map((topic, idx) => ({
         id: topic.id || generateId(),
         name: topic.name || `Topic ${idx + 1}`,
-        icon: SYMBOL_MIGRATION_MAP[topic.icon] || topic.icon || "folder",
+        icon: mapSymbol(topic.icon, "folder"),
         color: topic.color || COLOR_PALETTE[idx % COLOR_PALETTE.length],
         gridCols: clamp(parseInt(topic.gridCols, 10) || DEFAULT_GRID_COLS, 1, 12),
         gridRows: clamp(parseInt(topic.gridRows, 10) || DEFAULT_GRID_ROWS, 1, 8),
@@ -1369,8 +1460,13 @@
     }
 
     function getActiveTopic() { return topicsList.find(t => t.id === activeTopicId); }
-    function saveTopicsList() { localStorage.setItem("aac_tabs", JSON.stringify(topicsList)); }
-    function saveHistory() { localStorage.setItem("aac_history", JSON.stringify(audioHistory)); }
+    function saveTopicsList() { lsSet("aac_tabs", JSON.stringify(topicsList)); }
+    function saveHistory() { lsSet("aac_history", JSON.stringify(audioHistory)); }
+    function commitTopicsUi() {
+      saveTopicsList();
+      renderTopics();
+      renderSoundButtons();
+    }
 
     function getDefaultAccentForResolvedTheme() {
       const resolved = document.documentElement.getAttribute("data-theme") || "dark";
@@ -1394,12 +1490,12 @@
         customAccentColor = color;
         root.style.setProperty("--accent", color);
         root.style.setProperty("--accent-hover", accentHoverFrom(color));
-        if (persist) localStorage.setItem("aac_accent_color", color);
+        if (persist) lsSet("aac_accent_color", color);
       } else {
         customAccentColor = "";
         root.style.removeProperty("--accent");
         root.style.removeProperty("--accent-hover");
-        if (persist) localStorage.removeItem("aac_accent_color");
+        if (persist) lsDel("aac_accent_color");
       }
       const picker = document.getElementById("accent-color-picker");
       if (picker) picker.value = customAccentColor || getDefaultAccentForResolvedTheme();
@@ -1526,23 +1622,252 @@
     });
 
     // ==================== GOOGLE FONTS ICON STUDIO ====================
+    /**
+     * Catalog powering fonts.google.com/icons (Material Symbols + Icons).
+     * Response is JSON with a )]}' anti-XSSI prefix.
+     * incomplete=1 includes Material Symbols–only glyphs (e.g. recycling).
+     */
+    const GOOGLE_ICONS_METADATA_URL = "https://fonts.google.com/metadata/icons?incomplete=1";
+    /** CORS-friendly name list if the Google metadata endpoint is blocked. */
+    const MATERIAL_SYMBOLS_NAMES_URL =
+      "https://raw.githubusercontent.com/marella/material-symbols/main/material-symbols/index.d.ts";
+    const ICON_SEARCH_RESULT_LIMIT = 120;
+    const ICON_SEARCH_DEBOUNCE_MS = 220;
+
     let iconStudioReturnModalId = null;
+    /** @type {Array<{ico:string,name:string,popularity:number}>|null} */
+    let iconCatalog = null;
+    let iconCatalogSource = "local"; // "google" | "github" | "local"
+    let iconCatalogLoadPromise = null;
+    let iconSearchTimer = null;
+    let iconSearchRequestId = 0;
+
+    function parseGoogleIconsMetadata(text) {
+      let raw = String(text || "").trim();
+      // Google Fonts prefixes JSON with )]}' to discourage naive XSSI
+      if (raw.startsWith(")]}'")) {
+        const brace = raw.indexOf("{");
+        if (brace >= 0) raw = raw.slice(brace);
+      }
+      const data = JSON.parse(raw);
+      const icons = Array.isArray(data.icons) ? data.icons : [];
+      return icons.map((icon) => {
+        const ico = String(icon.name || "").trim();
+        const tags = Array.isArray(icon.tags) ? icon.tags : [];
+        const cats = Array.isArray(icon.categories) ? icon.categories : [];
+        const haystack = [ico, ...tags, ...cats].join(" ").toLowerCase();
+        return {
+          ico,
+          name: haystack,
+          popularity: Number(icon.popularity) || 0
+        };
+      }).filter((item) => item.ico);
+    }
+
+    function parseMaterialSymbolsNamesDts(text) {
+      const names = [];
+      const re = /"([a-z0-9_]+)"/g;
+      let m;
+      while ((m = re.exec(String(text || ""))) !== null) {
+        names.push(m[1]);
+      }
+      // de-dupe while preserving order
+      const seen = new Set();
+      const out = [];
+      for (const ico of names) {
+        if (seen.has(ico)) continue;
+        seen.add(ico);
+        out.push({ ico, name: ico, popularity: 0 });
+      }
+      return out;
+    }
+
+    async function loadIconCatalogFromGoogle() {
+      const res = await fetch(GOOGLE_ICONS_METADATA_URL, {
+        credentials: "omit",
+        mode: "cors"
+      });
+      if (!res.ok) throw new Error(`Google icons metadata HTTP ${res.status}`);
+      const text = await res.text();
+      const list = parseGoogleIconsMetadata(text);
+      if (!list.length) throw new Error("Google icons metadata empty");
+      return { list, source: "google" };
+    }
+
+    async function loadIconCatalogFromGithubNames() {
+      const res = await fetch(MATERIAL_SYMBOLS_NAMES_URL, {
+        credentials: "omit",
+        mode: "cors"
+      });
+      if (!res.ok) throw new Error(`Material Symbols names HTTP ${res.status}`);
+      const text = await res.text();
+      const list = parseMaterialSymbolsNamesDts(text);
+      if (!list.length) throw new Error("Material Symbols names empty");
+      return { list, source: "github" };
+    }
+
+    async function ensureIconCatalog() {
+      if (iconCatalog && iconCatalog.length) {
+        return { list: iconCatalog, source: iconCatalogSource };
+      }
+      if (iconCatalogLoadPromise) return iconCatalogLoadPromise;
+
+      iconCatalogLoadPromise = (async () => {
+        // 1) Official catalog used by fonts.google.com/icons
+        try {
+          const loaded = await loadIconCatalogFromGoogle();
+          iconCatalog = loaded.list;
+          iconCatalogSource = loaded.source;
+          return loaded;
+        } catch (_) { /* CORS / offline / file:// */ }
+
+        // 2) CORS-friendly full Material Symbols name list
+        try {
+          const loaded = await loadIconCatalogFromGithubNames();
+          iconCatalog = loaded.list;
+          iconCatalogSource = loaded.source;
+          return loaded;
+        } catch (_) { /* network */ }
+
+        // 3) Built-in short list
+        iconCatalog = ICON_DATABASE_FALLBACK.slice();
+        iconCatalogSource = "local";
+        return { list: iconCatalog, source: iconCatalogSource };
+      })();
+
+      try {
+        return await iconCatalogLoadPromise;
+      } finally {
+        iconCatalogLoadPromise = null;
+      }
+    }
+
+    function filterIconCatalog(catalog, query) {
+      const q = String(query || "").toLowerCase().trim();
+      let list = catalog;
+      if (q) {
+        list = catalog.filter((item) =>
+          item.ico.includes(q) || (item.name && item.name.includes(q))
+        );
+      }
+      list = list.slice().sort((a, b) => {
+        if (q) {
+          const rank = (item) => {
+            if (item.ico === q) return 0;
+            if (item.ico.startsWith(q)) return 1;
+            if (item.ico.includes(q)) return 2;
+            return 3;
+          };
+          const ra = rank(a);
+          const rb = rank(b);
+          if (ra !== rb) return ra - rb;
+        }
+        return (b.popularity || 0) - (a.popularity || 0) || a.ico.localeCompare(b.ico);
+      });
+      return list.slice(0, ICON_SEARCH_RESULT_LIMIT);
+    }
+
+    function iconCatalogSourceLabel(source) {
+      if (source === "google") return "fonts.google.com/icons";
+      if (source === "github") return "Material Symbols (mirror)";
+      return "offline favorites";
+    }
+
+    function paintIconStudioGrid(items, query, source) {
+      const grid = document.getElementById("icon-studio-grid");
+      if (!grid) return;
+      grid.innerHTML = "";
+
+      if (!items.length) {
+        grid.innerHTML = `<div class="icon-studio-empty">No matching icons for “${escapeHtml(query || "")}”</div>`;
+        return;
+      }
+
+      const frag = document.createDocumentFragment();
+      items.forEach((item) => {
+        const el = document.createElement("div");
+        el.className = `icon-studio-item material-symbols-outlined ${item.ico === selectedStudioIcon ? "selected" : ""}`;
+        el.textContent = item.ico;
+        el.title = item.ico;
+        el.setAttribute("role", "button");
+        el.setAttribute("tabindex", "0");
+        el.setAttribute("aria-label", item.ico);
+        const select = () => {
+          grid.querySelectorAll(".icon-studio-item").forEach((o) => o.classList.remove("selected"));
+          el.classList.add("selected");
+          selectedStudioIcon = item.ico;
+          const status = document.getElementById("icon-studio-status");
+          if (status) status.textContent = `Selected: ${item.ico} · ${iconCatalogSourceLabel(source)}`;
+        };
+        el.addEventListener("click", select);
+        el.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            select();
+          }
+        });
+        frag.appendChild(el);
+      });
+      grid.appendChild(frag);
+
+      const status = document.getElementById("icon-studio-status");
+      if (status && selectedStudioIcon) {
+        const qNote = query ? ` · “${query.trim()}”` : " · popular";
+        status.textContent =
+          `Selected: ${selectedStudioIcon}${qNote} · ${items.length} shown · ${iconCatalogSourceLabel(source)}`;
+      }
+    }
+
+    async function renderIconStudioGrid(query) {
+      const grid = document.getElementById("icon-studio-grid");
+      if (!grid) return;
+      const reqId = ++iconSearchRequestId;
+      const q = String(query || "");
+
+      if (!iconCatalog) {
+        grid.innerHTML = `<div class="icon-studio-empty">Loading icons from fonts.google.com…</div>`;
+      }
+
+      try {
+        const { list, source } = await ensureIconCatalog();
+        if (reqId !== iconSearchRequestId) return; // stale search
+        const filtered = filterIconCatalog(list, q);
+        paintIconStudioGrid(filtered, q, source);
+      } catch (_) {
+        if (reqId !== iconSearchRequestId) return;
+        paintIconStudioGrid(
+          filterIconCatalog(ICON_DATABASE_FALLBACK, q),
+          q,
+          "local"
+        );
+      }
+    }
+
+    function scheduleIconStudioSearch(query) {
+      clearTimeout(iconSearchTimer);
+      iconSearchTimer = setTimeout(() => {
+        renderIconStudioGrid(query);
+      }, ICON_SEARCH_DEBOUNCE_MS);
+    }
 
     function openIconStudio(targetInputId) {
       targetStudioInputId = targetInputId;
       const currentVal = document.getElementById(targetInputId)?.value || "chat";
-      selectedStudioIcon = SYMBOL_MIGRATION_MAP[currentVal] || currentVal || "chat";
+      selectedStudioIcon = mapSymbol(currentVal, "chat");
 
       // Remember which edit modal to restore after picking an icon
       const openParent = document.querySelector(".modal.open:not(#icon-studio-modal)");
       iconStudioReturnModalId = openParent ? openParent.id : null;
 
       initialIconStyles = { fill: iconFill, wght: iconWght, grad: iconGrad, opsz: iconOpsz };
-      document.getElementById("icon-search-input").value = "";
+      const searchInput = document.getElementById("icon-search-input");
+      if (searchInput) searchInput.value = "";
       document.getElementById("icon-studio-status").textContent = `Selected: ${selectedStudioIcon}`;
       applyGlobalIconStyles();
       renderIconStudioGrid("");
       openModal("icon-studio-modal");
+      // Prefetch catalog as soon as studio opens
+      ensureIconCatalog().catch(() => {});
     }
 
     function closeIconStudio(save) {
@@ -1565,33 +1890,9 @@
       }
     }
 
-    function renderIconStudioGrid(query) {
-      const grid = document.getElementById("icon-studio-grid");
-      grid.innerHTML = "";
-      const q = query.toLowerCase().trim();
-      const filtered = ICON_DATABASE.filter(item => item.ico.includes(q) || item.name.includes(q));
-
-      if (filtered.length === 0) {
-        grid.innerHTML = `<div class="icon-studio-empty">No matching icons found</div>`;
-        return;
-      }
-
-      filtered.forEach(item => {
-        const el = document.createElement("div");
-        el.className = `icon-studio-item material-symbols-outlined ${item.ico === selectedStudioIcon ? "selected" : ""}`;
-        el.textContent = item.ico;
-        el.title = item.name;
-        el.addEventListener("click", () => {
-          grid.querySelectorAll(".icon-studio-item").forEach(o => o.classList.remove("selected"));
-          el.classList.add("selected");
-          selectedStudioIcon = item.ico;
-          document.getElementById("icon-studio-status").textContent = `Selected: ${item.ico}`;
-        });
-        grid.appendChild(el);
-      });
-    }
-
-    document.getElementById("icon-search-input").addEventListener("input", (e) => renderIconStudioGrid(e.target.value));
+    document.getElementById("icon-search-input").addEventListener("input", (e) => {
+      scheduleIconStudioSearch(e.target.value);
+    });
     document.getElementById("studio-fill-btn").addEventListener("click", () => { iconFill = iconFill ? 0 : 1; applyGlobalIconStyles(); });
     document.getElementById("studio-wght-slider").addEventListener("input", (e) => { iconWght = parseInt(e.target.value, 10); applyGlobalIconStyles(); });
     document.getElementById("studio-grad-slider").addEventListener("input", (e) => { iconGrad = parseInt(e.target.value, 10); applyGlobalIconStyles(); });
@@ -1608,10 +1909,10 @@
         const input = document.getElementById(targetStudioInputId);
         if (input) input.value = selectedStudioIcon;
       }
-      localStorage.setItem("aac_icon_fill", iconFill);
-      localStorage.setItem("aac_icon_wght", iconWght);
-      localStorage.setItem("aac_icon_grad", iconGrad);
-      localStorage.setItem("aac_icon_opsz", iconOpsz);
+      lsSet("aac_icon_fill", iconFill);
+      lsSet("aac_icon_wght", iconWght);
+      lsSet("aac_icon_grad", iconGrad);
+      lsSet("aac_icon_opsz", iconOpsz);
       closeIconStudio(true);
     });
 
@@ -1700,7 +2001,7 @@
       expandedTopicIds.add(id);
       if (activeTopicId !== id) {
         activeTopicId = id;
-        localStorage.setItem("aac_active_tab", activeTopicId);
+        lsSet("aac_active_tab", activeTopicId);
         renderSoundButtons();
       }
       renderTopics();
@@ -1708,9 +2009,10 @@
 
     function switchTopic(id) {
       activeTopicId = id;
-      localStorage.setItem("aac_active_tab", activeTopicId);
+      lsSet("aac_active_tab", activeTopicId);
       expandedTopicIds.add(id);
-      renderTopics(); renderSoundButtons();
+      renderTopics();
+      renderSoundButtons();
       closeMobileSidebar();
       focusDisplayInput();
     }
@@ -1750,77 +2052,84 @@
       return `#${toHex(m[1])}${toHex(m[2])}${toHex(m[3])}`;
     }
 
-    function openTopicEditModal(topicId) {
-      const topic = topicsList.find(t => t.id === topicId);
-      if (!topic) return;
-      editingTopicId = topicId;
-      document.getElementById("topic-name-input").value = topic.name;
-      document.getElementById("topic-icon-input").value = topic.icon || "folder";
-      modalGridCols = clamp(parseInt(topic.gridCols, 10) || DEFAULT_GRID_COLS, 1, 12);
-      modalGridRows = clamp(parseInt(topic.gridRows, 10) || DEFAULT_GRID_ROWS, 1, 8);
-      syncModalGridLabels();
-
-      const colorPicker = document.getElementById("topic-color-picker");
-      colorPicker.innerHTML = "";
+    /** Build palette + custom color swatches into a picker container. */
+    function fillColorPicker(picker, selectedColor, fallback = "#3f3f4e") {
+      if (!picker) return;
+      picker.innerHTML = "";
+      const selectedHex = normalizeToHex(selectedColor);
+      const clearSel = () => $$(".color-option", picker).forEach(o => o.classList.remove("selected"));
 
       COLOR_PALETTE.forEach(col => {
         const opt = document.createElement("div");
-        opt.className = `color-option ${normalizeToHex(topic.color) === normalizeToHex(col) ? "selected" : ""}`;
+        opt.className = `color-option${selectedHex === normalizeToHex(col) ? " selected" : ""}`;
         opt.style.backgroundColor = col;
-        opt.addEventListener("click", () => {
-          colorPicker.querySelectorAll(".color-option").forEach(o => o.classList.remove("selected"));
-          opt.classList.add("selected");
-        });
-        colorPicker.appendChild(opt);
+        opt.addEventListener("click", () => { clearSel(); opt.classList.add("selected"); });
+        picker.appendChild(opt);
       });
 
       const customOpt = document.createElement("div");
       customOpt.className = "color-option custom";
-      const topicHex = normalizeToHex(topic.color);
-      if (topicHex && !COLOR_PALETTE.some(c => normalizeToHex(c) === topicHex)) customOpt.classList.add("selected");
-
+      if (selectedHex && !COLOR_PALETTE.some(c => normalizeToHex(c) === selectedHex)) {
+        customOpt.classList.add("selected");
+      }
       const colorInput = document.createElement("input");
       colorInput.type = "color";
       colorInput.className = "color-picker-input";
-      colorInput.value = topicHex || "#3f3f4e";
+      colorInput.value = selectedHex || fallback;
       customOpt.style.backgroundColor = colorInput.value;
-
       colorInput.addEventListener("input", (e) => {
         customOpt.style.backgroundColor = e.target.value;
-        colorPicker.querySelectorAll(".color-option").forEach(o => o.classList.remove("selected"));
+        clearSel();
         customOpt.classList.add("selected");
       });
       customOpt.addEventListener("click", () => {
-        colorPicker.querySelectorAll(".color-option").forEach(o => o.classList.remove("selected"));
+        clearSel();
         customOpt.classList.add("selected");
         colorInput.focus();
       });
-
       customOpt.appendChild(colorInput);
-      colorPicker.appendChild(customOpt);
+      picker.appendChild(customOpt);
+    }
+
+    function getSelectedPickerColor(pickerId) {
+      const sel = document.querySelector(`#${pickerId} .color-option.selected`);
+      return sel ? sel.style.backgroundColor : null;
+    }
+
+    function openTopicEditModal(topicId) {
+      const topic = topicsList.find(t => t.id === topicId);
+      if (!topic) return;
+      editingTopicId = topicId;
+      $("topic-name-input").value = topic.name;
+      $("topic-icon-input").value = topic.icon || "folder";
+      modalGridCols = clamp(parseInt(topic.gridCols, 10) || DEFAULT_GRID_COLS, 1, 12);
+      modalGridRows = clamp(parseInt(topic.gridRows, 10) || DEFAULT_GRID_ROWS, 1, 8);
+      syncModalGridLabels();
+      fillColorPicker($("topic-color-picker"), topic.color);
       openModal("topic-edit-modal");
     }
 
-    document.getElementById("save-topic-meta-btn").addEventListener("click", () => {
+    $("save-topic-meta-btn").addEventListener("click", () => {
       const topic = topicsList.find(t => t.id === editingTopicId);
       if (!topic) return;
-      topic.name = document.getElementById("topic-name-input").value.trim() || "Untitled";
-      const rawIco = document.getElementById("topic-icon-input").value.trim();
-      topic.icon = SYMBOL_MIGRATION_MAP[rawIco] || rawIco || "folder";
-      const selCol = document.querySelector("#topic-color-picker .color-option.selected");
-      if (selCol) topic.color = selCol.style.backgroundColor;
+      topic.name = trim($("topic-name-input").value) || "Untitled";
+      topic.icon = mapSymbol($("topic-icon-input").value, "folder");
+      const col = getSelectedPickerColor("topic-color-picker");
+      if (col) topic.color = col;
       topic.gridCols = clamp(modalGridCols, 1, 12);
       topic.gridRows = clamp(modalGridRows, 1, 8);
       repackSequentialGrid(topic);
-      saveTopicsList(); renderTopics(); renderSoundButtons(); closeModals();
+      commitTopicsUi();
+      closeModals();
     });
 
-    document.getElementById("delete-topic-btn").addEventListener("click", () => {
+    $("delete-topic-btn").addEventListener("click", () => {
       if (topicsList.length === 1) { alert("Cannot delete the last topic."); return; }
       if (!confirm("Are you sure you want to delete this topic and all its buttons?")) return;
       topicsList = topicsList.filter(t => t.id !== editingTopicId);
       if (!topicsList.find(t => t.id === activeTopicId)) activeTopicId = topicsList[0].id;
-      saveTopicsList(); renderTopics(); renderSoundButtons(); closeModals();
+      commitTopicsUi();
+      closeModals();
     });
 
     // ==================== SOUND BUTTON GRID ====================
@@ -1872,17 +2181,34 @@
         const symbolPart = btnData.symbol
           ? `<span class="material-symbols-outlined sound-button-symbol">${btnData.symbol}</span>`
           : "";
+        const sourceText = getButtonSourceText(btnData);
         btnEl.innerHTML = `
-          <div class="sound-button-inner">
-            ${symbolPart}
-            <div class="sound-button-label">${btnData.label || "Button"}</div>
-          </div>
+          <button type="button" class="sound-button-play" title="Play" aria-label="Play ${btnData.label || "button"}">
+            <span class="material-symbols-outlined">play_arrow</span>
+          </button>
+          <button type="button" class="sound-button-body" title="Insert text at cursor" aria-label="Insert text for ${btnData.label || "button"} at cursor">
+            <div class="sound-button-inner">
+              ${symbolPart}
+              <div class="sound-button-label">${btnData.label || "Button"}</div>
+            </div>
+          </button>
         `;
 
         if (isOverwriteMode) {
           btnEl.addEventListener("click", () => executeOverwrite(btnData.id));
         } else {
-          btnEl.addEventListener("click", () => playButtonSpeech(btnData));
+          const playEl = btnEl.querySelector(".sound-button-play");
+          const bodyEl = btnEl.querySelector(".sound-button-body");
+          playEl.addEventListener("click", (e) => {
+            e.stopPropagation();
+            playSpeechSource(btnData);
+          });
+          bodyEl.addEventListener("click", (e) => {
+            e.stopPropagation();
+            // Insert source text at caret with auto-spacing (does not replace display)
+            const insert = getButtonSourceText(btnData) || trim(btnData.label) || "";
+            insertTextAtDisplayCaret(insert);
+          });
         }
         soundCanvas.appendChild(btnEl);
       });
@@ -1920,87 +2246,44 @@
     }
 
     function openButtonEditModal(btnId, topicId = null) {
-      const tab = topicId
-        ? topicsList.find(t => t.id === topicId)
-        : getActiveTopic();
+      const tab = topicId ? topicsList.find(t => t.id === topicId) : getActiveTopic();
       const btn = tab?.buttons.find(b => b.id === btnId);
       if (!btn || !tab) return;
       editingButtonId = btnId;
       editingButtonTopicId = tab.id;
-      document.getElementById("button-label-input").value = btn.label || "";
-      document.getElementById("button-symbol-input").value = btn.symbol || "";
-
+      $("button-label-input").value = btn.label || "";
+      $("button-symbol-input").value = btn.symbol || "";
       const currentIdx = tab.buttons.findIndex(b => b.id === btnId);
       modalButtonIndexMax = Math.max(1, tab.buttons.length);
       modalButtonIndex = currentIdx >= 0 ? currentIdx + 1 : 1;
       syncModalButtonIndexLabels();
-
-      const picker = document.getElementById("button-color-picker");
-      picker.innerHTML = "";
-      const btnHex = normalizeToHex(btn.color);
-      COLOR_PALETTE.forEach(col => {
-        const opt = document.createElement("div");
-        opt.className = `color-option ${btnHex === normalizeToHex(col) ? "selected" : ""}`;
-        opt.style.backgroundColor = col;
-        opt.addEventListener("click", () => {
-          picker.querySelectorAll(".color-option").forEach(o => o.classList.remove("selected"));
-          opt.classList.add("selected");
-        });
-        picker.appendChild(opt);
-      });
-
-      const customOpt = document.createElement("div");
-      customOpt.className = "color-option custom";
-      if (btnHex && !COLOR_PALETTE.some(c => normalizeToHex(c) === btnHex)) customOpt.classList.add("selected");
-      const colorInput = document.createElement("input");
-      colorInput.type = "color";
-      colorInput.className = "color-picker-input";
-      colorInput.value = btnHex || "#3f3f4e";
-      customOpt.style.backgroundColor = colorInput.value;
-      colorInput.addEventListener("input", (e) => {
-        customOpt.style.backgroundColor = e.target.value;
-        picker.querySelectorAll(".color-option").forEach(o => o.classList.remove("selected"));
-        customOpt.classList.add("selected");
-      });
-      customOpt.addEventListener("click", () => {
-        picker.querySelectorAll(".color-option").forEach(o => o.classList.remove("selected"));
-        customOpt.classList.add("selected");
-        colorInput.focus();
-      });
-      customOpt.appendChild(colorInput);
-      picker.appendChild(customOpt);
-
+      fillColorPicker($("button-color-picker"), btn.color);
       openModal("button-edit-modal");
     }
 
-    document.getElementById("button-index-down")?.addEventListener("click", () => stepModalButtonIndex(-1));
-    document.getElementById("button-index-up")?.addEventListener("click", () => stepModalButtonIndex(1));
+    $("button-index-down")?.addEventListener("click", () => stepModalButtonIndex(-1));
+    $("button-index-up")?.addEventListener("click", () => stepModalButtonIndex(1));
 
-    document.getElementById("save-button-edit").addEventListener("click", () => {
+    $("save-button-edit").addEventListener("click", () => {
       const tab = topicsList.find(t => t.id === editingButtonTopicId) || getActiveTopic();
       const btn = tab?.buttons.find(b => b.id === editingButtonId);
       if (!btn || !tab) return;
-      btn.label = document.getElementById("button-label-input").value.trim() || "Button";
-      const rawSymbol = document.getElementById("button-symbol-input").value.trim();
-      btn.symbol = SYMBOL_MIGRATION_MAP[rawSymbol] || rawSymbol || "";
-      const selCol = document.querySelector("#button-color-picker .color-option.selected");
-      if (selCol) btn.color = selCol.style.backgroundColor;
+      btn.label = trim($("button-label-input").value) || "Button";
+      btn.symbol = mapSymbol($("button-symbol-input").value);
+      const col = getSelectedPickerColor("button-color-picker");
+      if (col) btn.color = col;
       moveButtonToIndex(tab, editingButtonId, modalButtonIndex - 1);
       repackSequentialGrid(tab);
-      saveTopicsList();
-      renderTopics();
-      renderSoundButtons();
+      commitTopicsUi();
       closeModals();
     });
 
-    document.getElementById("delete-button-edit").addEventListener("click", () => {
+    $("delete-button-edit").addEventListener("click", () => {
       const tab = topicsList.find(t => t.id === editingButtonTopicId) || getActiveTopic();
       if (!tab) return;
       tab.buttons = tab.buttons.filter(b => b.id !== editingButtonId);
       repackSequentialGrid(tab);
-      saveTopicsList();
-      renderTopics();
-      renderSoundButtons();
+      commitTopicsUi();
       closeModals();
     });
 
@@ -2017,47 +2300,50 @@
     // ==================== ASSIGN & OVERWRITE ====================
     function applyGeneratedSpeechToButton(btn, source) {
       if (!btn || !source) return;
-      const phrase = (source.text || getUtteranceText(source) || "").trim();
+      const phrase = trim(source.text || getUtteranceText(source));
       btn.label = phrase.substring(0, 24) || "Speech";
+      btn.sourceText = phrase || null;
       if (isUtteranceSource(source)) {
         btn.utteranceText = phrase;
         btn.audioData = null;
+        btn.effectsBaked = false;
       } else {
         btn.audioData = source.audioData || null;
         btn.utteranceText = null;
+        btn.effectsBaked = !!(source.effectsBaked && btn.audioData);
       }
     }
 
     document.getElementById("textarea-assign-btn").addEventListener("click", () => {
-      if (!canUseGeneratedActions(lastGeneratedAudio)) return;
+      if (!canAssignFromDisplay()) return;
       openModal("modal-assign-choice");
     });
 
-    document.getElementById("choice-create-new-btn").addEventListener("click", () => {
-      if (!canUseGeneratedActions(lastGeneratedAudio)) return;
+    $("choice-create-new-btn").addEventListener("click", () => {
+      const source = getAssignSource();
+      if (!source) return;
       const activeTab = getActiveTopic();
       if (!activeTab) return;
-
       const btn = normalizeButton({
         id: generateId(),
         col: activeTab.buttons.length % activeTab.gridCols,
         row: Math.floor(activeTab.buttons.length / activeTab.gridCols)
       }, activeTab.buttons.length);
-      applyGeneratedSpeechToButton(btn, lastGeneratedAudio);
+      applyGeneratedSpeechToButton(btn, source);
       activeTab.buttons.push(btn);
-
       repackSequentialGrid(activeTab);
-      saveTopicsList(); renderTopics(); renderSoundButtons(); closeModals();
+      commitTopicsUi();
+      closeModals();
     });
 
-    document.getElementById("choice-overwrite-btn").addEventListener("click", () => {
+    $("choice-overwrite-btn").addEventListener("click", () => {
       closeModals();
       setOverwriteMode(true);
     });
 
     function setOverwriteMode(enabled) {
       isOverwriteMode = enabled;
-      document.getElementById("overwrite-banner").classList.toggle("active", enabled);
+      $("overwrite-banner")?.classList.toggle("active", enabled);
       renderSoundButtons();
     }
 
@@ -2067,40 +2353,49 @@
     });
 
     function executeOverwrite(btnId) {
-      if (!canUseGeneratedActions(lastGeneratedAudio)) return;
+      const source = getAssignSource();
+      if (!source) return;
       const tab = getActiveTopic();
       const btn = tab?.buttons.find(b => b.id === btnId);
       if (!btn) return;
-
-      applyGeneratedSpeechToButton(btn, lastGeneratedAudio);
-      saveTopicsList();
+      applyGeneratedSpeechToButton(btn, source);
       setOverwriteMode(false);
-      renderTopics();
-      renderSoundButtons();
+      commitTopicsUi();
       focusDisplayInput();
     }
 
     // ==================== HISTORY (No Inline Relabeling) ====================
-    function addToHistory(textSpoken, model, voiceId, audioBlob) {
+    function addToHistory(textSpoken, model, voiceId, audioBlob, extra = {}) {
       const isUtt = model === "browser_tts" && !audioBlob;
-      const item = {
-        id: generateId(),
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      const item = makeSpeechItem({
         text: textSpoken,
         model,
         voiceId,
         audioData: audioBlob || null,
-        utteranceText: isUtt ? textSpoken : null
-      };
-      audioHistory.unshift(item);
-      if (audioHistory.length > 50) audioHistory.pop();
-      saveHistory(); renderHistory(); setGeneratedAudioActions(item);
+        utteranceText: isUtt ? textSpoken : null,
+        effectsBaked: !!(extra.effectsBaked && audioBlob),
+        withTimestamp: true
+      });
+      try {
+        if (!Array.isArray(audioHistory)) audioHistory = [];
+        audioHistory.unshift(item);
+        if (audioHistory.length > 50) audioHistory.length = 50;
+        saveHistory();
+        renderHistory();
+        setGeneratedAudioActions(item);
+        return item;
+      } catch (_) {
+        // History is best-effort — never fail speech because of storage/UI
+        try { setGeneratedAudioActions(item); } catch (__) {}
+        return null;
+      }
     }
 
     function renderHistory() {
-      const container = document.getElementById("audio-history");
+      const container = $("audio-history");
       if (!container) return;
-      const query = (document.getElementById("history-search-input")?.value || "").toLowerCase().trim();
+      if (!Array.isArray(audioHistory)) audioHistory = [];
+      const query = ($("history-search-input")?.value || "").toLowerCase().trim();
       const filtered = audioHistory.filter(item => (item.text || "").toLowerCase().includes(query));
       container.innerHTML = "";
 
@@ -2115,8 +2410,8 @@
         const isUtt = isUtteranceSource(item);
         el.innerHTML = `
           <div class="history-item-header">
-            <span class="history-item-text">${item.text}</span>
-            <span class="history-item-meta">${item.timestamp}${isUtt ? " · live TTS" : ""}</span>
+            <span class="history-item-text">${escapeHtml(item.text)}</span>
+            <span class="history-item-meta">${escapeHtml(item.timestamp || "")}${isUtt ? " · live TTS" : ""}</span>
           </div>
           <div class="history-actions">
             <button class="history-btn replay-btn" type="button"><span class="material-symbols-outlined icon-small">play_arrow</span> Play</button>
@@ -2125,25 +2420,12 @@
           </div>
         `;
 
-        el.querySelector(".replay-btn").addEventListener("click", () => {
-          playStoredSpeech(item);
-        });
-        el.querySelector(".restore-btn").addEventListener("click", () => {
-          setText(item.text);
-          if (item.model) {
-            modelSelect.value = item.model;
-            try { localStorage.setItem("elevenlabs_model", item.model); } catch (_) {}
-            modelSelect.dispatchEvent(new Event("change"));
-          }
-          if (item.voiceId && item.model !== "browser_tts") {
-            activeElevenVoiceId = item.voiceId;
-            localStorage.setItem("elevenlabs_voice", activeElevenVoiceId);
-          }
-          setGeneratedAudioActions(item);
-          focusDisplayInput();
-        });
-        el.querySelector(".delete-btn").addEventListener("click", () => {
-          audioHistory = audioHistory.filter(h => h.id !== item.id); saveHistory(); renderHistory();
+        el.querySelector(".replay-btn")?.addEventListener("click", () => playSpeechSource(item));
+        el.querySelector(".restore-btn")?.addEventListener("click", () => restoreSpeechToDisplay(item));
+        el.querySelector(".delete-btn")?.addEventListener("click", () => {
+          audioHistory = audioHistory.filter(h => h.id !== item.id);
+          saveHistory();
+          renderHistory();
         });
         container.appendChild(el);
       });
@@ -2157,11 +2439,26 @@
 
     function setGeneratedAudioActions(historyItem) {
       lastGeneratedAudio = historyItem;
-      audioActionsBar.classList.toggle("active", canUseGeneratedActions(lastGeneratedAudio));
+      syncGeneratedAudioActions();
+    }
+
+    /**
+     * Restore text into the display and arm Replay when a clip/utterance is available.
+     * Never mutates the selected model or voice.
+     */
+    function restoreSpeechToDisplay(item) {
+      if (!item) {
+        focusDisplayInput();
+        return;
+      }
+      const text = item.text || "";
+      setText(text, text.length);
+      setGeneratedAudioActions(item);
+      focusDisplayInput();
     }
 
     document.getElementById("textarea-replay-btn").addEventListener("click", () => {
-      if (canUseGeneratedActions(lastGeneratedAudio)) playStoredSpeech(lastGeneratedAudio);
+      if (canUseGeneratedActions(lastGeneratedAudio)) playSpeechSource(lastGeneratedAudio);
       else focusDisplayInput();
     });
 
@@ -2218,6 +2515,71 @@
       start = Math.max(0, Math.min(start, len));
       end = Math.max(0, Math.min(end, len));
       return { start, end };
+    }
+
+    /**
+     * Ensure at least one whitespace between inserted text and any adjacent non-space
+     * characters already in the display (start and/or end boundaries).
+     */
+    function padInsertAgainstNeighbors(text, start, end, insert) {
+      let piece = insert == null ? "" : String(insert);
+      if (!piece) return piece;
+      const before = start > 0 ? text[start - 1] : "";
+      const after = end < text.length ? text[end] : "";
+      if (before && !/\s/.test(before) && !/^\s/.test(piece)) piece = ` ${piece}`;
+      if (after && !/\s/.test(after) && !/\s$/.test(piece)) piece = `${piece} `;
+      return piece;
+    }
+
+    /** Insert plain text at the saved caret (replaces selection if any). */
+    function insertTextAtDisplayCaret(raw) {
+      const insert = (raw == null ? "" : String(raw));
+      if (!insert) {
+        focusDisplayInput();
+        return;
+      }
+      const text = getText();
+      const { start, end } = getDisplayCaretRange();
+      const padded = padInsertAgainstNeighbors(text, start, end, insert);
+      const next = text.substring(0, start) + padded + text.substring(end);
+      const newCaret = start + padded.length;
+      setText(next, newCaret);
+      focusDisplayInput();
+    }
+
+    /** Delete the whole word before the caret (or the current selection). */
+    function deleteWholeWordBeforeCaret() {
+      const text = getText();
+      const { start, end } = getDisplayCaretRange();
+      if (start !== end) {
+        setText(text.substring(0, start) + text.substring(end), start);
+        focusDisplayInput();
+        return;
+      }
+      if (start <= 0) {
+        focusDisplayInput();
+        return;
+      }
+      let i = start;
+      // Consume trailing whitespace first (same as typical Ctrl+Backspace)
+      while (i > 0 && /\s/.test(text[i - 1])) i--;
+      // Then the preceding word characters
+      while (i > 0 && !/\s/.test(text[i - 1])) i--;
+      setText(text.substring(0, i) + text.substring(start), i);
+      focusDisplayInput();
+    }
+
+    /** Move caret one character left (collapses selection to its start first). */
+    function moveDisplayCaretLeft() {
+      const { start, end } = getDisplayCaretRange();
+      const pos = start !== end ? start : Math.max(0, start - 1);
+      try {
+        displayInput.focus({ preventScroll: true });
+        displayInput.setSelectionRange(pos, pos);
+      } catch (_) {
+        try { displayInput.focus(); } catch (__) {}
+      }
+      savedDisplaySelection = { start: pos, end: pos };
     }
 
     // ==================== SAVED TAGS (insert modal) ====================
@@ -2308,18 +2670,13 @@
       renderTagInsertGrid(savedTagsList);
     });
 
-    /** Insert `[tag] ` into the display at the saved caret (replaces selection if any). */
+    /** Insert `[tag]` into the display at the saved caret (replaces selection if any). */
     function insertBracketTag(rawOverride) {
       const insertInput = document.getElementById("insert-tag-input");
       const raw = (rawOverride != null ? String(rawOverride) : (insertInput?.value || "")).trim();
       if (!raw) return;
-      const insert = `[${raw}] `;
-      const text = getText();
-      const { start, end } = getDisplayCaretRange();
-      const next = text.substring(0, start) + insert + text.substring(end);
-      const newCaret = start + insert.length;
-      setText(next, newCaret);
-      focusDisplayInput();
+      // Spacing against neighbors is handled by insertTextAtDisplayCaret
+      insertTextAtDisplayCaret(`[${raw}]`);
     }
 
     document.getElementById("insert-tag-btn")?.addEventListener("click", () => openTagInsertModal());
@@ -2338,22 +2695,83 @@
       displayInput.style.height = `${displayInput.scrollHeight}px`;
     }
 
-    /** Show/hide Replay & Assign when text still matches last spoken audio. */
+    /**
+     * Show Assign whenever the display has text (text-only pins allowed).
+     * Show Replay only when last generated speech still matches the display text.
+     */
     function syncGeneratedAudioActions() {
-      if (lastGeneratedAudio && getText().trim() !== (lastGeneratedAudio.text || "").trim()) {
-        audioActionsBar.classList.remove("active");
-      } else if (canUseGeneratedActions(lastGeneratedAudio)) {
-        audioActionsBar.classList.add("active");
-      }
+      const hasText = canAssignFromDisplay();
+      const text = getText().trim();
+      const replayOk = canUseGeneratedActions(lastGeneratedAudio)
+        && text === (lastGeneratedAudio.text || "").trim();
+
+      const replayBtn = document.getElementById("textarea-replay-btn");
+      const assignBtn = document.getElementById("textarea-assign-btn");
+      if (replayBtn) replayBtn.style.display = replayOk ? "" : "none";
+      if (assignBtn) assignBtn.style.display = hasText ? "" : "none";
+      audioActionsBar.classList.toggle("active", hasText || replayOk);
     }
 
     displayInput.addEventListener("input", () => {
       autosizeDisplayInput();
       syncGeneratedAudioActions();
     });
-    document.getElementById("clear-btn").addEventListener("click", () => {
-      setText(""); audioActionsBar.classList.remove("active"); focusDisplayInput();
-    });
+
+    /**
+     * Three text slots cycled by Recycle (baseball lineup analogy):
+     *   [0] at bat   = active display (synced on each recycle press)
+     *   [1] in the hole
+     *   [2] on deck
+     * Press: at bat → in the hole, in the hole → on deck, on deck → at bat.
+     * i.e. [A, B, C] → [C, A, B], then display shows the new at bat.
+     */
+    const recycleSlots = ["", "", ""]; // [atBat, inHole, onDeck]
+    const recycleBtn = document.getElementById("recycle-btn");
+
+    function previewSnippet(text, max = 36) {
+      const t = String(text || "").replace(/\s+/g, " ").trim();
+      if (!t) return "(empty)";
+      return t.length > max ? `${t.slice(0, max)}…` : t;
+    }
+
+    function syncRecycleButton() {
+      if (!recycleBtn) return;
+      const filled = recycleSlots.filter(s => String(s).length > 0).length;
+      // On next press: display→in the hole, in the hole→on deck, on deck→display
+      const nextAtBat = recycleSlots[2];
+      recycleBtn.title =
+        `Recycle (3 slots): at bat → in the hole → on deck → at bat\n` +
+        `Coming to bat: ${previewSnippet(nextAtBat)}\n` +
+        `In the hole: ${previewSnippet(recycleSlots[1])}`;
+      recycleBtn.setAttribute(
+        "aria-label",
+        `Recycle display text. ${filled} of 3 slots have text. Coming to bat: ${previewSnippet(nextAtBat, 48)}`
+      );
+    }
+
+    function cycleRecycleSlots() {
+      // Capture current display as at bat, then rotate
+      recycleSlots[0] = getText();
+      const atBat = recycleSlots[0];
+      const inHole = recycleSlots[1];
+      const onDeck = recycleSlots[2];
+      recycleSlots[0] = onDeck;  // on deck → at bat
+      recycleSlots[1] = atBat;   // at bat → in the hole
+      recycleSlots[2] = inHole;  // in the hole → on deck
+      setText(recycleSlots[0], recycleSlots[0].length);
+      syncRecycleButton();
+      focusDisplayInput();
+    }
+
+    function clearDisplayText() {
+      // Discard display text; do not save for restore
+      setText("");
+      focusDisplayInput();
+    }
+
+    document.getElementById("clear-btn").addEventListener("click", clearDisplayText);
+    recycleBtn?.addEventListener("click", cycleRecycleSlots);
+    syncRecycleButton();
 
     window.addEventListener("resize", () => {
       autosizeDisplayInput();
@@ -2481,6 +2899,21 @@
       return window.sharedAudioContext;
     }
 
+    /** Active HTMLAudioElement playback (element path), so new speech can interrupt it. */
+    let activeHtmlAudio = null;
+
+    function stopActiveHtmlAudio() {
+      if (!activeHtmlAudio) return;
+      try {
+        activeHtmlAudio.onended = null;
+        activeHtmlAudio.onerror = null;
+        activeHtmlAudio.pause();
+        activeHtmlAudio.removeAttribute("src");
+        activeHtmlAudio.load();
+      } catch (_) {}
+      activeHtmlAudio = null;
+    }
+
     function stopActiveBufferSources() {
       activeBufferSources.forEach(source => {
         try { source.onended = null; } catch (_) {}
@@ -2488,55 +2921,39 @@
         try { source.disconnect(); } catch (_) {}
       });
       activeBufferSources = [];
+      stopActiveHtmlAudio();
     }
 
-    function playAudioData(audioData) {
+    function playAudioData(audioData, opts = {}) {
       if (audioData) {
         const audio = new Audio(audioData);
         const gainSetting = parseFloat(volumeSlider.value) || 3.0;
-        const speed = parseFloat(speedSlider.value) || 1.0;
+        // Clips with speed already baked play at rate 1
+        const applySpeed = opts.applySpeed !== false;
+        const speed = applySpeed ? (parseFloat(speedSlider.value) || 1.0) : 1.0;
         audio.playbackRate = speed;
-        playAudioWithGain(audio, gainSetting);
+        playAudioWithGain(audio, gainSetting, { applySpeed, speed });
       }
       focusDisplayInput();
     }
 
-    /** Replay history/action item: clip if present, else regenerate utterance with active voice. */
-    function playStoredSpeech(item) {
-      if (!item) {
-        focusDisplayInput();
-        return;
-      }
-      if (isUtteranceSource(item)) {
-        speakPhrase(getUtteranceText(item), { recordHistory: false, showLoading: false, alertOnError: false });
-        return;
-      }
-      if (item.audioData) {
-        playAudioData(item.audioData);
-        return;
-      }
-      focusDisplayInput();
-    }
-
-    /** Play a sound button: stored clip or on-the-fly utterance regen. */
-    function playButtonSpeech(btn) {
-      if (!btn) {
-        focusDisplayInput();
-        return;
-      }
-      const utt = (btn.utteranceText || "").trim();
+    /** Play history item or button: live utterance regen, or stored clip. */
+    function playSpeechSource(src) {
+      if (!src) { focusDisplayInput(); return; }
+      const utt = trim(src.utteranceText) || (isUtteranceSource(src) ? getUtteranceText(src) : "");
       if (utt) {
         speakPhrase(utt, { recordHistory: false, showLoading: false, alertOnError: false });
         return;
       }
-      if (btn.audioData) {
-        playAudioData(btn.audioData);
+      if (src.audioData) {
+        playAudioData(src.audioData, { applySpeed: !src.effectsBaked });
         return;
       }
       focusDisplayInput();
     }
 
     function interpolateSample(data, pos) {
+      if (!data || data.length === 0) return 0;
       if (pos <= 0) return data[0] || 0;
       if (pos >= data.length - 1) return data[data.length - 1] || 0;
       const i0 = Math.floor(pos);
@@ -2544,169 +2961,198 @@
       return data[i0] * (1 - frac) + data[i0 + 1] * frac;
     }
 
-    function makeHannWindow(size) {
-      const w = new Float32Array(size);
-      if (size <= 1) {
-        w[0] = 1;
-        return w;
+    /** Linear resample a channel to a new length (speed change). */
+    function linearResampleChannel(input, newLen) {
+      const target = Math.max(1, Math.round(newLen));
+      if (!input || input.length === 0) return new Float32Array(target);
+      if (input.length === target) {
+        return input.slice ? input.slice() : new Float32Array(input);
       }
-      for (let i = 0; i < size; i++) {
-        w[i] = 0.5 * (1 - Math.cos((2 * Math.PI * i) / (size - 1)));
+      const out = new Float32Array(target);
+      if (target === 1) {
+        out[0] = input[0] || 0;
+        return out;
       }
-      return w;
+      const ratio = (input.length - 1) / (target - 1);
+      for (let i = 0; i < target; i++) out[i] = interpolateSample(input, i * ratio);
+      return out;
     }
 
-    /** Resample for pitch: ratio > 1 → higher pitch, shorter buffer. */
-    function resampleChannel(input, pitchRatio) {
-      const newLen = Math.max(1, Math.round(input.length / pitchRatio));
-      const out = new Float32Array(newLen);
-      for (let i = 0; i < newLen; i++) {
-        out[i] = interpolateSample(input, i * pitchRatio);
+    /** Apply speed offline (duration ≈ original / speed). */
+    function applySpeedToBuffer(ctx, audioBuffer, speed) {
+      if (!audioBuffer) return audioBuffer;
+      const rate = clamp(parseFloat(speed) || 1, 0.25, 4);
+      if (Math.abs(rate - 1) < 1e-6) return audioBuffer;
+      const targetLength = Math.max(1, Math.round(audioBuffer.length / rate));
+      const out = ctx.createBuffer(audioBuffer.numberOfChannels, targetLength, audioBuffer.sampleRate);
+      for (let ch = 0; ch < audioBuffer.numberOfChannels; ch++) {
+        out.copyToChannel(linearResampleChannel(audioBuffer.getChannelData(ch), targetLength), ch);
       }
       return out;
     }
 
-    /**
-     * Overlap-add time stretch to targetLen without changing pitch.
-     * Used after resample so overall duration matches the original.
-     */
-    function timeStretchChannel(input, targetLen) {
-      if (targetLen <= 0) return new Float32Array(0);
-      if (input.length === targetLen) return input.slice ? input.slice() : new Float32Array(input);
-      if (input.length < 32 || targetLen < 32) {
-        const out = new Float32Array(targetLen);
-        const ratio = input.length / targetLen;
-        for (let i = 0; i < targetLen; i++) out[i] = interpolateSample(input, i * ratio);
-        return out;
-      }
+    /** Encode an AudioBuffer as a 16-bit mono/stereo WAV data URL. */
+    function audioBufferToWavDataUrl(audioBuffer) {
+      const numChannels = audioBuffer.numberOfChannels;
+      const sampleRate = audioBuffer.sampleRate;
+      const numFrames = audioBuffer.length;
+      const bytesPerSample = 2;
+      const blockAlign = numChannels * bytesPerSample;
+      const dataSize = numFrames * blockAlign;
+      const buffer = new ArrayBuffer(44 + dataSize);
+      const view = new DataView(buffer);
 
-      const frameSize = Math.min(1024, 1 << Math.floor(Math.log2(Math.min(input.length, targetLen, 1024))));
-      const hopOut = Math.max(1, Math.floor(frameSize / 4));
-      const window = makeHannWindow(frameSize);
-      const output = new Float32Array(targetLen + frameSize);
-      const weight = new Float32Array(targetLen + frameSize);
-      const maxInStart = Math.max(0, input.length - frameSize);
+      const writeStr = (offset, str) => {
+        for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+      };
+      writeStr(0, "RIFF");
+      view.setUint32(4, 36 + dataSize, true);
+      writeStr(8, "WAVE");
+      writeStr(12, "fmt ");
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * blockAlign, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, bytesPerSample * 8, true);
+      writeStr(36, "data");
+      view.setUint32(40, dataSize, true);
 
-      for (let outPos = 0; outPos < targetLen; outPos += hopOut) {
-        const inPos = maxInStart === 0
-          ? 0
-          : Math.floor((outPos / Math.max(1, targetLen - 1)) * maxInStart);
-        for (let i = 0; i < frameSize; i++) {
-          const di = outPos + i;
-          const si = inPos + i;
-          const s = si < input.length ? input[si] * window[i] : 0;
-          output[di] += s;
-          weight[di] += window[i];
+      const channels = [];
+      for (let ch = 0; ch < numChannels; ch++) channels.push(audioBuffer.getChannelData(ch));
+      let offset = 44;
+      for (let i = 0; i < numFrames; i++) {
+        for (let ch = 0; ch < numChannels; ch++) {
+          let s = channels[ch][i];
+          s = Math.max(-1, Math.min(1, s));
+          view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+          offset += 2;
         }
       }
 
-      const result = new Float32Array(targetLen);
-      for (let i = 0; i < targetLen; i++) {
-        result[i] = weight[i] > 1e-6 ? output[i] / weight[i] : 0;
+      const bytes = new Uint8Array(buffer);
+      let binary = "";
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
       }
-      return result;
+      return `data:audio/wav;base64,${btoa(binary)}`;
+    }
+
+    async function ensureAudioCtx() {
+      const ctx = getSharedAudioContext();
+      if (!ctx) throw new Error("no audio context");
+      if (ctx.state === "suspended") await ctx.resume();
+      return ctx;
+    }
+
+    async function decodeToBuffer(arrayBuffer) {
+      const ctx = await ensureAudioCtx();
+      return ctx.decodeAudioData(arrayBuffer.slice(0));
+    }
+
+    /** Bake current speed into a clip; identity speed keeps original encoding. */
+    async function bakeSpeedIntoAudioData(audioSource) {
+      const speed = parseFloat(speedSlider.value) || 1.0;
+      const speedIdentity = Math.abs(speed - 1) < 1e-6;
+
+      let arrayBuffer;
+      if (typeof audioSource === "string") {
+        if (speedIdentity) return { dataUrl: audioSource, effectsBaked: false };
+        const res = await fetch(audioSource);
+        if (!res.ok) throw new Error("fetch failed");
+        arrayBuffer = await res.arrayBuffer();
+      } else if (audioSource instanceof Blob) {
+        if (speedIdentity) return { dataUrl: await blobToDataUrl(audioSource), effectsBaked: false };
+        arrayBuffer = await audioSource.arrayBuffer();
+      } else if (audioSource instanceof ArrayBuffer) {
+        arrayBuffer = audioSource;
+        if (speedIdentity) {
+          return { dataUrl: audioBufferToWavDataUrl(await decodeToBuffer(arrayBuffer)), effectsBaked: true };
+        }
+      } else {
+        throw new Error("unsupported audio source");
+      }
+
+      const ctx = await ensureAudioCtx();
+      let audioBuffer = await ctx.decodeAudioData(arrayBuffer.slice(0));
+      audioBuffer = applySpeedToBuffer(ctx, audioBuffer, speed);
+      return { dataUrl: audioBufferToWavDataUrl(audioBuffer), effectsBaked: true };
     }
 
     /**
-     * Pitch-shift an AudioBuffer by semitones while keeping the same duration.
-     * Speed is applied separately via playbackRate when playing.
+     * Play audio with gain + optional speed via HTMLAudioElement (preserves pitch).
+     * @param {HTMLAudioElement} audioElement
+     * @param {number} gainValue
+     * @param {{ applySpeed?: boolean, speed?: number, onStarted?: Function }} [opts]
      */
-    function pitchShiftBufferPreserveDuration(ctx, audioBuffer, semitones) {
-      if (!audioBuffer || Math.abs(semitones) < 1e-6) return audioBuffer;
-      const pitchRatio = Math.pow(2, semitones / 12);
-      const numChannels = audioBuffer.numberOfChannels;
-      const targetLength = audioBuffer.length;
-      const sampleRate = audioBuffer.sampleRate;
-      const out = ctx.createBuffer(numChannels, targetLength, sampleRate);
-
-      for (let ch = 0; ch < numChannels; ch++) {
-        const input = audioBuffer.getChannelData(ch);
-        const pitched = resampleChannel(input, pitchRatio);
-        const stretched = timeStretchChannel(pitched, targetLength);
-        out.copyToChannel(stretched, ch);
-      }
-      return out;
-    }
-
-    /**
-     * Play audio with Web Audio gain + pitch (duration-preserving) + speed.
-     * Pitch does not affect playback speed; speed uses playbackRate only.
-     */
-    async function playAudioWithGain(audioElement, gainValue) {
-      const pitchSemitones = getPitchSemitones();
-      const speed = audioElement.playbackRate || 1;
+    async function playAudioWithGain(audioElement, gainValue, opts = {}) {
+      const applySpeed = opts.applySpeed !== false;
+      const speed = applySpeed
+        ? (opts.speed != null ? opts.speed : (audioElement.playbackRate || 1))
+        : 1;
       const onEnded = typeof audioElement.onended === "function" ? audioElement.onended.bind(audioElement) : null;
-      const url = audioElement.src;
+      const onStarted = typeof opts.onStarted === "function" ? opts.onStarted : null;
+      const safeGain = clamp(parseFloat(gainValue) || 1, 0.05, 5);
 
-      const fallbackPlay = async () => {
-        // Fallback cannot pitch without changing speed; keep speed only.
-        audioElement.volume = Math.min(1.0, gainValue / 5.0);
+      let endedFired = false;
+      const fireEnded = () => {
+        if (endedFired) return;
+        endedFired = true;
+        if (onEnded) {
+          try { onEnded(); } catch (_) {}
+        }
+      };
+
+      try {
+        stopActiveHtmlAudio();
+        activeHtmlAudio = audioElement;
+        audioElement.volume = Math.min(1.0, safeGain / 5.0);
         try {
           audioElement.preservesPitch = true;
           audioElement.mozPreservesPitch = true;
           audioElement.webkitPreservesPitch = true;
         } catch (_) {}
-        audioElement.playbackRate = speed;
-        if (onEnded) audioElement.onended = onEnded;
-        await applySinkToMediaElement(audioElement);
-        audioElement.play().catch(() => {});
-      };
-
-      if (!url) {
-        await fallbackPlay();
-        return;
-      }
-
-      const ctx = getSharedAudioContext();
-      if (!ctx) {
-        await fallbackPlay();
-        return;
-      }
-
-      try {
-        if (ctx.state === "suspended") await ctx.resume();
-        if (typeof ctx.setSinkId === "function") {
-          try { await ctx.setSinkId(activeOutputDeviceId || ""); } catch (_) {}
-        }
-        stopActiveBufferSources();
-
-        const response = await fetch(url);
-        if (!response.ok) throw new Error("fetch failed");
-        const arrayBuffer = await response.arrayBuffer();
-        let audioBuffer = await ctx.decodeAudioData(arrayBuffer.slice(0));
-        audioBuffer = pitchShiftBufferPreserveDuration(ctx, audioBuffer, pitchSemitones);
-
-        const source = ctx.createBufferSource();
-        source.buffer = audioBuffer;
-        // Speed only — pitch already applied offline without changing duration
-        source.playbackRate.value = speed;
-        source.detune.value = 0;
-
-        const gainNode = ctx.createGain();
-        gainNode.gain.value = gainValue;
-        source.connect(gainNode);
-        gainNode.connect(ctx.destination);
-
-        source.onended = () => {
-          activeBufferSources = activeBufferSources.filter(s => s !== source);
-          try { source.disconnect(); } catch (_) {}
-          try { gainNode.disconnect(); } catch (_) {}
-          if (onEnded) {
-            try { onEnded(); } catch (_) {}
-          }
+        audioElement.playbackRate = clamp(speed, 0.25, 4);
+        audioElement.onended = () => {
+          if (activeHtmlAudio === audioElement) activeHtmlAudio = null;
+          fireEnded();
         };
-
-        activeBufferSources.push(source);
-        source.start(0);
-      } catch (err) {
-        await fallbackPlay();
+        audioElement.onerror = () => {
+          if (activeHtmlAudio === audioElement) activeHtmlAudio = null;
+          fireEnded();
+        };
+        await applySinkToMediaElement(audioElement);
+        await audioElement.play();
+        try { if (onStarted) onStarted(); } catch (_) {}
+      } catch (_) {
+        if (activeHtmlAudio === audioElement) activeHtmlAudio = null;
+        fireEnded();
       }
     }
 
+    /** ElevenLabs-style [tag] directives. */
+    function phraseHasInlineTags(text) {
+      return /\[[^\]]*\]/.test(String(text || ""));
+    }
+
+    /** Non-tag spoken content (tags stripped). Empty when phrase is blank or tags-only. */
+    function stripInlineTags(text) {
+      return String(text || "")
+        .replace(/\[[^\]]*\]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function hasNonTagSpeechContent(text) {
+      return stripInlineTags(text).length > 0;
+    }
+
     /**
-     * Speak arbitrary text with current voice settings.
-     * @param {string} text
-     * @param {{ recordHistory?: boolean, showLoading?: boolean, alertOnError?: boolean }} [opts]
+     * Speak with current voice settings.
+     * ElevenLabs requires non-empty speech content (not empty, not tags-only).
+     * Tags may accompany text; tags alone are not sent to ElevenLabs.
      */
     async function speakPhrase(text, opts = {}) {
       const {
@@ -2714,84 +3160,144 @@
         showLoading = false,
         alertOnError = false
       } = opts;
-      const phrase = (text || "").trim();
+      const phrase = trim(text);
       if (!phrase) return;
 
       const gainSetting = parseFloat(volumeSlider.value) || 3.0;
       const speed = parseFloat(speedSlider.value) || 1.0;
-      const pitchSemitones = getPitchSemitones();
+      const hasTags = phraseHasInlineTags(phrase);
+      const hasSpeechBody = hasNonTagSpeechContent(phrase);
+      const apiKey = lsGet("elevenlabs_key", "");
+      const canUseEleven = !!(apiKey && activeElevenVoiceId);
+      const useBrowser = modelSelect.value === "browser_tts";
 
-      let modelToUse = modelSelect.value;
-      if (phrase.includes("[") && modelToUse !== "browser_tts") {
-        modelToUse = "eleven_v3";
+      // ElevenLabs only when there is real speech text (not empty / tags-only)
+      if (!useBrowser && !hasSpeechBody) {
+        if (alertOnError) {
+          alert(hasTags
+            ? "Add some words to speak. Tags alone cannot be sent to ElevenLabs."
+            : "Type something to speak first.");
+        }
+        return;
       }
 
-      // Stop any in-progress speech so a new phrase starts cleanly
       try { window.speechSynthesis.cancel(); } catch (_) {}
       stopActiveBufferSources();
 
       if (showLoading) setSpeakBtnLoading();
       else setSpeakBtnIdle();
 
+      const doneLoading = () => { if (showLoading) setSpeakBtnIdle(); };
+      // Once playback has started, never show a hard failure popup
+      let playbackStarted = false;
+
       try {
-        if (modelSelect.value === "browser_tts") {
+        if (useBrowser) {
           const utterance = new SpeechSynthesisUtterance(phrase);
           utterance.volume = Math.min(1.0, gainSetting / 5.0);
           utterance.rate = speed;
-          utterance.pitch = pitchToUtterance(pitchSemitones);
+          utterance.pitch = 1;
           const voices = window.speechSynthesis.getVoices();
           const voiceIdx = (activeBrowserVoiceIndex !== "" && voices[activeBrowserVoiceIndex])
             ? activeBrowserVoiceIndex
             : 0;
           utterance.voice = voices[voiceIdx] || null;
           utterance.onend = () => {
-            if (showLoading) setSpeakBtnIdle();
+            doneLoading();
             if (recordHistory) addToHistory(phrase, "browser_tts", `voice_${voiceIdx}`, null);
             focusDisplayInput();
           };
-          utterance.onerror = () => {
-            if (showLoading) setSpeakBtnIdle();
-          };
+          utterance.onerror = () => { doneLoading(); };
           window.speechSynthesis.speak(utterance);
+          playbackStarted = true;
+          doneLoading();
           focusDisplayInput();
         } else {
-          const apiKey = localStorage.getItem("elevenlabs_key");
-          if (!apiKey || !activeElevenVoiceId) {
+          if (!canUseEleven) {
             if (alertOnError) alert("Please configure your API Key and select a voice in Settings.");
-            if (showLoading) setSpeakBtnIdle();
+            doneLoading();
             focusDisplayInput();
             return;
           }
-          const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${activeElevenVoiceId}`, {
-            method: "POST",
-            headers: { Accept: "audio/mpeg", "Content-Type": "application/json", "xi-api-key": apiKey },
-            body: JSON.stringify({
-              text: phrase, model_id: modelToUse,
-              voice_settings: { stability: parseFloat(stabilitySlider.value), similarity_boost: parseFloat(similaritySlider.value) }
-            })
-          });
+          // Tags need v3; otherwise use the selected Eleven model
+          const modelToUse = hasTags ? "eleven_v3" : modelSelect.value;
+
+          const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+          const fetchTimeout = setTimeout(() => { try { controller?.abort(); } catch (_) {} }, 25000);
+          let res;
+          try {
+            res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${activeElevenVoiceId}`, {
+              method: "POST",
+              headers: { Accept: "audio/mpeg", "Content-Type": "application/json", "xi-api-key": apiKey },
+              body: JSON.stringify({
+                text: phrase,
+                model_id: modelToUse,
+                voice_settings: {
+                  stability: parseFloat(stabilitySlider.value),
+                  similarity_boost: parseFloat(similaritySlider.value)
+                }
+              }),
+              signal: controller ? controller.signal : undefined
+            });
+          } finally {
+            clearTimeout(fetchTimeout);
+          }
           if (!res.ok) throw new Error("API Error");
           const blob = await res.blob();
-          const audioUrl = URL.createObjectURL(blob);
-          const audio = new Audio(audioUrl);
-          audio.playbackRate = speed;
+          if (!blob || blob.size < 16) throw new Error("Empty audio");
 
-          audio.onended = () => {
-            if (showLoading) setSpeakBtnIdle();
+          let playUrl;
+          let saveDataUrl = null;
+          let effectsBaked = false;
+          const objectUrl = URL.createObjectURL(blob);
+          try {
+            const baked = await withTimeout(bakeSpeedIntoAudioData(blob), 6000, "bake timeout");
+            saveDataUrl = baked.dataUrl;
+            effectsBaked = !!baked.effectsBaked;
+            playUrl = saveDataUrl || objectUrl;
+          } catch (_) {
+            playUrl = objectUrl;
+            effectsBaked = false;
+            try {
+              saveDataUrl = await blobToDataUrl(blob);
+            } catch (__) {
+              saveDataUrl = null;
+            }
+          }
+
+          const audio = new Audio(playUrl);
+          audio.playbackRate = effectsBaked ? 1 : speed;
+
+          let cleaned = false;
+          const cleanup = () => {
+            if (cleaned) return;
+            cleaned = true;
+            try { URL.revokeObjectURL(objectUrl); } catch (_) {}
+            doneLoading();
             focusDisplayInput();
           };
-          playAudioWithGain(audio, gainSetting);
+
+          audio.onended = cleanup;
+          await playAudioWithGain(audio, gainSetting, {
+            applySpeed: !effectsBaked,
+            speed: effectsBaked ? 1 : speed,
+            onStarted: () => {
+              playbackStarted = true;
+              doneLoading();
+            }
+          });
+          // play() resolved — treat as started even if onStarted was skipped
+          playbackStarted = true;
           focusDisplayInput();
 
-          if (recordHistory) {
-            const reader = new FileReader();
-            reader.onloadend = () => addToHistory(phrase, modelToUse, activeElevenVoiceId, reader.result);
-            reader.readAsDataURL(blob);
+          if (recordHistory && saveDataUrl) {
+            addToHistory(phrase, modelToUse, activeElevenVoiceId, saveDataUrl, { effectsBaked });
           }
         }
       } catch (_) {
-        if (alertOnError) alert("Failed to generate speech.");
-        if (showLoading) setSpeakBtnIdle();
+        // Only alert when nothing actually started playing
+        if (alertOnError && !playbackStarted) alert("Failed to generate speech.");
+        doneLoading();
         focusDisplayInput();
       }
     }
@@ -2810,44 +3316,101 @@
     }
 
     speakBtn.addEventListener("click", speakText);
-    displayInput.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!speakBtn.disabled) speakText(); } });
+    displayInput.addEventListener("keydown", (e) => {
+      // Enter (without Shift) → speak
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        if (!speakBtn.disabled) speakText();
+        return;
+      }
+      // Shift+Backspace → delete whole word
+      if (e.key === "Backspace" && e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        e.preventDefault();
+        deleteWholeWordBeforeCaret();
+        return;
+      }
+      // Shift+Space → move cursor left one position
+      if (e.key === " " && e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        e.preventDefault();
+        moveDisplayCaretLeft();
+      }
+    });
 
     // ==================== MODALS ====================
     function openModal(modalId) {
       document.querySelectorAll(".modal").forEach(m => m.classList.remove("open"));
-      document.getElementById(modalId)?.classList.add("open");
-      modalOverlay.classList.add("open");
+      const el = document.getElementById(modalId);
+      if (!el) return;
+      el.classList.add("open");
+      if (modalOverlay) modalOverlay.classList.add("open");
       document.body.classList.add("modal-open");
     }
     function closeModals() {
       document.querySelectorAll(".modal").forEach(m => m.classList.remove("open"));
-      modalOverlay.classList.remove("open");
+      if (modalOverlay) modalOverlay.classList.remove("open");
       document.body.classList.remove("modal-open");
       editingButtonId = null;
       editingButtonTopicId = null;
       editingTopicId = null;
-      focusDisplayInput();
+      iconStudioReturnModalId = null;
+      // Don't steal focus while another non-modal panel might be open
+      try { focusDisplayInput(); } catch (_) {}
     }
-    modalOverlay.addEventListener("click", closeModals);
+    // Expose for inline onclick handlers in the HTML markup
+    window.openModal = openModal;
+    window.closeModals = closeModals;
+    window.closeIconStudio = closeIconStudio;
+    window.openIconStudio = openIconStudio;
+
+    if (modalOverlay) {
+      modalOverlay.addEventListener("click", (e) => {
+        // Only the dimmed backdrop itself (not bubbled content — modals are siblings)
+        if (e.target === modalOverlay) closeModals();
+      });
+    }
+    // Cancel / Close buttons that use onclick="closeModals()" also get a reliable listener
+    document.querySelectorAll(".modal .modal-btn.secondary, .modal [data-close-modal]").forEach(btn => {
+      const handler = (btn.getAttribute("onclick") || "");
+      if (handler.includes("closeModals") || btn.hasAttribute("data-close-modal")) {
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          closeModals();
+        });
+      }
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      const studioOpen = document.getElementById("icon-studio-modal")?.classList.contains("open");
+      if (studioOpen) {
+        e.preventDefault();
+        closeIconStudio(false);
+        return;
+      }
+      if (document.body.classList.contains("modal-open") || modalOverlay?.classList.contains("open")) {
+        e.preventDefault();
+        closeModals();
+      }
+    });
 
     function syncSlider(el, valEl, storeKey, isFloat = true) {
-      const saved = localStorage.getItem(storeKey);
+      if (!el || !valEl) return;
+      const saved = lsGet(storeKey);
       if (saved !== null) el.value = saved;
-      valEl.textContent = isFloat ? parseFloat(el.value).toFixed(2) : el.value;
-      el.addEventListener("input", (e) => {
-        valEl.textContent = isFloat ? parseFloat(e.target.value).toFixed(2) : e.target.value;
-        localStorage.setItem(storeKey, e.target.value);
-      });
+      const paint = () => {
+        valEl.textContent = isFloat ? parseFloat(el.value).toFixed(2) : el.value;
+      };
+      paint();
+      el.addEventListener("input", () => { paint(); lsSet(storeKey, el.value); });
     }
 
     function updateSettingsVisibility() {
       const isBrowser = modelSelect.value === "browser_tts";
-      document.getElementById("group-browser-voice").style.display = isBrowser ? "flex" : "none";
-      document.getElementById("group-eleven-settings").style.display = isBrowser ? "none" : "flex";
+      $("group-browser-voice").style.display = isBrowser ? "flex" : "none";
+      $("group-eleven-settings").style.display = isBrowser ? "none" : "flex";
     }
 
-    modelSelect.value = localStorage.getItem("elevenlabs_model") || "browser_tts";
-    modelSelect.addEventListener("change", (e) => { localStorage.setItem("elevenlabs_model", e.target.value); updateSettingsVisibility(); });
+    modelSelect.value = lsGet("elevenlabs_model", "browser_tts") || "browser_tts";
+    modelSelect.addEventListener("change", (e) => { lsSet("elevenlabs_model", e.target.value); updateSettingsVisibility(); });
 
     // ==================== VOICES & API KEY MANAGEMENT ====================
     const previewText = "This is a preview.";
@@ -2904,10 +3467,7 @@
           document.getElementById("selected-browser-name").textContent = voice.name;
           document.querySelectorAll("#voice-list-browser .voice-item").forEach(el => el.classList.remove("selected"));
           item.classList.add("selected");
-          setTimeout(() => {
-            document.getElementById("voices-panel").classList.remove("open");
-            focusDisplayInput();
-          }, 200);
+          setTimeout(closeVoicesPanel, 200);
         });
 
         item.querySelector(".voice-preview-btn").addEventListener("click", (e) => {
@@ -2917,7 +3477,7 @@
           utterance.voice = voice;
           utterance.rate = parseFloat(speedSlider.value) || 1.0;
           utterance.volume = Math.min(1.0, (parseFloat(volumeSlider.value) || 3.0) / 5.0);
-          utterance.pitch = pitchToUtterance(getPitchSemitones());
+          utterance.pitch = 1;
           window.speechSynthesis.speak(utterance);
         });
         list.appendChild(item);
@@ -2984,81 +3544,67 @@
           document.getElementById("selected-eleven-name").textContent = voice.name;
           document.querySelectorAll("#voice-list-eleven .voice-item").forEach(el => el.classList.remove("selected"));
           item.classList.add("selected");
-          setTimeout(() => {
-            document.getElementById("voices-panel").classList.remove("open");
-            focusDisplayInput();
-          }, 200);
+          setTimeout(closeVoicesPanel, 200);
         });
 
         const previewBtn = item.querySelector(".voice-preview-btn");
         previewBtn.addEventListener("click", async (e) => {
           e.stopPropagation();
           const icon = previewBtn.querySelector(".material-symbols-outlined");
+          const resetPreview = () => { icon.textContent = "play_arrow"; previewBtn.disabled = false; };
           icon.textContent = "hourglass_top";
           previewBtn.disabled = true;
-          const apiKey = localStorage.getItem("elevenlabs_key");
+          const apiKey = lsGet("elevenlabs_key", "");
           const previewModel = modelSelect.value === "browser_tts" ? "eleven_v3" : modelSelect.value;
-
           try {
             if (!apiKey) throw new Error("No API key");
-            // Synthesize a short sample (more reliable than preview_url + WebAudio CORS issues)
             const synRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice.voice_id}`, {
               method: "POST",
               headers: { Accept: "audio/mpeg", "Content-Type": "application/json", "xi-api-key": apiKey },
               body: JSON.stringify({ text: previewText, model_id: previewModel })
             });
             if (!synRes.ok) throw new Error("API Error");
-            const blob = await synRes.blob();
-            const audio = new Audio(URL.createObjectURL(blob));
+            const audio = new Audio(URL.createObjectURL(await synRes.blob()));
             audio.playbackRate = parseFloat(speedSlider.value) || 1.0;
-            audio.onended = () => {
-              icon.textContent = "play_arrow";
-              previewBtn.disabled = false;
-            };
-            audio.onerror = () => {
-              icon.textContent = "play_arrow";
-              previewBtn.disabled = false;
-            };
-            const gainSetting = parseFloat(volumeSlider.value) || 3.0;
-            playAudioWithGain(audio, gainSetting);
+            audio.onended = resetPreview;
+            audio.onerror = resetPreview;
+            playAudioWithGain(audio, parseFloat(volumeSlider.value) || 3.0);
           } catch (_) {
             alert("Could not preview voice.");
-            icon.textContent = "play_arrow";
-            previewBtn.disabled = false;
+            resetPreview();
           }
         });
         list.appendChild(item);
       });
     }
 
-    document.getElementById("open-browser-voices").addEventListener("click", () => {
-      document.getElementById("voice-list-browser").classList.add("active");
-      document.getElementById("voice-list-eleven").classList.remove("active");
-      document.getElementById("voice-search-input").value = "";
-      loadBrowserVoices();
-      document.getElementById("voices-panel").classList.add("open");
-    });
+    function openVoicesPanel(mode) {
+      const browserList = $("voice-list-browser");
+      const elevenList = $("voice-list-eleven");
+      const isBrowser = mode === "browser";
+      browserList.classList.toggle("active", isBrowser);
+      elevenList.classList.toggle("active", !isBrowser);
+      $("voice-search-input").value = "";
+      if (isBrowser) loadBrowserVoices();
+      else if (elevenVoicesCache.length) renderElevenVoiceList();
+      else fetchElevenVoices(lsGet("elevenlabs_key", ""));
+      $("voices-panel").classList.add("open");
+    }
 
-    document.getElementById("open-eleven-voices").addEventListener("click", () => {
-      document.getElementById("voice-list-eleven").classList.add("active");
-      document.getElementById("voice-list-browser").classList.remove("active");
-      document.getElementById("voice-search-input").value = "";
-      const apiKey = localStorage.getItem("elevenlabs_key");
-      if (elevenVoicesCache.length) renderElevenVoiceList();
-      else fetchElevenVoices(apiKey);
-      document.getElementById("voices-panel").classList.add("open");
-    });
-
-    document.getElementById("close-voices-panel-btn").addEventListener("click", () => {
-      document.getElementById("voices-panel").classList.remove("open");
+    function closeVoicesPanel() {
+      $("voices-panel").classList.remove("open");
       focusDisplayInput();
-    });
+    }
 
-    document.getElementById("voice-search-input").addEventListener("input", () => {
+    $("open-browser-voices").addEventListener("click", () => openVoicesPanel("browser"));
+    $("open-eleven-voices").addEventListener("click", () => openVoicesPanel("eleven"));
+    $("close-voices-panel-btn").addEventListener("click", closeVoicesPanel);
+
+    $("voice-search-input").addEventListener("input", () => {
       clearTimeout(voiceSearchTimeout);
       voiceSearchTimeout = setTimeout(() => {
-        if (document.getElementById("voice-list-browser").classList.contains("active")) loadBrowserVoices();
-        if (document.getElementById("voice-list-eleven").classList.contains("active")) renderElevenVoiceList();
+        if ($("voice-list-browser").classList.contains("active")) loadBrowserVoices();
+        if ($("voice-list-eleven").classList.contains("active")) renderElevenVoiceList();
       }, 200);
     });
 
@@ -3066,36 +3612,28 @@
     const apiKeyInput = document.getElementById("api-key-input");
 
     function updateApiKeyStatus() {
-      const key = localStorage.getItem("elevenlabs_key") || "";
+      const key = lsGet("elevenlabs_key", "") || "";
       const label = apiKeyBtn.querySelector(".status-btn-text");
-      if (key) {
-        if (label) {
-          label.innerHTML = `<span class="material-symbols-outlined icon-small icon-btn-margin">key</span>API Key Saved (••••${key.slice(-4)})`;
-        }
-        apiKeyBtn.classList.remove("missing");
-        apiKeyBtn.classList.add("saved");
-        fetchElevenVoices(key);
-      } else {
-        if (label) {
-          label.innerHTML = `<span class="material-symbols-outlined icon-small icon-btn-margin">key</span>Missing API Key (Click to Add)`;
-        }
-        apiKeyBtn.classList.remove("saved");
-        apiKeyBtn.classList.add("missing");
-        elevenVoicesCache = [];
+      const hasKey = !!key;
+      if (label) {
+        label.innerHTML = hasKey
+          ? `<span class="material-symbols-outlined icon-small icon-btn-margin">key</span>API Key Saved (••••${key.slice(-4)})`
+          : `<span class="material-symbols-outlined icon-small icon-btn-margin">key</span>Missing API Key (Click to Add)`;
       }
+      apiKeyBtn.classList.toggle("missing", !hasKey);
+      apiKeyBtn.classList.toggle("saved", hasKey);
+      if (hasKey) fetchElevenVoices(key);
+      else elevenVoicesCache = [];
     }
 
     function openApiKeyModal() {
-      if (apiKeyInput) apiKeyInput.value = localStorage.getItem("elevenlabs_key") || "";
+      if (apiKeyInput) apiKeyInput.value = lsGet("elevenlabs_key", "") || "";
       openModal("api-key-modal");
-      requestAnimationFrame(() => {
-        try { apiKeyInput?.focus(); } catch (_) {}
-      });
+      requestAnimationFrame(() => { try { apiKeyInput?.focus(); } catch (_) {} });
     }
 
     function saveApiKeyFromModal() {
-      const updated = (apiKeyInput?.value || "").trim();
-      localStorage.setItem("elevenlabs_key", updated);
+      lsSet("elevenlabs_key", trim(apiKeyInput?.value));
       updateApiKeyStatus();
       closeModals();
     }
@@ -3117,24 +3655,6 @@
       syncSlider(similaritySlider, valSimilarity, "elevenlabs_similarity");
       syncSlider(volumeSlider, valVolume, "elevenlabs_volume");
       syncSlider(speedSlider, valSpeed, "elevenlabs_speed");
-
-      // Pitch (discrete semitone steps) — store actual semitone value
-      if (pitchSlider && valPitch) {
-        const savedPitch = localStorage.getItem("aac_pitch");
-        const idx = pitchIndexFromSemitones(savedPitch !== null ? savedPitch : 0);
-        pitchSlider.value = String(idx);
-        pitchSlider.max = String(PITCH_STEPS.length - 1);
-        const applyPitchLabel = () => {
-          const semi = getPitchSemitones();
-          valPitch.textContent = formatPitchLabel(semi);
-          pitchSlider.setAttribute("aria-valuetext", formatPitchLabel(semi));
-        };
-        applyPitchLabel();
-        pitchSlider.addEventListener("input", () => {
-          applyPitchLabel();
-          localStorage.setItem("aac_pitch", String(getPitchSemitones()));
-        });
-      }
 
       updateSettingsVisibility();
       updateApiKeyStatus();
@@ -3165,15 +3685,15 @@
 
       applyDisplayFontSize();
 
-      document.getElementById("font-down").addEventListener("click", () => {
+      $("font-down").addEventListener("click", () => {
         currentFontSize = Math.max(16, currentFontSize - 2);
-        localStorage.setItem("aac_font_size", currentFontSize);
+        lsSet("aac_font_size", currentFontSize);
         applyDisplayFontSize();
       });
 
-      document.getElementById("font-up").addEventListener("click", () => {
+      $("font-up").addEventListener("click", () => {
         currentFontSize = Math.min(48, currentFontSize + 2);
-        localStorage.setItem("aac_font_size", currentFontSize);
+        lsSet("aac_font_size", currentFontSize);
         applyDisplayFontSize();
       });
 
