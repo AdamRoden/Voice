@@ -448,7 +448,7 @@
     }
     .coach-banner-actions .modal-btn { min-height: 36px; padding: 8px 14px; font-size: 13px; }
 
-    /* Three text drafts (recycle) */
+    /* Three text drafts */
     .draft-slots {
       display: flex;
       align-items: center;
@@ -571,6 +571,250 @@
     .sound-button-label { width: 100%; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
     .sound-button-inner .sound-button-label { width: auto; flex: 1; min-width: 0; }
 
+    /* Everyday: full-button speak + tiny insert */
+    .sound-button.everyday-layout {
+      cursor: pointer;
+    }
+    .sound-button-main {
+      flex: 1 1 auto;
+      min-width: 0;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 0 6px 0 8px;
+      border: none;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      font-weight: 600;
+      text-shadow: inherit;
+      cursor: pointer;
+      overflow: hidden;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .sound-button-main:hover { background: rgba(255, 255, 255, 0.1); }
+    .sound-button-main:active { background: rgba(0, 0, 0, 0.14); transform: scale(0.99); }
+    .sound-button-main .sound-button-inner { pointer-events: none; }
+    .sound-button-insert {
+      flex: 0 0 auto;
+      width: calc(var(--sound-row-height, 44px) * 0.72);
+      min-width: 28px;
+      max-width: 40px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-left: 1px solid rgba(255, 255, 255, 0.28);
+      background: rgba(0, 0, 0, 0.18);
+      color: inherit;
+      cursor: pointer;
+      padding: 0;
+      margin: 0;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .sound-button-insert:hover { background: rgba(0, 0, 0, 0.32); }
+    .sound-button-insert:active { background: rgba(0, 0, 0, 0.42); }
+    .sound-button-insert .material-symbols-outlined {
+      font-size: calc(var(--sound-row-height, 44px) * 0.42);
+      line-height: 1;
+      opacity: 0.95;
+    }
+    .sound-button.utterance-button .sound-button-insert {
+      background: color-mix(in srgb, currentColor 12%, transparent);
+      border-left-color: color-mix(in srgb, currentColor 35%, transparent);
+    }
+    .sound-button.utterance-button .sound-button-insert:hover {
+      background: color-mix(in srgb, currentColor 22%, transparent);
+    }
+    .sound-button.utterance-button .sound-button-main:hover {
+      background: color-mix(in srgb, currentColor 10%, transparent);
+    }
+
+    /* Composition word chips (under display) */
+    .compose-strip {
+      display: none;
+      flex-direction: column;
+      gap: 4px;
+      flex-shrink: 0;
+      min-width: 0;
+    }
+    .compose-strip.has-items { display: flex; }
+    .compose-strip-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 0 2px;
+    }
+    .compose-strip-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .compose-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      max-height: 4.5em;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 2px 0;
+    }
+    .compose-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      max-width: 100%;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 4px 4px 4px 10px;
+      font-size: 13px;
+      font-weight: 500;
+      min-height: 32px;
+      cursor: default;
+    }
+    .compose-chip-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 12em;
+    }
+    .compose-chip-remove {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    .compose-chip-remove:hover {
+      background: var(--danger-bg);
+      color: var(--danger);
+    }
+    .compose-chip-remove .material-symbols-outlined { font-size: 16px; }
+
+    /* Larger touch targets (Comfort) */
+    body[data-touch-size="large"] {
+      --sound-row-height: 60px !important;
+    }
+    body[data-touch-size="large"] .sound-button {
+      font-size: 16px;
+      border-radius: 10px;
+    }
+    body[data-touch-size="large"] .sound-button-symbol { font-size: 20px; }
+    body[data-touch-size="large"] .key {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    body[data-touch-size="large"] .key.display-ctrl {
+      /* still driven by --display-ctrl-size, with a floor */
+      min-width: max(44px, var(--display-ctrl-size, 44px));
+      min-height: max(44px, var(--display-ctrl-size, 44px));
+    }
+    body[data-touch-size="large"] .draft-chip {
+      min-width: 44px;
+      min-height: 44px;
+      width: max(44px, var(--display-ctrl-size, 44px));
+      height: max(44px, var(--display-ctrl-size, 44px));
+      font-size: 14px;
+    }
+    body[data-touch-size="large"] .recents-chip {
+      min-height: 44px;
+      font-size: 15px;
+      padding: 8px 14px;
+    }
+    body[data-touch-size="large"] .compose-chip {
+      min-height: 40px;
+      font-size: 15px;
+      padding: 6px 6px 6px 12px;
+    }
+    body[data-touch-size="large"] .compose-chip-remove {
+      width: 36px;
+      height: 36px;
+    }
+    body[data-touch-size="large"] .mode-toggle-btn {
+      min-height: 48px;
+      font-size: 13px;
+    }
+    body[data-touch-size="large"] .sidebar-tab {
+      min-height: 52px;
+    }
+    body[data-touch-size="large"] .sound-canvas {
+      gap: 6px;
+    }
+    .touch-size-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .touch-size-row .toggle-switch-label {
+      font-size: 13px;
+      color: var(--text);
+      font-weight: 500;
+      flex: 1;
+    }
+    .touch-size-toggle {
+      position: relative;
+      width: 48px;
+      height: 28px;
+      flex-shrink: 0;
+    }
+    .touch-size-toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+    .touch-size-slider {
+      position: absolute;
+      inset: 0;
+      background: var(--key-bg);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .touch-size-slider::before {
+      content: "";
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      left: 3px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--text-secondary);
+      border-radius: 50%;
+      transition: transform 0.15s, background 0.15s;
+    }
+    .touch-size-toggle input:checked + .touch-size-slider {
+      background: color-mix(in srgb, var(--accent) 35%, var(--key-bg));
+      border-color: var(--accent);
+    }
+    .touch-size-toggle input:checked + .touch-size-slider::before {
+      transform: translate(18px, -50%);
+      background: var(--accent);
+    }
+    .touch-size-toggle input:focus-visible + .touch-size-slider {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
     /* Toolbar dock: tag row (matches sound rows) + Speak | Display | Clear */
     .bottom-dock { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
     .toolbar { display: flex; gap: 3px; align-items: flex-start; min-height: var(--display-ctrl-size, var(--display-font-size, 24px)); }
@@ -596,9 +840,7 @@
         .key.tts-btn:hover { background-color: var(--accent-hover); }
       .key.clear-btn { background-color: transparent; color: var(--danger); border-color: var(--danger); }
         .key.clear-btn:hover { background-color: var(--danger-bg); }
-      .key.recycle-btn { background-color: transparent; color: var(--accent); border-color: var(--accent); }
-        .key.recycle-btn:hover { background-color: color-mix(in srgb, var(--accent) 16%, transparent); }
-        .key.recycle-btn:active { background-color: color-mix(in srgb, var(--accent) 24%, transparent); }
+
       /* Add-tag matches sound button row height */
       .key.insert-btn {
         background-color: var(--key-bg);
@@ -1123,6 +1365,16 @@
             <button class="font-btn" id="font-up" type="button">A+</button>
           </div>
         </div>
+        <div class="sidebar-setting-group">
+          <div class="touch-size-row">
+            <span class="toggle-switch-label" id="large-targets-label">Larger touch targets</span>
+            <label class="touch-size-toggle" title="Bigger buttons and grid for easier taps">
+              <input type="checkbox" id="large-targets-toggle" aria-labelledby="large-targets-label">
+              <span class="touch-size-slider"></span>
+            </label>
+          </div>
+          <div class="modal-description" style="margin:0;">Comfort size for motor access — taller grid rows and controls.</div>
+        </div>
 
         <hr class="setting-divider">
 
@@ -1197,10 +1449,11 @@
       </div>
       <ol>
         <li><strong>Speak</strong> — type in the box, then press the blue speaker (or Enter).</li>
-        <li><strong>Buttons</strong> — left side plays; the label inserts text at your cursor.</li>
+        <li><strong>Buttons</strong> — in Everyday, tap the button to speak; the small <strong>+</strong> inserts text.</li>
         <li><strong>Assign</strong> — after you have text, pin it to a new sound button.</li>
-        <li><strong>Drafts A–C</strong> — recycle swaps among three text drafts; tap a letter to jump.</li>
-        <li><strong>Recent</strong> — spoken phrases appear under the box; tap to insert.</li>
+        <li><strong>Drafts A–C</strong> — tap a letter to switch among three text drafts.</li>
+        <li><strong>Recent</strong> — tap to insert; double-tap to speak.</li>
+        <li><strong>Message</strong> — words under the box; tap × to remove one.</li>
         <li><strong>Backup</strong> — switch to <strong>Builder</strong>, then Topics → Export / Import.</li>
         <li><strong>Selection</strong> — highlight words in the box to speak only that part.</li>
       </ol>
@@ -1247,9 +1500,12 @@
             <button type="button" class="draft-chip" data-draft="1" title="Draft B" aria-label="Draft B" aria-pressed="false">B</button>
             <button type="button" class="draft-chip" data-draft="2" title="Draft C" aria-label="Draft C" aria-pressed="false">C</button>
           </div>
-          <button class="key recycle-btn display-ctrl" id="recycle-btn" type="button" aria-label="Cycle to next draft" title="Cycle drafts A → B → C → A">
-            <span class="material-symbols-outlined icon-medium">recycling</span>
-          </button>
+        </div>
+        <div class="compose-strip" id="compose-strip" aria-label="Message words">
+          <div class="compose-strip-header">
+            <span class="compose-strip-label">Message</span>
+          </div>
+          <div class="compose-chips" id="compose-chips" role="list"></div>
         </div>
         <div class="recents-strip" id="recents-strip" aria-label="Recent phrases">
           <div class="recents-strip-header">
@@ -2900,11 +3156,13 @@
       soundCanvas.style.minHeight = "";
       autosizeSoundCanvas(activeTab);
 
+      const everydayLayout = appMode === "everyday";
+
       activeTab.buttons.forEach(btnData => {
         const isUtteranceBtn = !!(btnData.utteranceText || "").trim();
         const btnColor = btnData.color || "#3f3f4e";
         const btnEl = document.createElement("div");
-        btnEl.className = `sound-button${isOverwriteMode ? " overwrite-target" : ""}${isUtteranceBtn ? " utterance-button" : ""}`;
+        btnEl.className = `sound-button${isOverwriteMode ? " overwrite-target" : ""}${isUtteranceBtn ? " utterance-button" : ""}${everydayLayout && !isOverwriteMode ? " everyday-layout" : ""}`;
         btnEl.id = `btn-${btnData.id}`;
         btnEl.style.gridColumn = `${btnData.col + 1} / span ${btnData.colSpan}`;
         btnEl.style.gridRow = `${btnData.row + 1} / span ${btnData.rowSpan}`;
@@ -2919,33 +3177,56 @@
         const symbolPart = btnData.symbol
           ? `<span class="material-symbols-outlined sound-button-symbol">${btnData.symbol}</span>`
           : "";
-        btnEl.innerHTML = `
-          <button type="button" class="sound-button-play" title="Play" aria-label="Play ${btnData.label || "button"}">
-            <span class="material-symbols-outlined">play_arrow</span>
-          </button>
-          <button type="button" class="sound-button-body" title="Insert text at cursor" aria-label="Insert text for ${btnData.label || "button"} at cursor">
-            <div class="sound-button-inner">
-              ${symbolPart}
-              <div class="sound-button-label">${btnData.label || "Button"}</div>
-            </div>
-          </button>
-        `;
+        const label = btnData.label || "Button";
+        const insertText = getButtonSourceText(btnData) || trim(btnData.label) || "";
 
-        if (isOverwriteMode) {
-          btnEl.addEventListener("click", () => executeOverwrite(btnData.id));
-        } else {
-          const playEl = btnEl.querySelector(".sound-button-play");
-          const bodyEl = btnEl.querySelector(".sound-button-body");
-          playEl.addEventListener("click", (e) => {
+        if (everydayLayout && !isOverwriteMode) {
+          // Everyday: main area speaks; tiny + inserts into the message
+          btnEl.innerHTML = `
+            <button type="button" class="sound-button-main" title="Speak" aria-label="Speak ${label}">
+              <div class="sound-button-inner">
+                ${symbolPart}
+                <div class="sound-button-label">${label}</div>
+              </div>
+            </button>
+            <button type="button" class="sound-button-insert" title="Insert into message" aria-label="Insert ${label} into message">
+              <span class="material-symbols-outlined">add</span>
+            </button>
+          `;
+          btnEl.querySelector(".sound-button-main")?.addEventListener("click", (e) => {
             e.stopPropagation();
             playSpeechSource(btnData);
           });
-          bodyEl.addEventListener("click", (e) => {
+          btnEl.querySelector(".sound-button-insert")?.addEventListener("click", (e) => {
             e.stopPropagation();
-            // Insert source text at caret with auto-spacing (does not replace display)
-            const insert = getButtonSourceText(btnData) || trim(btnData.label) || "";
-            insertTextAtDisplayCaret(insert);
+            insertTextAtDisplayCaret(insertText);
+            announceLive(`Inserted ${label}`);
           });
+        } else {
+          // Builder (or overwrite): play strip + body insert
+          btnEl.innerHTML = `
+            <button type="button" class="sound-button-play" title="Play" aria-label="Play ${label}">
+              <span class="material-symbols-outlined">play_arrow</span>
+            </button>
+            <button type="button" class="sound-button-body" title="Insert text at cursor" aria-label="Insert text for ${label} at cursor">
+              <div class="sound-button-inner">
+                ${symbolPart}
+                <div class="sound-button-label">${label}</div>
+              </div>
+            </button>
+          `;
+          if (isOverwriteMode) {
+            btnEl.addEventListener("click", () => executeOverwrite(btnData.id));
+          } else {
+            btnEl.querySelector(".sound-button-play")?.addEventListener("click", (e) => {
+              e.stopPropagation();
+              playSpeechSource(btnData);
+            });
+            btnEl.querySelector(".sound-button-body")?.addEventListener("click", (e) => {
+              e.stopPropagation();
+              insertTextAtDisplayCaret(insertText);
+            });
+          }
         }
         soundCanvas.appendChild(btnEl);
       });
@@ -3167,9 +3448,23 @@
         btn.className = "recents-chip";
         btn.setAttribute("role", "listitem");
         btn.textContent = phrase;
-        btn.title = `Insert: ${phrase}`;
+        btn.title = `Tap: insert · Double-tap: speak — ${phrase}`;
+        let lastTap = 0;
         btn.addEventListener("click", () => {
-          insertTextAtDisplayCaret(phrase);
+          const now = Date.now();
+          if (now - lastTap < 380) {
+            lastTap = 0;
+            speakPhrase(phrase, { recordHistory: true, showLoading: false, alertOnError: false });
+            return;
+          }
+          lastTap = now;
+          // Delay single-tap insert slightly so double-tap can cancel
+          setTimeout(() => {
+            if (lastTap && Date.now() - lastTap >= 360) {
+              insertTextAtDisplayCaret(phrase);
+              lastTap = 0;
+            }
+          }, 370);
         });
         chips.appendChild(btn);
       });
@@ -3318,6 +3613,64 @@
       savedDisplaySelection = { start: pos, end: pos };
       autosizeDisplayInput();
       syncGeneratedAudioActions();
+      syncComposeStrip();
+    }
+
+    // ==================== COMPOSITION WORD CHIPS ====================
+    function tokenizeDisplayWords(text) {
+      const tokens = [];
+      const re = /\S+/g;
+      let m;
+      while ((m = re.exec(String(text || ""))) !== null) {
+        tokens.push({ text: m[0], start: m.index, end: m.index + m[0].length });
+      }
+      return tokens;
+    }
+
+    function removeDisplayWordAt(index) {
+      const text = getText();
+      const tokens = tokenizeDisplayWords(text);
+      if (index < 0 || index >= tokens.length) return;
+      const t = tokens[index];
+      let start = t.start;
+      let end = t.end;
+      // Prefer dropping a trailing space, else a leading space
+      if (end < text.length && /\s/.test(text[end])) end += 1;
+      else if (start > 0 && /\s/.test(text[start - 1])) start -= 1;
+      const next = text.slice(0, start) + text.slice(end);
+      setText(next, Math.min(start, next.length));
+      announceLive(`Removed ${t.text}`);
+      focusDisplayInput();
+    }
+
+    function syncComposeStrip() {
+      const strip = document.getElementById("compose-strip");
+      const chips = document.getElementById("compose-chips");
+      if (!strip || !chips) return;
+      const tokens = tokenizeDisplayWords(getText());
+      chips.innerHTML = "";
+      if (!tokens.length) {
+        strip.classList.remove("has-items");
+        return;
+      }
+      strip.classList.add("has-items");
+      tokens.forEach((tok, i) => {
+        const chip = document.createElement("div");
+        chip.className = "compose-chip";
+        chip.setAttribute("role", "listitem");
+        chip.innerHTML = `
+          <span class="compose-chip-text"></span>
+          <button type="button" class="compose-chip-remove" title="Remove word" aria-label="Remove ${tok.text}">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        `;
+        chip.querySelector(".compose-chip-text").textContent = tok.text;
+        chip.querySelector(".compose-chip-remove")?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          removeDisplayWordAt(i);
+        });
+        chips.appendChild(chip);
+      });
     }
 
     /** Caret/selection for insert — prefer live selection, else saved, else end. */
@@ -3536,17 +3889,16 @@
     displayInput.addEventListener("input", () => {
       autosizeDisplayInput();
       syncGeneratedAudioActions();
+      syncComposeStrip();
     });
 
     /**
      * Three text drafts (A / B / C).
-     * One is active in the display; recycle advances A → B → C → A.
-     * Tap a letter chip to jump to that draft (current text is saved first).
+     * One is active in the display; tap a letter chip to jump (current text is saved first).
      */
     const DRAFT_LABELS = ["A", "B", "C"];
     const drafts = ["", "", ""];
     let activeDraft = 0;
-    const recycleBtn = document.getElementById("recycle-btn");
     const draftSlotsEl = document.getElementById("draft-slots");
 
     function previewSnippet(text, max = 36) {
@@ -3572,16 +3924,6 @@
           `Draft ${label}${idx === activeDraft ? ", current" : ""}${filled ? "" : ", empty"}`
         );
       });
-      if (recycleBtn) {
-        const next = (activeDraft + 1) % drafts.length;
-        recycleBtn.title =
-          `Cycle drafts ${DRAFT_LABELS.join(" → ")} → ${DRAFT_LABELS[0]}\n` +
-          `Next: ${DRAFT_LABELS[next]} — ${previewSnippet(drafts[next])}`;
-        recycleBtn.setAttribute(
-          "aria-label",
-          `Cycle to draft ${DRAFT_LABELS[next]}`
-        );
-      }
     }
 
     function saveActiveDraftFromDisplay() {
@@ -3609,12 +3951,6 @@
       showDraft(i);
     }
 
-    function cycleRecycleSlots() {
-      saveActiveDraftFromDisplay();
-      const next = (activeDraft + 1) % drafts.length;
-      showDraft(next);
-    }
-
     function clearDisplayText() {
       // Discard display text only (does not wipe other drafts)
       setText("");
@@ -3624,7 +3960,6 @@
     }
 
     document.getElementById("clear-btn").addEventListener("click", clearDisplayText);
-    recycleBtn?.addEventListener("click", cycleRecycleSlots);
     draftSlotsEl?.addEventListener("click", (e) => {
       const chip = e.target.closest(".draft-chip");
       if (!chip || !draftSlotsEl.contains(chip)) return;
@@ -4654,12 +4989,35 @@
         const activeTab = document.querySelector(".sidebar-tab.active")?.getAttribute("data-tab");
         if (activeTab === "settings") switchSidebarTab("topics");
       }
-      // Re-render topics so edit controls match mode (builder-only nodes)
+      // Re-render so Everyday whole-button speak vs Builder play/insert matches mode
       try { renderTopics(); } catch (_) {}
+      try { renderSoundButtons(); } catch (_) {}
     }
 
     document.getElementById("mode-everyday-btn")?.addEventListener("click", () => applyAppMode("everyday"));
     document.getElementById("mode-builder-btn")?.addEventListener("click", () => applyAppMode("builder"));
+
+    // ==================== LARGER TOUCH TARGETS ====================
+    let largeTouchTargets = lsGet("aac_large_targets", "") === "1";
+
+    function applyTouchSize(enabled, { persist = true } = {}) {
+      largeTouchTargets = !!enabled;
+      document.body.dataset.touchSize = largeTouchTargets ? "large" : "normal";
+      if (persist) lsSet("aac_large_targets", largeTouchTargets ? "1" : "0");
+      const toggle = document.getElementById("large-targets-toggle");
+      if (toggle) toggle.checked = largeTouchTargets;
+      // Grid height depends on --sound-row-height
+      try {
+        const active = getActiveTopic();
+        if (active) autosizeSoundCanvas(active);
+        renderSoundButtons();
+        syncSpeakClearToDisplayHeight();
+      } catch (_) {}
+    }
+
+    document.getElementById("large-targets-toggle")?.addEventListener("change", (e) => {
+      applyTouchSize(!!e.target.checked);
+    });
 
     function syncOfflineBanner() {
       const banner = document.getElementById("offline-banner");
@@ -4681,6 +5039,7 @@
     function init() {
       applyTheme(currentTheme);
       applyGlobalIconStyles();
+      applyTouchSize(largeTouchTargets, { persist: false });
       applyAppMode(appMode, { persist: false });
       syncOfflineBanner();
       window.addEventListener("online", syncOfflineBanner);
@@ -4756,6 +5115,7 @@
       renderTopics();
       renderSoundButtons();
       renderRecentsStrip();
+      syncComposeStrip();
       // Topics first — communication over settings
       switchSidebarTab("topics");
       autosizeDisplayInput();
