@@ -9,6 +9,10 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="format-detection" content="telephone=no">
+  <meta name="description" content="AAC speech board with browser and ElevenLabs voices">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
   <title>AAC Speech & Audio Workspace</title>
   <!-- Google Material Symbols Outlined Font -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
@@ -108,8 +112,155 @@
       .topic-sound-edit-btn:hover { background-color: var(--bg-surface-hover); color: var(--accent); }
     .topic-buttons-empty { padding: 8px 6px; font-size: 12px; color: var(--text-secondary); font-weight: 400; }
 
-    #add-topic-sidebar-btn { margin-bottom: 12px; width: 100%; justify-content: center; flex-shrink: 0; }
+    #add-topic-sidebar-btn { margin-bottom: 8px; width: 100%; justify-content: center; flex-shrink: 0; }
+    .topics-backup-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+      flex-shrink: 0;
+    }
+    .topics-backup-row .tool-btn {
+      flex: 1;
+      justify-content: center;
+      padding: 8px 6px;
+      font-size: 12px;
+      min-height: 40px;
+    }
     #topics-list { flex: 1; overflow-y: auto; min-height: 0; }
+
+    /* Recent phrases under the display */
+    .recents-strip {
+      display: none;
+      flex-direction: column;
+      gap: 4px;
+      flex-shrink: 0;
+      min-width: 0;
+    }
+    .recents-strip.has-items { display: flex; }
+    .recents-strip-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 0 2px;
+    }
+    .recents-strip-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .recents-clear-btn {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 4px 6px;
+      border-radius: 6px;
+      min-height: 28px;
+    }
+    .recents-clear-btn:hover { color: var(--danger); background: var(--danger-bg); }
+    .recents-chips {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 6px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 2px 0 4px;
+      scrollbar-width: thin;
+    }
+    .recents-chip {
+      flex: 0 0 auto;
+      max-width: 11em;
+      background: var(--key-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-height: 34px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .recents-chip:hover { border-color: var(--accent); background: var(--key-hover); }
+    .recents-chip:active { background: var(--key-active); }
+
+    /* Everyday / Builder mode */
+    .mode-toggle {
+      display: flex;
+      gap: 4px;
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      background: var(--bg-main);
+    }
+    .mode-toggle-btn {
+      flex: 1;
+      border: 1px solid var(--border);
+      background: var(--key-bg);
+      color: var(--text-secondary);
+      border-radius: 8px;
+      padding: 8px 6px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .mode-toggle-btn:hover { border-color: var(--accent); color: var(--text); }
+    .mode-toggle-btn.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 14%, transparent);
+    }
+    body[data-app-mode="everyday"] .builder-only { display: none !important; }
+    body[data-app-mode="everyday"] .sidebar.collapsed .sidebar-tab[data-tab="settings"] { opacity: 0.85; }
+    body[data-app-mode="everyday"] #insert-toolbar { min-height: 0; }
+
+    .key.tts-btn.speaking {
+      background-color: color-mix(in srgb, var(--accent) 70%, #fff);
+      animation: speak-pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes speak-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent); }
+      50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 0%, transparent); }
+    }
+    .sr-live {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    .offline-banner {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      margin: 0 0 4px;
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--accent) 16%, var(--bg-surface));
+      border: 1px solid var(--accent);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+    .offline-banner.open { display: flex; }
 
     .accent-color-row { display: flex; align-items: center; gap: 8px; }
     .accent-color-row input[type="color"] { width: 44px; height: 36px; padding: 2px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-main); cursor: pointer; flex-shrink: 0; }
@@ -171,8 +322,19 @@
     /* ==================== MAIN WORKSPACE ==================== */
     .app-main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 5px; padding: 6px; overflow: hidden; height: 100%; position: relative; }
 
-    /* Mobile menu strip (hidden on desktop) */
-    .workspace-header { display: none; align-items: center; background-color: var(--bg-surface); padding: 4px 8px; border-radius: 8px; border: 1px solid var(--border); min-height: 40px; flex-shrink: 0; gap: 8px; }
+    /* Compact header: help always; menu only on mobile */
+    .workspace-header {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      background-color: transparent;
+      padding: 0;
+      border: none;
+      min-height: 0;
+      flex-shrink: 0;
+      gap: 4px;
+    }
+    .workspace-header .icon-btn { width: 36px; height: 36px; min-width: 36px; min-height: 36px; }
 
     .tool-btn { background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; transition: all 0.2s; white-space: nowrap; min-height: 40px; height: auto; }
       .tool-btn:hover { background-color: var(--key-hover); border-color: var(--text-secondary); }
@@ -218,6 +380,116 @@
 
     /* Sound Button Grid Canvas — height fits grid content */
     .sound-canvas { flex: 0 0 auto; width: 100%; height: auto; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; display: grid; gap: 4px; padding: 5px; overflow: hidden; transition: border-color 0.2s; position: relative; }
+
+    .sound-canvas-empty {
+      grid-column: 1 / -1;
+      grid-row: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 16px 12px;
+      text-align: center;
+      color: var(--text-secondary);
+      min-height: 110px;
+    }
+    .sound-canvas-empty-title { font-size: 15px; font-weight: 600; color: var(--text); }
+    .sound-canvas-empty-text { font-size: 13px; line-height: 1.4; max-width: 28em; }
+    .sound-canvas-empty-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 4px; }
+    .sound-canvas-empty-actions .status-btn {
+      width: auto;
+      min-width: 0;
+      padding: 10px 14px;
+      font-size: 13px;
+    }
+
+    /* First-run coach */
+    .coach-banner {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      margin: 0 0 6px 0;
+      padding: 12px 14px;
+      background: var(--bg-surface);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      box-shadow: 0 4px 14px var(--shadow);
+      flex-shrink: 0;
+    }
+    .coach-banner.open { display: flex; }
+    .coach-banner-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .coach-banner-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .coach-banner ol {
+      margin: 0;
+      padding-left: 1.25em;
+      font-size: 13px;
+      line-height: 1.45;
+      color: var(--text);
+    }
+    .coach-banner li { margin: 2px 0; }
+    .coach-banner-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+    .coach-banner-actions .modal-btn { min-height: 36px; padding: 8px 14px; font-size: 13px; }
+
+    /* Three text drafts (recycle) */
+    .draft-slots {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+      align-self: flex-start;
+    }
+    .draft-chip {
+      width: var(--display-ctrl-size, 36px);
+      height: var(--display-ctrl-size, 36px);
+      min-width: 32px;
+      min-height: 32px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--key-bg);
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+    .draft-chip:hover { border-color: var(--accent); color: var(--text); }
+    .draft-chip.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 14%, transparent);
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
+    }
+    .draft-chip.has-text:not(.active) { color: var(--text); }
+    .draft-chip-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      margin-left: 2px;
+      flex-shrink: 0;
+    }
 
     @keyframes wiggle {
       0% { transform: rotate(-1deg) scale(1); }
@@ -588,9 +860,13 @@
 
       .workspace-header {
         display: flex;
+        justify-content: space-between;
         gap: 6px;
         padding: 6px 8px;
         border-radius: 12px;
+        background-color: var(--bg-surface);
+        border: 1px solid var(--border);
+        min-height: 40px;
       }
 
       .sound-canvas {
@@ -737,6 +1013,7 @@
 <body>
 
   <div class="sidebar-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
+  <div id="sr-live" class="sr-live" aria-live="polite" aria-atomic="true"></div>
 
   <!-- ==================== LEFT SIDEBAR ==================== -->
   <aside class="sidebar" id="sidebar">
@@ -747,7 +1024,16 @@
       <span class="logo-text">AAC Workspace</span>
     </div>
 
-    <!-- Sidebar Tabs: Settings (default) | History | Topics -->
+    <div class="mode-toggle" role="group" aria-label="App mode">
+      <button type="button" class="mode-toggle-btn active" id="mode-everyday-btn" data-mode="everyday" title="Speak and use boards">
+        <span class="material-symbols-outlined icon-small">chat</span> Everyday
+      </button>
+      <button type="button" class="mode-toggle-btn" id="mode-builder-btn" data-mode="builder" title="Edit boards, voices, and backup">
+        <span class="material-symbols-outlined icon-small">build</span> Builder
+      </button>
+    </div>
+
+    <!-- Sidebar Tabs: Settings | History | Topics -->
     <div class="sidebar-tabs" id="sidebar-tabs">
       <button class="sidebar-tab active" data-tab="settings" id="tab-settings" type="button" title="Settings">
         <span class="material-symbols-outlined icon-medium">tune</span>
@@ -786,7 +1072,7 @@
           </div>
         </div>
 
-        <div class="settings-stack" id="group-eleven-settings">
+        <div class="settings-stack builder-only" id="group-eleven-settings">
           <div class="sidebar-setting-group">
             <button id="api-key-btn" class="status-btn missing" type="button">
               <span class="status-btn-text"><span class="material-symbols-outlined icon-small icon-btn-margin">key</span>Missing API Key (Click to Add)</span>
@@ -810,9 +1096,9 @@
           </div>
         </div>
 
-        <hr class="setting-divider">
+        <hr class="setting-divider builder-only">
 
-        <div class="sidebar-setting-group" id="group-output-device">
+        <div class="sidebar-setting-group builder-only" id="group-output-device">
           <label>Speaker / Output Device</label>
           <select id="output-device-select" aria-describedby="output-device-hint">
             <option value="">System default</option>
@@ -864,14 +1150,23 @@
           <input type="text" id="history-search-input" placeholder="Search speech history...">
         </div>
         <div class="history-list" id="audio-history"></div>
-        <button class="clear-history-btn" id="clear-history-btn" type="button">Clear All History</button>
+        <button class="clear-history-btn builder-only" id="clear-history-btn" type="button">Clear All History</button>
       </div>
 
       <!-- Topics Tab Content -->
       <div id="tab-content-topics" class="tab-content">
-        <button class="tool-btn" id="add-topic-sidebar-btn" type="button">
+        <button class="tool-btn builder-only" id="add-topic-sidebar-btn" type="button">
           <span class="material-symbols-outlined icon-medium">add</span> New Topic
         </button>
+        <div class="topics-backup-row builder-only">
+          <button class="tool-btn" id="export-board-btn" type="button" title="Download topics and buttons as JSON">
+            <span class="material-symbols-outlined icon-small">download</span> Export
+          </button>
+          <button class="tool-btn" id="import-board-btn" type="button" title="Import boards from a JSON file">
+            <span class="material-symbols-outlined icon-small">upload</span> Import
+          </button>
+          <input type="file" id="import-board-file" accept="application/json,.json" hidden>
+        </div>
         <div id="topics-list"></div>
       </div>
     </div>
@@ -883,6 +1178,35 @@
       <button class="icon-btn mobile-only mobile-menu-btn" id="mobile-menu-btn" type="button" title="Open menu" aria-label="Open menu">
         <span class="material-symbols-outlined">menu</span>
       </button>
+      <button class="icon-btn" id="help-coach-btn" type="button" title="Quick start help" aria-label="Show quick start help">
+        <span class="material-symbols-outlined">help</span>
+      </button>
+    </div>
+
+    <div class="offline-banner" id="offline-banner" role="status">
+      <span class="material-symbols-outlined icon-medium">wifi_off</span>
+      <span>Offline — browser voice still works. ElevenLabs needs a connection.</span>
+    </div>
+
+    <div class="coach-banner" id="coach-banner" role="region" aria-label="Quick start">
+      <div class="coach-banner-header">
+        <div class="coach-banner-title">
+          <span class="material-symbols-outlined icon-medium">lightbulb</span>
+          Quick start
+        </div>
+      </div>
+      <ol>
+        <li><strong>Speak</strong> — type in the box, then press the blue speaker (or Enter).</li>
+        <li><strong>Buttons</strong> — left side plays; the label inserts text at your cursor.</li>
+        <li><strong>Assign</strong> — after you have text, pin it to a new sound button.</li>
+        <li><strong>Drafts A–C</strong> — recycle swaps among three text drafts; tap a letter to jump.</li>
+        <li><strong>Recent</strong> — spoken phrases appear under the box; tap to insert.</li>
+        <li><strong>Backup</strong> — switch to <strong>Builder</strong>, then Topics → Export / Import.</li>
+        <li><strong>Selection</strong> — highlight words in the box to speak only that part.</li>
+      </ol>
+      <div class="coach-banner-actions">
+        <button type="button" class="modal-btn secondary" id="coach-dismiss-btn">Got it</button>
+      </div>
     </div>
 
     <div class="sound-canvas" id="sound-canvas"></div>
@@ -895,10 +1219,10 @@
       </div>
       <div class="bottom-dock">
         <div class="toolbar insert-toolbar" id="insert-toolbar">
-          <button class="key insert-btn" id="insert-tag-btn" type="button" aria-label="Insert tag">
+          <button class="key insert-btn builder-only" id="insert-tag-btn" type="button" aria-label="Insert tag">
             <span class="material-symbols-outlined icon-medium">add</span>
           </button>
-          <input type="text" class="insert-input" id="insert-tag-input" placeholder="Tag to insert..." autocomplete="off" spellcheck="false" aria-label="Tag text">
+          <input type="text" class="insert-input builder-only" id="insert-tag-input" placeholder="Tag to insert..." autocomplete="off" spellcheck="false" aria-label="Tag text">
           <div class="audio-actions-inline" id="generated-audio-actions">
             <button class="audio-action-btn play" id="textarea-replay-btn" type="button" title="Replay Audio">
               <span class="material-symbols-outlined icon-small">play_arrow</span>
@@ -911,16 +1235,28 @@
           </div>
         </div>
         <div class="toolbar" id="toolbar">
-          <button class="key tts-btn display-ctrl" id="speak-btn" type="button" aria-label="Speak">
+          <button class="key tts-btn display-ctrl" id="speak-btn" type="button" aria-label="Speak" title="Speak text (or selection). Click again to stop.">
             <span class="material-symbols-outlined icon-medium">volume_up</span>
           </button>
           <textarea class="display-textarea" id="display-input" spellcheck="true" autocomplete="off" autocapitalize="sentences" placeholder="Type here..." rows="1" aria-label="Display text"></textarea>
           <button class="key clear-btn display-ctrl" id="clear-btn" type="button" aria-label="Clear" title="Clear text (not saved)">
             <span class="material-symbols-outlined icon-medium">delete</span>
           </button>
-          <button class="key recycle-btn display-ctrl" id="recycle-btn" type="button" aria-label="Recycle display text" title="Recycle text: at bat → in the hole → on deck → at bat">
+          <div class="draft-slots" id="draft-slots" role="group" aria-label="Three text drafts">
+            <button type="button" class="draft-chip active" data-draft="0" title="Draft A (current)" aria-label="Draft A" aria-pressed="true">A</button>
+            <button type="button" class="draft-chip" data-draft="1" title="Draft B" aria-label="Draft B" aria-pressed="false">B</button>
+            <button type="button" class="draft-chip" data-draft="2" title="Draft C" aria-label="Draft C" aria-pressed="false">C</button>
+          </div>
+          <button class="key recycle-btn display-ctrl" id="recycle-btn" type="button" aria-label="Cycle to next draft" title="Cycle drafts A → B → C → A">
             <span class="material-symbols-outlined icon-medium">recycling</span>
           </button>
+        </div>
+        <div class="recents-strip" id="recents-strip" aria-label="Recent phrases">
+          <div class="recents-strip-header">
+            <span class="recents-strip-label">Recent</span>
+            <button type="button" class="recents-clear-btn" id="recents-clear-btn" title="Clear recent phrases">Clear</button>
+          </div>
+          <div class="recents-chips" id="recents-chips" role="list"></div>
         </div>
       </div>
     </div>
@@ -939,6 +1275,25 @@
       </div>
     </div>
     <div class="modal-buttons"><button class="modal-btn secondary" onclick="closeModals()">Cancel</button></div>
+  </div>
+
+  <!-- Import mode: replace or merge -->
+  <div class="modal" id="modal-import-choice">
+    <div class="modal-title">Import boards</div>
+    <div class="modal-scroll">
+      <div class="modal-description">How should this file be applied?</div>
+      <div class="modal-choice-group">
+        <button class="status-btn" id="import-merge-btn" type="button">
+          <span class="material-symbols-outlined icon-medium icon-btn-margin">merge</span>
+          Merge with existing topics
+        </button>
+        <button class="status-btn" id="import-replace-btn" type="button">
+          <span class="material-symbols-outlined icon-medium icon-btn-margin">swap_horiz</span>
+          Replace all topics
+        </button>
+      </div>
+    </div>
+    <div class="modal-buttons"><button class="modal-btn secondary" onclick="closeModals()" type="button">Cancel</button></div>
   </div>
 
   <!-- Insert Tag Modal -->
@@ -1271,6 +1626,8 @@
     let currentFontSize = parseInt(lsGet("aac_font_size", "24"), 10) || 24;
     let currentTheme = lsGet("aac_theme", "system") || "system";
     let customAccentColor = lsGet("aac_accent_color", "") || "";
+    /** everyday = communicate; builder = edit boards / advanced settings */
+    let appMode = lsGet("aac_app_mode", "everyday") === "builder" ? "builder" : "everyday";
 
     /** Saved caret in #display-input so programmatic refocus restores it. */
     let savedDisplaySelection = { start: null, end: null };
@@ -1336,7 +1693,14 @@
       document.getElementById("studio-val-opsz").textContent = iconOpsz;
     }
 
-    let topicsList = normalizeTopicsList(lsGetJson("aac_tabs", null) || [{ id: "default", name: "General Chat", icon: "chat", color: "#8ab4f8", buttons: [], gridCols: DEFAULT_GRID_COLS, gridRows: DEFAULT_GRID_ROWS }]);
+    // First visit (no aac_tabs): seed Everyday starter phrases. Existing saves unchanged.
+    const savedTopicsRaw = lsGetJson("aac_tabs", null);
+    let topicsList = normalizeTopicsList(
+      savedTopicsRaw != null ? savedTopicsRaw : createStarterTopicsRaw()
+    );
+    if (savedTopicsRaw == null) {
+      try { lsSet("aac_tabs", JSON.stringify(topicsList)); } catch (_) {}
+    }
     let activeTopicId = lsGet("aac_active_tab") || topicsList[0].id;
     if (!topicsList.find(t => t.id === activeTopicId)) activeTopicId = topicsList[0].id;
 
@@ -1444,9 +1808,70 @@
       });
     }
 
+    /**
+     * Starter board for first visit — common AAC phrases as live utterances
+     * (regenerate with the current voice on play).
+     */
+    function createStarterTopicsRaw() {
+      const phrases = [
+        { label: "Hello", symbol: "waving_hand", text: "Hello" },
+        { label: "Yes", symbol: "thumb_up", text: "Yes" },
+        { label: "No", symbol: "thumb_down", text: "No" },
+        { label: "Please", symbol: "front_hand", text: "Please" },
+        { label: "Thank you", symbol: "favorite", text: "Thank you" },
+        { label: "Help", symbol: "emergency_home", text: "I need help" },
+        { label: "Wait", symbol: "front_hand", text: "Please wait" },
+        { label: "More", symbol: "add", text: "More please" },
+        { label: "I'm OK", symbol: "sentiment_satisfied", text: "I'm okay" },
+        { label: "Bathroom", symbol: "wc", text: "I need the bathroom" },
+        { label: "Water", symbol: "water_drop", text: "I would like some water" },
+        { label: "Hungry", symbol: "restaurant", text: "I'm hungry" },
+        { label: "Pain", symbol: "healing", text: "I'm in pain" },
+        { label: "Stop", symbol: "stop_circle", text: "Stop" },
+        { label: "Don't know", symbol: "help", text: "I don't know" },
+        { label: "How are you?", symbol: "chat", text: "How are you?" }
+      ];
+      const cols = 4;
+      const buttons = phrases.map((p, i) => ({
+        id: `starter-${i}`,
+        label: p.label,
+        symbol: p.symbol,
+        color: COLOR_PALETTE[i % COLOR_PALETTE.length],
+        utteranceText: p.text,
+        sourceText: p.text,
+        audioData: null,
+        effectsBaked: false,
+        col: i % cols,
+        row: Math.floor(i / cols),
+        colSpan: 1,
+        rowSpan: 1
+      }));
+      return [{
+        id: "default",
+        name: "Everyday",
+        icon: "chat",
+        color: "#8ab4f8",
+        gridCols: cols,
+        gridRows: Math.ceil(phrases.length / cols),
+        buttons
+      }];
+    }
+
+    function loadStarterPhrasesIntoActiveTopic() {
+      const tab = getActiveTopic();
+      if (!tab) return;
+      const starter = createStarterTopicsRaw()[0];
+      tab.name = tab.name || starter.name;
+      tab.gridCols = starter.gridCols;
+      tab.gridRows = starter.gridRows;
+      tab.buttons = starter.buttons.map((b, i) => normalizeButton({ ...b, id: generateId() }, i));
+      commitTopicsUi();
+      focusDisplayInput();
+    }
+
     function normalizeTopicsList(rawList) {
       if (!Array.isArray(rawList) || rawList.length === 0) {
-        return [{ id: "default", name: "General Chat", icon: "chat", color: "#8ab4f8", buttons: [], gridCols: DEFAULT_GRID_COLS, gridRows: DEFAULT_GRID_ROWS }];
+        return normalizeTopicsList(createStarterTopicsRaw());
       }
       return rawList.map((topic, idx) => ({
         id: topic.id || generateId(),
@@ -1467,6 +1892,277 @@
       renderTopics();
       renderSoundButtons();
     }
+
+    // ==================== EXPORT / IMPORT BOARDS ====================
+    const BOARD_EXPORT_FORMAT = "aac-workspace";
+    const BOARD_EXPORT_VERSION = 1;
+
+    /** Serializable button: keep clips, drop nothing needed for restore. */
+    function exportButtonPayload(btn) {
+      return {
+        id: btn.id,
+        label: btn.label,
+        symbol: btn.symbol || "",
+        color: btn.color,
+        sourceText: btn.sourceText || null,
+        utteranceText: btn.utteranceText || null,
+        audioData: btn.audioData || null,
+        effectsBaked: !!btn.effectsBaked,
+        col: btn.col,
+        row: btn.row,
+        colSpan: btn.colSpan,
+        rowSpan: btn.rowSpan
+      };
+    }
+
+    function exportTopicPayload(topic) {
+      return {
+        id: topic.id,
+        name: topic.name,
+        icon: topic.icon,
+        color: topic.color,
+        gridCols: topic.gridCols,
+        gridRows: topic.gridRows,
+        buttons: (topic.buttons || []).map(exportButtonPayload)
+      };
+    }
+
+    function buildBoardExport() {
+      return {
+        format: BOARD_EXPORT_FORMAT,
+        version: BOARD_EXPORT_VERSION,
+        exportedAt: new Date().toISOString(),
+        activeTopicId,
+        topics: topicsList.map(exportTopicPayload),
+        settings: {
+          theme: currentTheme,
+          accentColor: customAccentColor || "",
+          fontSize: currentFontSize,
+          model: modelSelect?.value || "browser_tts",
+          speed: speedSlider?.value || "1",
+          volume: volumeSlider?.value || "3",
+          stability: stabilitySlider?.value || "0.5",
+          similarity: similaritySlider?.value || "0.75",
+          iconFill,
+          iconWght,
+          iconGrad,
+          iconOpsz
+          // API key intentionally omitted
+        },
+        // Text-only recents for convenience across devices
+        recentPhrases: Array.isArray(recentPhrases) ? recentPhrases.slice() : []
+      };
+    }
+
+    function downloadBoardExport() {
+      try {
+        let payload = buildBoardExport();
+        let json;
+        try {
+          json = JSON.stringify(payload, null, 2);
+        } catch (_) {
+          // Huge baked audio can blow the stringifier — export text/utterance only
+          payload = buildBoardExport();
+          payload.topics = (payload.topics || []).map((topic) => ({
+            ...topic,
+            buttons: (topic.buttons || []).map((b) => ({
+              ...b,
+              audioData: null,
+              utteranceText: b.utteranceText || b.sourceText || b.label || null,
+              sourceText: b.sourceText || b.utteranceText || b.label || null,
+              effectsBaked: false
+            }))
+          }));
+          payload.exportNote = "Audio clips omitted (file too large); phrases export as live text.";
+          json = JSON.stringify(payload, null, 2);
+        }
+        const blob = new Blob([json], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        const stamp = new Date().toISOString().slice(0, 10);
+        a.href = url;
+        a.download = `aac-workspace-${stamp}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => { try { URL.revokeObjectURL(url); } catch (_) {} }, 1500);
+      } catch (err) {
+        alert("Could not export boards. Try removing large audio clips first.");
+      }
+    }
+
+    function applyImportedSettings(settings) {
+      if (!settings || typeof settings !== "object") return;
+      if (settings.theme) applyTheme(settings.theme);
+      if (Object.prototype.hasOwnProperty.call(settings, "accentColor")) {
+        applyAccentColor(settings.accentColor || "");
+      }
+      if (Number.isFinite(Number(settings.fontSize))) {
+        currentFontSize = clamp(parseInt(settings.fontSize, 10) || 24, 16, 48);
+        lsSet("aac_font_size", currentFontSize);
+        applyDisplayFontSize();
+      }
+      if (settings.model && modelSelect) {
+        modelSelect.value = settings.model;
+        lsSet("elevenlabs_model", settings.model);
+        modelSelect.dispatchEvent(new Event("change"));
+      }
+      const fireSlider = (el, value) => {
+        if (!el || value == null || value === "") return;
+        el.value = value;
+        el.dispatchEvent(new Event("input"));
+      };
+      fireSlider(speedSlider, settings.speed);
+      fireSlider(volumeSlider, settings.volume);
+      fireSlider(stabilitySlider, settings.stability);
+      fireSlider(similaritySlider, settings.similarity);
+      if (settings.iconFill != null) iconFill = parseInt(settings.iconFill, 10) || 0;
+      if (settings.iconWght != null) iconWght = parseInt(settings.iconWght, 10) || 400;
+      if (settings.iconGrad != null) iconGrad = parseInt(settings.iconGrad, 10) || 0;
+      if (settings.iconOpsz != null) iconOpsz = parseInt(settings.iconOpsz, 10) || 24;
+      lsSet("aac_icon_fill", iconFill);
+      lsSet("aac_icon_wght", iconWght);
+      lsSet("aac_icon_grad", iconGrad);
+      lsSet("aac_icon_opsz", iconOpsz);
+      applyGlobalIconStyles();
+    }
+
+    function mergeTopicsFromImport(incomingList) {
+      const incoming = normalizeTopicsList(incomingList);
+      incoming.forEach((inc) => {
+        const existing = topicsList.find(t => t.id === inc.id)
+          || topicsList.find(t => (t.name || "").toLowerCase() === (inc.name || "").toLowerCase());
+        if (!existing) {
+          // Fresh topic — keep ids or assign new ones if collision
+          if (topicsList.some(t => t.id === inc.id)) {
+            inc.id = generateId();
+          }
+          topicsList.push(inc);
+          return;
+        }
+        // Merge buttons into matching topic
+        const byId = new Map(existing.buttons.map(b => [b.id, b]));
+        (inc.buttons || []).forEach((btn) => {
+          if (byId.has(btn.id)) {
+            Object.assign(byId.get(btn.id), btn);
+          } else {
+            const copy = { ...btn, id: generateId() };
+            existing.buttons.push(normalizeButton(copy, existing.buttons.length));
+          }
+        });
+        existing.gridCols = Math.max(existing.gridCols || 1, inc.gridCols || 1);
+        existing.gridRows = Math.max(existing.gridRows || 1, inc.gridRows || 1);
+        if (inc.icon) existing.icon = inc.icon;
+        if (inc.color) existing.color = inc.color;
+        repackSequentialGrid(existing);
+      });
+    }
+
+    /**
+     * @param {object} data
+     * @param {"replace"|"merge"} mode
+     */
+    function importBoardFromObject(data, mode = "replace") {
+      if (!data || typeof data !== "object") throw new Error("Invalid file");
+      if (data.format && data.format !== BOARD_EXPORT_FORMAT) {
+        throw new Error("Not an AAC Workspace export file");
+      }
+      const rawTopics = Array.isArray(data.topics) ? data.topics : null;
+      if (!rawTopics || !rawTopics.length) throw new Error("Export has no topics");
+
+      const next = normalizeTopicsList(rawTopics);
+      if (!next.length) throw new Error("No valid topics in file");
+
+      if (mode === "merge") {
+        mergeTopicsFromImport(next);
+      } else {
+        topicsList = next;
+      }
+
+      const preferred = data.activeTopicId;
+      activeTopicId = topicsList.find(t => t.id === preferred)?.id || topicsList[0].id;
+      expandedTopicIds = new Set([activeTopicId]);
+      lsSet("aac_active_tab", activeTopicId);
+      saveTopicsList();
+
+      if (data.settings && mode === "replace") applyImportedSettings(data.settings);
+
+      if (Array.isArray(data.recentPhrases)) {
+        if (mode === "merge") {
+          data.recentPhrases.forEach((t) => {
+            const phrase = trim(t);
+            if (!phrase) return;
+            recentPhrases = recentPhrases.filter(x => x !== phrase);
+            recentPhrases.unshift(phrase);
+          });
+          if (recentPhrases.length > RECENTS_MAX) recentPhrases.length = RECENTS_MAX;
+        } else {
+          recentPhrases = data.recentPhrases
+            .map(t => trim(t))
+            .filter(Boolean)
+            .slice(0, RECENTS_MAX);
+        }
+        saveRecentPhrases();
+        renderRecentsStrip();
+      }
+
+      commitTopicsUi();
+      updateSettingsVisibility();
+      focusDisplayInput();
+      announceLive(mode === "merge" ? "Boards merged" : "Boards replaced");
+    }
+
+    let pendingImportData = null;
+
+    async function parseImportFile(file) {
+      if (!file) return null;
+      const text = await file.text();
+      try {
+        return JSON.parse(text);
+      } catch (_) {
+        throw new Error("File is not valid JSON");
+      }
+    }
+
+    document.getElementById("export-board-btn")?.addEventListener("click", () => {
+      downloadBoardExport();
+    });
+    document.getElementById("import-board-btn")?.addEventListener("click", () => {
+      document.getElementById("import-board-file")?.click();
+    });
+    document.getElementById("import-board-file")?.addEventListener("change", async (e) => {
+      const file = e.target.files && e.target.files[0];
+      e.target.value = "";
+      if (!file) return;
+      try {
+        pendingImportData = await parseImportFile(file);
+        openModal("modal-import-choice");
+      } catch (err) {
+        pendingImportData = null;
+        alert(err?.message || "Could not import boards.");
+      }
+    });
+    document.getElementById("import-merge-btn")?.addEventListener("click", () => {
+      if (!pendingImportData) return;
+      try {
+        importBoardFromObject(pendingImportData, "merge");
+        pendingImportData = null;
+        closeModals();
+      } catch (err) {
+        alert(err?.message || "Could not merge boards.");
+      }
+    });
+    document.getElementById("import-replace-btn")?.addEventListener("click", () => {
+      if (!pendingImportData) return;
+      if (!confirm("Replace will remove all current topics and buttons on this device. Continue?")) return;
+      try {
+        importBoardFromObject(pendingImportData, "replace");
+        pendingImportData = null;
+        closeModals();
+      } catch (err) {
+        alert(err?.message || "Could not replace boards.");
+      }
+    });
 
     function getDefaultAccentForResolvedTheme() {
       const resolved = document.documentElement.getAttribute("data-theme") || "dark";
@@ -1943,7 +2639,7 @@
             <span class="material-symbols-outlined icon-medium" style="color: ${topic.color};">${topic.icon || "folder"}</span>
             <span class="topic-item-name">${topic.name}</span>
           </div>
-          <div class="topic-actions">
+          <div class="topic-actions builder-only">
             <button class="nav-action-btn edit-topic-btn" type="button" title="Edit Topic Settings">
               <span class="material-symbols-outlined icon-small">edit</span>
             </button>
@@ -1951,7 +2647,11 @@
         `;
         header.addEventListener("click", (e) => {
           if (e.target.closest(".edit-topic-btn")) { e.stopPropagation(); openTopicEditModal(topic.id); return; }
-          toggleTopicExpanded(topic.id);
+          // In Everyday mode, prefer switch + expand for quick board use
+          if (e.target.closest(".topic-item-content") || e.target === header) {
+            if (appMode === "everyday") switchTopic(topic.id);
+            else toggleTopicExpanded(topic.id);
+          }
         });
         item.appendChild(header);
 
@@ -1973,11 +2673,11 @@
                 <span class="topic-sound-swatch" style="background-color: ${btn.color || "#8ab4f8"};"></span>
                 ${symbolHtml}
                 <span class="topic-sound-label">${btn.label || "Button"}</span>
-                <button class="topic-sound-edit-btn" type="button" title="Edit button">
+                <button class="topic-sound-edit-btn builder-only" type="button" title="Edit button">
                   <span class="material-symbols-outlined icon-small">edit</span>
                 </button>
               `;
-              row.querySelector(".topic-sound-edit-btn").addEventListener("click", (e) => {
+              row.querySelector(".topic-sound-edit-btn")?.addEventListener("click", (e) => {
                 e.stopPropagation();
                 openButtonEditModal(btn.id, topic.id);
               });
@@ -2159,8 +2859,46 @@
     function renderSoundButtons() {
       const activeTab = getActiveTopic();
       if (!activeTab) return;
-      autosizeSoundCanvas(activeTab);
       soundCanvas.innerHTML = "";
+
+      if (!Array.isArray(activeTab.buttons) || activeTab.buttons.length === 0) {
+        // Empty board: single-cell CTA instead of a blank grid
+        soundCanvas.style.gridTemplateColumns = "1fr";
+        soundCanvas.style.gridTemplateRows = "auto";
+        soundCanvas.style.gridAutoRows = "auto";
+        soundCanvas.style.height = "auto";
+        soundCanvas.style.minHeight = "120px";
+        const empty = document.createElement("div");
+        empty.className = "sound-canvas-empty";
+        empty.innerHTML = `
+          <div class="sound-canvas-empty-title">No sound buttons yet</div>
+          <div class="sound-canvas-empty-text">
+            Type a phrase below, speak it, then use <strong>Assign to Button</strong> —
+            or load starter everyday phrases.
+          </div>
+          <div class="sound-canvas-empty-actions">
+            <button type="button" class="status-btn" id="empty-load-starters-btn">
+              <span class="material-symbols-outlined icon-small icon-btn-margin">auto_awesome</span>
+              Load starter phrases
+            </button>
+            <button type="button" class="status-btn" id="empty-focus-display-btn">
+              <span class="material-symbols-outlined icon-small icon-btn-margin">edit</span>
+              Type a phrase
+            </button>
+          </div>
+        `;
+        empty.querySelector("#empty-load-starters-btn")?.addEventListener("click", () => {
+          loadStarterPhrasesIntoActiveTopic();
+        });
+        empty.querySelector("#empty-focus-display-btn")?.addEventListener("click", () => {
+          focusDisplayInput();
+        });
+        soundCanvas.appendChild(empty);
+        return;
+      }
+
+      soundCanvas.style.minHeight = "";
+      autosizeSoundCanvas(activeTab);
 
       activeTab.buttons.forEach(btnData => {
         const isUtteranceBtn = !!(btnData.utteranceText || "").trim();
@@ -2181,7 +2919,6 @@
         const symbolPart = btnData.symbol
           ? `<span class="material-symbols-outlined sound-button-symbol">${btnData.symbol}</span>`
           : "";
-        const sourceText = getButtonSourceText(btnData);
         btnEl.innerHTML = `
           <button type="button" class="sound-button-play" title="Play" aria-label="Play ${btnData.label || "button"}">
             <span class="material-symbols-outlined">play_arrow</span>
@@ -2330,6 +3067,7 @@
         row: Math.floor(activeTab.buttons.length / activeTab.gridCols)
       }, activeTab.buttons.length);
       applyGeneratedSpeechToButton(btn, source);
+      pushRecentPhrase(source.text || getUtteranceText(source));
       activeTab.buttons.push(btn);
       repackSequentialGrid(activeTab);
       commitTopicsUi();
@@ -2359,10 +3097,89 @@
       const btn = tab?.buttons.find(b => b.id === btnId);
       if (!btn) return;
       applyGeneratedSpeechToButton(btn, source);
+      pushRecentPhrase(source.text || getUtteranceText(source));
       setOverwriteMode(false);
       commitTopicsUi();
       focusDisplayInput();
     }
+
+    // ==================== RECENT PHRASES (under display) ====================
+    const RECENTS_MAX = 16;
+    const RECENTS_STORAGE_KEY = "aac_recent_phrases";
+    let recentPhrases = loadRecentPhrases();
+
+    function loadRecentPhrases() {
+      const raw = lsGetJson(RECENTS_STORAGE_KEY, null);
+      if (Array.isArray(raw)) {
+        return raw.map(t => trim(t)).filter(Boolean).slice(0, RECENTS_MAX);
+      }
+      // Seed from speech history text (text only)
+      try {
+        const hist = asArray(lsGetJson("aac_history", []));
+        const seen = new Set();
+        const seeded = [];
+        for (const h of hist) {
+          const t = trim(h && h.text);
+          if (!t || seen.has(t)) continue;
+          seen.add(t);
+          seeded.push(t);
+          if (seeded.length >= RECENTS_MAX) break;
+        }
+        return seeded;
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function saveRecentPhrases() {
+      lsSet(RECENTS_STORAGE_KEY, JSON.stringify(recentPhrases));
+    }
+
+    function pushRecentPhrase(text) {
+      const t = trim(text);
+      if (!t) return;
+      recentPhrases = recentPhrases.filter(x => x !== t);
+      recentPhrases.unshift(t);
+      if (recentPhrases.length > RECENTS_MAX) recentPhrases.length = RECENTS_MAX;
+      saveRecentPhrases();
+      renderRecentsStrip();
+    }
+
+    function clearRecentPhrases() {
+      recentPhrases = [];
+      saveRecentPhrases();
+      renderRecentsStrip();
+    }
+
+    function renderRecentsStrip() {
+      const strip = document.getElementById("recents-strip");
+      const chips = document.getElementById("recents-chips");
+      if (!strip || !chips) return;
+      chips.innerHTML = "";
+      if (!recentPhrases.length) {
+        strip.classList.remove("has-items");
+        return;
+      }
+      strip.classList.add("has-items");
+      recentPhrases.forEach((phrase) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "recents-chip";
+        btn.setAttribute("role", "listitem");
+        btn.textContent = phrase;
+        btn.title = `Insert: ${phrase}`;
+        btn.addEventListener("click", () => {
+          insertTextAtDisplayCaret(phrase);
+        });
+        chips.appendChild(btn);
+      });
+    }
+
+    document.getElementById("recents-clear-btn")?.addEventListener("click", () => {
+      if (!recentPhrases.length) return;
+      if (!confirm("Clear all recent phrases?")) return;
+      clearRecentPhrases();
+    });
 
     // ==================== HISTORY (No Inline Relabeling) ====================
     function addToHistory(textSpoken, model, voiceId, audioBlob, extra = {}) {
@@ -2383,10 +3200,14 @@
         saveHistory();
         renderHistory();
         setGeneratedAudioActions(item);
+        pushRecentPhrase(textSpoken);
         return item;
       } catch (_) {
         // History is best-effort — never fail speech because of storage/UI
-        try { setGeneratedAudioActions(item); } catch (__) {}
+        try {
+          setGeneratedAudioActions(item);
+          pushRecentPhrase(textSpoken);
+        } catch (__) {}
         return null;
       }
     }
@@ -2415,7 +3236,7 @@
           </div>
           <div class="history-actions">
             <button class="history-btn replay-btn" type="button"><span class="material-symbols-outlined icon-small">play_arrow</span> Play</button>
-            <button class="history-btn restore restore-btn" type="button"><span class="material-symbols-outlined icon-small">restore</span> Restore</button>
+            <button class="history-btn restore restore-btn" type="button"><span class="material-symbols-outlined icon-small">restore</span> Load phrase</button>
             <button class="history-btn delete delete-btn" type="button"><span class="material-symbols-outlined icon-small">delete</span></button>
           </div>
         `;
@@ -2718,15 +3539,15 @@
     });
 
     /**
-     * Three text slots cycled by Recycle (baseball lineup analogy):
-     *   [0] at bat   = active display (synced on each recycle press)
-     *   [1] in the hole
-     *   [2] on deck
-     * Press: at bat → in the hole, in the hole → on deck, on deck → at bat.
-     * i.e. [A, B, C] → [C, A, B], then display shows the new at bat.
+     * Three text drafts (A / B / C).
+     * One is active in the display; recycle advances A → B → C → A.
+     * Tap a letter chip to jump to that draft (current text is saved first).
      */
-    const recycleSlots = ["", "", ""]; // [atBat, inHole, onDeck]
+    const DRAFT_LABELS = ["A", "B", "C"];
+    const drafts = ["", "", ""];
+    let activeDraft = 0;
     const recycleBtn = document.getElementById("recycle-btn");
+    const draftSlotsEl = document.getElementById("draft-slots");
 
     function previewSnippet(text, max = 36) {
       const t = String(text || "").replace(/\s+/g, " ").trim();
@@ -2734,44 +3555,118 @@
       return t.length > max ? `${t.slice(0, max)}…` : t;
     }
 
-    function syncRecycleButton() {
-      if (!recycleBtn) return;
-      const filled = recycleSlots.filter(s => String(s).length > 0).length;
-      // On next press: display→in the hole, in the hole→on deck, on deck→display
-      const nextAtBat = recycleSlots[2];
-      recycleBtn.title =
-        `Recycle (3 slots): at bat → in the hole → on deck → at bat\n` +
-        `Coming to bat: ${previewSnippet(nextAtBat)}\n` +
-        `In the hole: ${previewSnippet(recycleSlots[1])}`;
-      recycleBtn.setAttribute(
-        "aria-label",
-        `Recycle display text. ${filled} of 3 slots have text. Coming to bat: ${previewSnippet(nextAtBat, 48)}`
-      );
+    function syncDraftUi() {
+      const chips = draftSlotsEl ? draftSlotsEl.querySelectorAll(".draft-chip") : [];
+      chips.forEach((chip) => {
+        const idx = parseInt(chip.getAttribute("data-draft"), 10);
+        if (!Number.isFinite(idx)) return;
+        const label = DRAFT_LABELS[idx] || String(idx + 1);
+        const text = idx === activeDraft ? getText() : drafts[idx];
+        const filled = String(text || "").length > 0;
+        chip.classList.toggle("active", idx === activeDraft);
+        chip.classList.toggle("has-text", filled);
+        chip.setAttribute("aria-pressed", idx === activeDraft ? "true" : "false");
+        chip.title = `Draft ${label}${idx === activeDraft ? " (current)" : ""}: ${previewSnippet(text)}`;
+        chip.setAttribute(
+          "aria-label",
+          `Draft ${label}${idx === activeDraft ? ", current" : ""}${filled ? "" : ", empty"}`
+        );
+      });
+      if (recycleBtn) {
+        const next = (activeDraft + 1) % drafts.length;
+        recycleBtn.title =
+          `Cycle drafts ${DRAFT_LABELS.join(" → ")} → ${DRAFT_LABELS[0]}\n` +
+          `Next: ${DRAFT_LABELS[next]} — ${previewSnippet(drafts[next])}`;
+        recycleBtn.setAttribute(
+          "aria-label",
+          `Cycle to draft ${DRAFT_LABELS[next]}`
+        );
+      }
     }
 
-    function cycleRecycleSlots() {
-      // Capture current display as at bat, then rotate
-      recycleSlots[0] = getText();
-      const atBat = recycleSlots[0];
-      const inHole = recycleSlots[1];
-      const onDeck = recycleSlots[2];
-      recycleSlots[0] = onDeck;  // on deck → at bat
-      recycleSlots[1] = atBat;   // at bat → in the hole
-      recycleSlots[2] = inHole;  // in the hole → on deck
-      setText(recycleSlots[0], recycleSlots[0].length);
-      syncRecycleButton();
+    function saveActiveDraftFromDisplay() {
+      drafts[activeDraft] = getText();
+    }
+
+    function showDraft(index) {
+      const i = clamp(index, 0, drafts.length - 1);
+      activeDraft = i;
+      const text = drafts[i] || "";
+      setText(text, text.length);
+      syncDraftUi();
       focusDisplayInput();
     }
 
+    function selectDraft(index) {
+      const i = clamp(index, 0, drafts.length - 1);
+      if (i === activeDraft) {
+        saveActiveDraftFromDisplay();
+        syncDraftUi();
+        focusDisplayInput();
+        return;
+      }
+      saveActiveDraftFromDisplay();
+      showDraft(i);
+    }
+
+    function cycleRecycleSlots() {
+      saveActiveDraftFromDisplay();
+      const next = (activeDraft + 1) % drafts.length;
+      showDraft(next);
+    }
+
     function clearDisplayText() {
-      // Discard display text; do not save for restore
+      // Discard display text only (does not wipe other drafts)
       setText("");
+      drafts[activeDraft] = "";
+      syncDraftUi();
       focusDisplayInput();
     }
 
     document.getElementById("clear-btn").addEventListener("click", clearDisplayText);
     recycleBtn?.addEventListener("click", cycleRecycleSlots);
-    syncRecycleButton();
+    draftSlotsEl?.addEventListener("click", (e) => {
+      const chip = e.target.closest(".draft-chip");
+      if (!chip || !draftSlotsEl.contains(chip)) return;
+      const idx = parseInt(chip.getAttribute("data-draft"), 10);
+      if (!Number.isFinite(idx)) return;
+      selectDraft(idx);
+    });
+    // Keep active draft snapshot when the user types
+    displayInput.addEventListener("input", () => {
+      drafts[activeDraft] = getText();
+      syncDraftUi();
+    });
+    syncDraftUi();
+
+    // ==================== FIRST-RUN COACH ====================
+    const COACH_DISMISS_KEY = "aac_coach_dismissed";
+    const coachBanner = document.getElementById("coach-banner");
+
+    function isCoachDismissed() {
+      return lsGet(COACH_DISMISS_KEY, "") === "1";
+    }
+
+    function setCoachOpen(open) {
+      if (!coachBanner) return;
+      coachBanner.classList.toggle("open", !!open);
+    }
+
+    function dismissCoach() {
+      lsSet(COACH_DISMISS_KEY, "1");
+      setCoachOpen(false);
+      focusDisplayInput();
+    }
+
+    function showCoach() {
+      setCoachOpen(true);
+    }
+
+    document.getElementById("coach-dismiss-btn")?.addEventListener("click", dismissCoach);
+    document.getElementById("help-coach-btn")?.addEventListener("click", () => {
+      if (coachBanner?.classList.contains("open")) setCoachOpen(false);
+      else showCoach();
+    });
 
     window.addEventListener("resize", () => {
       autosizeDisplayInput();
@@ -3149,10 +4044,74 @@
       return stripInlineTags(text).length > 0;
     }
 
+    /** Screen-reader / status announcements */
+    function announceLive(msg) {
+      const el = document.getElementById("sr-live");
+      if (!el) return;
+      el.textContent = "";
+      requestAnimationFrame(() => { el.textContent = String(msg || ""); });
+    }
+
+    /**
+     * Text to speak: selected range if any, otherwise full display.
+     */
+    function getSpeakText() {
+      const full = getText();
+      const { start, end } = getDisplayCaretRange();
+      if (Number.isFinite(start) && Number.isFinite(end) && end > start) {
+        return full.substring(start, end);
+      }
+      return full;
+    }
+
+    let speakUiState = "idle"; // idle | loading | speaking
+    let speakGeneration = 0;
+
+    function setSpeakBtnIdle() {
+      speakUiState = "idle";
+      if (!speakBtn) return;
+      speakBtn.classList.remove("speaking");
+      speakBtn.innerHTML = '<span class="material-symbols-outlined icon-medium">volume_up</span>';
+      speakBtn.disabled = false;
+      speakBtn.setAttribute("aria-label", "Speak");
+      speakBtn.title = "Speak text (or selection). Click again while speaking to stop.";
+    }
+
+    function setSpeakBtnLoading() {
+      speakUiState = "loading";
+      if (!speakBtn) return;
+      speakBtn.classList.remove("speaking");
+      speakBtn.innerHTML = '<span class="material-symbols-outlined icon-medium">hourglass_empty</span>';
+      speakBtn.disabled = true;
+      speakBtn.setAttribute("aria-label", "Generating speech");
+      speakBtn.title = "Generating speech…";
+      announceLive("Generating speech");
+    }
+
+    function setSpeakBtnSpeaking() {
+      speakUiState = "speaking";
+      if (!speakBtn) return;
+      speakBtn.classList.add("speaking");
+      speakBtn.innerHTML = '<span class="material-symbols-outlined icon-medium">stop_circle</span>';
+      speakBtn.disabled = false;
+      speakBtn.setAttribute("aria-label", "Stop speaking");
+      speakBtn.title = "Speaking… click to stop";
+      announceLive("Speaking");
+    }
+
+    function stopAllSpeech() {
+      speakGeneration += 1;
+      try { window.speechSynthesis.cancel(); } catch (_) {}
+      stopActiveBufferSources();
+      stopActiveHtmlAudio();
+      setSpeakBtnIdle();
+      announceLive("Speech stopped");
+    }
+
     /**
      * Speak with current voice settings.
+     * Offline + Eleven selected → fall back to browser TTS.
      * ElevenLabs requires non-empty speech content (not empty, not tags-only).
-     * Tags may accompany text; tags alone are not sent to ElevenLabs.
      */
     async function speakPhrase(text, opts = {}) {
       const {
@@ -3169,7 +4128,14 @@
       const hasSpeechBody = hasNonTagSpeechContent(phrase);
       const apiKey = lsGet("elevenlabs_key", "");
       const canUseEleven = !!(apiKey && activeElevenVoiceId);
-      const useBrowser = modelSelect.value === "browser_tts";
+      const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+      let useBrowser = modelSelect.value === "browser_tts";
+
+      // Offline path: always allow browser TTS
+      if (!useBrowser && offline) {
+        useBrowser = true;
+        announceLive("Offline — using browser voice");
+      }
 
       // ElevenLabs only when there is real speech text (not empty / tags-only)
       if (!useBrowser && !hasSpeechBody) {
@@ -3183,11 +4149,18 @@
 
       try { window.speechSynthesis.cancel(); } catch (_) {}
       stopActiveBufferSources();
+      stopActiveHtmlAudio();
+
+      const myGen = ++speakGeneration;
+      const stillCurrent = () => myGen === speakGeneration;
 
       if (showLoading) setSpeakBtnLoading();
       else setSpeakBtnIdle();
 
-      const doneLoading = () => { if (showLoading) setSpeakBtnIdle(); };
+      const finishUi = () => {
+        if (!stillCurrent()) return;
+        setSpeakBtnIdle();
+      };
       // Once playback has started, never show a hard failure popup
       let playbackStarted = false;
 
@@ -3203,19 +4176,24 @@
             : 0;
           utterance.voice = voices[voiceIdx] || null;
           utterance.onend = () => {
-            doneLoading();
+            if (!stillCurrent()) return;
+            finishUi();
+            announceLive("Speech finished");
             if (recordHistory) addToHistory(phrase, "browser_tts", `voice_${voiceIdx}`, null);
             focusDisplayInput();
           };
-          utterance.onerror = () => { doneLoading(); };
+          utterance.onerror = () => {
+            if (!stillCurrent()) return;
+            finishUi();
+          };
           window.speechSynthesis.speak(utterance);
           playbackStarted = true;
-          doneLoading();
+          if (stillCurrent()) setSpeakBtnSpeaking();
           focusDisplayInput();
         } else {
           if (!canUseEleven) {
             if (alertOnError) alert("Please configure your API Key and select a voice in Settings.");
-            doneLoading();
+            finishUi();
             focusDisplayInput();
             return;
           }
@@ -3242,6 +4220,7 @@
           } finally {
             clearTimeout(fetchTimeout);
           }
+          if (!stillCurrent()) return;
           if (!res.ok) throw new Error("API Error");
           const blob = await res.blob();
           if (!blob || blob.size < 16) throw new Error("Empty audio");
@@ -3252,6 +4231,10 @@
           const objectUrl = URL.createObjectURL(blob);
           try {
             const baked = await withTimeout(bakeSpeedIntoAudioData(blob), 6000, "bake timeout");
+            if (!stillCurrent()) {
+              try { URL.revokeObjectURL(objectUrl); } catch (_) {}
+              return;
+            }
             saveDataUrl = baked.dataUrl;
             effectsBaked = !!baked.effectsBaked;
             playUrl = saveDataUrl || objectUrl;
@@ -3273,7 +4256,10 @@
             if (cleaned) return;
             cleaned = true;
             try { URL.revokeObjectURL(objectUrl); } catch (_) {}
-            doneLoading();
+            if (stillCurrent()) {
+              finishUi();
+              announceLive("Speech finished");
+            }
             focusDisplayInput();
           };
 
@@ -3283,11 +4269,17 @@
             speed: effectsBaked ? 1 : speed,
             onStarted: () => {
               playbackStarted = true;
-              doneLoading();
+              if (stillCurrent()) setSpeakBtnSpeaking();
             }
           });
+          if (!stillCurrent()) {
+            try { audio.pause(); } catch (_) {}
+            cleanup();
+            return;
+          }
           // play() resolved — treat as started even if onStarted was skipped
           playbackStarted = true;
+          if (stillCurrent()) setSpeakBtnSpeaking();
           focusDisplayInput();
 
           if (recordHistory && saveDataUrl) {
@@ -3296,23 +4288,24 @@
         }
       } catch (_) {
         // Only alert when nothing actually started playing
-        if (alertOnError && !playbackStarted) alert("Failed to generate speech.");
-        doneLoading();
+        if (alertOnError && !playbackStarted && stillCurrent()) alert("Failed to generate speech.");
+        finishUi();
         focusDisplayInput();
       }
     }
 
     async function speakText() {
-      await speakPhrase(getText(), { recordHistory: true, showLoading: true, alertOnError: true });
-    }
-
-    function setSpeakBtnIdle() {
-      speakBtn.innerHTML = '<span class="material-symbols-outlined icon-medium">volume_up</span>';
-      speakBtn.disabled = false;
-    }
-    function setSpeakBtnLoading() {
-      speakBtn.innerHTML = '<span class="material-symbols-outlined icon-medium">hourglass_empty</span>';
-      speakBtn.disabled = true;
+      if (speakUiState === "speaking" || speakUiState === "loading") {
+        stopAllSpeech();
+        return;
+      }
+      const text = getSpeakText();
+      if (!trim(text)) {
+        announceLive("Nothing to speak");
+        focusDisplayInput();
+        return;
+      }
+      await speakPhrase(text, { recordHistory: true, showLoading: true, alertOnError: true });
     }
 
     speakBtn.addEventListener("click", speakText);
@@ -3647,10 +4640,53 @@
       }
     });
 
+    // ==================== APP MODE (Everyday / Builder) ====================
+    function applyAppMode(mode, { persist = true } = {}) {
+      appMode = mode === "builder" ? "builder" : "everyday";
+      document.body.dataset.appMode = appMode;
+      if (persist) lsSet("aac_app_mode", appMode);
+      const everydayBtn = document.getElementById("mode-everyday-btn");
+      const builderBtn = document.getElementById("mode-builder-btn");
+      everydayBtn?.classList.toggle("active", appMode === "everyday");
+      builderBtn?.classList.toggle("active", appMode === "builder");
+      // Everyday users stay on Topics; Builder may open Settings freely
+      if (appMode === "everyday") {
+        const activeTab = document.querySelector(".sidebar-tab.active")?.getAttribute("data-tab");
+        if (activeTab === "settings") switchSidebarTab("topics");
+      }
+      // Re-render topics so edit controls match mode (builder-only nodes)
+      try { renderTopics(); } catch (_) {}
+    }
+
+    document.getElementById("mode-everyday-btn")?.addEventListener("click", () => applyAppMode("everyday"));
+    document.getElementById("mode-builder-btn")?.addEventListener("click", () => applyAppMode("builder"));
+
+    function syncOfflineBanner() {
+      const banner = document.getElementById("offline-banner");
+      if (!banner) return;
+      const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+      banner.classList.toggle("open", offline);
+    }
+
+    function registerServiceWorker() {
+      if (!("serviceWorker" in navigator)) return;
+      // file:// cannot register SW
+      if (location.protocol === "file:") return;
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch(() => {});
+      });
+    }
+
     // ==================== INITIALIZATION ====================
     function init() {
       applyTheme(currentTheme);
       applyGlobalIconStyles();
+      applyAppMode(appMode, { persist: false });
+      syncOfflineBanner();
+      window.addEventListener("online", syncOfflineBanner);
+      window.addEventListener("offline", syncOfflineBanner);
+      registerServiceWorker();
+
       syncSlider(stabilitySlider, valStability, "elevenlabs_stability");
       syncSlider(similaritySlider, valSimilarity, "elevenlabs_similarity");
       syncSlider(volumeSlider, valVolume, "elevenlabs_volume");
@@ -3719,8 +4755,12 @@
 
       renderTopics();
       renderSoundButtons();
-      switchSidebarTab("settings");
+      renderRecentsStrip();
+      // Topics first — communication over settings
+      switchSidebarTab("topics");
       autosizeDisplayInput();
+      syncDraftUi();
+      if (!isCoachDismissed()) showCoach();
       // Avoid auto-focus on mobile (opens keyboard immediately)
       if (!isMobileLayout()) focusDisplayInput();
     }
