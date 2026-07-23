@@ -192,41 +192,6 @@
     .recents-chip:hover { border-color: var(--accent); background: var(--key-hover); }
     .recents-chip:active { background: var(--key-active); }
 
-    /* Everyday / Builder mode */
-    .mode-toggle {
-      display: flex;
-      gap: 4px;
-      padding: 6px 8px;
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-      background: var(--bg-main);
-    }
-    .mode-toggle-btn {
-      flex: 1;
-      border: 1px solid var(--border);
-      background: var(--key-bg);
-      color: var(--text-secondary);
-      border-radius: 8px;
-      padding: 8px 6px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      min-height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-    }
-    .mode-toggle-btn:hover { border-color: var(--accent); color: var(--text); }
-    .mode-toggle-btn.active {
-      border-color: var(--accent);
-      color: var(--accent);
-      background: color-mix(in srgb, var(--accent) 14%, transparent);
-    }
-    body[data-app-mode="everyday"] .builder-only { display: none !important; }
-    body[data-app-mode="everyday"] .sidebar.collapsed .sidebar-tab[data-tab="settings"] { opacity: 0.85; }
-    body[data-app-mode="everyday"] #insert-toolbar { min-height: 0; }
-
     .key.tts-btn.speaking {
       background-color: color-mix(in srgb, var(--accent) 70%, #fff);
       animation: speak-pulse 1.2s ease-in-out infinite;
@@ -571,8 +536,8 @@
     .sound-button-label { width: 100%; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
     .sound-button-inner .sound-button-label { width: auto; flex: 1; min-width: 0; }
 
-    /* Everyday: full-button speak + tiny insert */
-    .sound-button.everyday-layout {
+    /* Full-button speak + tiny insert */
+    .sound-button.speak-layout {
       cursor: pointer;
     }
     .sound-button-main {
@@ -746,10 +711,6 @@
     body[data-touch-size="large"] .compose-chip-remove {
       width: 36px;
       height: 36px;
-    }
-    body[data-touch-size="large"] .mode-toggle-btn {
-      min-height: 48px;
-      font-size: 13px;
     }
     body[data-touch-size="large"] .sidebar-tab {
       min-height: 52px;
@@ -1266,15 +1227,6 @@
       <span class="logo-text">AAC Workspace</span>
     </div>
 
-    <div class="mode-toggle" role="group" aria-label="App mode">
-      <button type="button" class="mode-toggle-btn active" id="mode-everyday-btn" data-mode="everyday" title="Speak and use boards">
-        <span class="material-symbols-outlined icon-small">chat</span> Everyday
-      </button>
-      <button type="button" class="mode-toggle-btn" id="mode-builder-btn" data-mode="builder" title="Edit boards, voices, and backup">
-        <span class="material-symbols-outlined icon-small">build</span> Builder
-      </button>
-    </div>
-
     <!-- Sidebar Tabs: Settings | History | Topics -->
     <div class="sidebar-tabs" id="sidebar-tabs">
       <button class="sidebar-tab active" data-tab="settings" id="tab-settings" type="button" title="Settings">
@@ -1314,7 +1266,7 @@
           </div>
         </div>
 
-        <div class="settings-stack builder-only" id="group-eleven-settings">
+        <div class="settings-stack" id="group-eleven-settings">
           <div class="sidebar-setting-group">
             <button id="api-key-btn" class="status-btn missing" type="button">
               <span class="status-btn-text"><span class="material-symbols-outlined icon-small icon-btn-margin">key</span>Missing API Key (Click to Add)</span>
@@ -1338,9 +1290,9 @@
           </div>
         </div>
 
-        <hr class="setting-divider builder-only">
+        <hr class="setting-divider">
 
-        <div class="sidebar-setting-group builder-only" id="group-output-device">
+        <div class="sidebar-setting-group" id="group-output-device">
           <label>Speaker / Output Device</label>
           <select id="output-device-select" aria-describedby="output-device-hint">
             <option value="">System default</option>
@@ -1402,15 +1354,15 @@
           <input type="text" id="history-search-input" placeholder="Search speech history...">
         </div>
         <div class="history-list" id="audio-history"></div>
-        <button class="clear-history-btn builder-only" id="clear-history-btn" type="button">Clear All History</button>
+        <button class="clear-history-btn" id="clear-history-btn" type="button">Clear All History</button>
       </div>
 
       <!-- Topics Tab Content -->
       <div id="tab-content-topics" class="tab-content">
-        <button class="tool-btn builder-only" id="add-topic-sidebar-btn" type="button">
+        <button class="tool-btn" id="add-topic-sidebar-btn" type="button">
           <span class="material-symbols-outlined icon-medium">add</span> New Topic
         </button>
-        <div class="topics-backup-row builder-only">
+        <div class="topics-backup-row">
           <button class="tool-btn" id="export-board-btn" type="button" title="Download topics and buttons as JSON">
             <span class="material-symbols-outlined icon-small">download</span> Export
           </button>
@@ -1449,12 +1401,12 @@
       </div>
       <ol>
         <li><strong>Speak</strong> — type in the box, then press the blue speaker (or Enter).</li>
-        <li><strong>Buttons</strong> — in Everyday, tap the button to speak; the small <strong>+</strong> inserts text.</li>
+        <li><strong>Buttons</strong> — tap to speak; the small <strong>+</strong> inserts text into the message.</li>
         <li><strong>Assign</strong> — after you have text, pin it to a new sound button.</li>
         <li><strong>Drafts A–C</strong> — tap a letter to switch among three text drafts.</li>
         <li><strong>Recent</strong> — tap to insert; double-tap to speak.</li>
         <li><strong>Message</strong> — words under the box; tap × to remove one.</li>
-        <li><strong>Backup</strong> — switch to <strong>Builder</strong>, then Topics → Export / Import.</li>
+        <li><strong>Backup</strong> — Topics tab → Export / Import boards as a file.</li>
         <li><strong>Selection</strong> — highlight words in the box to speak only that part.</li>
       </ol>
       <div class="coach-banner-actions">
@@ -1472,10 +1424,10 @@
       </div>
       <div class="bottom-dock">
         <div class="toolbar insert-toolbar" id="insert-toolbar">
-          <button class="key insert-btn builder-only" id="insert-tag-btn" type="button" aria-label="Insert tag">
+          <button class="key insert-btn" id="insert-tag-btn" type="button" aria-label="Insert tag">
             <span class="material-symbols-outlined icon-medium">add</span>
           </button>
-          <input type="text" class="insert-input builder-only" id="insert-tag-input" placeholder="Tag to insert..." autocomplete="off" spellcheck="false" aria-label="Tag text">
+          <input type="text" class="insert-input" id="insert-tag-input" placeholder="Tag to insert..." autocomplete="off" spellcheck="false" aria-label="Tag text">
           <div class="audio-actions-inline" id="generated-audio-actions">
             <button class="audio-action-btn play" id="textarea-replay-btn" type="button" title="Replay Audio">
               <span class="material-symbols-outlined icon-small">play_arrow</span>
@@ -1882,9 +1834,6 @@
     let currentFontSize = parseInt(lsGet("aac_font_size", "24"), 10) || 24;
     let currentTheme = lsGet("aac_theme", "system") || "system";
     let customAccentColor = lsGet("aac_accent_color", "") || "";
-    /** everyday = communicate; builder = edit boards / advanced settings */
-    let appMode = lsGet("aac_app_mode", "everyday") === "builder" ? "builder" : "everyday";
-
     /** Saved caret in #display-input so programmatic refocus restores it. */
     let savedDisplaySelection = { start: null, end: null };
     /** Active Web Audio buffer sources (stop previous speech when starting new). */
@@ -2895,7 +2844,7 @@
             <span class="material-symbols-outlined icon-medium" style="color: ${topic.color};">${topic.icon || "folder"}</span>
             <span class="topic-item-name">${topic.name}</span>
           </div>
-          <div class="topic-actions builder-only">
+          <div class="topic-actions">
             <button class="nav-action-btn edit-topic-btn" type="button" title="Edit Topic Settings">
               <span class="material-symbols-outlined icon-small">edit</span>
             </button>
@@ -2903,11 +2852,7 @@
         `;
         header.addEventListener("click", (e) => {
           if (e.target.closest(".edit-topic-btn")) { e.stopPropagation(); openTopicEditModal(topic.id); return; }
-          // In Everyday mode, prefer switch + expand for quick board use
-          if (e.target.closest(".topic-item-content") || e.target === header) {
-            if (appMode === "everyday") switchTopic(topic.id);
-            else toggleTopicExpanded(topic.id);
-          }
+          toggleTopicExpanded(topic.id);
         });
         item.appendChild(header);
 
@@ -2929,7 +2874,7 @@
                 <span class="topic-sound-swatch" style="background-color: ${btn.color || "#8ab4f8"};"></span>
                 ${symbolHtml}
                 <span class="topic-sound-label">${btn.label || "Button"}</span>
-                <button class="topic-sound-edit-btn builder-only" type="button" title="Edit button">
+                <button class="topic-sound-edit-btn" type="button" title="Edit button">
                   <span class="material-symbols-outlined icon-small">edit</span>
                 </button>
               `;
@@ -3156,13 +3101,11 @@
       soundCanvas.style.minHeight = "";
       autosizeSoundCanvas(activeTab);
 
-      const everydayLayout = appMode === "everyday";
-
       activeTab.buttons.forEach(btnData => {
         const isUtteranceBtn = !!(btnData.utteranceText || "").trim();
         const btnColor = btnData.color || "#3f3f4e";
         const btnEl = document.createElement("div");
-        btnEl.className = `sound-button${isOverwriteMode ? " overwrite-target" : ""}${isUtteranceBtn ? " utterance-button" : ""}${everydayLayout && !isOverwriteMode ? " everyday-layout" : ""}`;
+        btnEl.className = `sound-button${isOverwriteMode ? " overwrite-target" : ""}${isUtteranceBtn ? " utterance-button" : ""}${!isOverwriteMode ? " speak-layout" : ""}`;
         btnEl.id = `btn-${btnData.id}`;
         btnEl.style.gridColumn = `${btnData.col + 1} / span ${btnData.colSpan}`;
         btnEl.style.gridRow = `${btnData.row + 1} / span ${btnData.rowSpan}`;
@@ -3180,8 +3123,16 @@
         const label = btnData.label || "Button";
         const insertText = getButtonSourceText(btnData) || trim(btnData.label) || "";
 
-        if (everydayLayout && !isOverwriteMode) {
-          // Everyday: main area speaks; tiny + inserts into the message
+        if (isOverwriteMode) {
+          btnEl.innerHTML = `
+            <div class="sound-button-inner" style="width:100%;padding:0 8px;">
+              ${symbolPart}
+              <div class="sound-button-label">${label}</div>
+            </div>
+          `;
+          btnEl.addEventListener("click", () => executeOverwrite(btnData.id));
+        } else {
+          // Main area speaks; tiny + inserts into the message
           btnEl.innerHTML = `
             <button type="button" class="sound-button-main" title="Speak" aria-label="Speak ${label}">
               <div class="sound-button-inner">
@@ -3202,31 +3153,6 @@
             insertTextAtDisplayCaret(insertText);
             announceLive(`Inserted ${label}`);
           });
-        } else {
-          // Builder (or overwrite): play strip + body insert
-          btnEl.innerHTML = `
-            <button type="button" class="sound-button-play" title="Play" aria-label="Play ${label}">
-              <span class="material-symbols-outlined">play_arrow</span>
-            </button>
-            <button type="button" class="sound-button-body" title="Insert text at cursor" aria-label="Insert text for ${label} at cursor">
-              <div class="sound-button-inner">
-                ${symbolPart}
-                <div class="sound-button-label">${label}</div>
-              </div>
-            </button>
-          `;
-          if (isOverwriteMode) {
-            btnEl.addEventListener("click", () => executeOverwrite(btnData.id));
-          } else {
-            btnEl.querySelector(".sound-button-play")?.addEventListener("click", (e) => {
-              e.stopPropagation();
-              playSpeechSource(btnData);
-            });
-            btnEl.querySelector(".sound-button-body")?.addEventListener("click", (e) => {
-              e.stopPropagation();
-              insertTextAtDisplayCaret(insertText);
-            });
-          }
         }
         soundCanvas.appendChild(btnEl);
       });
@@ -4975,28 +4901,6 @@
       }
     });
 
-    // ==================== APP MODE (Everyday / Builder) ====================
-    function applyAppMode(mode, { persist = true } = {}) {
-      appMode = mode === "builder" ? "builder" : "everyday";
-      document.body.dataset.appMode = appMode;
-      if (persist) lsSet("aac_app_mode", appMode);
-      const everydayBtn = document.getElementById("mode-everyday-btn");
-      const builderBtn = document.getElementById("mode-builder-btn");
-      everydayBtn?.classList.toggle("active", appMode === "everyday");
-      builderBtn?.classList.toggle("active", appMode === "builder");
-      // Everyday users stay on Topics; Builder may open Settings freely
-      if (appMode === "everyday") {
-        const activeTab = document.querySelector(".sidebar-tab.active")?.getAttribute("data-tab");
-        if (activeTab === "settings") switchSidebarTab("topics");
-      }
-      // Re-render so Everyday whole-button speak vs Builder play/insert matches mode
-      try { renderTopics(); } catch (_) {}
-      try { renderSoundButtons(); } catch (_) {}
-    }
-
-    document.getElementById("mode-everyday-btn")?.addEventListener("click", () => applyAppMode("everyday"));
-    document.getElementById("mode-builder-btn")?.addEventListener("click", () => applyAppMode("builder"));
-
     // ==================== LARGER TOUCH TARGETS ====================
     let largeTouchTargets = lsGet("aac_large_targets", "") === "1";
 
@@ -5040,7 +4944,6 @@
       applyTheme(currentTheme);
       applyGlobalIconStyles();
       applyTouchSize(largeTouchTargets, { persist: false });
-      applyAppMode(appMode, { persist: false });
       syncOfflineBanner();
       window.addEventListener("online", syncOfflineBanner);
       window.addEventListener("offline", syncOfflineBanner);
