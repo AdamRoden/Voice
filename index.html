@@ -430,8 +430,8 @@
       border: 1px solid var(--border);
       background: var(--key-bg);
       color: var(--text-secondary);
-      font-size: 12px;
-      font-weight: 700;
+      font-size: 24px;
+      font-weight: 500;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -608,7 +608,8 @@
       flex-shrink: 0;
       min-width: 0;
     }
-    .compose-strip.has-items { display: flex; }
+    .compose-strip.has-items,
+    .compose-strip.has-audio { display: flex; }
     .compose-strip-header {
       display: flex;
       align-items: center;
@@ -623,14 +624,34 @@
       text-transform: uppercase;
       letter-spacing: 0.04em;
     }
+    /* Chips row + Replay/Assign on the right */
+    .compose-strip-body {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
     .compose-chips {
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
+      flex: 1 1 auto;
+      min-width: 0;
       max-height: 4.5em;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
       padding: 2px 0;
+    }
+    .compose-strip .audio-actions-inline {
+      align-self: center;
+      height: auto;
+      min-height: 32px;
+    }
+    .compose-strip .audio-action-btn {
+      height: auto;
+      min-height: 32px;
+      padding: 6px 10px;
     }
     .compose-chip {
       display: inline-flex;
@@ -776,14 +797,31 @@
       outline-offset: 2px;
     }
 
-    /* Toolbar dock: tag row (matches sound rows) + Speak | Display | Clear */
+    /* Toolbar dock: Speak | Display | Clear, then recents row when present */
     .bottom-dock { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
     .toolbar { display: flex; gap: 3px; align-items: flex-start; min-height: var(--display-ctrl-size, var(--display-font-size, 24px)); }
+    /* Recents row: hidden until there are phrases (no empty ~44px gap) */
     .insert-toolbar {
-      height: var(--sound-row-height, 44px);
-      min-height: var(--sound-row-height, 44px);
+      display: none;
       align-items: center;
       flex-wrap: nowrap;
+      gap: 6px;
+      min-height: 0;
+    }
+    .insert-toolbar.has-items {
+      display: flex;
+      min-height: var(--sound-row-height, 44px);
+    }
+    .insert-toolbar .recents-strip {
+      flex: 1 1 auto;
+      min-width: 0;
+      gap: 2px;
+    }
+    .insert-toolbar .recents-strip-header {
+      padding: 0;
+    }
+    .insert-toolbar .recents-chips {
+      padding: 0;
     }
 
     .key { background-color: var(--key-bg); border: 1px solid var(--border); border-radius: 7px; color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 3px; transition: all 0.15s; padding: 0; white-space: nowrap; min-height: 34px; height: 34px; width: 34px; min-width: 34px; flex-shrink: 0; }
@@ -802,47 +840,93 @@
       .key.clear-btn { background-color: transparent; color: var(--danger); border-color: var(--danger); }
         .key.clear-btn:hover { background-color: var(--danger-bg); }
 
-      /* Add-tag matches sound button row height */
-      .key.insert-btn {
-        background-color: var(--key-bg);
-        color: var(--accent);
-        border-color: var(--accent);
-        font-weight: 600;
-        height: var(--sound-row-height, 44px);
-        min-height: var(--sound-row-height, 44px);
-        width: var(--sound-row-height, 44px);
-        min-width: var(--sound-row-height, 44px);
-        border-radius: 8px;
-      }
-        .key.insert-btn:hover { background-color: var(--key-hover); border-color: var(--accent-hover); color: var(--accent-hover); }
     .key .material-symbols-outlined { font-size: 18px; }
     .key.display-ctrl .material-symbols-outlined {
       font-size: calc(var(--display-ctrl-size, var(--display-font-size, 24px)) * 0.45);
     }
-    .key.insert-btn .material-symbols-outlined {
-      font-size: calc(var(--sound-row-height, 44px) * 0.45);
+
+    /* Custom tag field inside Insert Tag modal */
+    #insert-tag-input {
+      width: 100%;
+      min-height: 44px;
     }
 
-    .insert-input {
+    /* Display field shell: tag button + textarea share one bordered surface */
+    .display-field {
       flex: 1 1 auto;
       min-width: 0;
-      height: var(--sound-row-height, 44px);
-      min-height: var(--sound-row-height, 44px);
+      display: flex;
+      align-items: stretch;
+      gap: 0;
       background-color: var(--bg-surface);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0 10px;
-      color: var(--text);
-      font-size: 14px;
-      outline: none;
+      border-radius: 7px;
       transition: border-color 0.2s;
+      overflow: hidden;
     }
-      .insert-input:focus { border-color: var(--accent); }
-      .insert-input::placeholder { color: var(--text-secondary); }
+      .display-field:focus-within { border-color: var(--accent); }
 
     /* Inline autosizing display text (between Speak and Clear) — font size from Settings */
-    .display-textarea { flex: 1 1 auto; min-width: 0; width: auto; height: auto; min-height: var(--display-ctrl-size, var(--display-font-size, 24px)); max-height: min(30vh, 180px); background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 7px; padding: 6px 8px; line-height: 1.3; color: var(--text); font-size: var(--display-font-size, 24px); resize: none; outline: none; white-space: pre-wrap; word-break: break-word; transition: border-color 0.2s, min-height 0.05s; -webkit-overflow-scrolling: touch; overflow-y: auto; field-sizing: content; box-sizing: border-box; }
-      .display-textarea:focus { border-color: var(--accent); }
+    .display-textarea {
+      flex: 1 1 auto;
+      min-width: 0;
+      width: auto;
+      height: auto;
+      min-height: var(--display-ctrl-size, var(--display-font-size, 24px));
+      max-height: min(30vh, 180px);
+      background-color: transparent;
+      border: none;
+      border-radius: 0;
+      padding: 6px 8px 6px 4px;
+      line-height: 1.3;
+      color: var(--text);
+      font-size: var(--display-font-size, 24px);
+      resize: none;
+      outline: none;
+      white-space: pre-wrap;
+      word-break: break-word;
+      transition: min-height 0.05s;
+      -webkit-overflow-scrolling: touch;
+      overflow-y: auto;
+      field-sizing: content;
+      box-sizing: border-box;
+    }
+
+    /* Tag button: full field height, width hugs the icon */
+    .display-field .insert-btn {
+      position: relative;
+      flex: 0 0 auto;
+      align-self: stretch;
+      margin: 0;
+      padding: 0 2px;
+      background: transparent;
+      color: var(--accent);
+      border: none;
+      border-radius: 0;
+      height: auto;
+      min-height: 0;
+      max-height: none;
+      width: auto;
+      min-width: 0;
+      max-width: none;
+      box-shadow: none;
+      opacity: 0.92;
+    }
+      .display-field .insert-btn:hover {
+        background: var(--key-hover);
+        border-color: transparent;
+        color: var(--accent-hover);
+        opacity: 1;
+      }
+      .display-field .insert-btn:active {
+        background: var(--key-active);
+        transform: none;
+      }
+    /* Match Speak button icon size */
+    .display-field .insert-btn .material-symbols-outlined {
+      font-size: calc(var(--display-ctrl-size, var(--display-font-size, 24px)) * 0.45);
+      line-height: 1;
+    }
 
     /* Replay / Assign live in the tag row (hidden until audio is available) */
     .audio-actions-inline {
@@ -1092,7 +1176,7 @@
         min-width: 36px;
       }
       .display-textarea {
-        padding: 6px 8px;
+        padding: 6px 8px 6px 4px;
         max-height: min(26vh, 150px);
       }
       .audio-action-btn { font-size: 12px; padding: 0 8px; }
@@ -1188,7 +1272,7 @@
       .app-main { gap: 3px; padding: 4px; }
       .bottom-dock { gap: 2px; }
       .key { height: 30px; min-height: 30px; width: 30px; min-width: 30px; }
-      .display-textarea { max-height: min(22vh, 90px); padding: 4px 6px; }
+      .display-textarea { max-height: min(22vh, 90px); padding: 4px 6px 4px 2px; }
       .sound-button { font-size: 12px; }
       .sidebar { width: min(280px, 70vw); }
       .audio-action-btn { font-size: 11px; padding: 0 6px; }
@@ -1423,27 +1507,16 @@
         <button class="overwrite-cancel-btn" id="cancel-overwrite-btn" type="button">Cancel</button>
       </div>
       <div class="bottom-dock">
-        <div class="toolbar insert-toolbar" id="insert-toolbar">
-          <button class="key insert-btn" id="insert-tag-btn" type="button" aria-label="Insert tag">
-            <span class="material-symbols-outlined icon-medium">add</span>
-          </button>
-          <input type="text" class="insert-input" id="insert-tag-input" placeholder="Tag to insert..." autocomplete="off" spellcheck="false" aria-label="Tag text">
-          <div class="audio-actions-inline" id="generated-audio-actions">
-            <button class="audio-action-btn play" id="textarea-replay-btn" type="button" title="Replay Audio">
-              <span class="material-symbols-outlined icon-small">play_arrow</span>
-              <span class="audio-action-label">Replay Audio</span>
-            </button>
-            <button class="audio-action-btn" id="textarea-assign-btn" type="button" title="Assign to Button">
-              <span class="material-symbols-outlined icon-small">push_pin</span>
-              <span class="audio-action-label">Assign to Button</span>
-            </button>
-          </div>
-        </div>
         <div class="toolbar" id="toolbar">
           <button class="key tts-btn display-ctrl" id="speak-btn" type="button" aria-label="Speak" title="Speak text (or selection). Click again to stop.">
             <span class="material-symbols-outlined icon-medium">volume_up</span>
           </button>
-          <textarea class="display-textarea" id="display-input" spellcheck="true" autocomplete="off" autocapitalize="sentences" placeholder="Type here..." rows="1" aria-label="Display text"></textarea>
+          <div class="display-field">
+            <button class="key insert-btn" id="insert-tag-btn" type="button" aria-label="Insert tag" title="Insert tag">
+              <span class="material-symbols-outlined">comedy_mask</span>
+            </button>
+            <textarea class="display-textarea" id="display-input" spellcheck="true" autocomplete="off" autocapitalize="sentences" placeholder="Type here..." rows="1" aria-label="Display text"></textarea>
+          </div>
           <button class="key clear-btn display-ctrl" id="clear-btn" type="button" aria-label="Clear" title="Clear text (not saved)">
             <span class="material-symbols-outlined icon-medium">delete</span>
           </button>
@@ -1457,14 +1530,28 @@
           <div class="compose-strip-header">
             <span class="compose-strip-label">Message</span>
           </div>
-          <div class="compose-chips" id="compose-chips" role="list"></div>
-        </div>
-        <div class="recents-strip" id="recents-strip" aria-label="Recent phrases">
-          <div class="recents-strip-header">
-            <span class="recents-strip-label">Recent</span>
-            <button type="button" class="recents-clear-btn" id="recents-clear-btn" title="Clear recent phrases">Clear</button>
+          <div class="compose-strip-body">
+            <div class="compose-chips" id="compose-chips" role="list"></div>
+            <div class="audio-actions-inline" id="generated-audio-actions">
+              <button class="audio-action-btn play" id="textarea-replay-btn" type="button" title="Replay Audio">
+                <span class="material-symbols-outlined icon-small">play_arrow</span>
+                <span class="audio-action-label">Replay Audio</span>
+              </button>
+              <button class="audio-action-btn" id="textarea-assign-btn" type="button" title="Assign to Button">
+                <span class="material-symbols-outlined icon-small">push_pin</span>
+                <span class="audio-action-label">Assign to Button</span>
+              </button>
+            </div>
           </div>
-          <div class="recents-chips" id="recents-chips" role="list"></div>
+        </div>
+        <div class="toolbar insert-toolbar" id="insert-toolbar">
+          <div class="recents-strip" id="recents-strip" aria-label="Recent phrases">
+            <div class="recents-strip-header">
+              <span class="recents-strip-label">Recent</span>
+              <button type="button" class="recents-clear-btn" id="recents-clear-btn" title="Clear recent phrases">Clear</button>
+            </div>
+            <div class="recents-chips" id="recents-chips" role="list"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1508,7 +1595,11 @@
   <div class="modal" id="tag-insert-modal">
     <div class="modal-title">Insert Tag</div>
     <div class="modal-scroll">
-      <div class="modal-description">Tap a tag to insert it into the display text.</div>
+      <div class="sidebar-setting-group">
+        <label for="insert-tag-input">Custom tag</label>
+        <input type="text" class="modal-input" id="insert-tag-input" placeholder="Type a tag and press Enter…" autocomplete="off" spellcheck="false" aria-label="Custom tag to insert">
+      </div>
+      <div class="modal-description">Tap a saved tag, or type a custom one above and press Enter to insert.</div>
       <div class="tag-insert-grid" id="tag-insert-grid"></div>
       <div class="sidebar-setting-group">
         <label>Saved tags (comma-separated)</label>
@@ -3361,13 +3452,16 @@
     function renderRecentsStrip() {
       const strip = document.getElementById("recents-strip");
       const chips = document.getElementById("recents-chips");
+      const toolbar = document.getElementById("insert-toolbar");
       if (!strip || !chips) return;
       chips.innerHTML = "";
       if (!recentPhrases.length) {
         strip.classList.remove("has-items");
+        toolbar?.classList.remove("has-items");
         return;
       }
       strip.classList.add("has-items");
+      toolbar?.classList.add("has-items");
       recentPhrases.forEach((phrase) => {
         const btn = document.createElement("button");
         btn.type = "button";
@@ -3457,7 +3551,7 @@
           </div>
           <div class="history-actions">
             <button class="history-btn replay-btn" type="button"><span class="material-symbols-outlined icon-small">play_arrow</span> Play</button>
-            <button class="history-btn restore restore-btn" type="button"><span class="material-symbols-outlined icon-small">restore</span> Load phrase</button>
+            <button class="history-btn restore restore-btn" type="button"><span class="material-symbols-outlined icon-small">restore</span> Restore</button>
             <button class="history-btn delete delete-btn" type="button"><span class="material-symbols-outlined icon-small">delete</span></button>
           </div>
         `;
@@ -3506,14 +3600,20 @@
 
     // ==================== TEXT DISPLAY ====================
     /**
-     * Size Speak/Clear as squares matching the display field's one-line height
-     * (font + line-height + padding + border). Multi-line growth does not enlarge buttons.
+     * Size Speak/Clear as squares matching the display field shell's one-line height
+     * (textarea font + line-height + padding + .display-field border).
+     * Multi-line growth does not enlarge buttons.
      */
     function syncSpeakClearToDisplayHeight() {
       if (!displayInput) return;
       const styles = getComputedStyle(displayInput);
       const padY = (parseFloat(styles.paddingTop) || 0) + (parseFloat(styles.paddingBottom) || 0);
-      const borderY = (parseFloat(styles.borderTopWidth) || 0) + (parseFloat(styles.borderBottomWidth) || 0);
+      // Border lives on .display-field, not the textarea
+      const field = displayInput.closest(".display-field");
+      const fieldStyles = field ? getComputedStyle(field) : null;
+      const borderY = fieldStyles
+        ? (parseFloat(fieldStyles.borderTopWidth) || 0) + (parseFloat(fieldStyles.borderBottomWidth) || 0)
+        : (parseFloat(styles.borderTopWidth) || 0) + (parseFloat(styles.borderBottomWidth) || 0);
       let lineH = parseFloat(styles.lineHeight);
       if (!Number.isFinite(lineH) || styles.lineHeight === "normal") {
         lineH = currentFontSize * 1.3;
@@ -3745,10 +3845,23 @@
 
     function openTagInsertModal() {
       savedTagsList = loadSavedTags();
-      const input = document.getElementById("saved-tags-input");
-      if (input) input.value = tagsListToText(savedTagsList);
+      const savedInput = document.getElementById("saved-tags-input");
+      if (savedInput) savedInput.value = tagsListToText(savedTagsList);
       renderTagInsertGrid(savedTagsList);
+      const customInput = document.getElementById("insert-tag-input");
+      if (customInput) customInput.value = "";
       openModal("tag-insert-modal");
+      // Focus custom tag field so the user can type immediately
+      requestAnimationFrame(() => {
+        const el = document.getElementById("insert-tag-input");
+        if (!el) return;
+        try {
+          el.focus({ preventScroll: true });
+          el.select();
+        } catch (_) {
+          try { el.focus(); } catch (__) {}
+        }
+      });
     }
 
     function onSavedTagsInputChange() {
@@ -3783,7 +3896,12 @@
     document.getElementById("insert-tag-input")?.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
-        insertBracketTag();
+        const raw = (document.getElementById("insert-tag-input")?.value || "").trim();
+        if (!raw) return;
+        insertBracketTag(raw);
+        const customInput = document.getElementById("insert-tag-input");
+        if (customInput) customInput.value = "";
+        closeModals();
       }
     });
 
@@ -3809,7 +3927,10 @@
       const assignBtn = document.getElementById("textarea-assign-btn");
       if (replayBtn) replayBtn.style.display = replayOk ? "" : "none";
       if (assignBtn) assignBtn.style.display = hasText ? "" : "none";
-      audioActionsBar.classList.toggle("active", hasText || replayOk);
+      const showAudio = hasText || replayOk;
+      if (audioActionsBar) audioActionsBar.classList.toggle("active", showAudio);
+      // Keep Message row visible when Replay/Assign are shown even if chips are empty
+      document.getElementById("compose-strip")?.classList.toggle("has-audio", showAudio);
     }
 
     displayInput.addEventListener("input", () => {
