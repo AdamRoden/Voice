@@ -1,0 +1,1733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Chess</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <style>
+    :root {
+      --bg-main: #131314;
+      --bg-surface: #1e1f20;
+      --bg-surface-hover: #282a2c;
+      --bg-surface-active: #333537;
+      --border: #333537;
+      --accent: #8ab4f8;
+      --accent-hover: #aecbfa;
+      --text: #f1f3f4;
+      --text-secondary: #9aa0a6;
+      --danger: #f2b8b5;
+      --danger-bg: #601410;
+      --ok: #81c995;
+      --shadow: rgba(0, 0, 0, 0.4);
+      --light: #eed7b0;
+      --dark: #b58863;
+      --board-border: #4a3426;
+      --select: rgba(255, 255, 120, 0.5);
+      --legal: rgba(0, 0, 0, 0.2);
+      --legal-capture: rgba(220, 50, 50, 0.4);
+      --last: rgba(255, 255, 0, 0.25);
+      --sidebar-w: 300px;
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; }
+    body {
+      background: var(--bg-main);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      overflow: hidden;
+      font-size: 14px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .material-symbols-outlined {
+      font-family: "Material Symbols Outlined" !important;
+      font-weight: normal;
+      font-style: normal;
+      font-size: 22px;
+      line-height: 1;
+      display: inline-block;
+      vertical-align: middle;
+      user-select: none;
+    }
+    .icon-sm { font-size: 18px; }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ===== Sidebars ===== */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--bg-surface);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      z-index: 50;
+      transition: transform 0.28s ease, width 0.28s ease;
+    }
+    .sidebar-left { border-right: 1px solid var(--border); }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      min-height: 52px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .sidebar-header h2 {
+      font-size: 16px;
+      font-weight: 700;
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .icon-btn {
+      background: none;
+      border: none;
+      color: var(--text);
+      cursor: pointer;
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .icon-btn:hover { background: var(--bg-surface-hover); }
+
+    .sidebar-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 0;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .setting-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 4px 2px;
+    }
+    .setting-group > label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .setting-group select,
+    .setting-group input[type="text"] {
+      width: 100%;
+      background: var(--bg-main);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 14px;
+      outline: none;
+      min-height: 42px;
+    }
+    .setting-group select:focus,
+    .setting-group input[type="text"]:focus { border-color: var(--accent); }
+    .setting-group input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      height: 28px;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 0;
+      border: none;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      padding: 6px 2px 2px;
+    }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .btn-row.single { grid-template-columns: 1fr; }
+
+    .tool-btn {
+      background: var(--bg-main);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px 12px;
+      min-height: 44px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .tool-btn:hover { background: var(--bg-surface-hover); border-color: var(--text-secondary); }
+    .tool-btn:active { transform: scale(0.98); }
+    .tool-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .tool-btn.primary { background: #3a6ea5; border-color: #3a6ea5; color: #fff; }
+    .tool-btn.primary:hover { background: #4a7eb5; }
+    .tool-btn.danger { background: transparent; border-color: var(--danger); color: var(--danger); }
+    .tool-btn.danger:hover { background: var(--danger-bg); }
+    .tool-btn.accent { background: var(--accent); border-color: var(--accent); color: #0d1117; }
+    .tool-btn.accent:hover { background: var(--accent-hover); }
+
+    .status-btn {
+      background: var(--bg-main);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: left;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      min-height: 42px;
+      gap: 8px;
+    }
+    .status-btn:hover { border-color: var(--accent); background: var(--bg-surface-hover); }
+    .status-btn.missing { border-color: var(--danger); color: var(--danger); }
+    .status-btn.saved { border-color: var(--ok); }
+    .status-btn-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .settings-stack { display: flex; flex-direction: column; gap: 8px; }
+    .settings-stack.hidden { display: none; }
+
+    /* ===== Main ===== */
+    .main {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      gap: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .top-bar {
+      width: min(100%, 720px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .top-bar h1 {
+      font-size: clamp(1rem, 3vw, 1.25rem);
+      font-weight: 700;
+    }
+    .mobile-toggles { display: none; gap: 4px; }
+    .game-status {
+      font-size: clamp(0.85rem, 2.5vw, 1rem);
+      color: var(--text-secondary);
+      text-align: right;
+    }
+    .game-status.check { color: #ffb347; }
+    .game-status.mate { color: var(--danger); font-weight: 700; }
+    .game-status.draw { color: var(--accent); font-weight: 700; }
+
+    .board-wrap {
+      width: min(100%, calc(100dvh - 100px), 720px);
+      aspect-ratio: 1;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 10px 36px var(--shadow);
+      border: 3px solid var(--board-border);
+      background: var(--board-border);
+      max-height: calc(100dvh - 100px);
+    }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      grid-template-rows: repeat(8, 1fr);
+      width: 100%;
+      height: 100%;
+    }
+    .sq {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .sq.light { background: var(--light); }
+    .sq.dark { background: var(--dark); }
+    .sq.selected { background: var(--select) !important; }
+    .sq.last-move { box-shadow: inset 0 0 0 999px var(--last); }
+    .sq.legal::after {
+      content: "";
+      position: absolute;
+      width: 28%;
+      height: 28%;
+      border-radius: 50%;
+      background: var(--legal);
+      pointer-events: none;
+    }
+    .sq.legal.capture::after {
+      width: 86%;
+      height: 86%;
+      background: transparent;
+      border: 4px solid var(--legal-capture);
+      border-radius: 50%;
+    }
+    .sq.legal.ep::after {
+      width: 86%;
+      height: 86%;
+      background: transparent;
+      border: 4px dashed rgba(80, 140, 220, 0.75);
+      border-radius: 50%;
+    }
+
+    .piece {
+      width: 88%;
+      height: 88%;
+      z-index: 1;
+      pointer-events: none;
+      filter: drop-shadow(0 1.5px 2px rgba(0,0,0,0.35));
+      transition: transform 0.08s ease;
+    }
+    .sq:active .piece { transform: scale(1.06); }
+
+    .coord {
+      position: absolute;
+      font-size: clamp(0.5rem, 1.8vmin, 0.72rem);
+      font-weight: 700;
+      opacity: 0.5;
+      pointer-events: none;
+      line-height: 1;
+    }
+    .coord.file { right: 3px; bottom: 2px; }
+    .coord.rank { left: 3px; top: 2px; }
+    .sq.light .coord { color: var(--dark); }
+    .sq.dark .coord { color: var(--light); }
+
+    .move-history {
+      width: min(100%, 720px);
+      max-height: 2.8em;
+      overflow: hidden;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      line-height: 1.35;
+      word-break: break-word;
+      flex-shrink: 0;
+    }
+
+    /* ===== Modals ===== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      z-index: 2000;
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: auto; }
+
+    .modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.96);
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 2001;
+      width: min(420px, calc(100vw - 32px));
+      max-height: min(85dvh, 85vh);
+      box-shadow: 0 16px 36px var(--shadow);
+    }
+    .modal.open { display: flex; transform: translate(-50%, -50%) scale(1); }
+    .modal-title { font-size: 17px; font-weight: 600; }
+    .modal-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.4; }
+    .modal-input {
+      background: var(--bg-main);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 16px;
+      outline: none;
+      width: 100%;
+      min-height: 44px;
+    }
+    .modal-input:focus { border-color: var(--accent); }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+    .modal-btn {
+      border: 1px solid var(--border);
+      background: var(--bg-main);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      min-height: 42px;
+    }
+    .modal-btn.primary { background: var(--accent); border-color: var(--accent); color: #0d1117; }
+    .modal-btn.secondary { text-decoration: none; display: inline-flex; align-items: center; }
+    .modal-links { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .voices-panel {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: min(360px, 100vw);
+      height: 100%;
+      height: 100dvh;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border);
+      z-index: 2100;
+      display: none;
+      flex-direction: column;
+      box-shadow: 8px 0 24px var(--shadow);
+    }
+    .voices-panel.open { display: flex; }
+    .voices-panel.right {
+      left: auto;
+      right: 0;
+      border-right: none;
+      border-left: 1px solid var(--border);
+      box-shadow: -8px 0 24px var(--shadow);
+    }
+    .voices-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      min-height: 52px;
+    }
+    .voices-header h3 { flex: 1; font-size: 15px; }
+    .voices-search {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .voices-search input {
+      width: 100%;
+      background: var(--bg-main);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 14px;
+      outline: none;
+      min-height: 42px;
+    }
+    .voice-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .voice-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+    .voice-item:hover { background: var(--bg-surface-hover); }
+    .voice-item.selected { background: var(--bg-surface-active); border-color: var(--accent); }
+    .voice-item-name { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .voice-preview-btn {
+      background: var(--bg-main);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .history-empty-notice {
+      color: var(--text-secondary);
+      text-align: center;
+      padding: 24px 12px;
+      font-size: 13px;
+    }
+
+    /* Promotion */
+    .promo-modal .promo-choices {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    .promo-modal .promo-choices button {
+      background: var(--bg-main);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      cursor: pointer;
+      min-height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .promo-modal .promo-choices button:hover { border-color: var(--accent); }
+    .promo-modal .piece { width: 70%; height: auto; aspect-ratio: 1; }
+
+    .sidebar-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 40;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+    }
+    .sidebar-backdrop.open { opacity: 1; pointer-events: auto; }
+
+    /* Mobile */
+    @media (max-width: 960px) {
+      .sidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        width: min(320px, 88vw);
+      }
+      .sidebar-left {
+        left: 0;
+        transform: translateX(-105%);
+      }
+      .sidebar-left.mobile-open {
+        transform: translateX(0);
+        z-index: 60;
+      }
+      .sidebar-backdrop { display: block; }
+      .mobile-toggles { display: flex; }
+      .board-wrap {
+        width: min(100%, calc(100dvh - 120px), calc(100vw - 24px));
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
+
+  <!-- LEFT SIDEBAR: controls + voice -->
+  <aside class="sidebar sidebar-left" id="leftSidebar">
+    <div class="sidebar-header">
+      <button class="icon-btn" id="closeLeftBtn" type="button" title="Close">
+        <span class="material-symbols-outlined">menu_open</span>
+      </button>
+      <h2>Settings</h2>
+    </div>
+    <div class="sidebar-body">
+      <div class="section-title">Game</div>
+      <div class="btn-row">
+        <button class="tool-btn primary" id="undoBtn" type="button" disabled>
+          <span class="material-symbols-outlined icon-sm">undo</span> Undo
+        </button>
+        <button class="tool-btn danger" id="resetBtn" type="button">
+          <span class="material-symbols-outlined icon-sm">restart_alt</span> Reset
+        </button>
+      </div>
+      <div class="btn-row">
+        <button class="tool-btn" id="flipBtn" type="button">
+          <span class="material-symbols-outlined icon-sm">swap_vert</span> Flip Board
+        </button>
+        <button class="tool-btn accent" id="speakBtn" type="button" disabled>
+          <span class="material-symbols-outlined icon-sm">volume_up</span> Speak
+        </button>
+      </div>
+      <div class="setting-group">
+        <label for="announceSelect">Speak moves for</label>
+        <select id="announceSelect">
+          <option value="all">All</option>
+          <option value="bottom">Bottom only</option>
+          <option value="none">None</option>
+        </select>
+      </div>
+
+      <hr class="divider" />
+
+      <div class="section-title">Voice Engine</div>
+      <div class="setting-group">
+        <label for="modelSelect">Voice Model</label>
+        <select id="modelSelect">
+          <option value="browser_tts">Local Browser (Utterance)</option>
+          <option value="eleven_v3">Eleven v3</option>
+          <option value="eleven_multilingual_v2">Eleven Multilingual v2</option>
+          <option value="eleven_flash_v2">Eleven Flash v2</option>
+        </select>
+      </div>
+
+      <div class="settings-stack" id="groupBrowserVoice">
+        <div class="setting-group">
+          <label>Browser Voice</label>
+          <button class="status-btn" id="openBrowserVoices" type="button">
+            <span class="status-btn-text" id="selectedBrowserName">Select Voice...</span>
+            <span class="material-symbols-outlined icon-sm">chevron_right</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="settings-stack hidden" id="groupElevenSettings">
+        <div class="setting-group">
+          <button id="elevenApiKeyBtn" class="status-btn missing" type="button">
+            <span class="status-btn-text">
+              <span class="material-symbols-outlined icon-sm">key</span>
+              Missing API Key (Click to Add)
+            </span>
+          </button>
+        </div>
+        <div class="setting-group">
+          <label>ElevenLabs Voice</label>
+          <button class="status-btn" id="openElevenVoices" type="button">
+            <span class="status-btn-text" id="selectedElevenName">Select Voice...</span>
+            <span class="material-symbols-outlined icon-sm">chevron_right</span>
+          </button>
+        </div>
+        <div class="setting-group">
+          <label><span>Stability</span><span id="valStability">0.50</span></label>
+          <input type="range" id="stabilitySlider" min="0" max="1" step="0.05" value="0.5" />
+        </div>
+        <div class="setting-group">
+          <label><span>Similarity</span><span id="valSimilarity">0.75</span></label>
+          <input type="range" id="similaritySlider" min="0" max="1" step="0.05" value="0.75" />
+        </div>
+      </div>
+
+      <hr class="divider" />
+
+      <div class="setting-group">
+        <label><span>Volume Gain</span><span id="valVolume">5.00</span></label>
+        <input type="range" id="volumeSlider" min="1" max="5" step="0.5" value="5" />
+      </div>
+      <div class="setting-group">
+        <label><span>Speed</span><span id="valRate">1.00</span></label>
+        <input type="range" id="rateSlider" min="0.5" max="2" step="0.1" value="1" />
+      </div>
+      <div class="setting-group">
+        <label><span>Pitch</span><span id="valPitch">1.0</span></label>
+        <input type="range" id="pitchSlider" min="0" max="2" step="0.1" value="1" />
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="top-bar">
+      <div class="mobile-toggles">
+        <button class="icon-btn" id="openLeftBtn" type="button" title="Settings">
+          <span class="material-symbols-outlined">tune</span>
+        </button>
+      </div>
+      <h1>Chess</h1>
+      <div id="status" class="game-status">White to move</div>
+    </div>
+    <div class="board-wrap">
+      <div id="board" class="board" aria-label="Chess board"></div>
+    </div>
+    <div id="history" class="move-history" aria-live="polite"></div>
+  </main>
+
+  <div class="modal-overlay" id="modalOverlay"></div>
+
+  <!-- ElevenLabs API key -->
+  <div class="modal" id="elevenKeyModal">
+    <div class="modal-title">ElevenLabs API Key</div>
+    <div class="modal-desc">Uses the same key as the main Voice app (stored in this browser).</div>
+    <div class="modal-links">
+      <a class="modal-btn secondary" href="https://elevenlabs.io/app/sign-up" target="_blank" rel="noopener noreferrer">Create Free Account</a>
+      <a class="modal-btn secondary" href="https://elevenlabs.io/app/developers/api-keys" target="_blank" rel="noopener noreferrer">Create API Key</a>
+    </div>
+    <input type="text" id="elevenKeyInput" class="modal-input" placeholder="Paste key here" autocomplete="off" spellcheck="false" autocapitalize="off" />
+    <div class="modal-actions">
+      <button class="modal-btn" id="elevenKeyCancel" type="button">Cancel</button>
+      <button class="modal-btn primary" id="elevenKeySave" type="button">Save</button>
+    </div>
+  </div>
+
+  <!-- Promotion -->
+  <div class="modal promo-modal" id="promoModal">
+    <div class="modal-title">Promote pawn</div>
+    <div class="promo-choices">
+      <button type="button" data-piece="q" title="Queen"></button>
+      <button type="button" data-piece="r" title="Rook"></button>
+      <button type="button" data-piece="b" title="Bishop"></button>
+      <button type="button" data-piece="n" title="Knight"></button>
+    </div>
+  </div>
+
+  <!-- Voice picker panel -->
+  <div class="voices-panel" id="voicesPanel">
+    <div class="voices-header">
+      <button class="icon-btn" id="closeVoicesBtn" type="button">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <h3 id="voicesPanelTitle">Voices</h3>
+    </div>
+    <div class="voices-search">
+      <input type="search" id="voiceSearch" placeholder="Search voices..." />
+    </div>
+    <div class="voice-list" id="voiceList"></div>
+  </div>
+
+  <script>
+(function () {
+  "use strict";
+
+  const FILES = "abcdefgh";
+  const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+  // Classy Staunton-style solid silhouettes (viewBox 0 0 45 45)
+  const PIECE_PATHS = {
+    k: "M22.5 11.63V6M20 8h5M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5M11.5 37c5.5 3.5 15.5 3.5 21 0v-7s9-4.5 6-10.5c-4-6.5-13.5-3.5-16 4V27v-3.5c-3.5-7.5-13-10.5-16-4-3 6 5 10 5 10V37z",
+    q: "M8 12a2 2 0 1 1-4 0 2 2 0 1 1 4 0zM24.5 7.5a2 2 0 1 1-4 0 2 2 0 1 1 4 0zM41 12a2 2 0 1 1-4 0 2 2 0 1 1 4 0zM16 8.5a2 2 0 1 1-4 0 2 2 0 1 1 4 0zM33 9a2 2 0 1 1-4 0 2 2 0 1 1 4 0zM9 26c8.5-1.5 21-1.5 27 0l2-12-7 11V11l-5.5 13.5-3-15-3 15-5.5-14V25L7 14l2 12zM9 26c0 2 1.5 2 2.5 4 1 1.5 1 1 .5 3.5-1.5 1-1.5 2.5-1.5 2.5-1.5 1.5.5 2.5.5 2.5 6.5 1 16.5 1 23 0 0 0 1.5-1 0-2.5 0 0 .5-1.5-1-2.5-.5-2.5-.5-2 .5-3.5 1-2 2.5-2 2.5-4-8.5-1.5-18.5-1.5-27 0z",
+    r: "M9 39h27v-3H9v3zM12 36v-4h21v4H12zM11 14V9h4v2h5V9h5v2h5V9h4v5M34 14l-3 3H14l-3-3M31 17v12.5H14V17M31 29.5l1.5 2.5h-20l1.5-2.5M11 14h23",
+    b: "M9 36c3.39-.97 10.11.43 13.5-2 3.39 2.43 10.11 1.03 13.5 2 0 0 1.65.54 3 2-.68.97-1.65.99-3 .5-3.39-.97-10.11.46-13.5-1-3.39 1.46-10.11.03-13.5 1-1.35.49-2.32.47-3-.5 1.35-1.46 3-2 3-2zM15 32c2.5 2.5 12.5 2.5 15 0 .5-1.5 0-2 0-2 0-2.5-2.5-4-2.5-4 5.5-1.5 6-11.5-5-15.5-11 4-10.5 14-5 15.5 0 0-2.5 1.5-2.5 4 0 0-.5.5 0 2zM25 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 1 1 5 0z",
+    n: "M22 10c10.5 1 16.5 8 16 29H15c0-9 10-6.5 8-21M24 18c.38 2.91-5.55 7.37-8 9-3 2-2.82 4.34-5 4-1.042-.94 1.41-3.04 0-3-1 0 .19 1.23-1 2-1 0-4 1-4-4 0-2 6-12 6-12s1.89-1.9 2-3.5c-.73-.994-.5-2-.5-3 1-1 3 2.5 3 2.5h2s.78-1.992 2.5-3c1 0 1 3 1 3",
+    p: "M22.5 9c-2.21 0-4 1.79-4 4 0 .89.29 1.71.78 2.38C17.33 16.5 16 18.59 16 21c0 2.03.94 3.84 2.41 5.03-3 1.06-7.41 5.55-7.41 13.47h23c0-7.92-4.41-12.41-7.41-13.47 1.47-1.19 2.41-3 2.41-5.03 0-2.41-1.33-4.5-3.28-5.62.49-.67.78-1.49.78-2.38 0-2.21-1.79-4-4-4z",
+  };
+
+  // ===== State =====
+  let state;
+  let history = [];
+  let selected = null;
+  let legalTargets = new Set();
+  let lastMove = null;
+  let pendingPromo = null;
+  let moveLans = [];
+  let lastSpoken = null;
+  let boardFlipped = false;
+  let announceMode = localStorage.getItem("chess_announce") || "all";
+  // Migrate legacy announce options
+  if (announceMode === "white" || announceMode === "black") {
+    announceMode = "bottom";
+    localStorage.setItem("chess_announce", "bottom");
+  }
+  let activeBufferSources = [];
+  let voicesPanelMode = "browser"; // browser | eleven
+  let elevenVoicesCache = [];
+  let activeElevenVoiceId = localStorage.getItem("elevenlabs_voice") || "";
+  let activeBrowserVoiceIndex = localStorage.getItem("aac_browser_voice_index") || "";
+  let browserVoices = [];
+
+  // ===== DOM =====
+  const $ = (id) => document.getElementById(id);
+  const boardEl = $("board");
+  const statusEl = $("status");
+  const historyEl = $("history");
+  const undoBtn = $("undoBtn");
+  const resetBtn = $("resetBtn");
+  const flipBtn = $("flipBtn");
+  const speakBtn = $("speakBtn");
+  const announceSelect = $("announceSelect");
+  const modelSelect = $("modelSelect");
+  const groupBrowserVoice = $("groupBrowserVoice");
+  const groupElevenSettings = $("groupElevenSettings");
+  const volumeSlider = $("volumeSlider");
+  const rateSlider = $("rateSlider");
+  const pitchSlider = $("pitchSlider");
+  const stabilitySlider = $("stabilitySlider");
+  const similaritySlider = $("similaritySlider");
+  const promoModal = $("promoModal");
+  const modalOverlay = $("modalOverlay");
+  const leftSidebar = $("leftSidebar");
+  const sidebarBackdrop = $("sidebarBackdrop");
+  const voicesPanel = $("voicesPanel");
+  const voiceList = $("voiceList");
+  const voiceSearch = $("voiceSearch");
+
+  // ===== Chess core =====
+  function cloneState(s) {
+    return {
+      board: s.board.map((row) => row.slice()),
+      turn: s.turn,
+      castling: s.castling,
+      ep: s.ep,
+      halfmove: s.halfmove,
+      fullmove: s.fullmove,
+    };
+  }
+
+  function parseFen(fen) {
+    const parts = fen.trim().split(/\s+/);
+    const rows = parts[0].split("/");
+    const board = [];
+    for (let r = 0; r < 8; r++) {
+      const row = [];
+      for (const ch of rows[r]) {
+        if (/\d/.test(ch)) for (let i = 0; i < +ch; i++) row.push(null);
+        else row.push(ch);
+      }
+      board.push(row);
+    }
+    return {
+      board,
+      turn: parts[1] || "w",
+      castling: parts[2] === "-" ? "" : (parts[2] || "KQkq"),
+      ep: parts[3] === "-" ? null : (parts[3] || null),
+      halfmove: +(parts[4] || 0),
+      fullmove: +(parts[5] || 1),
+    };
+  }
+
+  function sq(r, c) { return r * 8 + c; }
+  function rc(i) { return [Math.floor(i / 8), i % 8]; }
+  function alg(i) {
+    const [r, c] = rc(i);
+    return FILES[c] + (8 - r);
+  }
+  function fromAlg(a) {
+    if (!a || a.length < 2) return null;
+    const c = FILES.indexOf(a[0]);
+    const r = 8 - parseInt(a[1], 10);
+    if (c < 0 || r < 0 || r > 7) return null;
+    return sq(r, c);
+  }
+  function inBounds(r, c) { return r >= 0 && r < 8 && c >= 0 && c < 8; }
+  function pieceAt(s, i) { const [r, c] = rc(i); return s.board[r][c]; }
+  function setPiece(s, i, p) { const [r, c] = rc(i); s.board[r][c] = p; }
+  function isWhite(p) { return p && p === p.toUpperCase(); }
+  function colorOf(p) { return !p ? null : isWhite(p) ? "w" : "b"; }
+  function enemy(color) { return color === "w" ? "b" : "w"; }
+  function typeOf(p) { return p ? p.toLowerCase() : null; }
+
+  function findKing(s, color) {
+    const k = color === "w" ? "K" : "k";
+    for (let i = 0; i < 64; i++) if (pieceAt(s, i) === k) return i;
+    return -1;
+  }
+
+  function isAttacked(s, target, byColor) {
+    const [tr, tc] = rc(target);
+    const pr = tr + (byColor === "w" ? 1 : -1);
+    for (const dc of [-1, 1]) {
+      const pc = tc + dc;
+      if (!inBounds(pr, pc)) continue;
+      const p = s.board[pr][pc];
+      if (p && colorOf(p) === byColor && typeOf(p) === "p") return true;
+    }
+    for (const [dr, dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]) {
+      const r = tr + dr, c = tc + dc;
+      if (!inBounds(r, c)) continue;
+      const p = s.board[r][c];
+      if (p && colorOf(p) === byColor && typeOf(p) === "n") return true;
+    }
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (!dr && !dc) continue;
+        const r = tr + dr, c = tc + dc;
+        if (!inBounds(r, c)) continue;
+        const p = s.board[r][c];
+        if (p && colorOf(p) === byColor && typeOf(p) === "k") return true;
+      }
+    }
+    const rays = [
+      { dirs: [[-1,0],[1,0],[0,-1],[0,1]], types: ["r", "q"] },
+      { dirs: [[-1,-1],[-1,1],[1,-1],[1,1]], types: ["b", "q"] },
+    ];
+    for (const ray of rays) {
+      for (const [dr, dc] of ray.dirs) {
+        let r = tr + dr, c = tc + dc;
+        while (inBounds(r, c)) {
+          const p = s.board[r][c];
+          if (p) {
+            if (colorOf(p) === byColor && ray.types.includes(typeOf(p))) return true;
+            break;
+          }
+          r += dr; c += dc;
+        }
+      }
+    }
+    return false;
+  }
+
+  function inCheck(s, color) {
+    const k = findKing(s, color);
+    if (k < 0) return true;
+    return isAttacked(s, k, enemy(color));
+  }
+
+  function rawMoves(s, from) {
+    const p = pieceAt(s, from);
+    if (!p) return [];
+    const color = colorOf(p);
+    const t = typeOf(p);
+    const [fr, fc] = rc(from);
+    const moves = [];
+
+    function add(to, extra) {
+      if (to < 0 || to > 63) return;
+      const [r, c] = rc(to);
+      if (!inBounds(r, c)) return;
+      const target = pieceAt(s, to);
+      if (target && colorOf(target) === color) return;
+      moves.push(Object.assign({ to, capture: !!target }, extra || {}));
+    }
+
+    if (t === "p") {
+      const dir = color === "w" ? -1 : 1;
+      const startR = color === "w" ? 6 : 1;
+      const promoR = color === "w" ? 0 : 7;
+      const one = fr + dir;
+      if (inBounds(one, fc) && !s.board[one][fc]) {
+        add(sq(one, fc), { promo: one === promoR });
+        if (fr === startR) {
+          const two = fr + 2 * dir;
+          if (inBounds(two, fc) && !s.board[two][fc]) add(sq(two, fc));
+        }
+      }
+      for (const dc of [-1, 1]) {
+        const r = fr + dir, c = fc + dc;
+        if (!inBounds(r, c)) continue;
+        const target = s.board[r][c];
+        if (target && colorOf(target) !== color) {
+          add(sq(r, c), { capture: true, promo: r === promoR });
+        }
+      }
+      if (s.ep) {
+        const epSq = fromAlg(s.ep);
+        if (epSq != null) {
+          const [er, ec] = rc(epSq);
+          if (er === fr + dir && Math.abs(ec - fc) === 1) {
+            moves.push({ to: epSq, capture: true, ep: true });
+          }
+        }
+      }
+    } else if (t === "n") {
+      for (const [dr, dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]) {
+        add(sq(fr + dr, fc + dc));
+      }
+    } else if (t === "b" || t === "r" || t === "q") {
+      const dirs = [];
+      if (t === "b" || t === "q") dirs.push([-1,-1],[-1,1],[1,-1],[1,1]);
+      if (t === "r" || t === "q") dirs.push([-1,0],[1,0],[0,-1],[0,1]);
+      for (const [dr, dc] of dirs) {
+        let r = fr + dr, c = fc + dc;
+        while (inBounds(r, c)) {
+          const target = s.board[r][c];
+          if (!target) add(sq(r, c));
+          else {
+            if (colorOf(target) !== color) add(sq(r, c), { capture: true });
+            break;
+          }
+          r += dr; c += dc;
+        }
+      }
+    } else if (t === "k") {
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (!dr && !dc) continue;
+          add(sq(fr + dr, fc + dc));
+        }
+      }
+      if (!inCheck(s, color)) {
+        const back = color === "w" ? 7 : 0;
+        if (fr === back && fc === 4) {
+          const canK = color === "w" ? s.castling.includes("K") : s.castling.includes("k");
+          if (canK && !s.board[back][5] && !s.board[back][6] &&
+              !isAttacked(s, sq(back, 5), enemy(color)) && !isAttacked(s, sq(back, 6), enemy(color))) {
+            moves.push({ to: sq(back, 6), castle: "K" });
+          }
+          const canQ = color === "w" ? s.castling.includes("Q") : s.castling.includes("q");
+          if (canQ && !s.board[back][1] && !s.board[back][2] && !s.board[back][3] &&
+              !isAttacked(s, sq(back, 3), enemy(color)) && !isAttacked(s, sq(back, 2), enemy(color))) {
+            moves.push({ to: sq(back, 2), castle: "Q" });
+          }
+        }
+      }
+    }
+    return moves;
+  }
+
+  function legalMovesFrom(s, from) {
+    const p = pieceAt(s, from);
+    if (!p || colorOf(p) !== s.turn) return [];
+    return rawMoves(s, from).filter((m) => !inCheck(applyMove(s, from, m, null), s.turn));
+  }
+
+  function allLegalMoves(s) {
+    const list = [];
+    for (let i = 0; i < 64; i++) {
+      const p = pieceAt(s, i);
+      if (p && colorOf(p) === s.turn) {
+        for (const m of legalMovesFrom(s, i)) list.push({ from: i, move: m });
+      }
+    }
+    return list;
+  }
+
+  function stripCastling(castling, ch) { return castling.replace(ch, ""); }
+
+  function applyMove(s, from, m, promoPiece) {
+    const next = cloneState(s);
+    const p = pieceAt(next, from);
+    const color = colorOf(p);
+    const t = typeOf(p);
+    const to = m.to;
+    const [fr, fc] = rc(from);
+    const [tr, tc] = rc(to);
+
+    if (m.ep) {
+      const capR = color === "w" ? tr + 1 : tr - 1;
+      next.board[capR][tc] = null;
+    }
+    if (m.castle === "K") {
+      const back = color === "w" ? 7 : 0;
+      next.board[back][5] = next.board[back][7];
+      next.board[back][7] = null;
+    } else if (m.castle === "Q") {
+      const back = color === "w" ? 7 : 0;
+      next.board[back][3] = next.board[back][0];
+      next.board[back][0] = null;
+    }
+
+    let placed = p;
+    if (m.promo) {
+      const promo = promoPiece || "q";
+      placed = color === "w" ? promo.toUpperCase() : promo.toLowerCase();
+    }
+    setPiece(next, to, placed);
+    setPiece(next, from, null);
+
+    let cast = next.castling;
+    if (t === "k") {
+      if (color === "w") cast = stripCastling(stripCastling(cast, "K"), "Q");
+      else cast = stripCastling(stripCastling(cast, "k"), "q");
+    }
+    if (from === 63 || to === 63) cast = stripCastling(cast, "K");
+    if (from === 56 || to === 56) cast = stripCastling(cast, "Q");
+    if (from === 7 || to === 7) cast = stripCastling(cast, "k");
+    if (from === 0 || to === 0) cast = stripCastling(cast, "q");
+    next.castling = cast;
+
+    if (t === "p" && Math.abs(tr - fr) === 2) next.ep = alg(sq((fr + tr) / 2, fc));
+    else next.ep = null;
+
+    if (t === "p" || m.capture || m.ep) next.halfmove = 0;
+    else next.halfmove = s.halfmove + 1;
+    if (color === "b") next.fullmove = s.fullmove + 1;
+    next.turn = enemy(color);
+    return next;
+  }
+
+  function toLan(s, from, m, promoPiece) {
+    const p = pieceAt(s, from);
+    const t = typeOf(p);
+    const next = applyMove(s, from, m, promoPiece);
+    const check = inCheck(next, next.turn);
+    const mates = check && allLegalMoves(next).length === 0;
+    const suffix = mates ? "#" : check ? "+" : "";
+    if (m.castle === "K") return "O-O" + suffix;
+    if (m.castle === "Q") return "O-O-O" + suffix;
+    const piece = t === "p" ? "" : t.toUpperCase();
+    const sep = (m.capture || m.ep) ? "x" : "-";
+    let lan = piece + alg(from) + sep + alg(m.to);
+    if (m.ep) lan += "e.p.";
+    if (m.promo) lan += "=" + (promoPiece || "q").toUpperCase();
+    return lan + suffix;
+  }
+
+  function lanToSpeech(lan) {
+    let s = lan;
+    s = s.replace(/O-O-O/g, "castles queenside");
+    s = s.replace(/O-O/g, "castles kingside");
+    s = s.replace(/e\.p\./g, " en passant");
+    s = s.replace(/#/g, " checkmate");
+    s = s.replace(/\+/g, " check");
+    s = s.replace(/=Q/g, " promotes to queen");
+    s = s.replace(/=R/g, " promotes to rook");
+    s = s.replace(/=B/g, " promotes to bishop");
+    s = s.replace(/=N/g, " promotes to knight");
+    s = s.replace(/x/g, " takes ");
+    s = s.replace(/-/g, " to ");
+    s = s.replace(/\bK(?=[a-h][1-8])/g, "King ");
+    s = s.replace(/\bQ(?=[a-h][1-8])/g, "Queen ");
+    s = s.replace(/\bR(?=[a-h][1-8])/g, "Rook ");
+    s = s.replace(/\bB(?=[a-h][1-8])/g, "Bishop ");
+    s = s.replace(/\bN(?=[a-h][1-8])/g, "Knight ");
+    s = s.replace(/([a-h])([1-8])/g, (_, f, r) => f.toUpperCase() + " " + r);
+    return s.replace(/\s+/g, " ").trim();
+  }
+
+  function gameStatus(s) {
+    const legal = allLegalMoves(s);
+    const check = inCheck(s, s.turn);
+    if (legal.length === 0) {
+      if (check) {
+        return {
+          text: (s.turn === "w" ? "Black" : "White") + " wins by checkmate",
+          cls: "mate",
+          over: true,
+        };
+      }
+      return { text: "Stalemate — draw", cls: "draw", over: true };
+    }
+    if (s.halfmove >= 100) return { text: "Draw — 50-move rule", cls: "draw", over: true };
+    if (check) {
+      return {
+        text: (s.turn === "w" ? "White" : "Black") + " to move — check",
+        cls: "check",
+        over: false,
+      };
+    }
+    return {
+      text: (s.turn === "w" ? "White" : "Black") + " to move",
+      cls: s.turn === "w" ? "white-turn" : "black-turn",
+      over: false,
+    };
+  }
+
+  // ===== Pieces (classy SVG) =====
+  function pieceSvg(code) {
+    const isW = code === code.toUpperCase();
+    const t = code.toLowerCase();
+    const fill = isW ? "#ffffff" : "#111111";
+    const stroke = isW ? "#1a1a1a" : "#000000";
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "piece");
+    svg.setAttribute("viewBox", "0 0 45 45");
+    svg.setAttribute("aria-hidden", "true");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", PIECE_PATHS[t]);
+    path.setAttribute("fill", fill);
+    path.setAttribute("stroke", stroke);
+    path.setAttribute("stroke-width", isW ? "1.5" : "1.2");
+    path.setAttribute("stroke-linejoin", "round");
+    path.setAttribute("stroke-linecap", "round");
+    svg.appendChild(path);
+    // subtle highlight for classy depth on white pieces
+    if (isW) {
+      const gloss = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      gloss.setAttribute("d", PIECE_PATHS[t]);
+      gloss.setAttribute("fill", "none");
+      gloss.setAttribute("stroke", "rgba(255,255,255,0.35)");
+      gloss.setAttribute("stroke-width", "0.6");
+      gloss.setAttribute("transform", "translate(-0.3 -0.3)");
+      svg.appendChild(gloss);
+    }
+    return svg;
+  }
+
+  // ===== Render =====
+  function displayIndex(r, c) {
+    if (!boardFlipped) return sq(r, c);
+    return sq(7 - r, 7 - c);
+  }
+
+  function render() {
+    boardEl.innerHTML = "";
+    const status = gameStatus(state);
+    statusEl.textContent = status.text;
+    statusEl.className = "game-status " + status.cls;
+    undoBtn.disabled = history.length === 0;
+    speakBtn.disabled = !lastSpoken;
+
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const i = displayIndex(r, c);
+        const [br, bc] = rc(i);
+        const el = document.createElement("div");
+        el.className = "sq " + ((br + bc) % 2 === 0 ? "light" : "dark");
+        el.dataset.i = String(i);
+
+        if (lastMove && (lastMove.from === i || lastMove.to === i)) el.classList.add("last-move");
+        if (selected === i) el.classList.add("selected");
+        if (legalTargets.has(i)) {
+          el.classList.add("legal");
+          const p = pieceAt(state, i);
+          const isEp = state.ep && fromAlg(state.ep) === i && selected != null &&
+            pieceAt(state, selected) && typeOf(pieceAt(state, selected)) === "p" && !p;
+          if (p) el.classList.add("capture");
+          if (isEp) el.classList.add("ep");
+        }
+
+        // Coordinates on board edge relative to view
+        if (c === 0) {
+          const coord = document.createElement("span");
+          coord.className = "coord rank";
+          coord.textContent = String(boardFlipped ? r + 1 : 8 - r);
+          el.appendChild(coord);
+        }
+        if (r === 7) {
+          const coord = document.createElement("span");
+          coord.className = "coord file";
+          coord.textContent = FILES[boardFlipped ? 7 - c : c];
+          el.appendChild(coord);
+        }
+
+        const p = state.board[br][bc];
+        if (p) el.appendChild(pieceSvg(p));
+        el.addEventListener("click", onSquareClick);
+        boardEl.appendChild(el);
+      }
+    }
+
+    const parts = [];
+    for (let n = 0; n < moveLans.length; n++) {
+      if (n % 2 === 0) parts.push((Math.floor(n / 2) + 1) + ". " + moveLans[n]);
+      else parts.push(moveLans[n]);
+    }
+    historyEl.textContent = parts.join(" ");
+  }
+
+  function onSquareClick(ev) {
+    const i = +ev.currentTarget.dataset.i;
+    if (gameStatus(state).over || pendingPromo) return;
+    const p = pieceAt(state, i);
+
+    if (selected != null && legalTargets.has(i)) {
+      const moves = legalMovesFrom(state, selected);
+      const m = moves.find((x) => x.to === i);
+      if (!m) return;
+      if (m.promo) {
+        pendingPromo = { from: selected, to: i, color: state.turn, move: m };
+        openPromo(state.turn);
+        return;
+      }
+      commitMove(selected, m, null);
+      return;
+    }
+
+    if (p && colorOf(p) === state.turn) {
+      selected = i;
+      legalTargets = new Set(legalMovesFrom(state, i).map((m) => m.to));
+      render();
+      return;
+    }
+    selected = null;
+    legalTargets = new Set();
+    render();
+  }
+
+  function bottomColor() {
+    // Unflipped: White at bottom. Flipped: Black at bottom.
+    return boardFlipped ? "b" : "w";
+  }
+
+  function commitMove(from, m, promoPiece) {
+    const mover = state.turn; // color making the move
+    const lan = toLan(state, from, m, promoPiece);
+    history.push({
+      state: cloneState(state),
+      lastMove: lastMove ? { ...lastMove } : null,
+      lan,
+    });
+    state = applyMove(state, from, m, promoPiece);
+    lastMove = { from, to: m.to };
+    moveLans.push(lan);
+    selected = null;
+    legalTargets = new Set();
+    pendingPromo = null;
+    render();
+    maybeAnnounceMove(lan, mover);
+  }
+
+  function shouldAnnounce(color) {
+    if (announceMode === "all") return true;
+    if (announceMode === "none") return false;
+    if (announceMode === "bottom") return color === bottomColor();
+    return false;
+  }
+
+  function maybeAnnounceMove(lan, moverColor) {
+    const text = lanToSpeech(lan);
+    lastSpoken = text;
+    speakBtn.disabled = false;
+    if (shouldAnnounce(moverColor)) speakPhrase(text);
+  }
+
+  function openPromo(color) {
+    promoModal.querySelectorAll("[data-piece]").forEach((btn) => {
+      btn.innerHTML = "";
+      const code = color === "w" ? btn.dataset.piece.toUpperCase() : btn.dataset.piece;
+      btn.appendChild(pieceSvg(code));
+    });
+    openModal("promoModal");
+  }
+
+  promoModal.querySelectorAll("[data-piece]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (!pendingPromo) return;
+      const piece = btn.dataset.piece;
+      const { from, move } = pendingPromo;
+      closeModals();
+      commitMove(from, move, piece);
+    });
+  });
+
+  function undo() {
+    if (!history.length) return;
+    if (pendingPromo) { pendingPromo = null; closeModals(); }
+    const snap = history.pop();
+    state = snap.state;
+    lastMove = snap.lastMove;
+    moveLans.pop();
+    selected = null;
+    legalTargets = new Set();
+    render();
+    lastSpoken = "Undo";
+    speakBtn.disabled = false;
+    if (announceMode !== "none") speakPhrase("Undo");
+  }
+
+  function reset() {
+    if (pendingPromo) { pendingPromo = null; closeModals(); }
+    state = parseFen(START_FEN);
+    history = [];
+    moveLans = [];
+    selected = null;
+    legalTargets = new Set();
+    lastMove = null;
+    render();
+    lastSpoken = "Board reset. White to move.";
+    speakBtn.disabled = false;
+    if (announceMode !== "none") speakPhrase(lastSpoken);
+  }
+
+  // ===== Audio / speech =====
+  function getSharedAudioContext() {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    if (!window.sharedAudioContext) window.sharedAudioContext = new Ctx();
+    return window.sharedAudioContext;
+  }
+
+  function stopActiveBufferSources() {
+    activeBufferSources.forEach((source) => {
+      try { source.onended = null; } catch (_) {}
+      try { source.stop(0); } catch (_) {}
+      try { source.disconnect(); } catch (_) {}
+    });
+    activeBufferSources = [];
+  }
+
+  async function playAudioWithGain(audioElement, gainValue) {
+    const speed = audioElement.playbackRate || 1;
+    const url = audioElement.src;
+    const fallback = () => {
+      audioElement.volume = Math.min(1, gainValue / 5);
+      audioElement.playbackRate = speed;
+      audioElement.play().catch(() => {});
+    };
+    if (!url) return fallback();
+    const ctx = getSharedAudioContext();
+    if (!ctx) return fallback();
+    try {
+      if (ctx.state === "suspended") await ctx.resume();
+      stopActiveBufferSources();
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("fetch failed");
+      const arrayBuffer = await response.arrayBuffer();
+      const audioBuffer = await ctx.decodeAudioData(arrayBuffer.slice(0));
+      const source = ctx.createBufferSource();
+      source.buffer = audioBuffer;
+      source.playbackRate.value = speed;
+      const gainNode = ctx.createGain();
+      gainNode.gain.value = Math.max(0.01, gainValue);
+      source.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      source.onended = () => {
+        activeBufferSources = activeBufferSources.filter((s) => s !== source);
+        try { source.disconnect(); } catch (_) {}
+        try { gainNode.disconnect(); } catch (_) {}
+      };
+      activeBufferSources.push(source);
+      source.start(0);
+    } catch (_) {
+      fallback();
+    }
+  }
+
+  async function speakPhrase(text, opts) {
+    const phrase = (text || "").trim();
+    if (!phrase) return;
+    lastSpoken = phrase;
+    speakBtn.disabled = false;
+
+    const gainSetting = parseFloat(volumeSlider.value) || 5;
+    const speed = parseFloat(rateSlider.value) || 1;
+    const pitch = parseFloat(pitchSlider.value) || 1;
+    const model = modelSelect.value;
+
+    try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (_) {}
+    stopActiveBufferSources();
+
+    try {
+      if (model === "browser_tts") {
+        if (!window.speechSynthesis) return;
+        const u = new SpeechSynthesisUtterance(phrase);
+        u.volume = Math.min(1, gainSetting / 5);
+        // honor prior request for volume gain of 5 when maxed
+        if (gainSetting >= 5) u.volume = 5;
+        u.rate = speed;
+        u.pitch = pitch;
+        const voices = window.speechSynthesis.getVoices();
+        const idx = activeBrowserVoiceIndex !== "" && voices[activeBrowserVoiceIndex]
+          ? +activeBrowserVoiceIndex
+          : 0;
+        if (voices[idx]) u.voice = voices[idx];
+        window.speechSynthesis.speak(u);
+      } else {
+        const apiKey = localStorage.getItem("elevenlabs_key");
+        if (!apiKey || !activeElevenVoiceId) {
+          if (opts && opts.alertOnError) {
+            alert("Configure ElevenLabs API key and voice in Settings.");
+          }
+          return;
+        }
+        const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${activeElevenVoiceId}`, {
+          method: "POST",
+          headers: {
+            Accept: "audio/mpeg",
+            "Content-Type": "application/json",
+            "xi-api-key": apiKey,
+          },
+          body: JSON.stringify({
+            text: phrase,
+            model_id: model,
+            voice_settings: {
+              stability: parseFloat(stabilitySlider.value),
+              similarity_boost: parseFloat(similaritySlider.value),
+            },
+          }),
+        });
+        if (!res.ok) throw new Error("ElevenLabs API error");
+        const blob = await res.blob();
+        const audio = new Audio(URL.createObjectURL(blob));
+        audio.playbackRate = speed;
+        await playAudioWithGain(audio, gainSetting);
+      }
+    } catch (_) {
+      if (opts && opts.alertOnError) alert("Failed to generate speech.");
+    }
+  }
+
+  function speakLast() {
+    if (!lastSpoken) return;
+    speakPhrase(lastSpoken, { alertOnError: true });
+  }
+
+  // ===== Settings persistence =====
+  function syncSlider(el, valEl, storeKey, decimals) {
+    const saved = localStorage.getItem(storeKey);
+    if (saved !== null) el.value = saved;
+    const fmt = () => {
+      valEl.textContent = parseFloat(el.value).toFixed(decimals);
+    };
+    fmt();
+    el.addEventListener("input", () => {
+      fmt();
+      localStorage.setItem(storeKey, el.value);
+    });
+  }
+
+  function updateSettingsVisibility() {
+    const isBrowser = modelSelect.value === "browser_tts";
+    groupBrowserVoice.classList.toggle("hidden", !isBrowser);
+    groupElevenSettings.classList.toggle("hidden", isBrowser);
+  }
+
+  // ===== ElevenLabs / browser voices =====
+  function updateElevenKeyStatus() {
+    const key = localStorage.getItem("elevenlabs_key") || "";
+    const btn = $("elevenApiKeyBtn");
+    const label = btn.querySelector(".status-btn-text");
+    if (key) {
+      label.innerHTML = `<span class="material-symbols-outlined icon-sm">key</span>API Key Saved (••••${key.slice(-4)})`;
+      btn.classList.remove("missing");
+      btn.classList.add("saved");
+      fetchElevenVoices(key);
+    } else {
+      label.innerHTML = `<span class="material-symbols-outlined icon-sm">key</span>Missing API Key (Click to Add)`;
+      btn.classList.add("missing");
+      btn.classList.remove("saved");
+      elevenVoicesCache = [];
+    }
+  }
+
+  async function fetchElevenVoices(apiKey) {
+    if (!apiKey) {
+      elevenVoicesCache = [];
+      return;
+    }
+    try {
+      const res = await fetch("https://api.elevenlabs.io/v1/voices", {
+        headers: { Accept: "application/json", "xi-api-key": apiKey },
+      });
+      if (!res.ok) throw new Error("voices");
+      const data = await res.json();
+      elevenVoicesCache = data.voices || [];
+      const selected = elevenVoicesCache.find((v) => v.voice_id === activeElevenVoiceId);
+      if (selected) $("selectedElevenName").textContent = selected.name;
+      if (voicesPanel.classList.contains("open") && voicesPanelMode === "eleven") renderVoiceList();
+    } catch (_) {
+      elevenVoicesCache = [];
+    }
+  }
+
+  function loadBrowserVoices() {
+    browserVoices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+    if (activeBrowserVoiceIndex === "" || !browserVoices[activeBrowserVoiceIndex]) {
+      const en = browserVoices.findIndex((v) => /^en/i.test(v.lang));
+      activeBrowserVoiceIndex = String(en >= 0 ? en : 0);
+    }
+    const v = browserVoices[activeBrowserVoiceIndex];
+    if (v) $("selectedBrowserName").textContent = v.name;
+    if (voicesPanel.classList.contains("open") && voicesPanelMode === "browser") renderVoiceList();
+  }
+
+  function openVoicesPanel(mode) {
+    voicesPanelMode = mode;
+    $("voicesPanelTitle").textContent = mode === "eleven" ? "ElevenLabs Voices" : "Browser Voices";
+    voiceSearch.value = "";
+    voicesPanel.classList.add("open");
+    if (mode === "eleven") {
+      const key = localStorage.getItem("elevenlabs_key");
+      if (elevenVoicesCache.length) renderVoiceList();
+      else fetchElevenVoices(key).then(renderVoiceList);
+    } else {
+      loadBrowserVoices();
+      renderVoiceList();
+    }
+  }
+
+  function closeVoicesPanel() {
+    voicesPanel.classList.remove("open");
+  }
+
+  function renderVoiceList() {
+    const q = (voiceSearch.value || "").toLowerCase().trim();
+    voiceList.innerHTML = "";
+
+    if (voicesPanelMode === "browser") {
+      const filtered = browserVoices
+        .map((voice, index) => ({ voice, index }))
+        .filter(({ voice }) =>
+          !q || voice.name.toLowerCase().includes(q) || voice.lang.toLowerCase().includes(q)
+        );
+      if (!filtered.length) {
+        voiceList.innerHTML = `<div class="history-empty-notice">No voices found</div>`;
+        return;
+      }
+      filtered.forEach(({ voice, index }) => {
+        const item = document.createElement("div");
+        item.className = "voice-item" + (String(activeBrowserVoiceIndex) === String(index) ? " selected" : "");
+        item.innerHTML = `
+          <span class="voice-item-name">${voice.name} (${voice.lang})</span>
+          <button class="voice-preview-btn" type="button" title="Preview">
+            <span class="material-symbols-outlined icon-sm">play_arrow</span>
+          </button>`;
+        item.addEventListener("click", (e) => {
+          if (e.target.closest("button")) return;
+          activeBrowserVoiceIndex = String(index);
+          localStorage.setItem("aac_browser_voice_index", activeBrowserVoiceIndex);
+          $("selectedBrowserName").textContent = voice.name;
+          closeVoicesPanel();
+        });
+        item.querySelector(".voice-preview-btn").addEventListener("click", (e) => {
+          e.stopPropagation();
+          const prev = activeBrowserVoiceIndex;
+          activeBrowserVoiceIndex = String(index);
+          speakPhrase("This is a preview.");
+          activeBrowserVoiceIndex = prev;
+        });
+        voiceList.appendChild(item);
+      });
+    } else {
+      if (!elevenVoicesCache.length) {
+        voiceList.innerHTML = `<div class="history-empty-notice">Enter an API key to load voices...</div>`;
+        return;
+      }
+      const filtered = elevenVoicesCache.filter((v) =>
+        !q || (v.name || "").toLowerCase().includes(q) || (v.category || "").toLowerCase().includes(q)
+      );
+      if (!filtered.length) {
+        voiceList.innerHTML = `<div class="history-empty-notice">No voices found</div>`;
+        return;
+      }
+      filtered.forEach((voice) => {
+        const item = document.createElement("div");
+        item.className = "voice-item" + (activeElevenVoiceId === voice.voice_id ? " selected" : "");
+        item.innerHTML = `
+          <span class="voice-item-name">${voice.name}</span>
+          <button class="voice-preview-btn" type="button" title="Preview">
+            <span class="material-symbols-outlined icon-sm">play_arrow</span>
+          </button>`;
+        item.addEventListener("click", (e) => {
+          if (e.target.closest("button")) return;
+          activeElevenVoiceId = voice.voice_id;
+          localStorage.setItem("elevenlabs_voice", activeElevenVoiceId);
+          $("selectedElevenName").textContent = voice.name;
+          closeVoicesPanel();
+        });
+        item.querySelector(".voice-preview-btn").addEventListener("click", async (e) => {
+          e.stopPropagation();
+          const prev = activeElevenVoiceId;
+          activeElevenVoiceId = voice.voice_id;
+          const prevModel = modelSelect.value;
+          if (modelSelect.value === "browser_tts") modelSelect.value = "eleven_v3";
+          await speakPhrase("This is a preview.");
+          activeElevenVoiceId = prev;
+          modelSelect.value = prevModel;
+        });
+        voiceList.appendChild(item);
+      });
+    }
+  }
+
+  // ===== Modals =====
+  function openModal(id) {
+    document.querySelectorAll(".modal").forEach((m) => m.classList.remove("open"));
+    $(id).classList.add("open");
+    modalOverlay.classList.add("open");
+  }
+  function closeModals() {
+    document.querySelectorAll(".modal").forEach((m) => m.classList.remove("open"));
+    modalOverlay.classList.remove("open");
+  }
+  modalOverlay.addEventListener("click", closeModals);
+
+  // ===== Sidebars mobile =====
+  function isMobile() { return window.matchMedia("(max-width: 960px)").matches; }
+
+  function closeMobileSidebars() {
+    leftSidebar.classList.remove("mobile-open");
+    sidebarBackdrop.classList.remove("open");
+    sidebarBackdrop.setAttribute("aria-hidden", "true");
+  }
+
+  function openLeft() {
+    if (isMobile()) {
+      leftSidebar.classList.add("mobile-open");
+      sidebarBackdrop.classList.add("open");
+      sidebarBackdrop.setAttribute("aria-hidden", "false");
+    }
+  }
+
+  $("openLeftBtn").addEventListener("click", openLeft);
+  $("closeLeftBtn").addEventListener("click", () => {
+    if (isMobile()) closeMobileSidebars();
+  });
+  sidebarBackdrop.addEventListener("click", closeMobileSidebars);
+
+  // ===== Wire UI =====
+  undoBtn.addEventListener("click", undo);
+  resetBtn.addEventListener("click", reset);
+  flipBtn.addEventListener("click", () => {
+    boardFlipped = !boardFlipped;
+    selected = null;
+    legalTargets = new Set();
+    render();
+  });
+  speakBtn.addEventListener("click", speakLast);
+
+  announceSelect.value = announceMode;
+  announceSelect.addEventListener("change", () => {
+    announceMode = announceSelect.value;
+    localStorage.setItem("chess_announce", announceMode);
+  });
+
+  modelSelect.value = localStorage.getItem("elevenlabs_model") || "browser_tts";
+  modelSelect.addEventListener("change", () => {
+    localStorage.setItem("elevenlabs_model", modelSelect.value);
+    updateSettingsVisibility();
+  });
+
+  $("openBrowserVoices").addEventListener("click", () => openVoicesPanel("browser"));
+  $("openElevenVoices").addEventListener("click", () => openVoicesPanel("eleven"));
+  $("closeVoicesBtn").addEventListener("click", closeVoicesPanel);
+  voiceSearch.addEventListener("input", () => {
+    clearTimeout(voiceSearch._t);
+    voiceSearch._t = setTimeout(renderVoiceList, 150);
+  });
+
+  $("elevenApiKeyBtn").addEventListener("click", () => {
+    $("elevenKeyInput").value = localStorage.getItem("elevenlabs_key") || "";
+    openModal("elevenKeyModal");
+  });
+  $("elevenKeyCancel").addEventListener("click", closeModals);
+  $("elevenKeySave").addEventListener("click", () => {
+    localStorage.setItem("elevenlabs_key", ($("elevenKeyInput").value || "").trim());
+    updateElevenKeyStatus();
+    closeModals();
+  });
+
+  // Init
+  syncSlider(volumeSlider, $("valVolume"), "elevenlabs_volume", 2);
+  if (!localStorage.getItem("elevenlabs_volume")) {
+    volumeSlider.value = "5";
+    $("valVolume").textContent = "5.00";
+  }
+  syncSlider(rateSlider, $("valRate"), "elevenlabs_speed", 2);
+  syncSlider(pitchSlider, $("valPitch"), "chess_pitch", 1);
+  syncSlider(stabilitySlider, $("valStability"), "elevenlabs_stability", 2);
+  syncSlider(similaritySlider, $("valSimilarity"), "elevenlabs_similarity", 2);
+
+  updateSettingsVisibility();
+  updateElevenKeyStatus();
+
+  if (window.speechSynthesis) {
+    loadBrowserVoices();
+    window.speechSynthesis.onvoiceschanged = loadBrowserVoices;
+  }
+
+  state = parseFen(START_FEN);
+  render();
+})();
+  </script>
+</body>
+</html>
