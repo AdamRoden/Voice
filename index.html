@@ -799,7 +799,7 @@
 
     /* Toolbar dock: Speak | Display | Clear, then recents row when present */
     .bottom-dock { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
-    .toolbar { display: flex; gap: 3px; align-items: flex-start; min-height: var(--display-ctrl-size, var(--display-font-size, 24px)); }
+    .toolbar { display: flex; gap: 3px; align-items: flex-start; min-height: var(--display-ctrl-size, var(--display-font-size, 40px)); }
     /* Recents row: hidden until there are phrases (no empty ~44px gap) */
     .insert-toolbar {
       display: none;
@@ -830,7 +830,7 @@
 
       /* Speak / Clear / Recycle: square, sized to display-input height */
       .key.display-ctrl {
-        --_dc: var(--display-ctrl-size, var(--display-font-size, 24px));
+        --_dc: var(--display-ctrl-size, var(--display-font-size, 40px));
         height: var(--_dc); min-height: var(--_dc); max-height: var(--_dc);
         width: var(--_dc); min-width: var(--_dc); max-width: var(--_dc);
         align-self: flex-start;
@@ -842,7 +842,7 @@
 
     .key .material-symbols-outlined { font-size: 18px; }
     .key.display-ctrl .material-symbols-outlined {
-      font-size: calc(var(--display-ctrl-size, var(--display-font-size, 24px)) * 0.45);
+      font-size: calc(var(--display-ctrl-size, var(--display-font-size, 40px)) * 0.45);
     }
 
     /* Custom tag field inside Insert Tag modal */
@@ -872,7 +872,7 @@
       min-width: 0;
       width: auto;
       height: auto;
-      min-height: var(--display-ctrl-size, var(--display-font-size, 24px));
+      min-height: var(--display-ctrl-size, var(--display-font-size, 40px));
       max-height: min(30vh, 180px);
       background-color: transparent;
       border: none;
@@ -880,7 +880,7 @@
       padding: 6px 8px 6px 4px;
       line-height: 1.3;
       color: var(--text);
-      font-size: var(--display-font-size, 24px);
+      font-size: var(--display-font-size, 40px);
       resize: none;
       outline: none;
       white-space: pre-wrap;
@@ -924,7 +924,7 @@
       }
     /* Match Speak button icon size */
     .display-field .insert-btn .material-symbols-outlined {
-      font-size: calc(var(--display-ctrl-size, var(--display-font-size, 24px)) * 0.45);
+      font-size: calc(var(--display-ctrl-size, var(--display-font-size, 40px)) * 0.45);
       line-height: 1;
     }
 
@@ -1395,7 +1395,7 @@
         <hr class="setting-divider">
 
         <div class="sidebar-setting-group">
-          <label><span>Font Size</span><span id="font-display">24px</span></label>
+          <label><span>Font Size</span><span id="font-display">40px</span></label>
           <div class="font-controls">
             <button class="font-btn" id="font-down" type="button">A-</button>
             <button class="font-btn" id="font-up" type="button">A+</button>
@@ -1780,9 +1780,13 @@
   <script>
     // ==================== STATE & PALETTE CONFIG ====================
     const COLOR_PALETTE = [
-      "#8ab4f8", "#8e918f", "#333537", "#0b57d0", "#2e7d32", "#d32f2f",
-      "#1976d2", "#f57c00", "#c2185b", "#512da8", "#00838f", "#4a90e2", "#8e24aa"
+      "#a0a0a0", "#cc0000", "#e69138", "#f1c232", "#6aa84f", "#45818e", "#3c78d8", "#3d85c6",
+      "#674ea7", "#a64d79", "#808080", "#990000", "#b45f06", "#bf9000", "#38761d", "#134f5c",
+      "#1155cc", "#0b5394", "#351c75", "#741b47", "#606060", "#660000", "#783f04", "#7f6000",
+      "#274e13", "#0c343d", "#1c4587", "#073763", "#20124d", "#4c1130", "#000000", "#ffffff",
+      "#dddddd", "#bbbbbb", "#999999", "#777777", "#555555", "#333333", "#111111"
     ];
+
     const DEFAULT_GRID_COLS = 4;
     const DEFAULT_GRID_ROWS = 2;
 
@@ -1922,7 +1926,7 @@
     let activeElevenVoiceId = lsGet("elevenlabs_voice", "") || "";
     /** Audio output deviceId for setSinkId ("" = system default). */
     let activeOutputDeviceId = lsGet("aac_output_device", "") || "";
-    let currentFontSize = parseInt(lsGet("aac_font_size", "24"), 10) || 24;
+    let currentFontSize = parseInt(lsGet("aac_font_size", "40"), 10) || 40;
     let currentTheme = lsGet("aac_theme", "system") || "system";
     let customAccentColor = lsGet("aac_accent_color", "") || "";
     /** Saved caret in #display-input so programmatic refocus restores it. */
@@ -2294,7 +2298,7 @@
         applyAccentColor(settings.accentColor || "");
       }
       if (Number.isFinite(Number(settings.fontSize))) {
-        currentFontSize = clamp(parseInt(settings.fontSize, 10) || 24, 16, 48);
+        currentFontSize = clamp(parseInt(settings.fontSize, 10) || 40, 16, 48);
         lsSet("aac_font_size", currentFontSize);
         applyDisplayFontSize();
       }
