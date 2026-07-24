@@ -1419,6 +1419,7 @@
         activeTopicId = id;
         lsSet("aac_active_tab", activeTopicId);
         renderSoundButtons();
+        try { if (typeof saveActiveChatSnapshot === "function") saveActiveChatSnapshot(); } catch (_) {}
       }
       renderTopics();
     }
@@ -1429,6 +1430,8 @@
       expandedTopicIds.add(id);
       renderTopics();
       renderSoundButtons();
+      // Keep the active chat's topic in sync (chats may not be init yet during early load)
+      try { if (typeof saveActiveChatSnapshot === "function") saveActiveChatSnapshot(); } catch (_) {}
       closeMobileSidebar();
       focusDisplayInput();
     }
@@ -1855,6 +1858,7 @@
 
     function saveRecentPhrases() {
       lsSet(RECENTS_STORAGE_KEY, JSON.stringify(recentPhrases));
+      try { if (typeof saveActiveChatSnapshot === "function") saveActiveChatSnapshot(); } catch (_) {}
     }
 
     function pushRecentPhrase(text) {
@@ -2360,13 +2364,82 @@
     });
 
     /**
-     * Three text drafts (1 / 2 / 3).
-     * One is active in the display; tap a chip to jump (current text is saved first).
+     * Three chats (1 / 2 / 3). Each stores:
+     *  - text (compose box)
+     *  - active topic id
+     *  - recent phrases for that chat
      */
-    const DRAFT_LABELS = ["1", "2", "3"];
-    const drafts = ["", "", ""];
-    let activeDraft = 0;
-    const draftSlotsEl = document.getElementById("draft-slots");
+    const CHAT_COUNT = 3;
+    const CHAT_LABELS = ["1", "2", "3"];
+    const CHATS_STORAGE_KEY = "aac_chats";
+    const ACTIVE_CHAT_KEY = "aac_active_chat";
+    const chatSlotsEl = document.getElementById("chat-slots");
+
+    function emptyChat(topicId = null) {
+      return {
+        text: "",
+        topicId: topicId || (topicsList[0] && topicsList[0].id) || null,
+        recents: []
+      };
+    }
+
+    function normalizeChat(raw, fallbackTopicId = null) {
+      if (typeof raw === "string") {
+        return {
+          text: raw,
+          topicId: fallbackTopicId || (topicsList[0] && topicsList[0].id) || null,
+          recents: []
+        };
+      }
+      if (!raw || typeof raw !== "object") return emptyChat(fallbackTopicId);
+      const recents = Array.isArray(raw.recents)
+        ? raw.recents.map((t) => trim(t)).filter(Boolean).slice(0, RECENTS_MAX)
+        : [];
+      return {
+        text: raw.text == null ? "" : String(raw.text),
+        topicId: raw.topicId || fallbackTopicId || (topicsList[0] && topicsList[0].id) || null,
+        recents
+      };
+    }
+
+    function loadChatsFromStorage() {
+      const raw = lsGetJson(CHATS_STORAGE_KEY, null);
+      const defaultTopic = activeTopicId || (topicsList[0] && topicsList[0].id) || null;
+      if (Array.isArray(raw) && raw.length) {
+        return Array.from({ length: CHAT_COUNT }, (_, i) => normalizeChat(raw[i], defaultTopic));
+      }
+      // First run: seed chat 1 from current workspace; leave 2 & 3 empty
+      const seed = {
+        text: "",
+        topicId: defaultTopic,
+        recents: Array.isArray(recentPhrases) ? recentPhrases.slice() : []
+      };
+      return [seed, emptyChat(defaultTopic), emptyChat(defaultTopic)];
+    }
+
+    let chats = loadChatsFromStorage();
+    let activeChat = (() => {
+      const n = parseInt(lsGet(ACTIVE_CHAT_KEY, "0"), 10);
+      return Number.isFinite(n) ? clamp(n, 0, CHAT_COUNT - 1) : 0;
+    })();
+
+    function persistChats() {
+      try {
+        lsSet(CHATS_STORAGE_KEY, JSON.stringify(chats));
+        lsSet(ACTIVE_CHAT_KEY, String(activeChat));
+      } catch (_) {}
+    }
+
+    /** Snapshot workspace into the active chat (text + topic + recents). */
+    function saveActiveChatSnapshot() {
+      if (!chats || !chats[activeChat]) return;
+      chats[activeChat] = {
+        text: getText(),
+        topicId: activeTopicId,
+        recents: Array.isArray(recentPhrases) ? recentPhrases.slice() : []
+      };
+      persistChats();
+    }
 
     function previewSnippet(text, max = 36) {
       const t = String(text || "").replace(/\s+/g, " ").trim();
@@ -2374,73 +2447,117 @@
       return t.length > max ? `${t.slice(0, max)}…` : t;
     }
 
-    function syncDraftUi() {
-      const chips = draftSlotsEl ? draftSlotsEl.querySelectorAll(".draft-chip[data-draft]") : [];
+    function chatHasContent(chat) {
+      if (!chat) return false;
+      if (trim(chat.text)) return true;
+      if (Array.isArray(chat.recents) && chat.recents.length) return true;
+      return false;
+    }
+
+    function syncChatUi() {
+      const chips = chatSlotsEl ? chatSlotsEl.querySelectorAll(".chat-chip[data-chat]") : [];
       chips.forEach((chip) => {
-        const idx = parseInt(chip.getAttribute("data-draft"), 10);
+        const idx = parseInt(chip.getAttribute("data-chat"), 10);
         if (!Number.isFinite(idx)) return;
-        const label = DRAFT_LABELS[idx] || String(idx + 1);
-        const text = idx === activeDraft ? getText() : drafts[idx];
-        const filled = String(text || "").length > 0;
-        chip.classList.toggle("active", idx === activeDraft);
+        const label = CHAT_LABELS[idx] || String(idx + 1);
+        const chat = idx === activeChat
+          ? { text: getText(), topicId: activeTopicId, recents: recentPhrases }
+          : chats[idx];
+        const filled = chatHasContent(chat);
+        const topic = topicsList.find((t) => t.id === chat?.topicId);
+        const topicName = topic?.name || "topic";
+        chip.classList.toggle("active", idx === activeChat);
         chip.classList.toggle("has-text", filled);
-        chip.setAttribute("aria-pressed", idx === activeDraft ? "true" : "false");
-        chip.title = `Draft ${label}${idx === activeDraft ? " (current)" : ""}: ${previewSnippet(text)}`;
+        chip.setAttribute("aria-pressed", idx === activeChat ? "true" : "false");
+        chip.title = `Chat ${label}${idx === activeChat ? " (current)" : ""} · ${topicName}: ${previewSnippet(chat?.text)}`;
         chip.setAttribute(
           "aria-label",
-          `Draft ${label}${idx === activeDraft ? ", current" : ""}${filled ? "" : ", empty"}`
+          `Chat ${label}${idx === activeChat ? ", current" : ""}${filled ? "" : ", empty"}`
         );
       });
     }
 
-    function saveActiveDraftFromDisplay() {
-      drafts[activeDraft] = getText();
+    function applyChatToWorkspace(chat) {
+      const c = normalizeChat(chat, activeTopicId);
+      setText(c.text || "", (c.text || "").length);
+
+      recentPhrases = Array.isArray(c.recents) ? c.recents.slice() : [];
+      lsSet(RECENTS_STORAGE_KEY, JSON.stringify(recentPhrases));
+      renderRecentsStrip();
+
+      const tid = c.topicId && topicsList.some((t) => t.id === c.topicId)
+        ? c.topicId
+        : (topicsList[0] && topicsList[0].id) || activeTopicId;
+      if (tid && tid !== activeTopicId) {
+        activeTopicId = tid;
+        lsSet("aac_active_tab", activeTopicId);
+        expandedTopicIds.add(tid);
+        renderTopics();
+        renderSoundButtons();
+      } else {
+        try { syncModeTopicButton(); } catch (_) {}
+      }
+
+      try {
+        syncComposeStrip();
+        syncGeneratedAudioActions();
+        autosizeDisplayInput();
+      } catch (_) {}
     }
 
-    function showDraft(index) {
-      const i = clamp(index, 0, drafts.length - 1);
-      activeDraft = i;
-      const text = drafts[i] || "";
-      setText(text, text.length);
-      syncDraftUi();
+    function showChat(index) {
+      const i = clamp(index, 0, CHAT_COUNT - 1);
+      activeChat = i;
+      applyChatToWorkspace(chats[i]);
+      persistChats();
+      syncChatUi();
       focusDisplayInput();
     }
 
-    function selectDraft(index) {
-      const i = clamp(index, 0, drafts.length - 1);
-      if (i === activeDraft) {
-        saveActiveDraftFromDisplay();
-        syncDraftUi();
+    function selectChat(index) {
+      const i = clamp(index, 0, CHAT_COUNT - 1);
+      if (i === activeChat) {
+        saveActiveChatSnapshot();
+        syncChatUi();
         focusDisplayInput();
         return;
       }
-      saveActiveDraftFromDisplay();
-      showDraft(i);
+      saveActiveChatSnapshot();
+      showChat(i);
     }
 
     function clearDisplayText() {
-      // Discard display text only (does not wipe other drafts)
+      // Clear message text only; keep this chat's topic and recents
       setText("");
-      drafts[activeDraft] = "";
-      syncDraftUi();
+      if (chats[activeChat]) chats[activeChat].text = "";
+      persistChats();
+      syncChatUi();
+      try {
+        syncComposeStrip();
+        syncGeneratedAudioActions();
+      } catch (_) {}
       focusDisplayInput();
     }
 
     document.getElementById("new-message-btn")?.addEventListener("click", clearDisplayText);
-    draftSlotsEl?.addEventListener("click", (e) => {
+    chatSlotsEl?.addEventListener("click", (e) => {
       if (e.target.closest("#new-message-btn, #textarea-assign-btn")) return;
-      const chip = e.target.closest(".draft-chip[data-draft]");
-      if (!chip || !draftSlotsEl.contains(chip)) return;
-      const idx = parseInt(chip.getAttribute("data-draft"), 10);
+      const chip = e.target.closest(".chat-chip[data-chat]");
+      if (!chip || !chatSlotsEl.contains(chip)) return;
+      const idx = parseInt(chip.getAttribute("data-chat"), 10);
       if (!Number.isFinite(idx)) return;
-      selectDraft(idx);
+      selectChat(idx);
     });
-    // Keep active draft snapshot when the user types
+    // Keep active chat text snapshot when the user types
     displayInput.addEventListener("input", () => {
-      drafts[activeDraft] = getText();
-      syncDraftUi();
+      if (chats[activeChat]) chats[activeChat].text = getText();
+      persistChats();
+      syncChatUi();
     });
-    syncDraftUi();
+
+    // Apply the restored active chat (topic + recents + text) on load
+    applyChatToWorkspace(chats[activeChat]);
+    syncChatUi();
 
     // ==================== FIRST-RUN COACH ====================
     const COACH_DISMISS_KEY = "aac_coach_dismissed";
@@ -3644,7 +3761,7 @@
         switchSidebarTab(initialTab, false, { fromRoute: true });
       }
       autosizeDisplayInput();
-      syncDraftUi();
+      syncChatUi();
       if (!isCoachDismissed()) showCoach();
       // Avoid auto-focus on mobile (opens keyboard immediately)
       if (!isMobileLayout()) focusDisplayInput();

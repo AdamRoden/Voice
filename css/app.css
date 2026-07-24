@@ -337,7 +337,7 @@
     /* ==================== MAIN WORKSPACE ==================== */
     .app-main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 5px; padding: 6px; overflow: hidden; height: 100%; position: relative; }
 
-    /* Desktop: drafts row; mobile: menu | drafts | new message */
+    /* Desktop: chats row; mobile: menu | chats | new message */
     .workspace-header {
       display: flex;
       align-items: center;
@@ -350,7 +350,7 @@
       gap: 8px;
     }
     .workspace-header .icon-btn { width: 40px; height: 40px; min-width: 40px; min-height: 40px; }
-    .workspace-header .draft-slots {
+    .workspace-header .chat-slots {
       flex: 0 1 auto;
       justify-content: center;
     }
@@ -467,14 +467,14 @@
     }
     .coach-banner-actions .modal-btn { min-height: 36px; padding: 8px 14px; font-size: 13px; }
 
-    /* Three text drafts (workspace header) */
-    .draft-slots {
+    /* Three chats (workspace header): each stores text + topic + recents */
+    .chat-slots {
       display: flex;
       align-items: center;
       gap: 4px;
       flex-shrink: 0;
     }
-    .draft-chip {
+    .chat-chip {
       width: 40px;
       height: 40px;
       min-width: 40px;
@@ -493,36 +493,36 @@
       padding: 0;
       transition: background 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s;
     }
-    .draft-chip .material-symbols-outlined {
+    .chat-chip .material-symbols-outlined {
       font-size: 22px;
       line-height: 1;
       font-weight: normal;
     }
-    .draft-chip:hover { border-color: var(--accent); color: var(--text); }
-    .draft-chip.active {
+    .chat-chip:hover { border-color: var(--accent); color: var(--text); }
+    .chat-chip.active {
       border-color: var(--accent);
       color: var(--accent);
       background: color-mix(in srgb, var(--accent) 14%, transparent);
       box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
     }
-    .draft-chip.has-text:not(.active) { color: var(--text); }
-    .draft-chip.new-message-btn,
-    .draft-chip.draft-assign-btn {
+    .chat-chip.has-text:not(.active) { color: var(--text); }
+    .chat-chip.new-message-btn,
+    .chat-chip.chat-assign-btn {
       color: var(--text);
       font-weight: 500;
     }
-    .draft-chip.new-message-btn:hover,
-    .draft-chip.draft-assign-btn:hover:not(:disabled):not(.is-disabled) {
+    .chat-chip.new-message-btn:hover,
+    .chat-chip.chat-assign-btn:hover:not(:disabled):not(.is-disabled) {
       color: var(--accent);
       border-color: var(--accent);
     }
-    .draft-chip.draft-assign-btn:disabled,
-    .draft-chip.draft-assign-btn.is-disabled {
+    .chat-chip.chat-assign-btn:disabled,
+    .chat-chip.chat-assign-btn.is-disabled {
       opacity: 0.4;
       cursor: not-allowed;
       pointer-events: none;
     }
-    .draft-chip-dot {
+    .chat-chip-dot {
       width: 5px;
       height: 5px;
       border-radius: 50%;
@@ -787,13 +787,13 @@
       min-width: max(44px, var(--display-ctrl-size, 44px));
       min-height: max(44px, var(--display-ctrl-size, 44px));
     }
-    body[data-touch-size="large"] .draft-chip {
+    body[data-touch-size="large"] .chat-chip {
       min-width: 44px;
       min-height: 44px;
       width: 44px;
       height: 44px;
     }
-    body[data-touch-size="large"] .draft-chip .material-symbols-outlined {
+    body[data-touch-size="large"] .chat-chip .material-symbols-outlined {
       font-size: 24px;
     }
     body[data-touch-size="large"] .recents-chip {
@@ -1348,7 +1348,7 @@
         font-size: 24px;
         color: var(--accent);
       }
-      .workspace-header .draft-slots { justify-self: center; }
+      .workspace-header .chat-slots { justify-self: center; }
 
       /* Full-screen drawer is never the desktop "collapsed rail" — always show close */
       .sidebar.collapsed .sidebar-collapse-btn,

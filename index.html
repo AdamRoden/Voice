@@ -197,14 +197,14 @@
       <button class="icon-btn mobile-only mobile-menu-btn" id="mobile-menu-btn" type="button" title="Open menu" aria-label="Open menu">
         <span class="material-symbols-outlined logo-mark">record_voice_over</span>
       </button>
-      <div class="draft-slots" id="draft-slots" role="group" aria-label="New message, drafts, and assign">
-        <button type="button" class="draft-chip new-message-btn" id="new-message-btn" title="New message" aria-label="New message — clear text">
+      <div class="chat-slots" id="chat-slots" role="group" aria-label="New message, chats, and assign">
+        <button type="button" class="chat-chip new-message-btn" id="new-message-btn" title="New message" aria-label="New message — clear text">
           <span class="material-symbols-outlined">edit_square</span>
         </button>
-        <button type="button" class="draft-chip active" data-draft="0" title="Draft 1 (current)" aria-label="Draft 1" aria-pressed="true">1</button>
-        <button type="button" class="draft-chip" data-draft="1" title="Draft 2" aria-label="Draft 2" aria-pressed="false">2</button>
-        <button type="button" class="draft-chip" data-draft="2" title="Draft 3" aria-label="Draft 3" aria-pressed="false">3</button>
-        <button type="button" class="draft-chip draft-assign-btn" id="textarea-assign-btn" title="Assign to button" aria-label="Assign to button">
+        <button type="button" class="chat-chip active" data-chat="0" title="Chat 1 (current)" aria-label="Chat 1" aria-pressed="true">1</button>
+        <button type="button" class="chat-chip" data-chat="1" title="Chat 2" aria-label="Chat 2" aria-pressed="false">2</button>
+        <button type="button" class="chat-chip" data-chat="2" title="Chat 3" aria-label="Chat 3" aria-pressed="false">3</button>
+        <button type="button" class="chat-chip chat-assign-btn" id="textarea-assign-btn" title="Assign to button" aria-label="Assign to button">
           <span class="material-symbols-outlined">push_pin</span>
         </button>
       </div>
@@ -224,7 +224,7 @@
       </div>
       <ol>
         <li><strong>Logo</strong> — top-left opens the menu (Settings, History, Topics). Use the chevron at the top-right of the menu to collapse it.</li>
-        <li><strong>Top bar</strong> (left → right) — <strong>new message</strong> clears the box; <strong>1 / 2 / 3</strong> switch drafts; <strong>pin</strong> assigns your text to a sound button.</li>
+        <li><strong>Top bar</strong> (left → right) — <strong>new message</strong> clears the box; <strong>1 / 2 / 3</strong> switch chats (each keeps text, topic, and recents); <strong>pin</strong> assigns your text to a sound button.</li>
         <li><strong>Board</strong> — tap a button to speak; the small <strong>+</strong> on a button inserts its text into the message.</li>
         <li><strong>Composer</strong> (left → right) — <strong>+</strong> inserts a tag; <strong>topic</strong> switches boards; type in the box; blue <strong>speaker</strong> speaks (or press Enter).</li>
         <li><strong>Message</strong> — words under the box; tap × to remove one; use <strong>Replay</strong> when available.</li>
@@ -258,7 +258,7 @@
               </button>
               <div class="mode-topic-menu" id="mode-topic-menu" role="listbox" aria-label="Topics" hidden></div>
             </div>
-            <textarea class="display-textarea" id="display-input" spellcheck="true" autocomplete="off" autocapitalize="sentences" placeholder="Ask anything…" rows="1" aria-label="Message text"></textarea>
+            <textarea class="display-textarea" id="display-input" spellcheck="true" autocomplete="off" autocapitalize="sentences" placeholder="Type anything…" rows="1" aria-label="Message text"></textarea>
             <button type="button" class="compose-speak-btn display-ctrl key tts-btn" id="speak-btn" aria-label="Speak" title="Speak text (or selection). Click again to stop.">
               <span class="material-symbols-outlined icon-medium">volume_up</span>
             </button>
