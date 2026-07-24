@@ -1,8 +1,10 @@
 /* AAC Workspace service worker — offline shell + app assets */
-const CACHE_NAME = "aac-workspace-v1";
+const CACHE_NAME = "aac-workspace-v2";
 const PRECACHE = [
   "./",
   "./index.html",
+  "./css/app.css",
+  "./js/app.js",
   "./manifest.webmanifest",
   "./icon.svg"
 ];
@@ -32,11 +34,39 @@ self.addEventListener("fetch", (event) => {
   // Only handle same-origin app shell; let CDN/API (fonts, ElevenLabs) hit the network
   if (url.origin !== self.location.origin) return;
 
+  // SPA navigations: always prefer the app shell (hash routes live client-side)
+  const isNavigate = req.mode === "navigate" ||
+    (req.destination === "document") ||
+    (req.headers.get("accept") || "").includes("text/html");
+
+  if (isNavigate) {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          if (res && res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put("./index.html", copy)).catch(() => {});
+          }
+          return res;
+        })
+        .catch(() => caches.match("./index.html"))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(req).then((cached) => {
       const network = fetch(req)
         .then((res) => {
-          if (res && res.ok && (req.mode === "navigate" || url.pathname.endsWith(".html") || url.pathname.endsWith(".js") || url.pathname.endsWith(".webmanifest") || url.pathname.endsWith(".svg"))) {
+          if (
+            res &&
+            res.ok &&
+            (url.pathname.endsWith(".html") ||
+              url.pathname.endsWith(".js") ||
+              url.pathname.endsWith(".css") ||
+              url.pathname.endsWith(".webmanifest") ||
+              url.pathname.endsWith(".svg"))
+          ) {
             const copy = res.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => {});
           }
