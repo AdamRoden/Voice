@@ -290,6 +290,58 @@
     .settings-stack { display: flex; flex-direction: column; gap: 4px; }
     .setting-divider { border: 0; border-top: 1px solid var(--border); margin: 6px 0; }
 
+    /* Advanced settings modal + feature toggles */
+    .advanced-settings-body {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .setting-toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      min-height: 48px;
+    }
+    .setting-toggle-row:hover { background: var(--bg-surface-hover); }
+    .setting-toggle-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+      flex: 1;
+    }
+    .setting-toggle-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .setting-toggle-desc {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--text-secondary);
+      line-height: 1.3;
+    }
+    .setting-toggle-input {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--accent);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    #modal-advanced-settings .sidebar-setting-group {
+      margin-top: 8px;
+      padding: 4px 8px;
+    }
+    /* Feature flags: hide optional UI when off (default) */
+    body:not([data-feat-message-words="1"]) .compose-strip { display: none !important; }
+    body:not([data-feat-recents="1"]) .recents-strip,
+    body:not([data-feat-recents="1"]) #insert-toolbar { display: none !important; }
+    body:not([data-feat-insert-tag="1"]) #insert-tag-btn { display: none !important; }
+
     /* Icon name inputs render the Material Symbol glyph instead of the raw name */
     .icon-name-input { font-family: 'Material Symbols Outlined' !important; font-size: 28px !important; text-align: center; height: 48px; letter-spacing: normal; font-variation-settings: 'FILL' var(--icon-fill, 0), 'wght' var(--icon-wght, 400), 'GRAD' var(--icon-grad, 0), 'opsz' var(--icon-opsz, 24); -webkit-font-feature-settings: 'liga'; line-height: 1; }
 
@@ -459,6 +511,14 @@
       color: var(--text);
     }
     .coach-banner li { margin: 2px 0; }
+    .coach-inline-icon {
+      font-size: 16px !important;
+      width: 1em;
+      height: 1em;
+      vertical-align: -0.2em;
+      color: var(--accent);
+      margin: 0 1px;
+    }
     .coach-banner-actions {
       display: flex;
       flex-wrap: wrap;
@@ -500,12 +560,17 @@
     }
     .chat-chip:hover { border-color: var(--accent); color: var(--text); }
     .chat-chip.active {
-      border-color: var(--accent);
-      color: var(--accent);
-      background: color-mix(in srgb, var(--accent) 14%, transparent);
-      box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
+      border-color: var(--chat-topic-color, var(--accent));
+      color: var(--chat-topic-color, var(--accent));
+      background: color-mix(in srgb, var(--chat-topic-color, var(--accent)) 14%, transparent);
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--chat-topic-color, var(--accent)) 40%, transparent);
     }
     .chat-chip.has-text:not(.active) { color: var(--text); }
+    .chat-chip .chat-chip-icon {
+      font-size: 22px;
+      line-height: 1;
+      font-weight: normal;
+    }
     .chat-chip.new-message-btn,
     .chat-chip.chat-assign-btn {
       color: var(--text);
@@ -769,111 +834,6 @@
     }
     .compose-chip-remove .material-symbols-outlined { font-size: 16px; }
 
-    /* Larger touch targets (Comfort) */
-    body[data-touch-size="large"] {
-      --sound-row-height: 60px !important;
-    }
-    body[data-touch-size="large"] .sound-button {
-      font-size: 16px;
-      border-radius: 10px;
-    }
-    body[data-touch-size="large"] .sound-button-symbol { font-size: 20px; }
-    body[data-touch-size="large"] .key {
-      min-height: 44px;
-      min-width: 44px;
-    }
-    body[data-touch-size="large"] .key.display-ctrl {
-      /* still driven by --display-ctrl-size, with a floor */
-      min-width: max(44px, var(--display-ctrl-size, 44px));
-      min-height: max(44px, var(--display-ctrl-size, 44px));
-    }
-    body[data-touch-size="large"] .chat-chip {
-      min-width: 44px;
-      min-height: 44px;
-      width: 44px;
-      height: 44px;
-    }
-    body[data-touch-size="large"] .chat-chip .material-symbols-outlined {
-      font-size: 24px;
-    }
-    body[data-touch-size="large"] .recents-chip {
-      min-height: 44px;
-      font-size: 15px;
-      padding: 8px 14px;
-    }
-    body[data-touch-size="large"] .compose-chip {
-      min-height: 40px;
-      font-size: 15px;
-      padding: 6px 6px 6px 12px;
-    }
-    body[data-touch-size="large"] .compose-chip-remove {
-      width: 36px;
-      height: 36px;
-    }
-    body[data-touch-size="large"] .sidebar-tab {
-      min-height: 52px;
-    }
-    body[data-touch-size="large"] .sound-canvas {
-      gap: 6px;
-    }
-    .touch-size-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-    .touch-size-row .toggle-switch-label {
-      font-size: 13px;
-      color: var(--text);
-      font-weight: 500;
-      flex: 1;
-    }
-    .touch-size-toggle {
-      position: relative;
-      width: 48px;
-      height: 28px;
-      flex-shrink: 0;
-    }
-    .touch-size-toggle input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-      position: absolute;
-    }
-    .touch-size-slider {
-      position: absolute;
-      inset: 0;
-      background: var(--key-bg);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      cursor: pointer;
-      transition: background 0.15s, border-color 0.15s;
-    }
-    .touch-size-slider::before {
-      content: "";
-      position: absolute;
-      width: 20px;
-      height: 20px;
-      left: 3px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: var(--text-secondary);
-      border-radius: 50%;
-      transition: transform 0.15s, background 0.15s;
-    }
-    .touch-size-toggle input:checked + .touch-size-slider {
-      background: color-mix(in srgb, var(--accent) 35%, var(--key-bg));
-      border-color: var(--accent);
-    }
-    .touch-size-toggle input:checked + .touch-size-slider::before {
-      transform: translate(18px, -50%);
-      background: var(--accent);
-    }
-    .touch-size-toggle input:focus-visible + .touch-size-slider {
-      outline: 2px solid var(--accent);
-      outline-offset: 2px;
-    }
-
     /* Grok-style compose: + | mode | text | speak (desktop row; mobile stacks) */
     .bottom-dock { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
 
@@ -992,6 +952,17 @@
       z-index: 40;
     }
     .mode-topic-menu[hidden] { display: none !important; }
+    .mode-topic-sep {
+      height: 1px;
+      margin: 6px 8px;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+    .mode-topic-create {
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .mode-topic-create .material-symbols-outlined { color: var(--accent); }
     .mode-topic-item {
       display: flex;
       align-items: center;
@@ -1088,7 +1059,7 @@
       min-width: 0;
       width: auto;
       height: auto;
-      min-height: var(--display-ctrl-size, var(--display-font-size, 40px));
+      min-height: var(--display-ctrl-size, var(--display-font-size, 28px));
       max-height: min(30vh, 180px);
       background-color: transparent;
       border: none;
@@ -1096,7 +1067,7 @@
       padding: 8px 6px;
       line-height: 1.35;
       color: var(--text);
-      font-size: var(--display-font-size, 40px);
+      font-size: var(--display-font-size, 28px);
       resize: none;
       outline: none;
       white-space: pre-wrap;

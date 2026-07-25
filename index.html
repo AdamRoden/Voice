@@ -30,8 +30,8 @@
         <span class="material-symbols-outlined logo-mark">record_voice_over</span>
         <span class="logo-text">AAC Workspace</span>
       </button>
-      <button class="icon-btn sidebar-collapse-btn" id="sidebar-collapse-btn" type="button" title="Collapse sidebar" aria-label="Collapse sidebar">
-        <span class="material-symbols-outlined">chevron_left</span>
+      <button class="icon-btn sidebar-collapse-btn" id="sidebar-collapse-btn" type="button" title="Close sidebar" aria-label="Close sidebar">
+        <span class="material-symbols-outlined">close</span>
       </button>
     </div>
 
@@ -76,18 +76,12 @@
 
         <div class="settings-stack" id="group-eleven-settings">
           <div class="sidebar-setting-group">
-            <button id="api-key-btn" class="status-btn missing" type="button">
-              <span class="status-btn-text"><span class="material-symbols-outlined icon-small icon-btn-margin">key</span>Missing API Key (Click to Add)</span>
-            </button>
-          </div>
-          <div class="sidebar-setting-group">
             <label>ElevenLabs Voice</label>
             <button class="status-btn" id="open-eleven-voices" type="button">
               <span class="status-btn-text" id="selected-eleven-name">Select Voice...</span>
               <span class="material-symbols-outlined icon-small">chevron_right</span>
             </button>
           </div>
-          <hr class="setting-divider">
           <div class="sidebar-setting-group">
             <label><span>Stability</span><span id="val-stability">0.50</span></label>
             <input type="range" id="stability-slider" min="0.0" max="1.0" step="0.05" value="0.5">
@@ -98,15 +92,6 @@
           </div>
         </div>
 
-        <hr class="setting-divider">
-
-        <div class="sidebar-setting-group" id="group-output-device">
-          <label>Speaker / Output Device</label>
-          <select id="output-device-select" aria-describedby="output-device-hint">
-            <option value="">System default</option>
-          </select>
-          <div class="modal-description" id="output-device-hint">Loading speakers…</div>
-        </div>
         <div class="sidebar-setting-group">
           <label><span>Volume Percent</span><span id="val-volume">300%</span></label>
           <input type="range" id="volume-slider" min="1" max="10" step="1" value="3" aria-valuemin="1" aria-valuemax="10">
@@ -119,25 +104,12 @@
         <hr class="setting-divider">
 
         <div class="sidebar-setting-group">
-          <label><span>Font Size</span><span id="font-display">40px</span></label>
+          <label><span>Font Size</span><span id="font-display">28px</span></label>
           <div class="font-controls">
             <button class="font-btn" id="font-down" type="button">A-</button>
             <button class="font-btn" id="font-up" type="button">A+</button>
           </div>
         </div>
-        <div class="sidebar-setting-group">
-          <div class="touch-size-row">
-            <span class="toggle-switch-label" id="large-targets-label">Larger touch targets</span>
-            <label class="touch-size-toggle" title="Bigger buttons and grid for easier taps">
-              <input type="checkbox" id="large-targets-toggle" aria-labelledby="large-targets-label">
-              <span class="touch-size-slider"></span>
-            </label>
-          </div>
-          <div class="modal-description" style="margin:0;">Comfort size for motor access — taller grid rows and controls.</div>
-        </div>
-
-        <hr class="setting-divider">
-
         <div class="sidebar-setting-group">
           <label>Theme Appearance</label>
           <div class="theme-picker-group">
@@ -152,6 +124,18 @@
             <input type="color" id="accent-color-picker" value="#8ab4f8" title="Custom accent color">
             <button class="font-btn" id="accent-color-reset" type="button" title="Reset to theme default">Reset</button>
           </div>
+        </div>
+
+        <hr class="setting-divider">
+
+        <div class="sidebar-setting-group">
+          <button class="status-btn" id="open-advanced-settings-btn" type="button" title="Advanced settings">
+            <span class="status-btn-text">
+              <span class="material-symbols-outlined icon-small icon-btn-margin">tune</span>
+              Advanced settings
+            </span>
+            <span class="material-symbols-outlined icon-small">chevron_right</span>
+          </button>
         </div>
       </div>
 
@@ -201,9 +185,15 @@
         <button type="button" class="chat-chip new-message-btn" id="new-message-btn" title="New message" aria-label="New message — clear text">
           <span class="material-symbols-outlined">edit_square</span>
         </button>
-        <button type="button" class="chat-chip active" data-chat="0" title="Chat 1 (current)" aria-label="Chat 1" aria-pressed="true">1</button>
-        <button type="button" class="chat-chip" data-chat="1" title="Chat 2" aria-label="Chat 2" aria-pressed="false">2</button>
-        <button type="button" class="chat-chip" data-chat="2" title="Chat 3" aria-label="Chat 3" aria-pressed="false">3</button>
+        <button type="button" class="chat-chip active" data-chat="0" title="Chat" aria-label="Chat" aria-pressed="true">
+          <span class="material-symbols-outlined chat-chip-icon">chat</span>
+        </button>
+        <button type="button" class="chat-chip" data-chat="1" title="Chat" aria-label="Chat" aria-pressed="false">
+          <span class="material-symbols-outlined chat-chip-icon">medical_services</span>
+        </button>
+        <button type="button" class="chat-chip" data-chat="2" title="Chat" aria-label="Chat" aria-pressed="false">
+          <span class="material-symbols-outlined chat-chip-icon">sentiment_satisfied</span>
+        </button>
         <button type="button" class="chat-chip chat-assign-btn" id="textarea-assign-btn" title="Assign to button" aria-label="Assign to button">
           <span class="material-symbols-outlined">push_pin</span>
         </button>
@@ -223,13 +213,10 @@
         </div>
       </div>
       <ol>
-        <li><strong>Logo</strong> — top-left opens the menu (Settings, History, Topics). Use the chevron at the top-right of the menu to collapse it.</li>
-        <li><strong>Top bar</strong> (left → right) — <strong>new message</strong> clears the box; <strong>1 / 2 / 3</strong> switch chats (each keeps text, topic, and recents); <strong>pin</strong> assigns your text to a sound button.</li>
-        <li><strong>Board</strong> — tap a button to speak; the small <strong>+</strong> on a button inserts its text into the message.</li>
-        <li><strong>Composer</strong> (left → right) — <strong>+</strong> inserts a tag; <strong>topic</strong> switches boards; type in the box; blue <strong>speaker</strong> speaks (or press Enter).</li>
-        <li><strong>Message</strong> — words under the box; tap × to remove one; use <strong>Replay</strong> when available.</li>
-        <li><strong>Recent</strong> — tap to insert a phrase; double-tap to speak it.</li>
-        <li><strong>Sidebar</strong> — Settings (voice &amp; look), History, Topics; <strong>Export / Import</strong> under Topics; <strong>Help</strong> at the bottom.</li>
+        <li><strong>Menu</strong> — <span class="material-symbols-outlined coach-inline-icon">record_voice_over</span> <strong>logo</strong> opens the menu drawer (Settings, History, Topics).</li>
+        <li><strong>Chats</strong> — <span class="material-symbols-outlined coach-inline-icon">edit_square</span> <strong>new message</strong> clears the text box; <span class="material-symbols-outlined coach-inline-icon">looks_one</span><span class="material-symbols-outlined coach-inline-icon">looks_two</span><span class="material-symbols-outlined coach-inline-icon">looks_3</span> <strong>icons</strong> switch chats; <span class="material-symbols-outlined coach-inline-icon">push_pin</span> <strong>pin</strong> assigns text in the box to a button.</li>
+        <li><strong>Sounds</strong> — <span class="material-symbols-outlined coach-inline-icon">grid_view</span> <strong>buttons</strong> play their audio.</li>
+        <li><strong>Text box</strong> — <span class="material-symbols-outlined coach-inline-icon">pin_history</span> <strong>selector</strong> switches soundboard for this chat; <span class="material-symbols-outlined coach-inline-icon">keyboard</span> <strong>type</strong> in the box; <span class="material-symbols-outlined coach-inline-icon">volume_up</span> <strong>speaker</strong> speaks (or press Enter).</li>
       </ol>
       <div class="coach-banner-actions">
         <button type="button" class="modal-btn secondary" id="coach-dismiss-btn">Got it</button>
@@ -252,7 +239,7 @@
             </button>
             <div class="compose-mode-wrap">
               <button type="button" class="compose-mode-btn" id="mode-topic-btn" aria-haspopup="listbox" aria-expanded="false" title="Switch topic">
-                <span class="material-symbols-outlined compose-mode-icon" id="mode-topic-icon">folder</span>
+                <span class="material-symbols-outlined compose-mode-icon" id="mode-topic-icon">pin_history</span>
                 <span class="compose-mode-label" id="mode-topic-label">Topics</span>
                 <span class="material-symbols-outlined compose-mode-caret">expand_more</span>
               </button>
@@ -325,6 +312,59 @@
     <div class="modal-buttons"><button class="modal-btn secondary" onclick="closeModals()" type="button">Cancel</button></div>
   </div>
 
+  <!-- Advanced Settings Modal -->
+  <div class="modal" id="modal-advanced-settings">
+    <div class="modal-title">Advanced settings</div>
+    <div class="modal-scroll">
+      <div class="modal-description">Optional tools hidden by default. Turn on only what you need.</div>
+      <div class="advanced-settings-body">
+        <div class="sidebar-setting-group">
+          <button id="api-key-btn" class="status-btn missing" type="button">
+            <span class="status-btn-text"><span class="material-symbols-outlined icon-small icon-btn-margin">key</span>Missing API Key (Click to Add)</span>
+          </button>
+        </div>
+        <label class="setting-toggle-row" for="opt-message-words">
+          <span class="setting-toggle-text">
+            <span class="setting-toggle-title">Message word chips</span>
+            <span class="setting-toggle-desc">Words under the text box with remove and option to Replay</span>
+          </span>
+          <input type="checkbox" id="opt-message-words" class="setting-toggle-input">
+        </label>
+        <label class="setting-toggle-row" for="opt-recents">
+          <span class="setting-toggle-text">
+            <span class="setting-toggle-title">Recent phrases</span>
+            <span class="setting-toggle-desc">Quick-insert strip under the text box</span>
+          </span>
+          <input type="checkbox" id="opt-recents" class="setting-toggle-input">
+        </label>
+        <label class="setting-toggle-row" for="opt-button-insert">
+          <span class="setting-toggle-text">
+            <span class="setting-toggle-title">Insert from sound buttons</span>
+            <span class="setting-toggle-desc">Show + on sound buttons to add text to the message</span>
+          </span>
+          <input type="checkbox" id="opt-button-insert" class="setting-toggle-input">
+        </label>
+        <label class="setting-toggle-row" for="opt-insert-tag">
+          <span class="setting-toggle-text">
+            <span class="setting-toggle-title">Insert tag button</span>
+            <span class="setting-toggle-desc">Show + in the text box to insert [tags]</span>
+          </span>
+          <input type="checkbox" id="opt-insert-tag" class="setting-toggle-input">
+        </label>
+        <div class="sidebar-setting-group" id="group-output-device">
+          <label>Speaker / Output Device</label>
+          <select id="output-device-select" aria-describedby="output-device-hint">
+            <option value="">System default</option>
+          </select>
+          <div class="modal-description" id="output-device-hint">Loading speakers…</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-buttons">
+      <button class="modal-btn secondary" type="button" onclick="closeModals()">Close</button>
+    </div>
+  </div>
+
   <!-- Insert Tag Modal -->
   <div class="modal" id="tag-insert-modal">
     <div class="modal-title">Insert Tag</div>
@@ -345,9 +385,9 @@
     </div>
   </div>
 
-  <!-- Edit Topic Meta Modal -->
+  <!-- Edit / Create Topic Meta Modal -->
   <div class="modal" id="topic-edit-modal">
-    <div class="modal-title">Edit Topic Settings</div>
+    <div class="modal-title" id="topic-edit-modal-title">Edit Topic Settings</div>
     <div class="modal-scroll">
       <div class="sidebar-setting-group">
         <label>Topic Name</label>
@@ -363,7 +403,7 @@
         <div class="modal-color-picker" id="topic-color-picker"></div>
       </div>
       <div class="sidebar-setting-group">
-        <label>Grid Size</label>
+        <label>Columns</label>
         <div class="grid-size-controls">
           <div class="header-stepper-group">
             <span>Cols</span>
@@ -373,21 +413,13 @@
               <button class="num-control-btn" type="button" onclick="stepModalGrid(1, 0)" aria-label="More columns">+</button>
             </div>
           </div>
-          <div class="header-stepper-group">
-            <span>Rows</span>
-            <div class="num-control-wrapper">
-              <button class="num-control-btn" type="button" onclick="stepModalGrid(0, -1)" aria-label="Fewer rows">-</button>
-              <span class="num-control-val" id="topic-rows-val">2</span>
-              <button class="num-control-btn" type="button" onclick="stepModalGrid(0, 1)" aria-label="More rows">+</button>
-            </div>
-          </div>
         </div>
       </div>
     </div>
     <div class="modal-buttons">
       <button class="modal-btn danger" id="delete-topic-btn" type="button">Delete</button>
       <button class="modal-btn primary" id="save-topic-meta-btn" type="button">Save</button>
-      <button class="modal-btn secondary" onclick="closeModals()" type="button">Cancel</button>
+      <button class="modal-btn secondary" id="cancel-topic-edit-btn" type="button">Cancel</button>
     </div>
   </div>
 
@@ -443,7 +475,7 @@
     </div>
     <div class="modal-buttons">
       <button class="modal-btn primary" id="save-api-key-btn" type="button">Save</button>
-      <button class="modal-btn secondary" type="button" onclick="closeModals()">Cancel</button>
+      <button class="modal-btn secondary" type="button" id="cancel-api-key-btn">Cancel</button>
     </div>
   </div>
 

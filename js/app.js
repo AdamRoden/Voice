@@ -167,9 +167,23 @@
     let activeElevenVoiceId = lsGet("elevenlabs_voice", "") || "";
     /** Audio output deviceId for setSinkId ("" = system default). */
     let activeOutputDeviceId = lsGet("aac_output_device", "") || "";
-    let currentFontSize = parseInt(lsGet("aac_font_size", "40"), 10) || 40;
+    let currentFontSize = parseInt(lsGet("aac_font_size", "28"), 10) || 28;
     let currentTheme = lsGet("aac_theme", "system") || "system";
     let customAccentColor = lsGet("aac_accent_color", "") || "";
+    /** Advanced optional UI — off by default; enable under Settings → Advanced. */
+    const FEAT_MESSAGE_WORDS_KEY = "aac_feat_message_words";
+    const FEAT_RECENTS_KEY = "aac_feat_recents";
+    const FEAT_BUTTON_INSERT_KEY = "aac_feat_button_insert";
+    const FEAT_INSERT_TAG_KEY = "aac_feat_insert_tag";
+    const lsGetBool = (key, defaultVal = false) => {
+      const v = lsGet(key, null);
+      if (v == null || v === "") return defaultVal;
+      return v === "1" || v === "true";
+    };
+    let featMessageWords = lsGetBool(FEAT_MESSAGE_WORDS_KEY, false);
+    let featRecents = lsGetBool(FEAT_RECENTS_KEY, false);
+    let featButtonInsert = lsGetBool(FEAT_BUTTON_INSERT_KEY, false);
+    let featInsertTag = lsGetBool(FEAT_INSERT_TAG_KEY, false);
     /** Saved caret in #display-input so programmatic refocus restores it. */
     let savedDisplaySelection = { start: null, end: null };
     /** Active Web Audio buffer sources (stop previous speech when starting new). */
@@ -253,6 +267,8 @@
     let modalButtonIndex = 1;
     let modalButtonIndexMax = 1;
     let editingTopicId = null;
+    /** Draft topic object when creating (not yet in topicsList). */
+    let pendingNewTopic = null;
     /** Draft grid size while the topic edit modal is open */
     let modalGridCols = DEFAULT_GRID_COLS;
     let modalGridRows = DEFAULT_GRID_ROWS;
@@ -480,6 +496,7 @@
       saveTopicsList();
       renderTopics();
       renderSoundButtons();
+      try { if (typeof syncChatUi === "function") syncChatUi(); } catch (_) {}
     }
 
     // ==================== EXPORT / IMPORT BOARDS ====================
@@ -535,7 +552,11 @@
           iconFill,
           iconWght,
           iconGrad,
-          iconOpsz
+          iconOpsz,
+          featMessageWords,
+          featRecents,
+          featButtonInsert,
+          featInsertTag
           // API key intentionally omitted
         },
         // Text-only recents for convenience across devices
@@ -587,7 +608,7 @@
         applyAccentColor(settings.accentColor || "");
       }
       if (Number.isFinite(Number(settings.fontSize))) {
-        currentFontSize = clamp(parseInt(settings.fontSize, 10) || 40, 16, 48);
+        currentFontSize = clamp(parseInt(settings.fontSize, 10) || 28, 16, 48);
         lsSet("aac_font_size", currentFontSize);
         applyDisplayFontSize();
       }
@@ -617,6 +638,23 @@
       lsSet("aac_icon_wght", iconWght);
       lsSet("aac_icon_grad", iconGrad);
       lsSet("aac_icon_opsz", iconOpsz);
+      if (Object.prototype.hasOwnProperty.call(settings, "featMessageWords")) {
+        featMessageWords = !!settings.featMessageWords;
+        lsSet(FEAT_MESSAGE_WORDS_KEY, featMessageWords ? "1" : "0");
+      }
+      if (Object.prototype.hasOwnProperty.call(settings, "featRecents")) {
+        featRecents = !!settings.featRecents;
+        lsSet(FEAT_RECENTS_KEY, featRecents ? "1" : "0");
+      }
+      if (Object.prototype.hasOwnProperty.call(settings, "featButtonInsert")) {
+        featButtonInsert = !!settings.featButtonInsert;
+        lsSet(FEAT_BUTTON_INSERT_KEY, featButtonInsert ? "1" : "0");
+      }
+      if (Object.prototype.hasOwnProperty.call(settings, "featInsertTag")) {
+        featInsertTag = !!settings.featInsertTag;
+        lsSet(FEAT_INSERT_TAG_KEY, featInsertTag ? "1" : "0");
+      }
+      applyAdvancedFeatures();
       applyGlobalIconStyles();
     }
 
@@ -1279,15 +1317,19 @@
       modeTopicMenu.hidden = !open;
       modeTopicBtn.setAttribute("aria-expanded", open ? "true" : "false");
       if (open) renderModeTopicMenu();
+      syncModeTopicButton();
     }
 
     function syncModeTopicButton() {
       const topic = getActiveTopic();
       const name = topic?.name || "Topics";
+      const expanded = isModeTopicMenuOpen();
       if (modeTopicLabel) modeTopicLabel.textContent = name;
-      if (modeTopicIcon) modeTopicIcon.textContent = topic?.icon || "folder";
-      if (modeTopicIcon && topic?.color) modeTopicIcon.style.color = topic.color;
-      else if (modeTopicIcon) modeTopicIcon.style.color = "";
+      if (modeTopicIcon) {
+        // Collapsed: neutral pin_history; open menu: active topic icon + color
+        modeTopicIcon.textContent = expanded ? (topic?.icon || "folder") : "pin_history";
+        modeTopicIcon.style.color = expanded && topic?.color ? topic.color : "";
+      }
       if (modeTopicBtn) {
         modeTopicBtn.title = `Topic: ${name}`;
         modeTopicBtn.setAttribute("aria-label", `Switch topic — ${name}`);
@@ -1302,27 +1344,45 @@
         empty.className = "mode-topic-empty";
         empty.textContent = "No topics yet";
         modeTopicMenu.appendChild(empty);
-        return;
-      }
-      topicsList.forEach((topic) => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = `mode-topic-item${topic.id === activeTopicId ? " active" : ""}`;
-        btn.setAttribute("role", "option");
-        btn.setAttribute("aria-selected", topic.id === activeTopicId ? "true" : "false");
-        btn.dataset.topicId = topic.id;
-        btn.innerHTML = `
-          <span class="material-symbols-outlined" style="color: ${topic.color || "inherit"};">${topic.icon || "folder"}</span>
-          <span class="mode-topic-item-name">${topic.name || "Topic"}</span>
-        `;
-        btn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          switchTopic(topic.id);
-          setModeTopicMenuOpen(false);
-          focusDisplayInput();
+      } else {
+        topicsList.forEach((topic) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = `mode-topic-item${topic.id === activeTopicId ? " active" : ""}`;
+          btn.setAttribute("role", "option");
+          btn.setAttribute("aria-selected", topic.id === activeTopicId ? "true" : "false");
+          btn.dataset.topicId = topic.id;
+          btn.innerHTML = `
+            <span class="material-symbols-outlined" style="color: ${topic.color || "inherit"};">${topic.icon || "folder"}</span>
+            <span class="mode-topic-item-name">${escapeHtml(topic.name || "Topic")}</span>
+          `;
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            switchTopic(topic.id);
+            setModeTopicMenuOpen(false);
+            focusDisplayInput();
+          });
+          modeTopicMenu.appendChild(btn);
         });
-        modeTopicMenu.appendChild(btn);
+      }
+      const sep = document.createElement("div");
+      sep.className = "mode-topic-sep";
+      sep.setAttribute("role", "separator");
+      modeTopicMenu.appendChild(sep);
+      const createBtn = document.createElement("button");
+      createBtn.type = "button";
+      createBtn.className = "mode-topic-item mode-topic-create";
+      createBtn.setAttribute("role", "option");
+      createBtn.innerHTML = `
+        <span class="material-symbols-outlined">add</span>
+        <span class="mode-topic-item-name">New topic</span>
+      `;
+      createBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        setModeTopicMenuOpen(false);
+        openCreateTopicModal();
       });
+      modeTopicMenu.appendChild(createBtn);
     }
 
     modeTopicBtn?.addEventListener("click", (e) => {
@@ -1432,33 +1492,59 @@
       renderSoundButtons();
       // Keep the active chat's topic in sync (chats may not be init yet during early load)
       try { if (typeof saveActiveChatSnapshot === "function") saveActiveChatSnapshot(); } catch (_) {}
+      try { if (typeof syncChatUi === "function") syncChatUi(); } catch (_) {}
       closeMobileSidebar();
       focusDisplayInput();
     }
 
     function syncModalGridLabels() {
       const colsEl = document.getElementById("topic-cols-val");
-      const rowsEl = document.getElementById("topic-rows-val");
       if (colsEl) colsEl.textContent = String(modalGridCols);
-      if (rowsEl) rowsEl.textContent = String(modalGridRows);
     }
 
     function stepModalGrid(deltaCols, deltaRows) {
       modalGridCols = clamp(modalGridCols + deltaCols, 1, 12);
-      modalGridRows = clamp(modalGridRows + deltaRows, 1, 8);
+      if (deltaRows) modalGridRows = clamp(modalGridRows + deltaRows, 1, 8);
       syncModalGridLabels();
     }
 
-    document.getElementById("add-topic-sidebar-btn").addEventListener("click", () => {
-      const name = prompt("Enter new topic name:", `Topic ${topicsList.length + 1}`);
-      if (name === null) return;
-      const newTopic = {
-        id: generateId(), name: name.trim() || "New Topic", icon: "folder",
+    function fillTopicEditForm(topic, { isCreate = false } = {}) {
+      const titleEl = document.getElementById("topic-edit-modal-title");
+      if (titleEl) titleEl.textContent = isCreate ? "New Topic" : "Edit Topic Settings";
+      const delBtn = document.getElementById("delete-topic-btn");
+      if (delBtn) delBtn.style.display = isCreate ? "none" : "";
+      $("topic-name-input").value = topic.name || "";
+      $("topic-icon-input").value = topic.icon || "folder";
+      modalGridCols = clamp(parseInt(topic.gridCols, 10) || DEFAULT_GRID_COLS, 1, 12);
+      modalGridRows = clamp(parseInt(topic.gridRows, 10) || DEFAULT_GRID_ROWS, 1, 8);
+      syncModalGridLabels();
+      fillColorPicker($("topic-color-picker"), topic.color);
+    }
+
+    function openCreateTopicModal() {
+      pendingNewTopic = {
+        id: generateId(),
+        name: `Topic ${topicsList.length + 1}`,
+        icon: "folder",
         color: COLOR_PALETTE[topicsList.length % COLOR_PALETTE.length],
-        gridCols: DEFAULT_GRID_COLS, gridRows: DEFAULT_GRID_ROWS, buttons: []
+        gridCols: DEFAULT_GRID_COLS,
+        gridRows: DEFAULT_GRID_ROWS,
+        buttons: []
       };
-      topicsList.push(newTopic); saveTopicsList(); switchTopic(newTopic.id);
-      focusDisplayInput();
+      editingTopicId = pendingNewTopic.id;
+      fillTopicEditForm(pendingNewTopic, { isCreate: true });
+      openModal("topic-edit-modal");
+      requestAnimationFrame(() => {
+        try {
+          const el = $("topic-name-input");
+          el?.focus({ preventScroll: true });
+          el?.select();
+        } catch (_) {}
+      });
+    }
+
+    document.getElementById("add-topic-sidebar-btn").addEventListener("click", () => {
+      openCreateTopicModal();
     });
 
     function normalizeToHex(col) {
@@ -1518,38 +1604,67 @@
     function openTopicEditModal(topicId) {
       const topic = topicsList.find(t => t.id === topicId);
       if (!topic) return;
+      pendingNewTopic = null;
       editingTopicId = topicId;
-      $("topic-name-input").value = topic.name;
-      $("topic-icon-input").value = topic.icon || "folder";
-      modalGridCols = clamp(parseInt(topic.gridCols, 10) || DEFAULT_GRID_COLS, 1, 12);
-      modalGridRows = clamp(parseInt(topic.gridRows, 10) || DEFAULT_GRID_ROWS, 1, 8);
-      syncModalGridLabels();
-      fillColorPicker($("topic-color-picker"), topic.color);
+      fillTopicEditForm(topic, { isCreate: false });
       openModal("topic-edit-modal");
     }
 
+    function cancelTopicEditModal() {
+      pendingNewTopic = null;
+      editingTopicId = null;
+      closeModals();
+    }
+
     $("save-topic-meta-btn").addEventListener("click", () => {
-      const topic = topicsList.find(t => t.id === editingTopicId);
+      const isCreate = !!(pendingNewTopic && pendingNewTopic.id === editingTopicId);
+      let topic = isCreate
+        ? pendingNewTopic
+        : topicsList.find(t => t.id === editingTopicId);
       if (!topic) return;
-      topic.name = trim($("topic-name-input").value) || "Untitled";
+      topic.name = trim($("topic-name-input").value) || (isCreate ? "New Topic" : "Untitled");
       topic.icon = mapSymbol($("topic-icon-input").value, "folder");
       const col = getSelectedPickerColor("topic-color-picker");
       if (col) topic.color = col;
       topic.gridCols = clamp(modalGridCols, 1, 12);
+      // Rows grow with buttons; keep existing/default row count for storage
       topic.gridRows = clamp(modalGridRows, 1, 8);
       repackSequentialGrid(topic);
-      commitTopicsUi();
+      if (isCreate) {
+        topicsList.push(topic);
+        pendingNewTopic = null;
+        saveTopicsList();
+        switchTopic(topic.id);
+      } else {
+        commitTopicsUi();
+        try { if (typeof syncChatUi === "function") syncChatUi(); } catch (_) {}
+      }
       closeModals();
     });
 
     $("delete-topic-btn").addEventListener("click", () => {
+      if (pendingNewTopic) { cancelTopicEditModal(); return; }
       if (topicsList.length === 1) { alert("Cannot delete the last topic."); return; }
       if (!confirm("Are you sure you want to delete this topic and all its buttons?")) return;
       topicsList = topicsList.filter(t => t.id !== editingTopicId);
       if (!topicsList.find(t => t.id === activeTopicId)) activeTopicId = topicsList[0].id;
+      // Remap chats that pointed at the deleted topic
+      try {
+        if (Array.isArray(chats)) {
+          chats.forEach((c, i) => {
+            if (c && c.topicId === editingTopicId) {
+              c.topicId = topicsList[Math.min(i, topicsList.length - 1)].id;
+            }
+          });
+          persistChats();
+        }
+      } catch (_) {}
       commitTopicsUi();
+      try { if (typeof syncChatUi === "function") syncChatUi(); } catch (_) {}
       closeModals();
     });
+
+    document.getElementById("cancel-topic-edit-btn")?.addEventListener("click", cancelTopicEditModal);
 
     // ==================== SOUND BUTTON GRID ====================
     /** Size the canvas height to grid rows / button content (and set fixed track sizes). */
@@ -1623,7 +1738,7 @@
         const isUtteranceBtn = !!(btnData.utteranceText || "").trim();
         const btnColor = btnData.color || "#3f3f4e";
         const btnEl = document.createElement("div");
-        btnEl.className = `sound-button${isOverwriteMode ? " overwrite-target" : ""}${isUtteranceBtn ? " utterance-button" : ""}${!isOverwriteMode ? " speak-layout" : ""}`;
+        btnEl.className = `sound-button${isOverwriteMode ? " overwrite-target" : ""}${isUtteranceBtn ? " utterance-button" : ""}${!isOverwriteMode && featButtonInsert ? " speak-layout" : ""}`;
         btnEl.id = `btn-${btnData.id}`;
         btnEl.style.gridColumn = `${btnData.col + 1} / span ${btnData.colSpan}`;
         btnEl.style.gridRow = `${btnData.row + 1} / span ${btnData.rowSpan}`;
@@ -1649,8 +1764,8 @@
             </div>
           `;
           btnEl.addEventListener("click", () => executeOverwrite(btnData.id));
-        } else {
-          // Main area speaks; tiny + inserts into the message
+        } else if (featButtonInsert) {
+          // Main area speaks; tiny + inserts into the message (Advanced setting)
           btnEl.innerHTML = `
             <button type="button" class="sound-button-main" title="Speak" aria-label="Speak ${label}">
               <div class="sound-button-inner">
@@ -1670,6 +1785,20 @@
             e.stopPropagation();
             insertTextAtDisplayCaret(insertText);
             announceLive(`Inserted ${label}`);
+          });
+        } else {
+          // Full button speaks (default — insert + is an Advanced option)
+          btnEl.innerHTML = `
+            <button type="button" class="sound-button-main" title="Speak" aria-label="Speak ${label}" style="padding:0 8px;">
+              <div class="sound-button-inner">
+                ${symbolPart}
+                <div class="sound-button-label">${label}</div>
+              </div>
+            </button>
+          `;
+          btnEl.querySelector(".sound-button-main")?.addEventListener("click", (e) => {
+            e.stopPropagation();
+            playSpeechSource(btnData);
           });
         }
         soundCanvas.appendChild(btnEl);
@@ -1883,7 +2012,7 @@
       const toolbar = document.getElementById("insert-toolbar");
       if (!strip || !chips) return;
       chips.innerHTML = "";
-      if (!recentPhrases.length) {
+      if (!featRecents || !recentPhrases.length) {
         strip.classList.remove("has-items");
         toolbar?.classList.remove("has-items");
         return;
@@ -2094,8 +2223,13 @@
       const strip = document.getElementById("compose-strip");
       const chips = document.getElementById("compose-chips");
       if (!strip || !chips) return;
-      const tokens = tokenizeDisplayWords(getText());
       chips.innerHTML = "";
+      if (!featMessageWords) {
+        strip.classList.remove("has-items");
+        strip.classList.remove("has-audio");
+        return;
+      }
+      const tokens = tokenizeDisplayWords(getText());
       if (!tokens.length) {
         strip.classList.remove("has-items");
         return;
@@ -2351,10 +2485,48 @@
         assignBtn.classList.toggle("is-disabled", !hasText);
         assignBtn.title = hasText ? "Assign to button" : "Type something to assign";
       }
-      const showAudio = replayOk;
+      const showAudio = featMessageWords && replayOk;
       if (audioActionsBar) audioActionsBar.classList.toggle("active", showAudio);
       // Keep Message row visible when Replay is shown even if chips are empty
       document.getElementById("compose-strip")?.classList.toggle("has-audio", showAudio);
+    }
+
+    /** Apply Advanced feature flags to body attrs, checkboxes, and related UI. */
+    function applyAdvancedFeatures() {
+      document.body.dataset.featMessageWords = featMessageWords ? "1" : "0";
+      document.body.dataset.featRecents = featRecents ? "1" : "0";
+      document.body.dataset.featButtonInsert = featButtonInsert ? "1" : "0";
+      document.body.dataset.featInsertTag = featInsertTag ? "1" : "0";
+      const mw = document.getElementById("opt-message-words");
+      const rec = document.getElementById("opt-recents");
+      const ins = document.getElementById("opt-button-insert");
+      const tag = document.getElementById("opt-insert-tag");
+      if (mw) mw.checked = featMessageWords;
+      if (rec) rec.checked = featRecents;
+      if (ins) ins.checked = featButtonInsert;
+      if (tag) tag.checked = featInsertTag;
+      syncComposeStrip();
+      syncGeneratedAudioActions();
+      renderRecentsStrip();
+      renderSoundButtons();
+    }
+
+    function setFeatureFlag(which, enabled) {
+      const on = !!enabled;
+      if (which === "messageWords") {
+        featMessageWords = on;
+        lsSet(FEAT_MESSAGE_WORDS_KEY, on ? "1" : "0");
+      } else if (which === "recents") {
+        featRecents = on;
+        lsSet(FEAT_RECENTS_KEY, on ? "1" : "0");
+      } else if (which === "buttonInsert") {
+        featButtonInsert = on;
+        lsSet(FEAT_BUTTON_INSERT_KEY, on ? "1" : "0");
+      } else if (which === "insertTag") {
+        featInsertTag = on;
+        lsSet(FEAT_INSERT_TAG_KEY, on ? "1" : "0");
+      }
+      applyAdvancedFeatures();
     }
 
     displayInput.addEventListener("input", () => {
@@ -2364,21 +2536,28 @@
     });
 
     /**
-     * Three chats (1 / 2 / 3). Each stores:
+     * Three chats linked to topics. Each stores:
      *  - text (compose box)
-     *  - active topic id
+     *  - active topic id (chip shows that topic's icon + color)
      *  - recent phrases for that chat
+     * Defaults: chat i → topicsList[i] (Everyday / Needs / Feelings on first run).
      */
     const CHAT_COUNT = 3;
-    const CHAT_LABELS = ["1", "2", "3"];
     const CHATS_STORAGE_KEY = "aac_chats";
     const ACTIVE_CHAT_KEY = "aac_active_chat";
     const chatSlotsEl = document.getElementById("chat-slots");
 
+    function defaultTopicIdForChat(index) {
+      const i = clamp(index, 0, Math.max(0, topicsList.length - 1));
+      return (topicsList[i] && topicsList[i].id)
+        || (topicsList[0] && topicsList[0].id)
+        || null;
+    }
+
     function emptyChat(topicId = null) {
       return {
         text: "",
-        topicId: topicId || (topicsList[0] && topicsList[0].id) || null,
+        topicId: topicId || defaultTopicIdForChat(0),
         recents: []
       };
     }
@@ -2387,7 +2566,7 @@
       if (typeof raw === "string") {
         return {
           text: raw,
-          topicId: fallbackTopicId || (topicsList[0] && topicsList[0].id) || null,
+          topicId: fallbackTopicId || defaultTopicIdForChat(0),
           recents: []
         };
       }
@@ -2397,24 +2576,30 @@
         : [];
       return {
         text: raw.text == null ? "" : String(raw.text),
-        topicId: raw.topicId || fallbackTopicId || (topicsList[0] && topicsList[0].id) || null,
+        topicId: raw.topicId || fallbackTopicId || defaultTopicIdForChat(0),
         recents
       };
     }
 
     function loadChatsFromStorage() {
       const raw = lsGetJson(CHATS_STORAGE_KEY, null);
-      const defaultTopic = activeTopicId || (topicsList[0] && topicsList[0].id) || null;
       if (Array.isArray(raw) && raw.length) {
-        return Array.from({ length: CHAT_COUNT }, (_, i) => normalizeChat(raw[i], defaultTopic));
+        return Array.from({ length: CHAT_COUNT }, (_, i) =>
+          normalizeChat(raw[i], defaultTopicIdForChat(i))
+        );
       }
-      // First run: seed chat 1 from current workspace; leave 2 & 3 empty
-      const seed = {
-        text: "",
-        topicId: defaultTopic,
-        recents: Array.isArray(recentPhrases) ? recentPhrases.slice() : []
-      };
-      return [seed, emptyChat(defaultTopic), emptyChat(defaultTopic)];
+      // First run: chat tabs map to the three default topics
+      return Array.from({ length: CHAT_COUNT }, (_, i) => {
+        const tid = defaultTopicIdForChat(i);
+        if (i === 0) {
+          return {
+            text: "",
+            topicId: tid,
+            recents: Array.isArray(recentPhrases) ? recentPhrases.slice() : []
+          };
+        }
+        return emptyChat(tid);
+      });
     }
 
     let chats = loadChatsFromStorage();
@@ -2459,21 +2644,36 @@
       chips.forEach((chip) => {
         const idx = parseInt(chip.getAttribute("data-chat"), 10);
         if (!Number.isFinite(idx)) return;
-        const label = CHAT_LABELS[idx] || String(idx + 1);
         const chat = idx === activeChat
           ? { text: getText(), topicId: activeTopicId, recents: recentPhrases }
           : chats[idx];
         const filled = chatHasContent(chat);
-        const topic = topicsList.find((t) => t.id === chat?.topicId);
-        const topicName = topic?.name || "topic";
+        const topic = topicsList.find((t) => t.id === chat?.topicId)
+          || topicsList[idx]
+          || topicsList[0]
+          || null;
+        const topicName = topic?.name || `Chat ${idx + 1}`;
+        const icon = topic?.icon || "folder";
+        const color = topic?.color || "";
         chip.classList.toggle("active", idx === activeChat);
         chip.classList.toggle("has-text", filled);
         chip.setAttribute("aria-pressed", idx === activeChat ? "true" : "false");
-        chip.title = `Chat ${label}${idx === activeChat ? " (current)" : ""} · ${topicName}: ${previewSnippet(chat?.text)}`;
+        chip.title = `${topicName}${idx === activeChat ? " (current)" : ""}: ${previewSnippet(chat?.text)}`;
         chip.setAttribute(
           "aria-label",
-          `Chat ${label}${idx === activeChat ? ", current" : ""}${filled ? "" : ", empty"}`
+          `${topicName}${idx === activeChat ? ", current chat" : ""}${filled ? "" : ", empty"}`
         );
+        let iconEl = chip.querySelector(".chat-chip-icon");
+        if (!iconEl) {
+          chip.innerHTML = "";
+          iconEl = document.createElement("span");
+          iconEl.className = "material-symbols-outlined chat-chip-icon";
+          chip.appendChild(iconEl);
+        }
+        iconEl.textContent = icon;
+        iconEl.style.color = color || "";
+        if (color) chip.style.setProperty("--chat-topic-color", color);
+        else chip.style.removeProperty("--chat-topic-color");
       });
     }
 
@@ -3313,6 +3513,7 @@
       editingButtonId = null;
       editingButtonTopicId = null;
       editingTopicId = null;
+      pendingNewTopic = null;
       iconStudioReturnModalId = null;
       // Don't steal focus while another non-modal panel might be open
       try { focusDisplayInput(); } catch (_) {}
@@ -3594,63 +3795,61 @@
 
     const apiKeyBtn = document.getElementById("api-key-btn");
     const apiKeyInput = document.getElementById("api-key-input");
+    /** When set, closing the API key modal returns here (e.g. advanced settings). */
+    let apiKeyReturnModalId = null;
 
     function updateApiKeyStatus() {
       const key = lsGet("elevenlabs_key", "") || "";
-      const label = apiKeyBtn.querySelector(".status-btn-text");
+      const label = apiKeyBtn?.querySelector(".status-btn-text");
       const hasKey = !!key;
       if (label) {
         label.innerHTML = hasKey
           ? `<span class="material-symbols-outlined icon-small icon-btn-margin">key</span>API Key Saved (••••${key.slice(-4)})`
           : `<span class="material-symbols-outlined icon-small icon-btn-margin">key</span>Missing API Key (Click to Add)`;
       }
-      apiKeyBtn.classList.toggle("missing", !hasKey);
-      apiKeyBtn.classList.toggle("saved", hasKey);
+      if (apiKeyBtn) {
+        apiKeyBtn.classList.toggle("missing", !hasKey);
+        apiKeyBtn.classList.toggle("saved", hasKey);
+      }
       if (hasKey) fetchElevenVoices(key);
       else elevenVoicesCache = [];
     }
 
     function openApiKeyModal() {
+      apiKeyReturnModalId = document.getElementById("modal-advanced-settings")?.classList.contains("open")
+        ? "modal-advanced-settings"
+        : null;
       if (apiKeyInput) apiKeyInput.value = lsGet("elevenlabs_key", "") || "";
       openModal("api-key-modal");
       requestAnimationFrame(() => { try { apiKeyInput?.focus(); } catch (_) {} });
     }
 
-    function saveApiKeyFromModal() {
-      lsSet("elevenlabs_key", trim(apiKeyInput?.value));
-      updateApiKeyStatus();
-      closeModals();
+    function closeApiKeyModal(saved) {
+      if (saved) {
+        lsSet("elevenlabs_key", trim(apiKeyInput?.value));
+        updateApiKeyStatus();
+      }
+      const returnTo = apiKeyReturnModalId;
+      apiKeyReturnModalId = null;
+      if (returnTo) {
+        openModal(returnTo);
+      } else {
+        closeModals();
+      }
     }
 
-    apiKeyBtn.addEventListener("click", openApiKeyModal);
+    function saveApiKeyFromModal() {
+      closeApiKeyModal(true);
+    }
+
+    apiKeyBtn?.addEventListener("click", openApiKeyModal);
     document.getElementById("save-api-key-btn")?.addEventListener("click", saveApiKeyFromModal);
+    document.getElementById("cancel-api-key-btn")?.addEventListener("click", () => closeApiKeyModal(false));
     apiKeyInput?.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
         saveApiKeyFromModal();
       }
-    });
-
-    // ==================== LARGER TOUCH TARGETS ====================
-    let largeTouchTargets = lsGet("aac_large_targets", "") === "1";
-
-    function applyTouchSize(enabled, { persist = true } = {}) {
-      largeTouchTargets = !!enabled;
-      document.body.dataset.touchSize = largeTouchTargets ? "large" : "normal";
-      if (persist) lsSet("aac_large_targets", largeTouchTargets ? "1" : "0");
-      const toggle = document.getElementById("large-targets-toggle");
-      if (toggle) toggle.checked = largeTouchTargets;
-      // Grid height depends on --sound-row-height
-      try {
-        const active = getActiveTopic();
-        if (active) autosizeSoundCanvas(active);
-        renderSoundButtons();
-        syncSpeakClearToDisplayHeight();
-      } catch (_) {}
-    }
-
-    document.getElementById("large-targets-toggle")?.addEventListener("change", (e) => {
-      applyTouchSize(!!e.target.checked);
     });
 
     function syncOfflineBanner() {
@@ -3673,7 +3872,6 @@
     function init() {
       applyTheme(currentTheme);
       applyGlobalIconStyles();
-      applyTouchSize(largeTouchTargets, { persist: false });
       syncOfflineBanner();
       window.addEventListener("online", syncOfflineBanner);
       window.addEventListener("offline", syncOfflineBanner);
@@ -3687,7 +3885,23 @@
       updateSettingsVisibility();
       updateApiKeyStatus();
 
-      // Speaker / output device picker
+      // Advanced settings modal: optional features + speaker / output device
+      document.getElementById("open-advanced-settings-btn")?.addEventListener("click", () => {
+        openModal("modal-advanced-settings");
+        refreshOutputDevices();
+      });
+      document.getElementById("opt-message-words")?.addEventListener("change", (e) => {
+        setFeatureFlag("messageWords", e.target.checked);
+      });
+      document.getElementById("opt-recents")?.addEventListener("change", (e) => {
+        setFeatureFlag("recents", e.target.checked);
+      });
+      document.getElementById("opt-button-insert")?.addEventListener("change", (e) => {
+        setFeatureFlag("buttonInsert", e.target.checked);
+      });
+      document.getElementById("opt-insert-tag")?.addEventListener("change", (e) => {
+        setFeatureFlag("insertTag", e.target.checked);
+      });
       const outputSelect = document.getElementById("output-device-select");
       if (outputSelect) {
         outputSelect.addEventListener("change", (e) => {
@@ -3746,9 +3960,7 @@
       }
 
       renderTopics();
-      renderSoundButtons();
-      renderRecentsStrip();
-      syncComposeStrip();
+      applyAdvancedFeatures();
       // Restore sidebar route from hash (default #/topics)
       {
         const initialTab = tabFromHash();
