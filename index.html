@@ -177,25 +177,30 @@
 
   <!-- ==================== MAIN WORKSPACE ==================== -->
   <main class="app-main">
-    <div class="workspace-header">
-      <button class="icon-btn mobile-only mobile-menu-btn" id="mobile-menu-btn" type="button" title="Open menu" aria-label="Open menu">
-        <span class="material-symbols-outlined logo-mark">record_voice_over</span>
+    <div class="workspace-header-shell" id="workspace-header-shell" data-expanded="0">
+      <button type="button" class="header-expand-handle" id="header-expand-handle" aria-expanded="false" aria-controls="workspace-header" title="Show chats" aria-label="Show chats">
+        <span class="material-symbols-outlined">expand_more</span>
       </button>
-      <div class="chat-slots" id="chat-slots" role="group" aria-label="New message, chats, and assign">
-        <button type="button" class="chat-chip new-message-btn" id="new-message-btn" title="New message" aria-label="New message — clear text">
-          <span class="material-symbols-outlined">edit_square</span>
+      <div class="workspace-header" id="workspace-header">
+        <button class="icon-btn mobile-only mobile-menu-btn" id="mobile-menu-btn" type="button" title="Open menu" aria-label="Open menu">
+          <span class="material-symbols-outlined logo-mark">record_voice_over</span>
         </button>
-        <button type="button" class="chat-chip active" data-chat="0" title="Chat" aria-label="Chat" aria-pressed="true">
-          <span class="material-symbols-outlined chat-chip-icon">chat</span>
-        </button>
-        <button type="button" class="chat-chip" data-chat="1" title="Chat" aria-label="Chat" aria-pressed="false">
-          <span class="material-symbols-outlined chat-chip-icon">medical_services</span>
-        </button>
-        <button type="button" class="chat-chip" data-chat="2" title="Chat" aria-label="Chat" aria-pressed="false">
-          <span class="material-symbols-outlined chat-chip-icon">sentiment_satisfied</span>
-        </button>
-        <button type="button" class="chat-chip chat-assign-btn" id="textarea-assign-btn" title="Assign to button" aria-label="Assign to button">
-          <span class="material-symbols-outlined">push_pin</span>
+        <div class="chat-slots" id="chat-slots" role="group" aria-label="Chats">
+          <button type="button" class="chat-chip active is-topic-dropdown" data-chat="0" title="Chat" aria-label="Chat" aria-pressed="true" aria-haspopup="listbox" aria-expanded="false">
+            <span class="material-symbols-outlined chat-chip-icon">chat</span>
+            <span class="chat-chip-name"></span>
+            <span class="material-symbols-outlined chat-chip-caret" aria-hidden="true">expand_more</span>
+          </button>
+          <button type="button" class="chat-chip" data-chat="1" title="Chat" aria-label="Chat" aria-pressed="false">
+            <span class="material-symbols-outlined chat-chip-icon">medical_services</span>
+          </button>
+          <button type="button" class="chat-chip" data-chat="2" title="Chat" aria-label="Chat" aria-pressed="false">
+            <span class="material-symbols-outlined chat-chip-icon">sentiment_satisfied</span>
+          </button>
+          <div class="header-topic-menu mode-topic-menu" id="header-topic-menu" role="listbox" aria-label="Topics" hidden></div>
+        </div>
+        <button type="button" class="icon-btn header-collapse-btn" id="header-collapse-btn" title="Collapse top bar" aria-label="Collapse top bar">
+          <span class="material-symbols-outlined">close</span>
         </button>
       </div>
     </div>
@@ -214,9 +219,10 @@
       </div>
       <ol>
         <li><strong>Menu</strong> — <span class="material-symbols-outlined coach-inline-icon">record_voice_over</span> <strong>logo</strong> opens the menu drawer (Settings, History, Topics).</li>
-        <li><strong>Chats</strong> — <span class="material-symbols-outlined coach-inline-icon">edit_square</span> <strong>new message</strong> clears the text box; <span class="material-symbols-outlined coach-inline-icon">looks_one</span><span class="material-symbols-outlined coach-inline-icon">looks_two</span><span class="material-symbols-outlined coach-inline-icon">looks_3</span> <strong>icons</strong> switch chats; <span class="material-symbols-outlined coach-inline-icon">push_pin</span> <strong>pin</strong> assigns text in the box to a button.</li>
+        <li><strong>Top bar</strong> — pull the <span class="material-symbols-outlined coach-inline-icon">expand_more</span> <strong>chevron</strong> or swipe down to show chats; <span class="material-symbols-outlined coach-inline-icon">close</span> collapses it.</li>
+        <li><strong>Chats &amp; topics</strong> — inactive chat icons switch conversations; the <strong>active</strong> chat opens the topics menu (switch, edit, or new topic).</li>
         <li><strong>Sounds</strong> — <span class="material-symbols-outlined coach-inline-icon">grid_view</span> <strong>buttons</strong> play their audio.</li>
-        <li><strong>Text box</strong> — <span class="material-symbols-outlined coach-inline-icon">pin_history</span> <strong>selector</strong> switches soundboard for this chat; <span class="material-symbols-outlined coach-inline-icon">keyboard</span> <strong>type</strong> in the box; <span class="material-symbols-outlined coach-inline-icon">volume_up</span> <strong>speaker</strong> speaks (or press Enter).</li>
+        <li><strong>Text box</strong> — <span class="material-symbols-outlined coach-inline-icon">more_horiz</span> <strong>Actions</strong> for new message, pin, replay, tags, and history; <span class="material-symbols-outlined coach-inline-icon">volume_up</span> <strong>speaker</strong> speaks (or press Enter).</li>
       </ol>
       <div class="coach-banner-actions">
         <button type="button" class="modal-btn secondary" id="coach-dismiss-btn">Got it</button>
@@ -234,16 +240,32 @@
       <div class="bottom-dock">
         <div class="compose-box" id="toolbar">
           <div class="compose-row">
-            <button type="button" class="compose-icon-btn" id="insert-tag-btn" aria-label="Insert tag" title="Insert tag">
-              <span class="material-symbols-outlined">add</span>
-            </button>
-            <div class="compose-mode-wrap">
-              <button type="button" class="compose-mode-btn" id="mode-topic-btn" aria-haspopup="listbox" aria-expanded="false" title="Switch topic">
-                <span class="material-symbols-outlined compose-mode-icon" id="mode-topic-icon">pin_history</span>
-                <span class="compose-mode-label" id="mode-topic-label">Topics</span>
-                <span class="material-symbols-outlined compose-mode-caret">expand_more</span>
-              </button>
-              <div class="mode-topic-menu" id="mode-topic-menu" role="listbox" aria-label="Topics" hidden></div>
+            <div class="compose-leading" id="compose-leading">
+              <div class="compose-quick-actions" id="compose-quick-actions" aria-label="Quick actions">
+                <button type="button" class="compose-icon-btn compose-standalone" id="compose-new-message-btn" aria-label="New message" title="New message">
+                  <span class="material-symbols-outlined">edit_square</span>
+                </button>
+                <button type="button" class="compose-icon-btn compose-standalone" id="compose-pin-btn" aria-label="Pin to button" title="Pin message to button">
+                  <span class="material-symbols-outlined">push_pin</span>
+                </button>
+                <button type="button" class="compose-icon-btn compose-standalone" id="compose-replay-btn" aria-label="Replay message" title="Replay message">
+                  <span class="material-symbols-outlined">replay</span>
+                </button>
+                <button type="button" class="compose-icon-btn compose-standalone" id="insert-tag-btn" aria-label="Insert tag" title="Insert tag">
+                  <span class="material-symbols-outlined">add</span>
+                </button>
+                <button type="button" class="compose-icon-btn compose-standalone" id="compose-history-btn" aria-label="View history" title="View history">
+                  <span class="material-symbols-outlined">history</span>
+                </button>
+              </div>
+              <div class="compose-actions-wrap" id="compose-actions-wrap">
+                <button type="button" class="compose-mode-btn" id="compose-actions-btn" aria-haspopup="menu" aria-expanded="false" title="Message actions">
+                  <span class="material-symbols-outlined compose-mode-icon">more_horiz</span>
+                  <span class="compose-mode-label">Actions</span>
+                  <span class="material-symbols-outlined compose-mode-caret">expand_more</span>
+                </button>
+                <div class="compose-actions-menu mode-topic-menu" id="compose-actions-menu" role="menu" aria-label="Message actions" hidden></div>
+              </div>
             </div>
             <textarea class="display-textarea" id="display-input" spellcheck="true" autocomplete="off" autocapitalize="sentences" placeholder="Type anything…" rows="1" aria-label="Message text"></textarea>
             <button type="button" class="compose-speak-btn display-ctrl key tts-btn" id="speak-btn" aria-label="Speak" title="Speak text (or selection). Click again to stop.">
@@ -344,12 +366,42 @@
           </span>
           <input type="checkbox" id="opt-button-insert" class="setting-toggle-input">
         </label>
+        <div class="modal-description advanced-settings-section-label">Compose quick actions</div>
+        <div class="modal-description advanced-settings-section-hint">Each can also open from the Actions menu. Turn on to show a stand-alone button next to the text box.</div>
+        <label class="setting-toggle-row" for="opt-compose-new">
+          <span class="setting-toggle-text">
+            <span class="setting-toggle-title">New message button</span>
+            <span class="setting-toggle-desc">Clear the text box with one tap</span>
+          </span>
+          <input type="checkbox" id="opt-compose-new" class="setting-toggle-input">
+        </label>
+        <label class="setting-toggle-row" for="opt-compose-pin">
+          <span class="setting-toggle-text">
+            <span class="setting-toggle-title">Pin to button</span>
+            <span class="setting-toggle-desc">Assign message text to a sound button</span>
+          </span>
+          <input type="checkbox" id="opt-compose-pin" class="setting-toggle-input">
+        </label>
+        <label class="setting-toggle-row" for="opt-compose-replay">
+          <span class="setting-toggle-text">
+            <span class="setting-toggle-title">Replay button</span>
+            <span class="setting-toggle-desc">Replay the last spoken message when it still matches</span>
+          </span>
+          <input type="checkbox" id="opt-compose-replay" class="setting-toggle-input">
+        </label>
         <label class="setting-toggle-row" for="opt-insert-tag">
           <span class="setting-toggle-text">
             <span class="setting-toggle-title">Insert tag button</span>
-            <span class="setting-toggle-desc">Show + in the text box to insert [tags]</span>
+            <span class="setting-toggle-desc">Show + next to the text box to insert [tags]</span>
           </span>
           <input type="checkbox" id="opt-insert-tag" class="setting-toggle-input">
+        </label>
+        <label class="setting-toggle-row" for="opt-compose-history">
+          <span class="setting-toggle-text">
+            <span class="setting-toggle-title">History button</span>
+            <span class="setting-toggle-desc">Open speech history from the text box</span>
+          </span>
+          <input type="checkbox" id="opt-compose-history" class="setting-toggle-input">
         </label>
         <div class="sidebar-setting-group" id="group-output-device">
           <label>Speaker / Output Device</label>
@@ -361,6 +413,51 @@
       </div>
     </div>
     <div class="modal-buttons">
+      <button class="modal-btn secondary" type="button" onclick="closeModals()">Close</button>
+    </div>
+  </div>
+
+  <!-- New topic: scratch vs template -->
+  <div class="modal" id="modal-topic-create-choice">
+    <div class="modal-title">New topic</div>
+    <div class="modal-scroll">
+      <div class="modal-description">Start empty, or copy an existing board as a template.</div>
+      <div class="modal-choice-group">
+        <button class="status-btn" id="topic-create-scratch-btn" type="button">
+          <span class="material-symbols-outlined icon-medium icon-btn-margin">note_add</span>
+          Create from scratch
+        </button>
+        <button class="status-btn" id="topic-create-template-btn" type="button">
+          <span class="material-symbols-outlined icon-medium icon-btn-margin">content_copy</span>
+          Use existing topic as template
+        </button>
+      </div>
+    </div>
+    <div class="modal-buttons"><button class="modal-btn secondary" type="button" onclick="closeModals()">Cancel</button></div>
+  </div>
+
+  <!-- Pick a topic to clone -->
+  <div class="modal" id="modal-topic-template-pick">
+    <div class="modal-title">Choose template</div>
+    <div class="modal-scroll">
+      <div class="modal-description">Buttons, layout, and styling will be copied. You can rename the new topic next.</div>
+      <div class="modal-choice-group" id="topic-template-list"></div>
+    </div>
+    <div class="modal-buttons"><button class="modal-btn secondary" type="button" id="topic-template-back-btn">Back</button></div>
+  </div>
+
+  <!-- Speech history modal -->
+  <div class="modal" id="modal-history">
+    <div class="modal-title">Speech history</div>
+    <div class="modal-scroll">
+      <div class="history-search-box">
+        <span class="material-symbols-outlined search-icon">search</span>
+        <input type="text" id="modal-history-search-input" placeholder="Search speech history…">
+      </div>
+      <div class="history-list modal-history-list" id="modal-audio-history"></div>
+    </div>
+    <div class="modal-buttons">
+      <button class="modal-btn danger" type="button" id="modal-clear-history-btn">Clear all</button>
       <button class="modal-btn secondary" type="button" onclick="closeModals()">Close</button>
     </div>
   </div>
@@ -394,13 +491,22 @@
         <input type="text" id="topic-name-input" class="modal-input" placeholder="Topic name" maxlength="30">
       </div>
       <div class="sidebar-setting-group">
-        <label>Material Symbol Icon</label>
-        <input type="text" id="topic-icon-input" class="modal-input icon-name-input input-margin-bottom" maxlength="48" spellcheck="false" autocomplete="off" aria-label="Topic icon">
-        <button class="status-btn btn-center" onclick="openIconStudio('topic-icon-input')" type="button"><span class="material-symbols-outlined icon-small icon-btn-margin">search</span> Open Icon Studio Picker...</button>
+        <label for="topic-icon-input">Material Symbol Icon</label>
+        <div class="icon-field-row">
+          <input type="text" id="topic-icon-input" class="modal-input icon-name-input" maxlength="48" spellcheck="false" autocomplete="off" aria-label="Topic icon">
+          <button class="icon-studio-inline-btn" onclick="openIconStudio('topic-icon-input')" type="button" title="Open Icon Studio" aria-label="Open Icon Studio">
+            <span class="material-symbols-outlined">search</span>
+          </button>
+        </div>
       </div>
       <div class="sidebar-setting-group">
         <label>Color Accent</label>
         <div class="modal-color-picker" id="topic-color-picker"></div>
+      </div>
+      <div class="sidebar-setting-group" id="topic-buttons-organizer-group">
+        <label>Sound buttons</label>
+        <div class="modal-description">Drag to reorder. Tap a button to edit. Use × to remove. Changes apply when you Save.</div>
+        <div class="topic-btn-organizer" id="topic-btn-organizer" role="list" aria-label="Sound buttons layout"></div>
       </div>
       <div class="sidebar-setting-group">
         <label>Columns</label>
@@ -432,9 +538,13 @@
         <input type="text" id="button-label-input" class="modal-input" placeholder="Button label" maxlength="30">
       </div>
       <div class="sidebar-setting-group">
-        <label>Symbol (optional)</label>
-        <input type="text" id="button-symbol-input" class="modal-input icon-name-input input-margin-bottom" maxlength="48" spellcheck="false" autocomplete="off" placeholder="" aria-label="Button symbol">
-        <button class="status-btn btn-center" onclick="openIconStudio('button-symbol-input')" type="button"><span class="material-symbols-outlined icon-small icon-btn-margin">search</span> Open Icon Studio Picker...</button>
+        <label for="button-symbol-input">Symbol (optional)</label>
+        <div class="icon-field-row">
+          <input type="text" id="button-symbol-input" class="modal-input icon-name-input" maxlength="48" spellcheck="false" autocomplete="off" placeholder="" aria-label="Button symbol">
+          <button class="icon-studio-inline-btn" onclick="openIconStudio('button-symbol-input')" type="button" title="Open Icon Studio" aria-label="Open Icon Studio">
+            <span class="material-symbols-outlined">search</span>
+          </button>
+        </div>
       </div>
       <div class="sidebar-setting-group">
         <label>Color</label>

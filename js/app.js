@@ -175,6 +175,10 @@
     const FEAT_RECENTS_KEY = "aac_feat_recents";
     const FEAT_BUTTON_INSERT_KEY = "aac_feat_button_insert";
     const FEAT_INSERT_TAG_KEY = "aac_feat_insert_tag";
+    const FEAT_COMPOSE_NEW_KEY = "aac_feat_compose_new";
+    const FEAT_COMPOSE_PIN_KEY = "aac_feat_compose_pin";
+    const FEAT_COMPOSE_REPLAY_KEY = "aac_feat_compose_replay";
+    const FEAT_COMPOSE_HISTORY_KEY = "aac_feat_compose_history";
     const lsGetBool = (key, defaultVal = false) => {
       const v = lsGet(key, null);
       if (v == null || v === "") return defaultVal;
@@ -184,6 +188,11 @@
     let featRecents = lsGetBool(FEAT_RECENTS_KEY, false);
     let featButtonInsert = lsGetBool(FEAT_BUTTON_INSERT_KEY, false);
     let featInsertTag = lsGetBool(FEAT_INSERT_TAG_KEY, false);
+    let featComposeNew = lsGetBool(FEAT_COMPOSE_NEW_KEY, false);
+    let featComposePin = lsGetBool(FEAT_COMPOSE_PIN_KEY, false);
+    let featComposeReplay = lsGetBool(FEAT_COMPOSE_REPLAY_KEY, false);
+    let featComposeHistory = lsGetBool(FEAT_COMPOSE_HISTORY_KEY, false);
+    let headerExpanded = false;
     /** Saved caret in #display-input so programmatic refocus restores it. */
     let savedDisplaySelection = { start: null, end: null };
     /** Active Web Audio buffer sources (stop previous speech when starting new). */
@@ -269,6 +278,8 @@
     let editingTopicId = null;
     /** Draft topic object when creating (not yet in topicsList). */
     let pendingNewTopic = null;
+    /** Draft sound buttons while topic edit modal is open (reorder/remove). */
+    let modalButtonsDraft = null;
     /** Draft grid size while the topic edit modal is open */
     let modalGridCols = DEFAULT_GRID_COLS;
     let modalGridRows = DEFAULT_GRID_ROWS;
@@ -976,11 +987,15 @@
       sidebarBackdrop.addEventListener("click", () => closeMobileSidebar());
     }
 
-    // Escape closes topic mode menu / mobile drawer / voices panel
+    // Escape closes header/compose menus / mobile drawer / voices panel
     document.addEventListener("keydown", (e) => {
       if (e.key !== "Escape") return;
-      if (isModeTopicMenuOpen()) {
-        setModeTopicMenuOpen(false);
+      if (typeof isHeaderTopicMenuOpen === "function" && isHeaderTopicMenuOpen()) {
+        setHeaderTopicMenuOpen(false);
+        return;
+      }
+      if (typeof isComposeActionsMenuOpen === "function" && isComposeActionsMenuOpen()) {
+        setComposeActionsMenuOpen(false);
         return;
       }
       const voicesPanel = document.getElementById("voices-panel");
@@ -1302,50 +1317,150 @@
     /** Topic ids currently expanded in the Topics sidebar list (independent of active topic). */
     let expandedTopicIds = new Set([activeTopicId]);
 
-    // ---- Compose "Mode" topic picker (Grok-style) ----
-    const modeTopicBtn = document.getElementById("mode-topic-btn");
-    const modeTopicMenu = document.getElementById("mode-topic-menu");
-    const modeTopicLabel = document.getElementById("mode-topic-label");
-    const modeTopicIcon = document.getElementById("mode-topic-icon");
+    // ---- Collapsible workspace header ----
+    const headerShell = document.getElementById("workspace-header-shell");
+    const headerExpandHandle = document.getElementById("header-expand-handle");
+    const headerCollapseBtn = document.getElementById("header-collapse-btn");
+    const headerTopicMenu = document.getElementById("header-topic-menu");
 
-    function isModeTopicMenuOpen() {
-      return !!(modeTopicMenu && !modeTopicMenu.hidden);
+    function getActiveChatChip() {
+      const slots = document.getElementById("chat-slots");
+      if (!slots) return null;
+      return slots.querySelector(`.chat-chip[data-chat="${activeChat}"]`)
+        || slots.querySelector(".chat-chip.active");
     }
 
-    function setModeTopicMenuOpen(open) {
-      if (!modeTopicMenu || !modeTopicBtn) return;
-      modeTopicMenu.hidden = !open;
-      modeTopicBtn.setAttribute("aria-expanded", open ? "true" : "false");
-      if (open) renderModeTopicMenu();
-      syncModeTopicButton();
+    function syncHeaderChrome() {
+      if (!headerShell) return;
+      headerShell.dataset.expanded = headerExpanded ? "1" : "0";
+      if (headerExpandHandle) {
+        headerExpandHandle.setAttribute("aria-expanded", headerExpanded ? "true" : "false");
+        headerExpandHandle.title = "Show chats";
+        headerExpandHandle.setAttribute("aria-label", "Show chats");
+      }
     }
 
+    function setHeaderExpanded(open) {
+      headerExpanded = !!open;
+      syncHeaderChrome();
+      if (!headerExpanded) setHeaderTopicMenuOpen(false);
+    }
+
+    headerExpandHandle?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setHeaderExpanded(true);
+    });
+    headerCollapseBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setHeaderExpanded(false);
+    });
+
+    // Swipe down on shell to expand; swipe up on expanded header to collapse
+    (function setupHeaderSwipe() {
+      if (!headerShell) return;
+      let startY = null;
+      let startX = null;
+      const THRESH = 40;
+      const onStart = (e) => {
+        const t = e.touches?.[0];
+        if (!t) return;
+        startY = t.clientY;
+        startX = t.clientX;
+      };
+      const onEnd = (e) => {
+        if (startY == null) return;
+        const t = e.changedTouches?.[0];
+        if (!t) { startY = null; return; }
+        const dy = t.clientY - startY;
+        const dx = Math.abs(t.clientX - (startX || 0));
+        startY = null;
+        startX = null;
+        if (dx > Math.abs(dy) || Math.abs(dy) < THRESH) return;
+        if (dy > 0) setHeaderExpanded(true);
+        else setHeaderExpanded(false);
+      };
+      headerShell.addEventListener("touchstart", onStart, { passive: true });
+      headerShell.addEventListener("touchend", onEnd, { passive: true });
+    })();
+
+    syncHeaderChrome();
+
+    // ---- Topics dropdown (anchored to the active chat chip) ----
+    function isHeaderTopicMenuOpen() {
+      return !!(headerTopicMenu && !headerTopicMenu.hidden);
+    }
+
+    /** Place the topics menu with fixed coords so app-main overflow cannot clip it. */
+    function positionHeaderTopicMenu() {
+      const anchor = getActiveChatChip();
+      if (!headerTopicMenu || !anchor || headerTopicMenu.hidden) return;
+      const pad = 8;
+      const r = anchor.getBoundingClientRect();
+      const menuW = Math.min(320, Math.max(200, window.innerWidth - pad * 2));
+      let left = r.left + (r.width / 2) - (menuW / 2);
+      if (left + menuW > window.innerWidth - pad) left = window.innerWidth - pad - menuW;
+      if (left < pad) left = pad;
+      let top = r.bottom + 6;
+      const maxH = Math.min(320, Math.max(120, window.innerHeight - top - pad));
+      if (maxH < 140 && r.top > 160) {
+        const upH = Math.min(320, r.top - pad - 6);
+        top = Math.max(pad, r.top - 6 - upH);
+        headerTopicMenu.style.maxHeight = `${upH}px`;
+      } else {
+        headerTopicMenu.style.maxHeight = `${maxH}px`;
+      }
+      headerTopicMenu.style.position = "fixed";
+      headerTopicMenu.style.left = `${Math.round(left)}px`;
+      headerTopicMenu.style.top = `${Math.round(top)}px`;
+      headerTopicMenu.style.right = "auto";
+      headerTopicMenu.style.bottom = "auto";
+      headerTopicMenu.style.width = `${Math.round(menuW)}px`;
+      headerTopicMenu.style.zIndex = "450";
+    }
+
+    function setHeaderTopicMenuOpen(open) {
+      if (!headerTopicMenu) return;
+      headerTopicMenu.hidden = !open;
+      headerShell?.classList.toggle("menu-open", !!open);
+      const chip = getActiveChatChip();
+      if (chip) chip.setAttribute("aria-expanded", open ? "true" : "false");
+      // Clear expanded on inactive chips
+      document.querySelectorAll("#chat-slots .chat-chip[data-chat]").forEach((c) => {
+        if (c !== chip) c.setAttribute("aria-expanded", "false");
+      });
+      if (open) {
+        setComposeActionsMenuOpen(false);
+        renderHeaderTopicMenu();
+        if (!headerExpanded) setHeaderExpanded(true);
+        requestAnimationFrame(() => positionHeaderTopicMenu());
+      }
+      try { syncChatUi(); } catch (_) {}
+    }
+
+    window.addEventListener("resize", () => {
+      if (isHeaderTopicMenuOpen()) positionHeaderTopicMenu();
+    });
+    window.addEventListener("scroll", () => {
+      if (isHeaderTopicMenuOpen()) positionHeaderTopicMenu();
+    }, true);
+
+    /** Alias used by chat apply paths that previously synced the compose topic control. */
     function syncModeTopicButton() {
-      const topic = getActiveTopic();
-      const name = topic?.name || "Topics";
-      const expanded = isModeTopicMenuOpen();
-      if (modeTopicLabel) modeTopicLabel.textContent = name;
-      if (modeTopicIcon) {
-        // Collapsed: neutral pin_history; open menu: active topic icon + color
-        modeTopicIcon.textContent = expanded ? (topic?.icon || "folder") : "pin_history";
-        modeTopicIcon.style.color = expanded && topic?.color ? topic.color : "";
-      }
-      if (modeTopicBtn) {
-        modeTopicBtn.title = `Topic: ${name}`;
-        modeTopicBtn.setAttribute("aria-label", `Switch topic — ${name}`);
-      }
+      try { syncChatUi(); } catch (_) {}
     }
 
-    function renderModeTopicMenu() {
-      if (!modeTopicMenu) return;
-      modeTopicMenu.innerHTML = "";
+    function renderHeaderTopicMenu() {
+      if (!headerTopicMenu) return;
+      headerTopicMenu.innerHTML = "";
       if (!topicsList.length) {
         const empty = document.createElement("div");
         empty.className = "mode-topic-empty";
         empty.textContent = "No topics yet";
-        modeTopicMenu.appendChild(empty);
+        headerTopicMenu.appendChild(empty);
       } else {
         topicsList.forEach((topic) => {
+          const row = document.createElement("div");
+          row.className = "mode-topic-item-row";
           const btn = document.createElement("button");
           btn.type = "button";
           btn.className = `mode-topic-item${topic.id === activeTopicId ? " active" : ""}`;
@@ -1359,16 +1474,29 @@
           btn.addEventListener("click", (e) => {
             e.stopPropagation();
             switchTopic(topic.id);
-            setModeTopicMenuOpen(false);
+            setHeaderTopicMenuOpen(false);
             focusDisplayInput();
           });
-          modeTopicMenu.appendChild(btn);
+          const editBtn = document.createElement("button");
+          editBtn.type = "button";
+          editBtn.className = "mode-topic-edit-btn";
+          editBtn.title = "Edit topic";
+          editBtn.setAttribute("aria-label", `Edit ${topic.name || "topic"}`);
+          editBtn.innerHTML = `<span class="material-symbols-outlined icon-small">edit</span>`;
+          editBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            setHeaderTopicMenuOpen(false);
+            openTopicEditModal(topic.id);
+          });
+          row.appendChild(btn);
+          row.appendChild(editBtn);
+          headerTopicMenu.appendChild(row);
         });
       }
       const sep = document.createElement("div");
       sep.className = "mode-topic-sep";
       sep.setAttribute("role", "separator");
-      modeTopicMenu.appendChild(sep);
+      headerTopicMenu.appendChild(sep);
       const createBtn = document.createElement("button");
       createBtn.type = "button";
       createBtn.className = "mode-topic-item mode-topic-create";
@@ -1379,20 +1507,103 @@
       `;
       createBtn.addEventListener("click", (e) => {
         e.stopPropagation();
-        setModeTopicMenuOpen(false);
-        openCreateTopicModal();
+        setHeaderTopicMenuOpen(false);
+        openNewTopicFlow();
       });
-      modeTopicMenu.appendChild(createBtn);
+      headerTopicMenu.appendChild(createBtn);
     }
 
-    modeTopicBtn?.addEventListener("click", (e) => {
+    // ---- Compose Actions menu ----
+    const composeActionsBtn = document.getElementById("compose-actions-btn");
+    const composeActionsMenu = document.getElementById("compose-actions-menu");
+
+    function isComposeActionsMenuOpen() {
+      return !!(composeActionsMenu && !composeActionsMenu.hidden);
+    }
+
+    function setComposeActionsMenuOpen(open) {
+      if (!composeActionsMenu || !composeActionsBtn) return;
+      composeActionsMenu.hidden = !open;
+      composeActionsBtn.setAttribute("aria-expanded", open ? "true" : "false");
+      if (open) {
+        setHeaderTopicMenuOpen(false);
+        renderComposeActionsMenu();
+      }
+    }
+
+    function renderComposeActionsMenu() {
+      if (!composeActionsMenu) return;
+      const hasText = canAssignFromDisplay();
+      const text = getText().trim();
+      const replayOk = canUseGeneratedActions(lastGeneratedAudio)
+        && text === (lastGeneratedAudio.text || "").trim();
+      const items = [
+        { id: "new", icon: "edit_square", label: "New message", disabled: false },
+        { id: "pin", icon: "push_pin", label: "Pin to button", disabled: !hasText },
+        { id: "replay", icon: "replay", label: "Replay message", disabled: !replayOk },
+        { id: "tag", icon: "add", label: "Insert tag", disabled: false },
+        { id: "history", icon: "history", label: "View history", disabled: false }
+      ];
+      composeActionsMenu.innerHTML = "";
+      items.forEach((item) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = `compose-actions-item${item.disabled ? " is-disabled" : ""}`;
+        btn.setAttribute("role", "menuitem");
+        btn.disabled = !!item.disabled;
+        btn.innerHTML = `
+          <span class="material-symbols-outlined">${item.icon}</span>
+          <span>${item.label}</span>
+        `;
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (item.disabled) return;
+          setComposeActionsMenuOpen(false);
+          runComposeAction(item.id);
+        });
+        composeActionsMenu.appendChild(btn);
+      });
+    }
+
+    function runComposeAction(id) {
+      if (id === "new") clearDisplayText();
+      else if (id === "pin") startAssignFromDisplay();
+      else if (id === "replay") replayLastGenerated();
+      else if (id === "tag") openTagInsertModal();
+      else if (id === "history") openHistoryModal();
+    }
+
+    function startAssignFromDisplay() {
+      if (!canAssignFromDisplay()) return;
+      openModal("modal-assign-choice");
+    }
+
+    function replayLastGenerated() {
+      if (canUseGeneratedActions(lastGeneratedAudio)) playSpeechSource(lastGeneratedAudio);
+    }
+
+    function openHistoryModal() {
+      openModal("modal-history");
+      renderHistory();
+      requestAnimationFrame(() => {
+        try { document.getElementById("modal-history-search-input")?.focus({ preventScroll: true }); } catch (_) {}
+      });
+    }
+
+    composeActionsBtn?.addEventListener("click", (e) => {
       e.stopPropagation();
-      setModeTopicMenuOpen(!isModeTopicMenuOpen());
+      setComposeActionsMenuOpen(!isComposeActionsMenuOpen());
     });
+
     document.addEventListener("click", (e) => {
-      if (!isModeTopicMenuOpen()) return;
-      const wrap = e.target.closest?.(".compose-mode-wrap");
-      if (!wrap) setModeTopicMenuOpen(false);
+      if (isHeaderTopicMenuOpen()) {
+        const wrap = e.target.closest?.("#chat-slots, #header-topic-menu");
+        if (!wrap) setHeaderTopicMenuOpen(false);
+      }
+      if (isComposeActionsMenuOpen()) {
+        const wrap = e.target.closest?.("#compose-actions-wrap");
+        if (!wrap) setComposeActionsMenuOpen(false);
+      }
     });
 
     function renderTopics() {
@@ -1506,6 +1717,11 @@
       modalGridCols = clamp(modalGridCols + deltaCols, 1, 12);
       if (deltaRows) modalGridRows = clamp(modalGridRows + deltaRows, 1, 8);
       syncModalGridLabels();
+      // Live-update organizer layout to match column count
+      if (Array.isArray(modalButtonsDraft)) {
+        repackSequentialGrid({ buttons: modalButtonsDraft, gridCols: modalGridCols });
+        renderTopicButtonOrganizer();
+      }
     }
 
     function fillTopicEditForm(topic, { isCreate = false } = {}) {
@@ -1519,18 +1735,51 @@
       modalGridRows = clamp(parseInt(topic.gridRows, 10) || DEFAULT_GRID_ROWS, 1, 8);
       syncModalGridLabels();
       fillColorPicker($("topic-color-picker"), topic.color);
+      modalButtonsDraft = Array.isArray(topic.buttons)
+        ? topic.buttons.map((b, i) => normalizeButton({ ...b }, i))
+        : [];
+      repackSequentialGrid({ buttons: modalButtonsDraft, gridCols: modalGridCols });
+      renderTopicButtonOrganizer();
     }
 
-    function openCreateTopicModal() {
-      pendingNewTopic = {
+    function cloneTopicAsTemplate(source) {
+      const src = source || {};
+      const buttons = (Array.isArray(src.buttons) ? src.buttons : []).map((b, i) => {
+        const copy = normalizeButton({ ...b, id: generateId() }, i);
+        // Deep-copy audio payload string if present
+        if (b && b.audioData != null) copy.audioData = b.audioData;
+        if (b && b.utteranceText != null) copy.utteranceText = b.utteranceText;
+        if (b && b.sourceText != null) copy.sourceText = b.sourceText;
+        if (b && b.effectsBaked != null) copy.effectsBaked = b.effectsBaked;
+        copy.colSpan = b.colSpan || 1;
+        copy.rowSpan = b.rowSpan || 1;
+        return copy;
+      });
+      const baseName = trim(src.name) || "Topic";
+      return {
         id: generateId(),
-        name: `Topic ${topicsList.length + 1}`,
-        icon: "folder",
-        color: COLOR_PALETTE[topicsList.length % COLOR_PALETTE.length],
-        gridCols: DEFAULT_GRID_COLS,
-        gridRows: DEFAULT_GRID_ROWS,
-        buttons: []
+        name: `Copy of ${baseName}`.slice(0, 30),
+        icon: src.icon || "folder",
+        color: src.color || COLOR_PALETTE[topicsList.length % COLOR_PALETTE.length],
+        gridCols: clamp(parseInt(src.gridCols, 10) || DEFAULT_GRID_COLS, 1, 12),
+        gridRows: clamp(parseInt(src.gridRows, 10) || DEFAULT_GRID_ROWS, 1, 8),
+        buttons
       };
+    }
+
+    function openCreateTopicModal(fromTemplate = null) {
+      pendingNewTopic = fromTemplate
+        ? cloneTopicAsTemplate(fromTemplate)
+        : {
+            id: generateId(),
+            name: `Topic ${topicsList.length + 1}`,
+            icon: "folder",
+            color: COLOR_PALETTE[topicsList.length % COLOR_PALETTE.length],
+            gridCols: DEFAULT_GRID_COLS,
+            gridRows: DEFAULT_GRID_ROWS,
+            buttons: []
+          };
+      if (fromTemplate) repackSequentialGrid(pendingNewTopic);
       editingTopicId = pendingNewTopic.id;
       fillTopicEditForm(pendingNewTopic, { isCreate: true });
       openModal("topic-edit-modal");
@@ -1543,9 +1792,275 @@
       });
     }
 
-    document.getElementById("add-topic-sidebar-btn").addEventListener("click", () => {
-      openCreateTopicModal();
+    /** Entry: choice modal, or scratch if no topics exist yet. */
+    function openNewTopicFlow() {
+      if (!topicsList.length) {
+        openCreateTopicModal(null);
+        return;
+      }
+      openModal("modal-topic-create-choice");
+    }
+
+    function openTopicTemplatePicker() {
+      const list = document.getElementById("topic-template-list");
+      if (!list) return;
+      list.innerHTML = "";
+      topicsList.forEach((topic) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "status-btn";
+        btn.innerHTML = `
+          <span class="status-btn-text">
+            <span class="material-symbols-outlined icon-medium icon-btn-margin" style="color:${topic.color || "inherit"}">${topic.icon || "folder"}</span>
+            ${escapeHtml(topic.name || "Topic")}
+            <span style="opacity:0.7;font-weight:400"> · ${(topic.buttons || []).length} buttons</span>
+          </span>
+          <span class="material-symbols-outlined icon-small">chevron_right</span>
+        `;
+        btn.addEventListener("click", () => openCreateTopicModal(topic));
+        list.appendChild(btn);
+      });
+      openModal("modal-topic-template-pick");
+    }
+
+    document.getElementById("topic-create-scratch-btn")?.addEventListener("click", () => {
+      openCreateTopicModal(null);
     });
+    document.getElementById("topic-create-template-btn")?.addEventListener("click", () => {
+      openTopicTemplatePicker();
+    });
+    document.getElementById("topic-template-back-btn")?.addEventListener("click", () => {
+      openModal("modal-topic-create-choice");
+    });
+
+    document.getElementById("add-topic-sidebar-btn").addEventListener("click", () => {
+      openNewTopicFlow();
+    });
+
+    /**
+     * When set, button-edit was opened from the topic organizer.
+     * Edits apply to modalButtonsDraft only; topic meta form fields stay in the inputs.
+     */
+    let topicEditResumeId = null;
+    /** Snapshot of topic form fields while button-edit is open from organizer. */
+    let topicEditFormSnapshot = null;
+
+    function snapshotTopicEditForm() {
+      topicEditFormSnapshot = {
+        name: $("topic-name-input")?.value || "",
+        icon: $("topic-icon-input")?.value || "folder",
+        color: getSelectedPickerColor("topic-color-picker"),
+        cols: modalGridCols,
+        rows: modalGridRows,
+        isCreate: !!(pendingNewTopic && pendingNewTopic.id === editingTopicId),
+        topicId: editingTopicId,
+        buttons: Array.isArray(modalButtonsDraft)
+          ? modalButtonsDraft.map((b, i) => normalizeButton({ ...b }, i))
+          : []
+      };
+    }
+
+    function resumeTopicEditModal() {
+      const resumeId = topicEditResumeId;
+      const snap = topicEditFormSnapshot;
+      topicEditResumeId = null;
+      topicEditFormSnapshot = null;
+      if (!resumeId && !snap) return;
+
+      const isCreate = !!(snap?.isCreate || (pendingNewTopic && pendingNewTopic.id === resumeId));
+      const topicId = resumeId || snap?.topicId;
+      editingTopicId = topicId;
+
+      if (isCreate && pendingNewTopic && pendingNewTopic.id === topicId) {
+        // Restore draft buttons onto pending topic for form fill, then re-apply form snapshot
+        if (snap) {
+          pendingNewTopic.buttons = snap.buttons;
+          pendingNewTopic.gridCols = snap.cols;
+          pendingNewTopic.gridRows = snap.rows;
+        }
+        fillTopicEditForm(pendingNewTopic, { isCreate: true });
+      } else {
+        const topic = topicsList.find((t) => t.id === topicId);
+        if (!topic) return;
+        // Fill from live topic meta, then overlay in-progress form + draft buttons
+        fillTopicEditForm(topic, { isCreate: false });
+      }
+
+      if (snap) {
+        if ($("topic-name-input")) $("topic-name-input").value = snap.name;
+        if ($("topic-icon-input")) $("topic-icon-input").value = snap.icon;
+        modalGridCols = clamp(snap.cols, 1, 12);
+        modalGridRows = clamp(snap.rows, 1, 8);
+        syncModalGridLabels();
+        if (snap.color) fillColorPicker($("topic-color-picker"), snap.color);
+        modalButtonsDraft = snap.buttons.map((b, i) => normalizeButton({ ...b }, i));
+        repackSequentialGrid({ buttons: modalButtonsDraft, gridCols: modalGridCols });
+        renderTopicButtonOrganizer();
+      }
+      openModal("topic-edit-modal");
+    }
+
+    function openOrganizerButtonEdit(btnId) {
+      if (!btnId || !Array.isArray(modalButtonsDraft)) return;
+      const btn = modalButtonsDraft.find((b) => b.id === btnId);
+      if (!btn) return;
+      snapshotTopicEditForm();
+      topicEditResumeId = editingTopicId || topicEditFormSnapshot?.topicId;
+      editingButtonId = btnId;
+      editingButtonTopicId = topicEditResumeId;
+      $("button-label-input").value = btn.label || "";
+      $("button-symbol-input").value = btn.symbol || "";
+      const currentIdx = modalButtonsDraft.findIndex((b) => b.id === btnId);
+      modalButtonIndexMax = Math.max(1, modalButtonsDraft.length);
+      modalButtonIndex = currentIdx >= 0 ? currentIdx + 1 : 1;
+      syncModalButtonIndexLabels();
+      fillColorPicker($("button-color-picker"), btn.color);
+      openModal("button-edit-modal");
+    }
+
+    function renderTopicButtonOrganizer() {
+      const root = document.getElementById("topic-btn-organizer");
+      const group = document.getElementById("topic-buttons-organizer-group");
+      if (!root) return;
+      if (group) group.style.display = "";
+      root.innerHTML = "";
+      const cols = clamp(modalGridCols, 1, 12);
+      root.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+      const draft = Array.isArray(modalButtonsDraft) ? modalButtonsDraft : [];
+      if (!draft.length) {
+        root.innerHTML = `<div class="topic-btn-organizer-empty">No sound buttons yet</div>`;
+        return;
+      }
+      draft.forEach((btn, index) => {
+        const tile = document.createElement("div");
+        tile.className = "topic-org-tile";
+        tile.setAttribute("role", "listitem");
+        tile.draggable = true;
+        tile.dataset.index = String(index);
+        tile.dataset.btnId = btn.id;
+        tile.title = "Drag to reorder · Tap to edit";
+        const bg = btn.color || "#3f3f4e";
+        tile.style.backgroundColor = bg;
+        const symbol = btn.symbol
+          ? `<span class="material-symbols-outlined topic-org-symbol">${btn.symbol}</span>`
+          : "";
+        tile.innerHTML = `
+          <button type="button" class="topic-org-remove" title="Remove" aria-label="Remove ${escapeHtml(btn.label || "button")}">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+          ${symbol}
+          <span class="topic-org-label">${escapeHtml(btn.label || "Button")}</span>
+        `;
+        tile.querySelector(".topic-org-remove")?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          modalButtonsDraft = modalButtonsDraft.filter((_, i) => i !== index);
+          renderTopicButtonOrganizer();
+        });
+
+        // Click (no drag) opens button editor; drag reorders
+        let ptrDown = false;
+        let didDrag = false;
+        let startX = 0;
+        let startY = 0;
+        let pointerId = null;
+        let startIdx = index;
+        const DRAG_PX = 10;
+
+        tile.addEventListener("dragstart", (e) => {
+          didDrag = true;
+          tile.classList.add("dragging");
+          try { e.dataTransfer.setData("text/plain", String(index)); e.dataTransfer.effectAllowed = "move"; } catch (_) {}
+        });
+        tile.addEventListener("dragend", () => {
+          tile.classList.remove("dragging");
+          root.querySelectorAll(".topic-org-tile.drag-over").forEach((el) => el.classList.remove("drag-over"));
+          // Prevent the synthetic click after HTML5 drag
+          setTimeout(() => { didDrag = false; }, 0);
+        });
+        tile.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          tile.classList.add("drag-over");
+        });
+        tile.addEventListener("dragleave", () => tile.classList.remove("drag-over"));
+        tile.addEventListener("drop", (e) => {
+          e.preventDefault();
+          tile.classList.remove("drag-over");
+          let from = NaN;
+          try { from = parseInt(e.dataTransfer.getData("text/plain"), 10); } catch (_) {}
+          const to = index;
+          if (!Number.isFinite(from) || from === to || !modalButtonsDraft) return;
+          const next = modalButtonsDraft.slice();
+          const [moved] = next.splice(from, 1);
+          next.splice(to, 0, moved);
+          modalButtonsDraft = next;
+          repackSequentialGrid({ buttons: modalButtonsDraft, gridCols: modalGridCols });
+          renderTopicButtonOrganizer();
+        });
+
+        tile.addEventListener("pointerdown", (e) => {
+          if (e.button != null && e.button !== 0) return;
+          if (e.target.closest?.(".topic-org-remove")) return;
+          ptrDown = true;
+          didDrag = false;
+          startX = e.clientX;
+          startY = e.clientY;
+          startIdx = index;
+          // Touch: pointer-based reorder (HTML5 DnD is weak on touch)
+          if (e.pointerType !== "mouse") {
+            pointerId = e.pointerId;
+            try { tile.setPointerCapture(pointerId); } catch (_) {}
+          }
+        });
+        tile.addEventListener("pointermove", (e) => {
+          if (!ptrDown) return;
+          if (Math.hypot(e.clientX - startX, e.clientY - startY) > DRAG_PX) {
+            didDrag = true;
+            if (pointerId != null) tile.classList.add("dragging");
+          }
+        });
+        tile.addEventListener("pointerup", (e) => {
+          if (!ptrDown) return;
+          ptrDown = false;
+          const wasDrag = didDrag;
+          tile.classList.remove("dragging");
+          if (pointerId != null && e.pointerId === pointerId) {
+            pointerId = null;
+            if (wasDrag) {
+              const el = document.elementFromPoint(e.clientX, e.clientY);
+              const target = el?.closest?.(".topic-org-tile");
+              const to = target ? parseInt(target.dataset.index, 10) : NaN;
+              if (Number.isFinite(to) && to !== startIdx && modalButtonsDraft) {
+                const next = modalButtonsDraft.slice();
+                const [moved] = next.splice(startIdx, 1);
+                next.splice(to, 0, moved);
+                modalButtonsDraft = next;
+                repackSequentialGrid({ buttons: modalButtonsDraft, gridCols: modalGridCols });
+                renderTopicButtonOrganizer();
+              }
+              return;
+            }
+          }
+          // Click without drag → edit button
+          if (!wasDrag && !e.target.closest?.(".topic-org-remove")) {
+            openOrganizerButtonEdit(btn.id);
+          }
+        });
+        tile.addEventListener("pointercancel", () => {
+          ptrDown = false;
+          pointerId = null;
+          tile.classList.remove("dragging");
+        });
+        // Keyboard: Enter/Space to edit
+        tile.tabIndex = 0;
+        tile.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            openOrganizerButtonEdit(btn.id);
+          }
+        });
+        root.appendChild(tile);
+      });
+    }
 
     function normalizeToHex(col) {
       if (!col) return "";
@@ -1613,6 +2128,7 @@
     function cancelTopicEditModal() {
       pendingNewTopic = null;
       editingTopicId = null;
+      modalButtonsDraft = null;
       closeModals();
     }
 
@@ -1629,7 +2145,11 @@
       topic.gridCols = clamp(modalGridCols, 1, 12);
       // Rows grow with buttons; keep existing/default row count for storage
       topic.gridRows = clamp(modalGridRows, 1, 8);
+      if (Array.isArray(modalButtonsDraft)) {
+        topic.buttons = modalButtonsDraft.map((b, i) => normalizeButton({ ...b }, i));
+      }
       repackSequentialGrid(topic);
+      modalButtonsDraft = null;
       if (isCreate) {
         topicsList.push(topic);
         pendingNewTopic = null;
@@ -1836,15 +2356,25 @@
       tab.buttons.splice(to, 0, item);
     }
 
+    function findTopicForEdit(topicId) {
+      if (topicId && pendingNewTopic && pendingNewTopic.id === topicId) return pendingNewTopic;
+      if (topicId) {
+        const found = topicsList.find((t) => t.id === topicId);
+        if (found) return found;
+      }
+      if (pendingNewTopic && pendingNewTopic.id === editingTopicId) return pendingNewTopic;
+      return getActiveTopic();
+    }
+
     function openButtonEditModal(btnId, topicId = null) {
-      const tab = topicId ? topicsList.find(t => t.id === topicId) : getActiveTopic();
-      const btn = tab?.buttons.find(b => b.id === btnId);
+      const tab = findTopicForEdit(topicId);
+      const btn = tab?.buttons?.find((b) => b.id === btnId);
       if (!btn || !tab) return;
       editingButtonId = btnId;
       editingButtonTopicId = tab.id;
       $("button-label-input").value = btn.label || "";
       $("button-symbol-input").value = btn.symbol || "";
-      const currentIdx = tab.buttons.findIndex(b => b.id === btnId);
+      const currentIdx = tab.buttons.findIndex((b) => b.id === btnId);
       modalButtonIndexMax = Math.max(1, tab.buttons.length);
       modalButtonIndex = currentIdx >= 0 ? currentIdx + 1 : 1;
       syncModalButtonIndexLabels();
@@ -1855,9 +2385,42 @@
     $("button-index-down")?.addEventListener("click", () => stepModalButtonIndex(-1));
     $("button-index-up")?.addEventListener("click", () => stepModalButtonIndex(1));
 
+    function finishButtonEditAndMaybeResume(didMutate) {
+      if (topicEditResumeId) {
+        // Draft-only path — do not commit topicsList until topic Save
+        editingButtonId = null;
+        editingButtonTopicId = null;
+        resumeTopicEditModal();
+        return;
+      }
+      if (didMutate) commitTopicsUi();
+      closeModals();
+    }
+
     $("save-button-edit").addEventListener("click", () => {
-      const tab = topicsList.find(t => t.id === editingButtonTopicId) || getActiveTopic();
-      const btn = tab?.buttons.find(b => b.id === editingButtonId);
+      // Organizer → draft-only edit
+      if (topicEditResumeId && Array.isArray(modalButtonsDraft) && topicEditFormSnapshot) {
+        const btn = modalButtonsDraft.find((b) => b.id === editingButtonId);
+        if (!btn) return;
+        btn.label = trim($("button-label-input").value) || "Button";
+        btn.symbol = mapSymbol($("button-symbol-input").value);
+        const col = getSelectedPickerColor("button-color-picker");
+        if (col) btn.color = col;
+        // Reorder within draft
+        const from = modalButtonsDraft.findIndex((b) => b.id === editingButtonId);
+        const to = clamp(modalButtonIndex - 1, 0, modalButtonsDraft.length - 1);
+        if (from >= 0 && from !== to) {
+          const [item] = modalButtonsDraft.splice(from, 1);
+          modalButtonsDraft.splice(to, 0, item);
+        }
+        repackSequentialGrid({ buttons: modalButtonsDraft, gridCols: modalGridCols });
+        topicEditFormSnapshot.buttons = modalButtonsDraft.map((b, i) => normalizeButton({ ...b }, i));
+        finishButtonEditAndMaybeResume(true);
+        return;
+      }
+
+      const tab = findTopicForEdit(editingButtonTopicId);
+      const btn = tab?.buttons?.find((b) => b.id === editingButtonId);
       if (!btn || !tab) return;
       btn.label = trim($("button-label-input").value) || "Button";
       btn.symbol = mapSymbol($("button-symbol-input").value);
@@ -1865,18 +2428,34 @@
       if (col) btn.color = col;
       moveButtonToIndex(tab, editingButtonId, modalButtonIndex - 1);
       repackSequentialGrid(tab);
-      commitTopicsUi();
-      closeModals();
+      finishButtonEditAndMaybeResume(true);
     });
 
     $("delete-button-edit").addEventListener("click", () => {
-      const tab = topicsList.find(t => t.id === editingButtonTopicId) || getActiveTopic();
+      if (topicEditResumeId && Array.isArray(modalButtonsDraft) && topicEditFormSnapshot) {
+        modalButtonsDraft = modalButtonsDraft.filter((b) => b.id !== editingButtonId);
+        repackSequentialGrid({ buttons: modalButtonsDraft, gridCols: modalGridCols });
+        topicEditFormSnapshot.buttons = modalButtonsDraft.map((b, i) => normalizeButton({ ...b }, i));
+        finishButtonEditAndMaybeResume(true);
+        return;
+      }
+      const tab = findTopicForEdit(editingButtonTopicId);
       if (!tab) return;
-      tab.buttons = tab.buttons.filter(b => b.id !== editingButtonId);
+      tab.buttons = (tab.buttons || []).filter((b) => b.id !== editingButtonId);
       repackSequentialGrid(tab);
-      commitTopicsUi();
-      closeModals();
+      finishButtonEditAndMaybeResume(true);
     });
+
+    // Cancel from button edit returns to topic edit when opened from organizer
+    document.querySelector("#button-edit-modal .modal-btn.secondary")?.addEventListener("click", (e) => {
+      if (!topicEditResumeId) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      editingButtonId = null;
+      editingButtonTopicId = null;
+      // Discard button form changes — snapshot still has pre-open draft
+      resumeTopicEditModal();
+    }, true);
 
     function repackSequentialGrid(tab) {
       let col = 0, row = 0;
@@ -1905,10 +2484,8 @@
       }
     }
 
-    document.getElementById("textarea-assign-btn").addEventListener("click", () => {
-      if (!canAssignFromDisplay()) return;
-      openModal("modal-assign-choice");
-    });
+    document.getElementById("compose-pin-btn")?.addEventListener("click", () => startAssignFromDisplay());
+    document.getElementById("textarea-assign-btn")?.addEventListener("click", () => startAssignFromDisplay());
 
     $("choice-create-new-btn").addEventListener("click", () => {
       const source = getAssignSource();
@@ -2084,11 +2661,10 @@
       }
     }
 
-    function renderHistory() {
-      const container = $("audio-history");
+    function renderHistoryInto(container, searchInput) {
       if (!container) return;
       if (!Array.isArray(audioHistory)) audioHistory = [];
-      const query = ($("history-search-input")?.value || "").toLowerCase().trim();
+      const query = (searchInput?.value || "").toLowerCase().trim();
       const filtered = audioHistory.filter(item => (item.text || "").toLowerCase().includes(query));
       container.innerHTML = "";
 
@@ -2114,7 +2690,10 @@
         `;
 
         el.querySelector(".replay-btn")?.addEventListener("click", () => playSpeechSource(item));
-        el.querySelector(".restore-btn")?.addEventListener("click", () => restoreSpeechToDisplay(item));
+        el.querySelector(".restore-btn")?.addEventListener("click", () => {
+          restoreSpeechToDisplay(item);
+          closeModals();
+        });
         el.querySelector(".delete-btn")?.addEventListener("click", () => {
           audioHistory = audioHistory.filter(h => h.id !== item.id);
           saveHistory();
@@ -2124,8 +2703,18 @@
       });
     }
 
+    function renderHistory() {
+      renderHistoryInto($("audio-history"), $("history-search-input"));
+      renderHistoryInto($("modal-audio-history"), $("modal-history-search-input"));
+    }
+
     document.getElementById("history-search-input")?.addEventListener("input", renderHistory);
+    document.getElementById("modal-history-search-input")?.addEventListener("input", renderHistory);
     document.getElementById("clear-history-btn")?.addEventListener("click", () => {
+      if (!confirm("Clear all audio history?")) return;
+      audioHistory = []; saveHistory(); renderHistory();
+    });
+    document.getElementById("modal-clear-history-btn")?.addEventListener("click", () => {
       if (!confirm("Clear all audio history?")) return;
       audioHistory = []; saveHistory(); renderHistory();
     });
@@ -2479,12 +3068,25 @@
 
       const replayBtn = document.getElementById("textarea-replay-btn");
       const assignBtn = document.getElementById("textarea-assign-btn");
+      const composePin = document.getElementById("compose-pin-btn");
+      const composeReplay = document.getElementById("compose-replay-btn");
       if (replayBtn) replayBtn.style.display = replayOk ? "" : "none";
       if (assignBtn) {
         assignBtn.disabled = !hasText;
         assignBtn.classList.toggle("is-disabled", !hasText);
         assignBtn.title = hasText ? "Assign to button" : "Type something to assign";
       }
+      if (composePin) {
+        composePin.disabled = !hasText;
+        composePin.classList.toggle("is-disabled", !hasText);
+        composePin.title = hasText ? "Pin message to button" : "Type something to pin";
+      }
+      if (composeReplay) {
+        composeReplay.disabled = !replayOk;
+        composeReplay.classList.toggle("is-disabled", !replayOk);
+        composeReplay.title = replayOk ? "Replay message" : "Speak first to enable replay";
+      }
+      if (isComposeActionsMenuOpen()) renderComposeActionsMenu();
       const showAudio = featMessageWords && replayOk;
       if (audioActionsBar) audioActionsBar.classList.toggle("active", showAudio);
       // Keep Message row visible when Replay is shown even if chips are empty
@@ -2497,14 +3099,26 @@
       document.body.dataset.featRecents = featRecents ? "1" : "0";
       document.body.dataset.featButtonInsert = featButtonInsert ? "1" : "0";
       document.body.dataset.featInsertTag = featInsertTag ? "1" : "0";
+      document.body.dataset.featComposeNew = featComposeNew ? "1" : "0";
+      document.body.dataset.featComposePin = featComposePin ? "1" : "0";
+      document.body.dataset.featComposeReplay = featComposeReplay ? "1" : "0";
+      document.body.dataset.featComposeHistory = featComposeHistory ? "1" : "0";
       const mw = document.getElementById("opt-message-words");
       const rec = document.getElementById("opt-recents");
       const ins = document.getElementById("opt-button-insert");
       const tag = document.getElementById("opt-insert-tag");
+      const cn = document.getElementById("opt-compose-new");
+      const cp = document.getElementById("opt-compose-pin");
+      const cr = document.getElementById("opt-compose-replay");
+      const ch = document.getElementById("opt-compose-history");
       if (mw) mw.checked = featMessageWords;
       if (rec) rec.checked = featRecents;
       if (ins) ins.checked = featButtonInsert;
       if (tag) tag.checked = featInsertTag;
+      if (cn) cn.checked = featComposeNew;
+      if (cp) cp.checked = featComposePin;
+      if (cr) cr.checked = featComposeReplay;
+      if (ch) ch.checked = featComposeHistory;
       syncComposeStrip();
       syncGeneratedAudioActions();
       renderRecentsStrip();
@@ -2525,6 +3139,18 @@
       } else if (which === "insertTag") {
         featInsertTag = on;
         lsSet(FEAT_INSERT_TAG_KEY, on ? "1" : "0");
+      } else if (which === "composeNew") {
+        featComposeNew = on;
+        lsSet(FEAT_COMPOSE_NEW_KEY, on ? "1" : "0");
+      } else if (which === "composePin") {
+        featComposePin = on;
+        lsSet(FEAT_COMPOSE_PIN_KEY, on ? "1" : "0");
+      } else if (which === "composeReplay") {
+        featComposeReplay = on;
+        lsSet(FEAT_COMPOSE_REPLAY_KEY, on ? "1" : "0");
+      } else if (which === "composeHistory") {
+        featComposeHistory = on;
+        lsSet(FEAT_COMPOSE_HISTORY_KEY, on ? "1" : "0");
       }
       applyAdvancedFeatures();
     }
@@ -2641,6 +3267,7 @@
 
     function syncChatUi() {
       const chips = chatSlotsEl ? chatSlotsEl.querySelectorAll(".chat-chip[data-chat]") : [];
+      const menuOpen = isHeaderTopicMenuOpen();
       chips.forEach((chip) => {
         const idx = parseInt(chip.getAttribute("data-chat"), 10);
         if (!Number.isFinite(idx)) return;
@@ -2655,17 +3282,32 @@
         const topicName = topic?.name || `Chat ${idx + 1}`;
         const icon = topic?.icon || "folder";
         const color = topic?.color || "";
-        chip.classList.toggle("active", idx === activeChat);
+        const isActive = idx === activeChat;
+        chip.classList.toggle("active", isActive);
         chip.classList.toggle("has-text", filled);
-        chip.setAttribute("aria-pressed", idx === activeChat ? "true" : "false");
-        chip.title = `${topicName}${idx === activeChat ? " (current)" : ""}: ${previewSnippet(chat?.text)}`;
-        chip.setAttribute(
-          "aria-label",
-          `${topicName}${idx === activeChat ? ", current chat" : ""}${filled ? "" : ", empty"}`
-        );
+        chip.classList.toggle("is-topic-dropdown", isActive);
+        chip.setAttribute("aria-pressed", isActive ? "true" : "false");
+        if (isActive) {
+          chip.setAttribute("aria-haspopup", "listbox");
+          chip.setAttribute("aria-expanded", menuOpen ? "true" : "false");
+          chip.title = `${topicName} (current) — tap for topics · ${previewSnippet(chat?.text)}`;
+          chip.setAttribute(
+            "aria-label",
+            `${topicName}, current chat, topics menu${filled ? "" : ", empty"}`
+          );
+        } else {
+          chip.removeAttribute("aria-haspopup");
+          chip.setAttribute("aria-expanded", "false");
+          chip.title = `${topicName}: ${previewSnippet(chat?.text)}`;
+          chip.setAttribute(
+            "aria-label",
+            `${topicName}${filled ? "" : ", empty"}`
+          );
+        }
         let iconEl = chip.querySelector(".chat-chip-icon");
         if (!iconEl) {
-          chip.innerHTML = "";
+          // Keep only chip chrome we own; rebuild icon + optional name/caret
+          chip.querySelectorAll(".chat-chip-icon, .chat-chip-name, .chat-chip-caret").forEach((n) => n.remove());
           iconEl = document.createElement("span");
           iconEl.className = "material-symbols-outlined chat-chip-icon";
           chip.appendChild(iconEl);
@@ -2674,6 +3316,30 @@
         iconEl.style.color = color || "";
         if (color) chip.style.setProperty("--chat-topic-color", color);
         else chip.style.removeProperty("--chat-topic-color");
+
+        let nameEl = chip.querySelector(".chat-chip-name");
+        let caret = chip.querySelector(".chat-chip-caret");
+        if (isActive) {
+          if (!nameEl) {
+            nameEl = document.createElement("span");
+            nameEl.className = "chat-chip-name";
+            chip.appendChild(nameEl);
+          }
+          nameEl.textContent = topicName;
+          if (!caret) {
+            caret = document.createElement("span");
+            caret.className = "material-symbols-outlined chat-chip-caret";
+            caret.setAttribute("aria-hidden", "true");
+            caret.textContent = "expand_more";
+            chip.appendChild(caret);
+          }
+          // Order: icon → name → caret
+          if (iconEl.nextSibling !== nameEl) chip.insertBefore(nameEl, iconEl.nextSibling);
+          if (nameEl.nextSibling !== caret) chip.appendChild(caret);
+        } else {
+          if (nameEl) nameEl.remove();
+          if (caret) caret.remove();
+        }
       });
     }
 
@@ -2717,11 +3383,11 @@
     function selectChat(index) {
       const i = clamp(index, 0, CHAT_COUNT - 1);
       if (i === activeChat) {
-        saveActiveChatSnapshot();
-        syncChatUi();
-        focusDisplayInput();
+        // Active chat chip is the topics dropdown
+        setHeaderTopicMenuOpen(!isHeaderTopicMenuOpen());
         return;
       }
+      setHeaderTopicMenuOpen(false);
       saveActiveChatSnapshot();
       showChat(i);
     }
@@ -2740,8 +3406,10 @@
     }
 
     document.getElementById("new-message-btn")?.addEventListener("click", clearDisplayText);
+    document.getElementById("compose-new-message-btn")?.addEventListener("click", clearDisplayText);
+    document.getElementById("compose-replay-btn")?.addEventListener("click", () => replayLastGenerated());
+    document.getElementById("compose-history-btn")?.addEventListener("click", () => openHistoryModal());
     chatSlotsEl?.addEventListener("click", (e) => {
-      if (e.target.closest("#new-message-btn, #textarea-assign-btn")) return;
       const chip = e.target.closest(".chat-chip[data-chat]");
       if (!chip || !chatSlotsEl.contains(chip)) return;
       const idx = parseInt(chip.getAttribute("data-chat"), 10);
@@ -3514,7 +4182,11 @@
       editingButtonTopicId = null;
       editingTopicId = null;
       pendingNewTopic = null;
+      modalButtonsDraft = null;
+      topicEditResumeId = null;
+      topicEditFormSnapshot = null;
       iconStudioReturnModalId = null;
+      headerShell?.classList.remove("menu-open");
       // Don't steal focus while another non-modal panel might be open
       try { focusDisplayInput(); } catch (_) {}
     }
@@ -3901,6 +4573,18 @@
       });
       document.getElementById("opt-insert-tag")?.addEventListener("change", (e) => {
         setFeatureFlag("insertTag", e.target.checked);
+      });
+      document.getElementById("opt-compose-new")?.addEventListener("change", (e) => {
+        setFeatureFlag("composeNew", e.target.checked);
+      });
+      document.getElementById("opt-compose-pin")?.addEventListener("change", (e) => {
+        setFeatureFlag("composePin", e.target.checked);
+      });
+      document.getElementById("opt-compose-replay")?.addEventListener("change", (e) => {
+        setFeatureFlag("composeReplay", e.target.checked);
+      });
+      document.getElementById("opt-compose-history")?.addEventListener("change", (e) => {
+        setFeatureFlag("composeHistory", e.target.checked);
       });
       const outputSelect = document.getElementById("output-device-select");
       if (outputSelect) {
