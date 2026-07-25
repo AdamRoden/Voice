@@ -185,18 +185,7 @@
         <button class="icon-btn mobile-only mobile-menu-btn" id="mobile-menu-btn" type="button" title="Open menu" aria-label="Open menu">
           <span class="material-symbols-outlined logo-mark">record_voice_over</span>
         </button>
-        <div class="chat-slots" id="chat-slots" role="group" aria-label="Chats">
-          <button type="button" class="chat-chip active is-topic-dropdown" data-chat="0" title="Chat" aria-label="Chat" aria-pressed="true" aria-haspopup="listbox" aria-expanded="false">
-            <span class="material-symbols-outlined chat-chip-icon">chat</span>
-            <span class="chat-chip-name"></span>
-            <span class="material-symbols-outlined chat-chip-caret" aria-hidden="true">expand_more</span>
-          </button>
-          <button type="button" class="chat-chip" data-chat="1" title="Chat" aria-label="Chat" aria-pressed="false">
-            <span class="material-symbols-outlined chat-chip-icon">medical_services</span>
-          </button>
-          <button type="button" class="chat-chip" data-chat="2" title="Chat" aria-label="Chat" aria-pressed="false">
-            <span class="material-symbols-outlined chat-chip-icon">sentiment_satisfied</span>
-          </button>
+        <div class="chat-slots" id="chat-slots" role="group" aria-label="Topic chats">
           <div class="header-topic-menu mode-topic-menu" id="header-topic-menu" role="listbox" aria-label="Topics" hidden></div>
         </div>
         <button type="button" class="icon-btn header-collapse-btn" id="header-collapse-btn" title="Collapse top bar" aria-label="Collapse top bar">
@@ -220,9 +209,9 @@
       <ol>
         <li><strong>Menu</strong> — <span class="material-symbols-outlined coach-inline-icon">record_voice_over</span> <strong>logo</strong> opens the menu drawer (Settings, History, Topics).</li>
         <li><strong>Top bar</strong> — pull the <span class="material-symbols-outlined coach-inline-icon">expand_more</span> <strong>chevron</strong> or swipe down to show chats; <span class="material-symbols-outlined coach-inline-icon">close</span> collapses it.</li>
-        <li><strong>Chats &amp; topics</strong> — inactive chat icons switch conversations; the <strong>active</strong> chat opens the topics menu (switch, edit, or new topic).</li>
+        <li><strong>Topic chats</strong> — each open topic is its own chat (1–5, no duplicates). Tap an inactive chip to switch; tap the <strong>active</strong> chip for the topics menu.</li>
         <li><strong>Sounds</strong> — <span class="material-symbols-outlined coach-inline-icon">grid_view</span> <strong>buttons</strong> play their audio.</li>
-        <li><strong>Text box</strong> — <span class="material-symbols-outlined coach-inline-icon">more_horiz</span> <strong>Actions</strong> for new message, pin, replay, tags, and history; <span class="material-symbols-outlined coach-inline-icon">volume_up</span> <strong>speaker</strong> speaks (or press Enter).</li>
+        <li><strong>Text box</strong> — <span class="material-symbols-outlined coach-inline-icon">more_horiz</span> <strong>Actions</strong> for clear, pin, replay, tags, and history; <span class="material-symbols-outlined coach-inline-icon">volume_up</span> <strong>speaker</strong> speaks (or press Enter).</li>
       </ol>
       <div class="coach-banner-actions">
         <button type="button" class="modal-btn secondary" id="coach-dismiss-btn">Got it</button>
@@ -242,20 +231,11 @@
           <div class="compose-row">
             <div class="compose-leading" id="compose-leading">
               <div class="compose-quick-actions" id="compose-quick-actions" aria-label="Quick actions">
-                <button type="button" class="compose-icon-btn compose-standalone" id="compose-new-message-btn" aria-label="New message" title="New message">
-                  <span class="material-symbols-outlined">edit_square</span>
-                </button>
-                <button type="button" class="compose-icon-btn compose-standalone" id="compose-pin-btn" aria-label="Pin to button" title="Pin message to button">
-                  <span class="material-symbols-outlined">push_pin</span>
-                </button>
-                <button type="button" class="compose-icon-btn compose-standalone" id="compose-replay-btn" aria-label="Replay message" title="Replay message">
-                  <span class="material-symbols-outlined">replay</span>
+                <button type="button" class="compose-icon-btn compose-standalone" id="compose-history-btn" aria-label="View history" title="View history">
+                  <span class="material-symbols-outlined">history</span>
                 </button>
                 <button type="button" class="compose-icon-btn compose-standalone" id="insert-tag-btn" aria-label="Insert tag" title="Insert tag">
                   <span class="material-symbols-outlined">add</span>
-                </button>
-                <button type="button" class="compose-icon-btn compose-standalone" id="compose-history-btn" aria-label="View history" title="View history">
-                  <span class="material-symbols-outlined">history</span>
                 </button>
               </div>
               <div class="compose-actions-wrap" id="compose-actions-wrap">
@@ -268,6 +248,17 @@
               </div>
             </div>
             <textarea class="display-textarea" id="display-input" spellcheck="true" autocomplete="off" autocapitalize="sentences" placeholder="Type anything…" rows="1" aria-label="Message text"></textarea>
+            <div class="compose-trailing" id="compose-trailing" aria-label="Message controls">
+              <button type="button" class="compose-icon-btn compose-standalone" id="compose-new-message-btn" aria-label="Clear message" title="Clear message">
+                <span class="material-symbols-outlined">close</span>
+              </button>
+              <button type="button" class="compose-icon-btn compose-standalone" id="compose-pin-btn" aria-label="Pin to button" title="Pin message to button">
+                <span class="material-symbols-outlined">push_pin</span>
+              </button>
+              <button type="button" class="compose-icon-btn compose-standalone" id="compose-replay-btn" aria-label="Replay message" title="Replay message">
+                <span class="material-symbols-outlined">replay</span>
+              </button>
+            </div>
             <button type="button" class="compose-speak-btn display-ctrl key tts-btn" id="speak-btn" aria-label="Speak" title="Speak text (or selection). Click again to stop.">
               <span class="material-symbols-outlined icon-medium">volume_up</span>
             </button>
@@ -370,22 +361,22 @@
         <div class="modal-description advanced-settings-section-hint">Each can also open from the Actions menu. Turn on to show a stand-alone button next to the text box.</div>
         <label class="setting-toggle-row" for="opt-compose-new">
           <span class="setting-toggle-text">
-            <span class="setting-toggle-title">New message button</span>
-            <span class="setting-toggle-desc">Clear the text box with one tap</span>
+            <span class="setting-toggle-title">Clear message button</span>
+            <span class="setting-toggle-desc">Show × to the right of the text box to clear it</span>
           </span>
           <input type="checkbox" id="opt-compose-new" class="setting-toggle-input">
         </label>
         <label class="setting-toggle-row" for="opt-compose-pin">
           <span class="setting-toggle-text">
             <span class="setting-toggle-title">Pin to button</span>
-            <span class="setting-toggle-desc">Assign message text to a sound button</span>
+            <span class="setting-toggle-desc">Show pin to the right of the text box</span>
           </span>
           <input type="checkbox" id="opt-compose-pin" class="setting-toggle-input">
         </label>
         <label class="setting-toggle-row" for="opt-compose-replay">
           <span class="setting-toggle-text">
             <span class="setting-toggle-title">Replay button</span>
-            <span class="setting-toggle-desc">Replay the last spoken message when it still matches</span>
+            <span class="setting-toggle-desc">Show replay to the right of the text box</span>
           </span>
           <input type="checkbox" id="opt-compose-replay" class="setting-toggle-input">
         </label>

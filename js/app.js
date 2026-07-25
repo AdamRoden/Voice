@@ -223,12 +223,62 @@
             end = Math.max(0, Math.min(end, len));
           }
           displayInput.setSelectionRange(start, end);
+          neutralizeUnneededKeyboardScroll();
         } catch (_) {
-          try { displayInput.focus(); } catch (__) {}
+          try {
+            displayInput.focus({ preventScroll: true });
+            neutralizeUnneededKeyboardScroll();
+          } catch (__) {}
         }
       });
     }
 
+    /**
+     * iPad/iOS often pans the page when the soft keyboard opens.
+     * Undo that scroll unless the keyboard would cover the text box.
+     */
+    function isDisplayInputCoveredByKeyboard() {
+      if (!displayInput) return false;
+      const vv = window.visualViewport;
+      const rect = displayInput.getBoundingClientRect();
+      const margin = 12;
+      if (vv) {
+        const top = vv.offsetTop;
+        const bottom = vv.offsetTop + vv.height;
+        return rect.bottom > bottom - margin || rect.top < top + margin;
+      }
+      // Fallback: treat as covered if near the bottom of the layout viewport
+      return rect.bottom > window.innerHeight - margin;
+    }
+
+    function neutralizeUnneededKeyboardScroll() {
+      if (!displayInput || document.activeElement !== displayInput) return;
+      if (isDisplayInputCoveredByKeyboard()) {
+        // Only then allow a minimal bring-into-view (nearest, no smooth pan of whole page)
+        try {
+          const dock = document.querySelector(".bottom-dock-wrap") || displayInput;
+          dock.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "auto" });
+        } catch (_) {}
+        return;
+      }
+      // Not covered — cancel browser focus scroll / keyboard pan
+      try {
+        if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
+        if (document.documentElement) document.documentElement.scrollTop = 0;
+        if (document.body) document.body.scrollTop = 0;
+      } catch (_) {}
+    }
+
+    displayInput.addEventListener("focus", () => {
+      // Run after Safari's focus scroll (often applied next frame)
+      neutralizeUnneededKeyboardScroll();
+      requestAnimationFrame(() => {
+        neutralizeUnneededKeyboardScroll();
+        setTimeout(neutralizeUnneededKeyboardScroll, 50);
+        setTimeout(neutralizeUnneededKeyboardScroll, 150);
+        setTimeout(neutralizeUnneededKeyboardScroll, 300);
+      });
+    });
     displayInput.addEventListener("blur", saveDisplaySelection);
     // selectionchange is a document-level event
     document.addEventListener("selectionchange", () => {
@@ -749,6 +799,10 @@
       }
 
       commitTopicsUi();
+      try {
+        if (typeof reconcileChatsAfterTopicChange === "function") reconcileChatsAfterTopicChange();
+        else if (typeof openChatForTopic === "function") openChatForTopic(activeTopicId);
+      } catch (_) {}
       updateSettingsVisibility();
       focusDisplayInput();
       announceLive(mode === "merge" ? "Boards merged" : "Boards replaced");
@@ -1422,19 +1476,21 @@
       if (!headerTopicMenu) return;
       headerTopicMenu.hidden = !open;
       headerShell?.classList.toggle("menu-open", !!open);
-      const chip = getActiveChatChip();
-      if (chip) chip.setAttribute("aria-expanded", open ? "true" : "false");
-      // Clear expanded on inactive chips
-      document.querySelectorAll("#chat-slots .chat-chip[data-chat]").forEach((c) => {
-        if (c !== chip) c.setAttribute("aria-expanded", "false");
-      });
       if (open) {
         setComposeActionsMenuOpen(false);
         renderHeaderTopicMenu();
         if (!headerExpanded) setHeaderExpanded(true);
+      }
+      // Update chip aria only — do NOT rebuild chips here (that detaches the
+      // click target and the document listener immediately closes the menu).
+      const chip = getActiveChatChip();
+      if (chip) chip.setAttribute("aria-expanded", open ? "true" : "false");
+      document.querySelectorAll("#chat-slots .chat-chip[data-chat]").forEach((c) => {
+        if (c !== chip) c.setAttribute("aria-expanded", "false");
+      });
+      if (open) {
         requestAnimationFrame(() => positionHeaderTopicMenu());
       }
-      try { syncChatUi(); } catch (_) {}
     }
 
     window.addEventListener("resize", () => {
@@ -1452,6 +1508,9 @@
     function renderHeaderTopicMenu() {
       if (!headerTopicMenu) return;
       headerTopicMenu.innerHTML = "";
+      const openTopicIds = new Set(
+        (Array.isArray(chats) ? chats : []).map((c) => c && c.topicId).filter(Boolean)
+      );
       if (!topicsList.length) {
         const empty = document.createElement("div");
         empty.className = "mode-topic-empty";
@@ -1461,15 +1520,21 @@
         topicsList.forEach((topic) => {
           const row = document.createElement("div");
           row.className = "mode-topic-item-row";
+          const isActive = topic.id === activeTopicId;
+          const isOpen = openTopicIds.has(topic.id);
           const btn = document.createElement("button");
           btn.type = "button";
-          btn.className = `mode-topic-item${topic.id === activeTopicId ? " active" : ""}`;
+          btn.className = `mode-topic-item${isActive ? " active" : ""}`;
           btn.setAttribute("role", "option");
-          btn.setAttribute("aria-selected", topic.id === activeTopicId ? "true" : "false");
+          btn.setAttribute("aria-selected", isActive ? "true" : "false");
           btn.dataset.topicId = topic.id;
+          const openHint = isOpen && !isActive
+            ? `<span class="mode-topic-open-badge">open</span>`
+            : "";
           btn.innerHTML = `
             <span class="material-symbols-outlined" style="color: ${topic.color || "inherit"};">${topic.icon || "folder"}</span>
             <span class="mode-topic-item-name">${escapeHtml(topic.name || "Topic")}</span>
+            ${openHint}
           `;
           btn.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -1511,6 +1576,24 @@
         openNewTopicFlow();
       });
       headerTopicMenu.appendChild(createBtn);
+      // Allow closing the active chat when more than one is open
+      if (Array.isArray(chats) && chats.length > 1) {
+        const closeBtn = document.createElement("button");
+        closeBtn.type = "button";
+        closeBtn.className = "mode-topic-item";
+        closeBtn.setAttribute("role", "option");
+        closeBtn.innerHTML = `
+          <span class="material-symbols-outlined">close</span>
+          <span class="mode-topic-item-name">Close this chat</span>
+        `;
+        closeBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          setHeaderTopicMenuOpen(false);
+          try { closeChat(activeChat); } catch (_) {}
+          focusDisplayInput();
+        });
+        headerTopicMenu.appendChild(closeBtn);
+      }
     }
 
     // ---- Compose Actions menu ----
@@ -1538,7 +1621,7 @@
       const replayOk = canUseGeneratedActions(lastGeneratedAudio)
         && text === (lastGeneratedAudio.text || "").trim();
       const items = [
-        { id: "new", icon: "edit_square", label: "New message", disabled: false },
+        { id: "new", icon: "close", label: "Clear message", disabled: false },
         { id: "pin", icon: "push_pin", label: "Pin to button", disabled: !hasText },
         { id: "replay", icon: "replay", label: "Replay message", disabled: !replayOk },
         { id: "tag", icon: "add", label: "Insert tag", disabled: false },
@@ -1597,8 +1680,11 @@
 
     document.addEventListener("click", (e) => {
       if (isHeaderTopicMenuOpen()) {
-        const wrap = e.target.closest?.("#chat-slots, #header-topic-menu");
-        if (!wrap) setHeaderTopicMenuOpen(false);
+        const t = e.target;
+        const inSlots = chatSlotsEl && t instanceof Node && chatSlotsEl.contains(t);
+        const inMenu = headerTopicMenu && t instanceof Node && headerTopicMenu.contains(t);
+        const viaClosest = !!(t?.closest?.("#chat-slots, #header-topic-menu"));
+        if (!inSlots && !inMenu && !viaClosest) setHeaderTopicMenuOpen(false);
       }
       if (isComposeActionsMenuOpen()) {
         const wrap = e.target.closest?.("#compose-actions-wrap");
@@ -1678,7 +1764,7 @@
       });
     }
 
-    /** Toggle a topic's expanded state; expanding also activates it for the workspace. */
+    /** Toggle a topic's expanded state; expanding also opens that topic's chat. */
     function toggleTopicExpanded(id) {
       if (expandedTopicIds.has(id)) {
         expandedTopicIds.delete(id);
@@ -1687,23 +1773,41 @@
       }
       expandedTopicIds.add(id);
       if (activeTopicId !== id) {
-        activeTopicId = id;
-        lsSet("aac_active_tab", activeTopicId);
-        renderSoundButtons();
-        try { if (typeof saveActiveChatSnapshot === "function") saveActiveChatSnapshot(); } catch (_) {}
+        try {
+          if (typeof openChatForTopic === "function") openChatForTopic(id);
+          else {
+            activeTopicId = id;
+            lsSet("aac_active_tab", activeTopicId);
+            renderSoundButtons();
+          }
+        } catch (_) {
+          activeTopicId = id;
+          lsSet("aac_active_tab", activeTopicId);
+          renderSoundButtons();
+        }
       }
       renderTopics();
     }
 
     function switchTopic(id) {
-      activeTopicId = id;
-      lsSet("aac_active_tab", activeTopicId);
-      expandedTopicIds.add(id);
-      renderTopics();
-      renderSoundButtons();
-      // Keep the active chat's topic in sync (chats may not be init yet during early load)
-      try { if (typeof saveActiveChatSnapshot === "function") saveActiveChatSnapshot(); } catch (_) {}
-      try { if (typeof syncChatUi === "function") syncChatUi(); } catch (_) {}
+      // Each topic is its own chat — open or focus that topic's chat
+      try {
+        if (typeof openChatForTopic === "function") {
+          openChatForTopic(id);
+        } else {
+          activeTopicId = id;
+          lsSet("aac_active_tab", activeTopicId);
+          expandedTopicIds.add(id);
+          renderTopics();
+          renderSoundButtons();
+        }
+      } catch (_) {
+        activeTopicId = id;
+        lsSet("aac_active_tab", activeTopicId);
+        expandedTopicIds.add(id);
+        renderTopics();
+        renderSoundButtons();
+      }
       closeMobileSidebar();
       focusDisplayInput();
     }
@@ -1713,15 +1817,54 @@
       if (colsEl) colsEl.textContent = String(modalGridCols);
     }
 
+    /** Backup for live board column preview while the topic modal is open. */
+    let liveGridColsBackup = null;
+    let liveGridTopicId = null;
+
+    function clearLiveGridColsPreview(restore) {
+      if (liveGridColsBackup == null || !liveGridTopicId) {
+        liveGridColsBackup = null;
+        liveGridTopicId = null;
+        return;
+      }
+      if (restore) {
+        const topic = topicsList.find((t) => t.id === liveGridTopicId);
+        if (topic) {
+          topic.gridCols = liveGridColsBackup;
+          repackSequentialGrid(topic);
+          if (topic.id === activeTopicId) renderSoundButtons();
+        }
+      }
+      liveGridColsBackup = null;
+      liveGridTopicId = null;
+    }
+
+    /** Live-resize the main board when editing the active topic's column count. */
+    function previewLiveGridColsFromModal() {
+      const tid = editingTopicId;
+      if (!tid) return;
+      const topic = topicsList.find((t) => t.id === tid);
+      if (!topic || topic.id !== activeTopicId) return;
+      if (liveGridColsBackup == null || liveGridTopicId !== tid) {
+        liveGridColsBackup = clamp(parseInt(topic.gridCols, 10) || DEFAULT_GRID_COLS, 1, 12);
+        liveGridTopicId = tid;
+      }
+      topic.gridCols = clamp(modalGridCols, 1, 12);
+      // Keep board layout packed to the preview column count
+      repackSequentialGrid(topic);
+      renderSoundButtons();
+    }
+
     function stepModalGrid(deltaCols, deltaRows) {
       modalGridCols = clamp(modalGridCols + deltaCols, 1, 12);
       if (deltaRows) modalGridRows = clamp(modalGridRows + deltaRows, 1, 8);
       syncModalGridLabels();
-      // Live-update organizer layout to match column count
+      // Live-update organizer tiles (and board if this is the active topic)
       if (Array.isArray(modalButtonsDraft)) {
         repackSequentialGrid({ buttons: modalButtonsDraft, gridCols: modalGridCols });
-        renderTopicButtonOrganizer();
       }
+      renderTopicButtonOrganizer();
+      previewLiveGridColsFromModal();
     }
 
     function fillTopicEditForm(topic, { isCreate = false } = {}) {
@@ -1925,7 +2068,16 @@
       if (group) group.style.display = "";
       root.innerHTML = "";
       const cols = clamp(modalGridCols, 1, 12);
+      // Drive tile size from column count: more cols → narrower (and shorter) tiles
+      root.style.setProperty("--org-cols", String(cols));
       root.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+      const gap = cols >= 8 ? "3px" : cols >= 6 ? "4px" : cols >= 4 ? "6px" : "8px";
+      const fontPx = cols >= 8 ? "10px" : cols >= 6 ? "11px" : cols >= 4 ? "12px" : "13px";
+      const iconPx = cols >= 8 ? "14px" : cols >= 6 ? "16px" : "18px";
+      root.style.setProperty("--org-gap", gap);
+      root.style.setProperty("--org-tile-font", fontPx);
+      root.style.setProperty("--org-tile-icon", iconPx);
+      root.dataset.cols = String(cols);
       const draft = Array.isArray(modalButtonsDraft) ? modalButtonsDraft : [];
       if (!draft.length) {
         root.innerHTML = `<div class="topic-btn-organizer-empty">No sound buttons yet</div>`;
@@ -2126,6 +2278,7 @@
     }
 
     function cancelTopicEditModal() {
+      clearLiveGridColsPreview(true);
       pendingNewTopic = null;
       editingTopicId = null;
       modalButtonsDraft = null;
@@ -2150,10 +2303,13 @@
       }
       repackSequentialGrid(topic);
       modalButtonsDraft = null;
+      // Keep previewed columns; no restore on successful save
+      clearLiveGridColsPreview(false);
       if (isCreate) {
         topicsList.push(topic);
         pendingNewTopic = null;
         saveTopicsList();
+        // New topic opens as its own chat (if under max)
         switchTopic(topic.id);
       } else {
         commitTopicsUi();
@@ -2168,15 +2324,15 @@
       if (!confirm("Are you sure you want to delete this topic and all its buttons?")) return;
       topicsList = topicsList.filter(t => t.id !== editingTopicId);
       if (!topicsList.find(t => t.id === activeTopicId)) activeTopicId = topicsList[0].id;
-      // Remap chats that pointed at the deleted topic
+      // Drop chats for the deleted topic; keep unique open set (1–5)
       try {
         if (Array.isArray(chats)) {
-          chats.forEach((c, i) => {
-            if (c && c.topicId === editingTopicId) {
-              c.topicId = topicsList[Math.min(i, topicsList.length - 1)].id;
-            }
-          });
-          persistChats();
+          chats = chats.filter((c) => c && c.topicId !== editingTopicId);
+          if (typeof reconcileChatsAfterTopicChange === "function") {
+            reconcileChatsAfterTopicChange();
+          } else {
+            persistChats();
+          }
         }
       } catch (_) {}
       commitTopicsUi();
@@ -3162,13 +3318,11 @@
     });
 
     /**
-     * Three chats linked to topics. Each stores:
-     *  - text (compose box)
-     *  - active topic id (chip shows that topic's icon + color)
-     *  - recent phrases for that chat
-     * Defaults: chat i → topicsList[i] (Everyday / Needs / Feelings on first run).
+     * Topic chats (1–5): each open topic is its own chat — no duplicate topicIds.
+     * Stores text, topicId, and recents per chat.
      */
-    const CHAT_COUNT = 3;
+    const CHAT_MIN = 1;
+    const CHAT_MAX = 5;
     const CHATS_STORAGE_KEY = "aac_chats";
     const ACTIVE_CHAT_KEY = "aac_active_chat";
     const chatSlotsEl = document.getElementById("chat-slots");
@@ -3207,32 +3361,61 @@
       };
     }
 
+    /** Dedupe by topicId, drop unknown topics, clamp length to [1, CHAT_MAX]. */
+    function reconcileChatsList(list) {
+      const validIds = new Set(topicsList.map((t) => t.id));
+      const seen = new Set();
+      const out = [];
+      (Array.isArray(list) ? list : []).forEach((raw) => {
+        const c = normalizeChat(raw, null);
+        if (!c.topicId || !validIds.has(c.topicId) || seen.has(c.topicId)) return;
+        seen.add(c.topicId);
+        out.push(c);
+      });
+      if (out.length > CHAT_MAX) out.length = CHAT_MAX;
+      if (out.length === 0) {
+        const tid = (topicsList[0] && topicsList[0].id) || activeTopicId;
+        if (tid) out.push(emptyChat(tid));
+      }
+      return out;
+    }
+
     function loadChatsFromStorage() {
       const raw = lsGetJson(CHATS_STORAGE_KEY, null);
       if (Array.isArray(raw) && raw.length) {
-        return Array.from({ length: CHAT_COUNT }, (_, i) =>
-          normalizeChat(raw[i], defaultTopicIdForChat(i))
-        );
+        return reconcileChatsList(raw);
       }
-      // First run: chat tabs map to the three default topics
-      return Array.from({ length: CHAT_COUNT }, (_, i) => {
+      // First run: open one chat per starter topic (up to CHAT_MAX)
+      const n = Math.min(CHAT_MAX, Math.max(CHAT_MIN, topicsList.length || 1));
+      const starter = [];
+      for (let i = 0; i < n; i++) {
         const tid = defaultTopicIdForChat(i);
+        if (!tid || starter.some((c) => c.topicId === tid)) continue;
         if (i === 0) {
-          return {
+          starter.push({
             text: "",
             topicId: tid,
             recents: Array.isArray(recentPhrases) ? recentPhrases.slice() : []
-          };
+          });
+        } else {
+          starter.push(emptyChat(tid));
         }
-        return emptyChat(tid);
-      });
+      }
+      return reconcileChatsList(starter);
     }
 
     let chats = loadChatsFromStorage();
     let activeChat = (() => {
       const n = parseInt(lsGet(ACTIVE_CHAT_KEY, "0"), 10);
-      return Number.isFinite(n) ? clamp(n, 0, CHAT_COUNT - 1) : 0;
+      const idx = Number.isFinite(n) ? n : 0;
+      return clamp(idx, 0, Math.max(0, chats.length - 1));
     })();
+
+    // Prefer active topic matching active chat
+    if (chats[activeChat]?.topicId) {
+      activeTopicId = chats[activeChat].topicId;
+      lsSet("aac_active_tab", activeTopicId);
+    }
 
     function persistChats() {
       try {
@@ -3244,9 +3427,11 @@
     /** Snapshot workspace into the active chat (text + topic + recents). */
     function saveActiveChatSnapshot() {
       if (!chats || !chats[activeChat]) return;
+      // Topic is fixed to the chat's topic (no duplicate topics across chats)
+      const topicId = chats[activeChat].topicId || activeTopicId;
       chats[activeChat] = {
         text: getText(),
-        topicId: activeTopicId,
+        topicId,
         recents: Array.isArray(recentPhrases) ? recentPhrases.slice() : []
       };
       persistChats();
@@ -3265,27 +3450,125 @@
       return false;
     }
 
+    function findChatIndexForTopic(topicId) {
+      return chats.findIndex((c) => c && c.topicId === topicId);
+    }
+
+    /**
+     * Open or focus the chat for a topic.
+     * - Existing open topic → swap with active so it takes the active chip's place
+     * - New topic and under max → put it in the active slot; previous active becomes a new chip
+     * - At max → reassign the active chat slot to that topic (unique)
+     */
+    function openChatForTopic(topicId) {
+      if (!topicId || !topicsList.some((t) => t.id === topicId)) return;
+      const existing = findChatIndexForTopic(topicId);
+
+      if (existing === activeChat) {
+        // Already active — keep topic/board in sync
+        activeTopicId = topicId;
+        lsSet("aac_active_tab", activeTopicId);
+        expandedTopicIds.add(topicId);
+        renderTopics();
+        renderSoundButtons();
+        syncChatUi();
+        return;
+      }
+
+      saveActiveChatSnapshot();
+
+      if (existing >= 0) {
+        // Swap places with active: picked topic moves into the active chip slot
+        const a = activeChat;
+        const tmp = chats[a];
+        chats[a] = chats[existing];
+        chats[existing] = tmp;
+        applyChatToWorkspace(chats[a]);
+        persistChats();
+        syncChatUi();
+        focusDisplayInput();
+        return;
+      }
+
+      if (chats.length < CHAT_MAX) {
+        // New topic becomes active in-place; previous active chat slides out as another chip
+        const prev = {
+          text: chats[activeChat]?.text || "",
+          topicId: chats[activeChat]?.topicId,
+          recents: Array.isArray(chats[activeChat]?.recents) ? chats[activeChat].recents.slice() : []
+        };
+        chats[activeChat] = emptyChat(topicId);
+        if (prev.topicId && prev.topicId !== topicId) chats.push(normalizeChat(prev));
+        applyChatToWorkspace(chats[activeChat]);
+        persistChats();
+        syncChatUi();
+        focusDisplayInput();
+        return;
+      }
+
+      // At capacity: replace active chat's topic (still unique)
+      chats[activeChat] = emptyChat(topicId);
+      applyChatToWorkspace(chats[activeChat]);
+      persistChats();
+      syncChatUi();
+      focusDisplayInput();
+    }
+
+    /** Remove a chat chip (min 1). */
+    function closeChat(index) {
+      if (!Array.isArray(chats) || chats.length <= CHAT_MIN) return;
+      const i = clamp(index, 0, chats.length - 1);
+      saveActiveChatSnapshot();
+      chats.splice(i, 1);
+      if (activeChat > i) activeChat -= 1;
+      else if (activeChat >= chats.length) activeChat = chats.length - 1;
+      activeChat = clamp(activeChat, 0, chats.length - 1);
+      applyChatToWorkspace(chats[activeChat]);
+      persistChats();
+      syncChatUi();
+      focusDisplayInput();
+    }
+
+    /** After topics list changes, drop invalid/dupe chats and reclamp. */
+    function reconcileChatsAfterTopicChange() {
+      if (!Array.isArray(chats)) return;
+      const prevActiveTopic = chats[activeChat]?.topicId || activeTopicId;
+      chats = reconcileChatsList(chats);
+      let idx = findChatIndexForTopic(prevActiveTopic);
+      if (idx < 0) idx = 0;
+      activeChat = clamp(idx, 0, chats.length - 1);
+      if (chats[activeChat]) {
+        applyChatToWorkspace(chats[activeChat]);
+      }
+      persistChats();
+      syncChatUi();
+    }
+
     function syncChatUi() {
-      const chips = chatSlotsEl ? chatSlotsEl.querySelectorAll(".chat-chip[data-chat]") : [];
+      if (!chatSlotsEl) return;
       const menuOpen = isHeaderTopicMenuOpen();
-      chips.forEach((chip) => {
-        const idx = parseInt(chip.getAttribute("data-chat"), 10);
-        if (!Number.isFinite(idx)) return;
+      const menuEl = headerTopicMenu || document.getElementById("header-topic-menu");
+
+      // Rebuild chips dynamically (1–5); keep the topics menu node
+      chatSlotsEl.querySelectorAll(".chat-chip[data-chat]").forEach((el) => el.remove());
+
+      chats.forEach((chatRow, idx) => {
         const chat = idx === activeChat
-          ? { text: getText(), topicId: activeTopicId, recents: recentPhrases }
-          : chats[idx];
+          ? { text: getText(), topicId: chats[idx]?.topicId || activeTopicId, recents: recentPhrases }
+          : chatRow;
         const filled = chatHasContent(chat);
         const topic = topicsList.find((t) => t.id === chat?.topicId)
-          || topicsList[idx]
           || topicsList[0]
           || null;
         const topicName = topic?.name || `Chat ${idx + 1}`;
         const icon = topic?.icon || "folder";
         const color = topic?.color || "";
         const isActive = idx === activeChat;
-        chip.classList.toggle("active", isActive);
-        chip.classList.toggle("has-text", filled);
-        chip.classList.toggle("is-topic-dropdown", isActive);
+
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = `chat-chip${isActive ? " active is-topic-dropdown" : ""}${filled ? " has-text" : ""}`;
+        chip.dataset.chat = String(idx);
         chip.setAttribute("aria-pressed", isActive ? "true" : "false");
         if (isActive) {
           chip.setAttribute("aria-haspopup", "listbox");
@@ -3296,51 +3579,41 @@
             `${topicName}, current chat, topics menu${filled ? "" : ", empty"}`
           );
         } else {
-          chip.removeAttribute("aria-haspopup");
           chip.setAttribute("aria-expanded", "false");
           chip.title = `${topicName}: ${previewSnippet(chat?.text)}`;
-          chip.setAttribute(
-            "aria-label",
-            `${topicName}${filled ? "" : ", empty"}`
-          );
+          chip.setAttribute("aria-label", `${topicName}${filled ? "" : ", empty"}`);
         }
-        let iconEl = chip.querySelector(".chat-chip-icon");
-        if (!iconEl) {
-          // Keep only chip chrome we own; rebuild icon + optional name/caret
-          chip.querySelectorAll(".chat-chip-icon, .chat-chip-name, .chat-chip-caret").forEach((n) => n.remove());
-          iconEl = document.createElement("span");
-          iconEl.className = "material-symbols-outlined chat-chip-icon";
-          chip.appendChild(iconEl);
-        }
+        if (color) chip.style.setProperty("--chat-topic-color", color);
+
+        const iconEl = document.createElement("span");
+        iconEl.className = "material-symbols-outlined chat-chip-icon";
         iconEl.textContent = icon;
         iconEl.style.color = color || "";
-        if (color) chip.style.setProperty("--chat-topic-color", color);
-        else chip.style.removeProperty("--chat-topic-color");
+        chip.appendChild(iconEl);
 
-        let nameEl = chip.querySelector(".chat-chip-name");
-        let caret = chip.querySelector(".chat-chip-caret");
         if (isActive) {
-          if (!nameEl) {
-            nameEl = document.createElement("span");
-            nameEl.className = "chat-chip-name";
-            chip.appendChild(nameEl);
-          }
+          const nameEl = document.createElement("span");
+          nameEl.className = "chat-chip-name";
           nameEl.textContent = topicName;
-          if (!caret) {
-            caret = document.createElement("span");
-            caret.className = "material-symbols-outlined chat-chip-caret";
-            caret.setAttribute("aria-hidden", "true");
-            caret.textContent = "expand_more";
-            chip.appendChild(caret);
-          }
-          // Order: icon → name → caret
-          if (iconEl.nextSibling !== nameEl) chip.insertBefore(nameEl, iconEl.nextSibling);
-          if (nameEl.nextSibling !== caret) chip.appendChild(caret);
+          chip.appendChild(nameEl);
+          const caret = document.createElement("span");
+          caret.className = "material-symbols-outlined chat-chip-caret";
+          caret.setAttribute("aria-hidden", "true");
+          caret.textContent = "expand_more";
+          chip.appendChild(caret);
+        }
+
+        if (menuEl && menuEl.parentNode === chatSlotsEl) {
+          chatSlotsEl.insertBefore(chip, menuEl);
         } else {
-          if (nameEl) nameEl.remove();
-          if (caret) caret.remove();
+          chatSlotsEl.appendChild(chip);
         }
       });
+
+      // Keep menu anchored if it was open while chips were rebuilt
+      if (menuOpen) {
+        requestAnimationFrame(() => positionHeaderTopicMenu());
+      }
     }
 
     function applyChatToWorkspace(chat) {
@@ -3361,7 +3634,10 @@
         renderTopics();
         renderSoundButtons();
       } else {
+        activeTopicId = tid || activeTopicId;
+        lsSet("aac_active_tab", activeTopicId);
         try { syncModeTopicButton(); } catch (_) {}
+        renderSoundButtons();
       }
 
       try {
@@ -3372,7 +3648,7 @@
     }
 
     function showChat(index) {
-      const i = clamp(index, 0, CHAT_COUNT - 1);
+      const i = clamp(index, 0, Math.max(0, chats.length - 1));
       activeChat = i;
       applyChatToWorkspace(chats[i]);
       persistChats();
@@ -3381,7 +3657,7 @@
     }
 
     function selectChat(index) {
-      const i = clamp(index, 0, CHAT_COUNT - 1);
+      const i = clamp(index, 0, Math.max(0, chats.length - 1));
       if (i === activeChat) {
         // Active chat chip is the topics dropdown
         setHeaderTopicMenuOpen(!isHeaderTopicMenuOpen());
@@ -3410,17 +3686,27 @@
     document.getElementById("compose-replay-btn")?.addEventListener("click", () => replayLastGenerated());
     document.getElementById("compose-history-btn")?.addEventListener("click", () => openHistoryModal());
     chatSlotsEl?.addEventListener("click", (e) => {
+      // Clicks inside the topics menu are not chip switches
+      if (e.target.closest?.("#header-topic-menu")) return;
       const chip = e.target.closest(".chat-chip[data-chat]");
       if (!chip || !chatSlotsEl.contains(chip)) return;
       const idx = parseInt(chip.getAttribute("data-chat"), 10);
       if (!Number.isFinite(idx)) return;
+      e.stopPropagation(); // avoid document outside-click closing the menu on the same open click
       selectChat(idx);
     });
     // Keep active chat text snapshot when the user types
     displayInput.addEventListener("input", () => {
       if (chats[activeChat]) chats[activeChat].text = getText();
       persistChats();
-      syncChatUi();
+      // Soft UI refresh: only rebuild chips when menu is closed so the dropdown stays put
+      if (!isHeaderTopicMenuOpen()) syncChatUi();
+      else {
+        const chip = getActiveChatChip();
+        const nameEl = chip?.querySelector(".chat-chip-name");
+        const topic = getActiveTopic();
+        if (nameEl && topic) nameEl.textContent = topic.name || nameEl.textContent;
+      }
     });
 
     // Apply the restored active chat (topic + recents + text) on load
@@ -4180,6 +4466,8 @@
       document.body.classList.remove("modal-open");
       editingButtonId = null;
       editingButtonTopicId = null;
+      // If topic edit closed without save, restore live column preview
+      if (liveGridColsBackup != null) clearLiveGridColsPreview(true);
       editingTopicId = null;
       pendingNewTopic = null;
       modalButtonsDraft = null;
@@ -4278,6 +4566,60 @@
       return (document.getElementById("voice-search-input").value || "").toLowerCase().trim();
     }
 
+    // ---- Favorite voices (always sorted to the top of each list) ----
+    const FAV_BROWSER_VOICES_KEY = "aac_fav_browser_voices";
+    const FAV_ELEVEN_VOICES_KEY = "aac_fav_eleven_voices";
+
+    function loadFavoriteVoiceKeys(storageKey) {
+      const raw = asArray(lsGetJson(storageKey, []));
+      return new Set(raw.map((k) => String(k)));
+    }
+
+    function saveFavoriteVoiceKeys(storageKey, set) {
+      try { lsSet(storageKey, JSON.stringify([...set])); } catch (_) {}
+    }
+
+    let favoriteBrowserVoices = loadFavoriteVoiceKeys(FAV_BROWSER_VOICES_KEY);
+    let favoriteElevenVoices = loadFavoriteVoiceKeys(FAV_ELEVEN_VOICES_KEY);
+
+    /** Stable key for browser voices (index is not stable across reloads). */
+    function browserVoiceKey(voice) {
+      if (!voice) return "";
+      return `${voice.name || ""}\u0000${voice.lang || ""}`;
+    }
+
+    function isBrowserVoiceFavorite(voice) {
+      return favoriteBrowserVoices.has(browserVoiceKey(voice));
+    }
+
+    function isElevenVoiceFavorite(voiceId) {
+      return favoriteElevenVoices.has(String(voiceId || ""));
+    }
+
+    function toggleBrowserVoiceFavorite(voice) {
+      const key = browserVoiceKey(voice);
+      if (!key) return false;
+      if (favoriteBrowserVoices.has(key)) favoriteBrowserVoices.delete(key);
+      else favoriteBrowserVoices.add(key);
+      saveFavoriteVoiceKeys(FAV_BROWSER_VOICES_KEY, favoriteBrowserVoices);
+      return favoriteBrowserVoices.has(key);
+    }
+
+    function toggleElevenVoiceFavorite(voiceId) {
+      const key = String(voiceId || "");
+      if (!key) return false;
+      if (favoriteElevenVoices.has(key)) favoriteElevenVoices.delete(key);
+      else favoriteElevenVoices.add(key);
+      saveFavoriteVoiceKeys(FAV_ELEVEN_VOICES_KEY, favoriteElevenVoices);
+      return favoriteElevenVoices.has(key);
+    }
+
+    /** Favorites first, then name (case-insensitive). */
+    function compareVoicesByFavoriteThenName(aFav, aName, bFav, bName) {
+      if (aFav !== bFav) return aFav ? -1 : 1;
+      return String(aName || "").localeCompare(String(bName || ""), undefined, { sensitivity: "base" });
+    }
+
     function ensureDefaultBrowserVoice(voices) {
       if (!voices || !voices.length) return;
       const idxValid = activeBrowserVoiceIndex !== "" && voices[activeBrowserVoiceIndex];
@@ -4300,19 +4642,23 @@
 
       const q = getVoiceSearchQuery();
       const filtered = voices
-        .map((voice, index) => ({ voice, index }))
-        .filter(({ voice }) => voice.name.toLowerCase().includes(q) || voice.lang.toLowerCase().includes(q));
+        .map((voice, index) => ({ voice, index, fav: isBrowserVoiceFavorite(voice) }))
+        .filter(({ voice }) => voice.name.toLowerCase().includes(q) || voice.lang.toLowerCase().includes(q))
+        .sort((a, b) => compareVoicesByFavoriteThenName(a.fav, a.voice.name, b.fav, b.voice.name));
 
       if (filtered.length === 0) {
         list.innerHTML = `<div class="history-empty-notice">No voices found</div>`;
         return;
       }
 
-      filtered.forEach(({ voice, index }) => {
+      filtered.forEach(({ voice, index, fav }) => {
         const item = document.createElement("div");
-        item.className = `voice-item ${String(activeBrowserVoiceIndex) === String(index) ? "selected" : ""}`;
+        item.className = `voice-item ${String(activeBrowserVoiceIndex) === String(index) ? "selected" : ""}${fav ? " is-favorite" : ""}`;
         item.innerHTML = `
-          <span class="voice-item-name">${voice.name} (${voice.lang})</span>
+          <button type="button" class="voice-fav-btn${fav ? " is-on" : ""}" title="${fav ? "Remove from favorites" : "Add to favorites"}" aria-label="${fav ? "Remove from favorites" : "Add to favorites"}" aria-pressed="${fav ? "true" : "false"}">
+            <span class="material-symbols-outlined icon-small">${fav ? "star" : "star_border"}</span>
+          </button>
+          <span class="voice-item-name">${escapeHtml(voice.name)} (${escapeHtml(voice.lang)})</span>
           <button class="voice-preview-btn" type="button" title="Preview Voice">
             <span class="material-symbols-outlined icon-small">play_arrow</span>
           </button>
@@ -4325,6 +4671,12 @@
           document.querySelectorAll("#voice-list-browser .voice-item").forEach(el => el.classList.remove("selected"));
           item.classList.add("selected");
           setTimeout(closeVoicesPanel, 200);
+        });
+
+        item.querySelector(".voice-fav-btn")?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          toggleBrowserVoiceFavorite(voice);
+          loadBrowserVoices();
         });
 
         item.querySelector(".voice-preview-btn").addEventListener("click", (e) => {
@@ -4367,9 +4719,12 @@
     function renderElevenVoiceList() {
       const list = document.getElementById("voice-list-eleven");
       const q = getVoiceSearchQuery();
-      const filtered = elevenVoicesCache.filter(v =>
-        v.name.toLowerCase().includes(q) || (v.category || "").toLowerCase().includes(q)
-      );
+      const filtered = elevenVoicesCache
+        .filter(v =>
+          v.name.toLowerCase().includes(q) || (v.category || "").toLowerCase().includes(q)
+        )
+        .map((voice) => ({ voice, fav: isElevenVoiceFavorite(voice.voice_id) }))
+        .sort((a, b) => compareVoicesByFavoriteThenName(a.fav, a.voice.name, b.fav, b.voice.name));
       list.innerHTML = "";
 
       const selected = elevenVoicesCache.find(v => v.voice_id === activeElevenVoiceId);
@@ -4384,11 +4739,14 @@
         return;
       }
 
-      filtered.forEach(voice => {
+      filtered.forEach(({ voice, fav }) => {
         const item = document.createElement("div");
-        item.className = `voice-item ${activeElevenVoiceId === voice.voice_id ? "selected" : ""}`;
+        item.className = `voice-item ${activeElevenVoiceId === voice.voice_id ? "selected" : ""}${fav ? " is-favorite" : ""}`;
         item.innerHTML = `
-          <span class="voice-item-name">${voice.name} (${voice.category || "General"})</span>
+          <button type="button" class="voice-fav-btn${fav ? " is-on" : ""}" title="${fav ? "Remove from favorites" : "Add to favorites"}" aria-label="${fav ? "Remove from favorites" : "Add to favorites"}" aria-pressed="${fav ? "true" : "false"}">
+            <span class="material-symbols-outlined icon-small">${fav ? "star" : "star_border"}</span>
+          </button>
+          <span class="voice-item-name">${escapeHtml(voice.name)} (${escapeHtml(voice.category || "General")})</span>
           <button class="voice-preview-btn" type="button" title="Preview Voice">
             <span class="material-symbols-outlined icon-small">play_arrow</span>
           </button>
@@ -4402,6 +4760,12 @@
           document.querySelectorAll("#voice-list-eleven .voice-item").forEach(el => el.classList.remove("selected"));
           item.classList.add("selected");
           setTimeout(closeVoicesPanel, 200);
+        });
+
+        item.querySelector(".voice-fav-btn")?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          toggleElevenVoiceFavorite(voice.voice_id);
+          renderElevenVoiceList();
         });
 
         const previewBtn = item.querySelector(".voice-preview-btn");
@@ -4636,12 +5000,23 @@
         } else {
           document.body.style.height = "";
         }
+        // After keyboard resize, only keep page pan if the text box would be covered
+        neutralizeUnneededKeyboardScroll();
       };
       setAppHeight();
       window.addEventListener("resize", setAppHeight);
       if (window.visualViewport) {
         window.visualViewport.addEventListener("resize", setAppHeight);
+        window.visualViewport.addEventListener("scroll", () => {
+          neutralizeUnneededKeyboardScroll();
+        });
       }
+      // Catch iOS layout viewport pans that leave window.scrollY non-zero
+      window.addEventListener("scroll", () => {
+        if (document.activeElement === displayInput && !isDisplayInputCoveredByKeyboard()) {
+          try { window.scrollTo(0, 0); } catch (_) {}
+        }
+      }, { passive: true });
 
       renderTopics();
       applyAdvancedFeatures();

@@ -486,6 +486,7 @@
       grid-column: 2;
       gap: 6px;
       flex: 0 1 auto;
+      flex-wrap: nowrap;
       min-width: 0;
       max-width: 100%;
     }
@@ -502,10 +503,13 @@
     .chat-chip.is-topic-dropdown {
       width: auto;
       min-width: 40px;
-      max-width: min(168px, 42vw);
+      max-width: min(148px, 36vw);
       padding: 0 6px 0 8px;
       gap: 4px;
       border-radius: 12px;
+    }
+    .workspace-header .chat-chip:not(.is-topic-dropdown) {
+      flex-shrink: 0;
     }
     .chat-chip.is-topic-dropdown .chat-chip-name {
       font-size: 13px;
@@ -573,16 +577,22 @@
     }
     /* Topic sound-button organizer (edit modal) */
     .topic-btn-organizer {
+      --org-cols: 4;
+      --org-gap: 8px;
+      --org-tile-font: 12px;
+      --org-tile-icon: 18px;
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 8px;
+      grid-template-columns: repeat(var(--org-cols), minmax(0, 1fr));
+      gap: var(--org-gap);
       padding: 8px;
       background: var(--bg-main);
       border: 1px solid var(--border);
       border-radius: 10px;
       min-height: 56px;
-      max-height: min(36vh, 240px);
+      max-height: min(40vh, 280px);
       overflow-y: auto;
+      overflow-x: hidden;
+      align-content: start;
     }
 
     /* Icon field + Icon Studio on one row */
@@ -631,16 +641,23 @@
     .topic-org-tile {
       position: relative;
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
       align-items: center;
       justify-content: center;
-      gap: 4px;
-      min-height: 72px;
-      padding: 8px 4px 6px;
-      border-radius: 12px;
+      gap: clamp(2px, 0.6vw, 6px);
+      /* Fill grid cell width; height follows width so tiles shrink/grow with columns */
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+      aspect-ratio: 2.2 / 1;
+      height: auto;
+      min-height: 28px;
+      max-height: none;
+      padding: 3px clamp(4px, 1.2vw, 10px);
+      border-radius: 10px;
       border: 1px solid rgba(255,255,255,0.15);
       color: #fff;
-      font-size: 11px;
+      font-size: var(--org-tile-font, 12px);
       font-weight: 600;
       cursor: grab;
       user-select: none;
@@ -657,8 +674,9 @@
       outline-offset: 2px;
     }
     .topic-org-tile .topic-org-symbol {
-      font-size: 22px;
+      font-size: var(--org-tile-icon, 18px);
       line-height: 1;
+      flex-shrink: 0;
     }
     .topic-org-tile .topic-org-label {
       max-width: 100%;
@@ -666,6 +684,8 @@
       text-overflow: ellipsis;
       white-space: nowrap;
       line-height: 1.2;
+      min-width: 0;
+      text-align: left;
     }
     .topic-org-remove {
       position: absolute;
@@ -1144,9 +1164,10 @@
       gap: 4px;
       flex: 0 1 auto;
       min-width: 0;
-      max-width: min(52vw, 280px);
+      max-width: min(40vw, 200px);
     }
-    .compose-quick-actions {
+    .compose-quick-actions,
+    .compose-trailing {
       display: flex;
       align-items: center;
       gap: 2px;
@@ -1155,7 +1176,15 @@
       overflow-x: auto;
       scrollbar-width: none;
     }
-    .compose-quick-actions::-webkit-scrollbar { display: none; }
+    .compose-quick-actions::-webkit-scrollbar,
+    .compose-trailing::-webkit-scrollbar { display: none; }
+    .compose-trailing {
+      flex: 0 0 auto;
+      align-self: flex-end;
+      margin-bottom: 2px;
+      max-width: none;
+      overflow: visible;
+    }
 
     .compose-icon-btn,
     .compose-mode-btn,
@@ -1314,7 +1343,19 @@
       font-weight: 600;
     }
     .mode-topic-item .material-symbols-outlined { font-size: 20px; flex-shrink: 0; }
-    .mode-topic-item-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mode-topic-item-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+    .mode-topic-open-badge {
+      flex-shrink: 0;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      background: var(--bg-main);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 2px 6px;
+    }
     .mode-topic-empty {
       padding: 12px;
       font-size: 13px;
@@ -1552,11 +1593,41 @@
     .voice-list { display: none; flex-direction: column; gap: 4px; overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; padding-right: 4px; overscroll-behavior: contain; }
       .voice-list.active { display: flex; }
 
-    .voice-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-radius: 10px; cursor: pointer; transition: all 0.2s; font-size: 14px; border: 1px solid transparent; background-color: var(--bg-main); min-height: 48px; gap: 8px; }
+    .voice-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 10px; cursor: pointer; transition: all 0.2s; font-size: 14px; border: 1px solid transparent; background-color: var(--bg-main); min-height: 48px; gap: 6px; }
       .voice-item:hover { background-color: var(--bg-surface-hover); border-color: var(--border); }
       .voice-item:active { background-color: var(--bg-surface-active); }
       .voice-item.selected { background-color: var(--bg-surface-active); border-color: var(--accent); font-weight: 600; color: var(--accent); }
-    .voice-item-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; margin-right: 8px; min-width: 0; }
+      .voice-item.is-favorite { border-color: color-mix(in srgb, #f4b400 35%, var(--border)); }
+    .voice-item-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; margin-right: 4px; min-width: 0; }
+
+    .voice-fav-btn {
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      min-height: 40px;
+      border: none;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      transition: color 0.15s, background 0.15s, transform 0.1s;
+    }
+    .voice-fav-btn:hover {
+      background: var(--bg-surface-hover);
+      color: #f4b400;
+    }
+    .voice-fav-btn.is-on {
+      color: #f4b400;
+    }
+    .voice-fav-btn.is-on .material-symbols-outlined {
+      font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+    }
+    .voice-fav-btn:active { transform: scale(0.94); }
 
     .voice-preview-btn { background: var(--key-bg); border: 1px solid var(--border); color: var(--text); font-size: 12px; font-weight: 600; cursor: pointer; padding: 8px 10px; border-radius: 8px; display: flex; align-items: center; gap: 4px; transition: all 0.2s; min-height: 36px; min-width: 40px; flex-shrink: 0; }
       .voice-preview-btn:hover { background: var(--key-hover); color: var(--accent); border-color: var(--accent); }
@@ -1669,14 +1740,14 @@
 
       .bottom-dock { gap: 4px; }
 
-      /* Phones: text on top; actions on a fixed row with Speak always right */
+      /* Phones: text on top; left actions | trailing clear/pin/replay | Speak */
       .compose-box { border-radius: 22px; }
       .compose-row {
         display: grid;
-        grid-template-columns: 1fr auto;
+        grid-template-columns: auto 1fr auto auto;
         grid-template-areas:
-          "text text"
-          "lead speak";
+          "text text text text"
+          "lead .    trail speak";
         align-items: center;
         padding: 10px 10px 8px;
         gap: 8px;
@@ -1695,10 +1766,16 @@
       .compose-leading {
         grid-area: lead;
         max-width: none;
-        width: 100%;
+        width: auto;
         min-width: 0;
         margin-bottom: 0;
         align-self: center;
+      }
+      .compose-trailing {
+        grid-area: trail;
+        margin-bottom: 0;
+        align-self: center;
+        justify-self: end;
       }
       .compose-icon-btn {
         margin-bottom: 0;
