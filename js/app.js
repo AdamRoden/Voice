@@ -4466,39 +4466,53 @@
           icon.textContent = "hourglass_top";
           previewBtn.disabled = true;
           const apiKey = lsGet("elevenlabs_key", "");
-          const previewModel = modelSelect.value === "browser_tts"
+          // When Local Browser is selected, still preview on an Eleven model.
+          const selectedModel = modelSelect.value === "browser_tts"
             ? "eleven_v3"
-            : normalizeElevenModelId(modelSelect.value);
+            : modelSelect.value;
+          let objectUrl = null;
           try {
             if (!apiKey) throw new Error("No API key");
             if (!Eleven) throw new Error("AacEleven missing");
-            const speed = getSpeechSpeed();
-            const pitch = getSpeechPitch();
-            const { apiSpeed, localSpeed } = Eleven.splitSpeed(speed, previewModel);
-            const body = { text: previewText, model_id: previewModel };
-            if (apiSpeed != null) body.voice_settings = { speed: apiSpeed };
-            const fx = { speed: localSpeed, pitch };
+            const prepared = Eleven.prepareSpeakRequest({
+              phrase: previewText,
+              selectedModel,
+              speed: getSpeechSpeed(),
+              pitch: getSpeechPitch()
+            });
             const synRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice.voice_id}`, {
               method: "POST",
               headers: { Accept: "audio/mpeg", "Content-Type": "application/json", "xi-api-key": apiKey },
-              body: JSON.stringify(body)
+              body: JSON.stringify(prepared.body)
             });
             if (!synRes.ok) throw new Error("API Error");
             const blob = await synRes.blob();
-            let playUrl = URL.createObjectURL(blob);
-            let playFx = fx;
+            objectUrl = URL.createObjectURL(blob);
+            let playUrl = objectUrl;
+            let playFx = prepared.fx;
             try {
-              const baked = await bakeEffectsIntoAudioData(blob, fx);
+              const baked = await bakeEffectsIntoAudioData(blob, prepared.fx);
               if (baked.dataUrl) {
                 playUrl = baked.dataUrl;
                 if (baked.effectsBaked) playFx = null;
               }
             } catch (_) {}
             const audio = new Audio(playUrl);
-            audio.onended = resetPreview;
-            audio.onerror = resetPreview;
-            playAudioWithGain(audio, getVolumeGain(), { fx: playFx });
+            const cleanup = () => {
+              if (objectUrl) {
+                try { URL.revokeObjectURL(objectUrl); } catch (_) {}
+                objectUrl = null;
+              }
+              resetPreview();
+            };
+            audio.onended = cleanup;
+            audio.onerror = cleanup;
+            await playAudioWithGain(audio, getVolumeGain(), { fx: playFx, onEnded: cleanup });
           } catch (_) {
+            if (objectUrl) {
+              try { URL.revokeObjectURL(objectUrl); } catch (__) {}
+              objectUrl = null;
+            }
             alert("Could not preview voice.");
             resetPreview();
           }
