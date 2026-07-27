@@ -128,21 +128,23 @@
     const modelSelect = $("model-select");
     const volumeSlider = $("volume-slider");
     const speedSlider = $("speed-slider");
-    const stabilitySlider = $("stability-slider");
-    const similaritySlider = $("similarity-slider");
+    const pitchSlider = $("pitch-slider");
     const valVolume = $("val-volume");
-    /** Gain multipliers for Volume Percent stops 1–10 → 100%…1000%. */
+    /** Gain multipliers for Amplifier stops 1–10 → 100%…1000%. */
     const VOLUME_STOP_COUNT = 10;
     const VOLUME_STOP_GAINS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     const VOLUME_GAIN_MAX = VOLUME_STOP_GAINS[VOLUME_STOP_GAINS.length - 1];
+    const AudioFx = window.AacAudioFx;
+    const Eleven = window.AacEleven;
+    const KeyboardApi = window.AacKeyboard;
 
     function getVolumeStop() {
       const raw = parseInt(volumeSlider?.value, 10);
-      if (!Number.isFinite(raw)) return 3;
+      if (!Number.isFinite(raw)) return 1; // default Amplifier 100%
       return clamp(raw, 1, VOLUME_STOP_COUNT);
     }
 
-    /** Audio gain for the current volume stop (1…10). */
+    /** Audio gain for the current Amplifier stop (1…10). */
     function getVolumeGain() {
       return VOLUME_STOP_GAINS[getVolumeStop() - 1];
     }
@@ -152,9 +154,28 @@
       const s = clamp(stop, 1, VOLUME_STOP_COUNT);
       return Math.round(VOLUME_STOP_GAINS[s - 1] * 100);
     }
+
+    function getSpeechSpeed() {
+      const n = parseFloat(speedSlider?.value);
+      return Number.isFinite(n) ? clamp(n, 0.25, 4) : 1;
+    }
+
+    function getSpeechPitch() {
+      const n = parseFloat(pitchSlider?.value);
+      return Number.isFinite(n) ? clamp(n, 0.5, 2) : 1;
+    }
+
+    /** Current slider FX for unbaked clips. */
+    function getSpeechFx() {
+      return { speed: getSpeechSpeed(), pitch: getSpeechPitch() };
+    }
+
+    function normalizeElevenModelId(id) {
+      return Eleven ? Eleven.normalizeModelId(id) : "browser_tts";
+    }
+
     const valSpeed = $("val-speed");
-    const valStability = $("val-stability");
-    const valSimilarity = $("val-similarity");
+    const valPitch = $("val-pitch");
     const fontDisplay = $("font-display");
 
     // State Variables
@@ -172,7 +193,6 @@
     let customAccentColor = lsGet("aac_accent_color", "") || "";
     /** Advanced optional UI — off by default; enable under Settings → Advanced. */
     const FEAT_MESSAGE_WORDS_KEY = "aac_feat_message_words";
-    const FEAT_RECENTS_KEY = "aac_feat_recents";
     const FEAT_BUTTON_INSERT_KEY = "aac_feat_button_insert";
     const FEAT_INSERT_TAG_KEY = "aac_feat_insert_tag";
     const FEAT_COMPOSE_NEW_KEY = "aac_feat_compose_new";
@@ -185,7 +205,6 @@
       return v === "1" || v === "true";
     };
     let featMessageWords = lsGetBool(FEAT_MESSAGE_WORDS_KEY, false);
-    let featRecents = lsGetBool(FEAT_RECENTS_KEY, false);
     let featButtonInsert = lsGetBool(FEAT_BUTTON_INSERT_KEY, false);
     let featInsertTag = lsGetBool(FEAT_INSERT_TAG_KEY, false);
     let featComposeNew = lsGetBool(FEAT_COMPOSE_NEW_KEY, false);
@@ -223,64 +242,28 @@
             end = Math.max(0, Math.min(end, len));
           }
           displayInput.setSelectionRange(start, end);
-          neutralizeUnneededKeyboardScroll();
+          scheduleKeyboardAlign();
         } catch (_) {
           try {
             displayInput.focus({ preventScroll: true });
-            neutralizeUnneededKeyboardScroll();
+            scheduleKeyboardAlign();
           } catch (__) {}
         }
       });
     }
 
-    /**
-     * iPad/iOS often pans the page when the soft keyboard opens.
-     * Undo that scroll unless the keyboard would cover the text box.
-     */
-    function isDisplayInputCoveredByKeyboard() {
-      if (!displayInput) return false;
-      const vv = window.visualViewport;
-      const rect = displayInput.getBoundingClientRect();
-      const margin = 12;
-      if (vv) {
-        const top = vv.offsetTop;
-        const bottom = vv.offsetTop + vv.height;
-        return rect.bottom > bottom - margin || rect.top < top + margin;
+    // Soft keyboard: viewport pin + CSS dock (see js/keyboard.js)
+    let keyboardCtl = null;
+    function ensureKeyboard() {
+      if (!keyboardCtl && KeyboardApi && typeof KeyboardApi.createController === "function") {
+        keyboardCtl = KeyboardApi.createController({ isMobileLayout });
       }
-      // Fallback: treat as covered if near the bottom of the layout viewport
-      return rect.bottom > window.innerHeight - margin;
+      return keyboardCtl;
     }
-
-    function neutralizeUnneededKeyboardScroll() {
-      if (!displayInput || document.activeElement !== displayInput) return;
-      if (isDisplayInputCoveredByKeyboard()) {
-        // Only then allow a minimal bring-into-view (nearest, no smooth pan of whole page)
-        try {
-          const dock = document.querySelector(".bottom-dock-wrap") || displayInput;
-          dock.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "auto" });
-        } catch (_) {}
-        return;
-      }
-      // Not covered — cancel browser focus scroll / keyboard pan
-      try {
-        if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
-        if (document.documentElement) document.documentElement.scrollTop = 0;
-        if (document.body) document.body.scrollTop = 0;
-      } catch (_) {}
+    function scheduleKeyboardAlign() {
+      ensureKeyboard()?.schedule();
     }
-
-    displayInput.addEventListener("focus", () => {
-      // Run after Safari's focus scroll (often applied next frame)
-      neutralizeUnneededKeyboardScroll();
-      requestAnimationFrame(() => {
-        neutralizeUnneededKeyboardScroll();
-        setTimeout(neutralizeUnneededKeyboardScroll, 50);
-        setTimeout(neutralizeUnneededKeyboardScroll, 150);
-        setTimeout(neutralizeUnneededKeyboardScroll, 300);
-      });
-    });
     displayInput.addEventListener("blur", saveDisplaySelection);
-    // selectionchange is a document-level event
     document.addEventListener("selectionchange", () => {
       if (document.activeElement === displayInput) saveDisplaySelection();
     });
@@ -607,21 +590,17 @@
           fontSize: currentFontSize,
           model: modelSelect?.value || "browser_tts",
           speed: speedSlider?.value || "1",
-          volume: volumeSlider?.value || "3",
-          stability: stabilitySlider?.value || "0.5",
-          similarity: similaritySlider?.value || "0.75",
+          pitch: pitchSlider?.value || "1",
+          volume: volumeSlider?.value || "1",
           iconFill,
           iconWght,
           iconGrad,
           iconOpsz,
           featMessageWords,
-          featRecents,
           featButtonInsert,
           featInsertTag
           // API key intentionally omitted
-        },
-        // Text-only recents for convenience across devices
-        recentPhrases: Array.isArray(recentPhrases) ? recentPhrases.slice() : []
+        }
       };
     }
 
@@ -674,8 +653,9 @@
         applyDisplayFontSize();
       }
       if (settings.model && modelSelect) {
-        modelSelect.value = settings.model;
-        lsSet("elevenlabs_model", settings.model);
+        const mid = normalizeElevenModelId(settings.model);
+        modelSelect.value = mid;
+        lsSet("elevenlabs_model", mid);
         modelSelect.dispatchEvent(new Event("change"));
       }
       const fireSlider = (el, value) => {
@@ -684,13 +664,12 @@
         el.dispatchEvent(new Event("input"));
       };
       fireSlider(speedSlider, settings.speed);
+      fireSlider(pitchSlider, settings.pitch);
       if (settings.volume != null && settings.volume !== "" && volumeSlider) {
         const n = parseFloat(settings.volume);
         // Accept stop 1–10 (or legacy values) → nearest stop
         fireSlider(volumeSlider, Number.isFinite(n) ? String(clamp(Math.round(n), 1, VOLUME_STOP_COUNT)) : settings.volume);
       }
-      fireSlider(stabilitySlider, settings.stability);
-      fireSlider(similaritySlider, settings.similarity);
       if (settings.iconFill != null) iconFill = parseInt(settings.iconFill, 10) || 0;
       if (settings.iconWght != null) iconWght = parseInt(settings.iconWght, 10) || 400;
       if (settings.iconGrad != null) iconGrad = parseInt(settings.iconGrad, 10) || 0;
@@ -702,10 +681,6 @@
       if (Object.prototype.hasOwnProperty.call(settings, "featMessageWords")) {
         featMessageWords = !!settings.featMessageWords;
         lsSet(FEAT_MESSAGE_WORDS_KEY, featMessageWords ? "1" : "0");
-      }
-      if (Object.prototype.hasOwnProperty.call(settings, "featRecents")) {
-        featRecents = !!settings.featRecents;
-        lsSet(FEAT_RECENTS_KEY, featRecents ? "1" : "0");
       }
       if (Object.prototype.hasOwnProperty.call(settings, "featButtonInsert")) {
         featButtonInsert = !!settings.featButtonInsert;
@@ -778,25 +753,6 @@
       saveTopicsList();
 
       if (data.settings && mode === "replace") applyImportedSettings(data.settings);
-
-      if (Array.isArray(data.recentPhrases)) {
-        if (mode === "merge") {
-          data.recentPhrases.forEach((t) => {
-            const phrase = trim(t);
-            if (!phrase) return;
-            recentPhrases = recentPhrases.filter(x => x !== phrase);
-            recentPhrases.unshift(phrase);
-          });
-          if (recentPhrases.length > RECENTS_MAX) recentPhrases.length = RECENTS_MAX;
-        } else {
-          recentPhrases = data.recentPhrases
-            .map(t => trim(t))
-            .filter(Boolean)
-            .slice(0, RECENTS_MAX);
-        }
-        saveRecentPhrases();
-        renderRecentsStrip();
-      }
 
       commitTopicsUi();
       try {
@@ -2654,7 +2610,6 @@
         row: Math.floor(activeTab.buttons.length / activeTab.gridCols)
       }, activeTab.buttons.length);
       applyGeneratedSpeechToButton(btn, source);
-      pushRecentPhrase(source.text || getUtteranceText(source));
       activeTab.buttons.push(btn);
       repackSequentialGrid(activeTab);
       commitTopicsUi();
@@ -2684,107 +2639,10 @@
       const btn = tab?.buttons.find(b => b.id === btnId);
       if (!btn) return;
       applyGeneratedSpeechToButton(btn, source);
-      pushRecentPhrase(source.text || getUtteranceText(source));
       setOverwriteMode(false);
       commitTopicsUi();
       focusDisplayInput();
     }
-
-    // ==================== RECENT PHRASES (under display) ====================
-    const RECENTS_MAX = 16;
-    const RECENTS_STORAGE_KEY = "aac_recent_phrases";
-    let recentPhrases = loadRecentPhrases();
-
-    function loadRecentPhrases() {
-      const raw = lsGetJson(RECENTS_STORAGE_KEY, null);
-      if (Array.isArray(raw)) {
-        return raw.map(t => trim(t)).filter(Boolean).slice(0, RECENTS_MAX);
-      }
-      // Seed from speech history text (text only)
-      try {
-        const hist = asArray(lsGetJson("aac_history", []));
-        const seen = new Set();
-        const seeded = [];
-        for (const h of hist) {
-          const t = trim(h && h.text);
-          if (!t || seen.has(t)) continue;
-          seen.add(t);
-          seeded.push(t);
-          if (seeded.length >= RECENTS_MAX) break;
-        }
-        return seeded;
-      } catch (_) {
-        return [];
-      }
-    }
-
-    function saveRecentPhrases() {
-      lsSet(RECENTS_STORAGE_KEY, JSON.stringify(recentPhrases));
-      try { if (typeof saveActiveChatSnapshot === "function") saveActiveChatSnapshot(); } catch (_) {}
-    }
-
-    function pushRecentPhrase(text) {
-      const t = trim(text);
-      if (!t) return;
-      recentPhrases = recentPhrases.filter(x => x !== t);
-      recentPhrases.unshift(t);
-      if (recentPhrases.length > RECENTS_MAX) recentPhrases.length = RECENTS_MAX;
-      saveRecentPhrases();
-      renderRecentsStrip();
-    }
-
-    function clearRecentPhrases() {
-      recentPhrases = [];
-      saveRecentPhrases();
-      renderRecentsStrip();
-    }
-
-    function renderRecentsStrip() {
-      const strip = document.getElementById("recents-strip");
-      const chips = document.getElementById("recents-chips");
-      const toolbar = document.getElementById("insert-toolbar");
-      if (!strip || !chips) return;
-      chips.innerHTML = "";
-      if (!featRecents || !recentPhrases.length) {
-        strip.classList.remove("has-items");
-        toolbar?.classList.remove("has-items");
-        return;
-      }
-      strip.classList.add("has-items");
-      toolbar?.classList.add("has-items");
-      recentPhrases.forEach((phrase) => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "recents-chip";
-        btn.setAttribute("role", "listitem");
-        btn.textContent = phrase;
-        btn.title = `Tap: insert · Double-tap: speak — ${phrase}`;
-        let lastTap = 0;
-        btn.addEventListener("click", () => {
-          const now = Date.now();
-          if (now - lastTap < 380) {
-            lastTap = 0;
-            speakPhrase(phrase, { recordHistory: true, showLoading: false, alertOnError: false });
-            return;
-          }
-          lastTap = now;
-          // Delay single-tap insert slightly so double-tap can cancel
-          setTimeout(() => {
-            if (lastTap && Date.now() - lastTap >= 360) {
-              insertTextAtDisplayCaret(phrase);
-              lastTap = 0;
-            }
-          }, 370);
-        });
-        chips.appendChild(btn);
-      });
-    }
-
-    document.getElementById("recents-clear-btn")?.addEventListener("click", () => {
-      if (!recentPhrases.length) return;
-      if (!confirm("Clear all recent phrases?")) return;
-      clearRecentPhrases();
-    });
 
     // ==================== HISTORY (No Inline Relabeling) ====================
     function addToHistory(textSpoken, model, voiceId, audioBlob, extra = {}) {
@@ -2805,13 +2663,11 @@
         saveHistory();
         renderHistory();
         setGeneratedAudioActions(item);
-        pushRecentPhrase(textSpoken);
         return item;
       } catch (_) {
         // History is best-effort — never fail speech because of storage/UI
         try {
           setGeneratedAudioActions(item);
-          pushRecentPhrase(textSpoken);
         } catch (__) {}
         return null;
       }
@@ -3210,6 +3066,8 @@
       syncSpeakClearToDisplayHeight();
       displayInput.style.height = "auto";
       displayInput.style.height = `${displayInput.scrollHeight}px`;
+      // Keep the field bottom pinned to the keyboard top as it grows.
+      if (document.activeElement === displayInput) scheduleKeyboardAlign();
     }
 
     /**
@@ -3252,7 +3110,6 @@
     /** Apply Advanced feature flags to body attrs, checkboxes, and related UI. */
     function applyAdvancedFeatures() {
       document.body.dataset.featMessageWords = featMessageWords ? "1" : "0";
-      document.body.dataset.featRecents = featRecents ? "1" : "0";
       document.body.dataset.featButtonInsert = featButtonInsert ? "1" : "0";
       document.body.dataset.featInsertTag = featInsertTag ? "1" : "0";
       document.body.dataset.featComposeNew = featComposeNew ? "1" : "0";
@@ -3260,7 +3117,6 @@
       document.body.dataset.featComposeReplay = featComposeReplay ? "1" : "0";
       document.body.dataset.featComposeHistory = featComposeHistory ? "1" : "0";
       const mw = document.getElementById("opt-message-words");
-      const rec = document.getElementById("opt-recents");
       const ins = document.getElementById("opt-button-insert");
       const tag = document.getElementById("opt-insert-tag");
       const cn = document.getElementById("opt-compose-new");
@@ -3268,7 +3124,6 @@
       const cr = document.getElementById("opt-compose-replay");
       const ch = document.getElementById("opt-compose-history");
       if (mw) mw.checked = featMessageWords;
-      if (rec) rec.checked = featRecents;
       if (ins) ins.checked = featButtonInsert;
       if (tag) tag.checked = featInsertTag;
       if (cn) cn.checked = featComposeNew;
@@ -3277,7 +3132,6 @@
       if (ch) ch.checked = featComposeHistory;
       syncComposeStrip();
       syncGeneratedAudioActions();
-      renderRecentsStrip();
       renderSoundButtons();
     }
 
@@ -3286,9 +3140,6 @@
       if (which === "messageWords") {
         featMessageWords = on;
         lsSet(FEAT_MESSAGE_WORDS_KEY, on ? "1" : "0");
-      } else if (which === "recents") {
-        featRecents = on;
-        lsSet(FEAT_RECENTS_KEY, on ? "1" : "0");
       } else if (which === "buttonInsert") {
         featButtonInsert = on;
         lsSet(FEAT_BUTTON_INSERT_KEY, on ? "1" : "0");
@@ -3319,7 +3170,7 @@
 
     /**
      * Topic chats (1–5): each open topic is its own chat — no duplicate topicIds.
-     * Stores text, topicId, and recents per chat.
+     * Stores text and topicId per chat.
      */
     const CHAT_MIN = 1;
     const CHAT_MAX = 5;
@@ -3337,8 +3188,7 @@
     function emptyChat(topicId = null) {
       return {
         text: "",
-        topicId: topicId || defaultTopicIdForChat(0),
-        recents: []
+        topicId: topicId || defaultTopicIdForChat(0)
       };
     }
 
@@ -3346,18 +3196,13 @@
       if (typeof raw === "string") {
         return {
           text: raw,
-          topicId: fallbackTopicId || defaultTopicIdForChat(0),
-          recents: []
+          topicId: fallbackTopicId || defaultTopicIdForChat(0)
         };
       }
       if (!raw || typeof raw !== "object") return emptyChat(fallbackTopicId);
-      const recents = Array.isArray(raw.recents)
-        ? raw.recents.map((t) => trim(t)).filter(Boolean).slice(0, RECENTS_MAX)
-        : [];
       return {
         text: raw.text == null ? "" : String(raw.text),
-        topicId: raw.topicId || fallbackTopicId || defaultTopicIdForChat(0),
-        recents
+        topicId: raw.topicId || fallbackTopicId || defaultTopicIdForChat(0)
       };
     }
 
@@ -3391,15 +3236,7 @@
       for (let i = 0; i < n; i++) {
         const tid = defaultTopicIdForChat(i);
         if (!tid || starter.some((c) => c.topicId === tid)) continue;
-        if (i === 0) {
-          starter.push({
-            text: "",
-            topicId: tid,
-            recents: Array.isArray(recentPhrases) ? recentPhrases.slice() : []
-          });
-        } else {
-          starter.push(emptyChat(tid));
-        }
+        starter.push(emptyChat(tid));
       }
       return reconcileChatsList(starter);
     }
@@ -3424,15 +3261,14 @@
       } catch (_) {}
     }
 
-    /** Snapshot workspace into the active chat (text + topic + recents). */
+    /** Snapshot workspace into the active chat (text + topic). */
     function saveActiveChatSnapshot() {
       if (!chats || !chats[activeChat]) return;
       // Topic is fixed to the chat's topic (no duplicate topics across chats)
       const topicId = chats[activeChat].topicId || activeTopicId;
       chats[activeChat] = {
         text: getText(),
-        topicId,
-        recents: Array.isArray(recentPhrases) ? recentPhrases.slice() : []
+        topicId
       };
       persistChats();
     }
@@ -3445,9 +3281,7 @@
 
     function chatHasContent(chat) {
       if (!chat) return false;
-      if (trim(chat.text)) return true;
-      if (Array.isArray(chat.recents) && chat.recents.length) return true;
-      return false;
+      return !!trim(chat.text);
     }
 
     function findChatIndexForTopic(topicId) {
@@ -3494,8 +3328,7 @@
         // New topic becomes active in-place; previous active chat slides out as another chip
         const prev = {
           text: chats[activeChat]?.text || "",
-          topicId: chats[activeChat]?.topicId,
-          recents: Array.isArray(chats[activeChat]?.recents) ? chats[activeChat].recents.slice() : []
+          topicId: chats[activeChat]?.topicId
         };
         chats[activeChat] = emptyChat(topicId);
         if (prev.topicId && prev.topicId !== topicId) chats.push(normalizeChat(prev));
@@ -3554,7 +3387,7 @@
 
       chats.forEach((chatRow, idx) => {
         const chat = idx === activeChat
-          ? { text: getText(), topicId: chats[idx]?.topicId || activeTopicId, recents: recentPhrases }
+          ? { text: getText(), topicId: chats[idx]?.topicId || activeTopicId }
           : chatRow;
         const filled = chatHasContent(chat);
         const topic = topicsList.find((t) => t.id === chat?.topicId)
@@ -3620,10 +3453,6 @@
       const c = normalizeChat(chat, activeTopicId);
       setText(c.text || "", (c.text || "").length);
 
-      recentPhrases = Array.isArray(c.recents) ? c.recents.slice() : [];
-      lsSet(RECENTS_STORAGE_KEY, JSON.stringify(recentPhrases));
-      renderRecentsStrip();
-
       const tid = c.topicId && topicsList.some((t) => t.id === c.topicId)
         ? c.topicId
         : (topicsList[0] && topicsList[0].id) || activeTopicId;
@@ -3669,7 +3498,7 @@
     }
 
     function clearDisplayText() {
-      // Clear message text only; keep this chat's topic and recents
+      // Clear message text only; keep this chat's topic
       setText("");
       if (chats[activeChat]) chats[activeChat].text = "";
       persistChats();
@@ -3709,7 +3538,7 @@
       }
     });
 
-    // Apply the restored active chat (topic + recents + text) on load
+    // Apply the restored active chat (topic + text) on load
     applyChatToWorkspace(chats[activeChat]);
     syncChatUi();
 
@@ -3895,15 +3724,18 @@
       stopActiveHtmlAudio();
     }
 
+    /**
+     * Play a clip. Pass fx only when effects are not already baked.
+     * @param {string} audioData data URL / URL
+     * @param {{ fx?: { speed: number, pitch: number }|null }} [opts]
+     */
     function playAudioData(audioData, opts = {}) {
       if (audioData) {
-        const audio = new Audio(audioData);
-        const gainSetting = getVolumeGain();
-        // Clips with speed already baked play at rate 1
-        const applySpeed = opts.applySpeed !== false;
-        const speed = applySpeed ? (parseFloat(speedSlider.value) || 1.0) : 1.0;
-        audio.playbackRate = speed;
-        playAudioWithGain(audio, gainSetting, { applySpeed, speed });
+        const fx = opts.fx != null ? opts.fx : null;
+        playAudioWithGain(new Audio(audioData), getVolumeGain(), {
+          fx,
+          onEnded: typeof opts.onEnded === "function" ? opts.onEnded : null
+        });
       }
       focusDisplayInput();
     }
@@ -3917,98 +3749,13 @@
         return;
       }
       if (src.audioData) {
-        playAudioData(src.audioData, { applySpeed: !src.effectsBaked });
+        // Baked clips: no fx. Live/unbaked: apply current slider FX once in the player.
+        playAudioData(src.audioData, {
+          fx: src.effectsBaked ? null : getSpeechFx()
+        });
         return;
       }
       focusDisplayInput();
-    }
-
-    function interpolateSample(data, pos) {
-      if (!data || data.length === 0) return 0;
-      if (pos <= 0) return data[0] || 0;
-      if (pos >= data.length - 1) return data[data.length - 1] || 0;
-      const i0 = Math.floor(pos);
-      const frac = pos - i0;
-      return data[i0] * (1 - frac) + data[i0 + 1] * frac;
-    }
-
-    /** Linear resample a channel to a new length (speed change). */
-    function linearResampleChannel(input, newLen) {
-      const target = Math.max(1, Math.round(newLen));
-      if (!input || input.length === 0) return new Float32Array(target);
-      if (input.length === target) {
-        return input.slice ? input.slice() : new Float32Array(input);
-      }
-      const out = new Float32Array(target);
-      if (target === 1) {
-        out[0] = input[0] || 0;
-        return out;
-      }
-      const ratio = (input.length - 1) / (target - 1);
-      for (let i = 0; i < target; i++) out[i] = interpolateSample(input, i * ratio);
-      return out;
-    }
-
-    /** Apply speed offline (duration ≈ original / speed). */
-    function applySpeedToBuffer(ctx, audioBuffer, speed) {
-      if (!audioBuffer) return audioBuffer;
-      const rate = clamp(parseFloat(speed) || 1, 0.25, 4);
-      if (Math.abs(rate - 1) < 1e-6) return audioBuffer;
-      const targetLength = Math.max(1, Math.round(audioBuffer.length / rate));
-      const out = ctx.createBuffer(audioBuffer.numberOfChannels, targetLength, audioBuffer.sampleRate);
-      for (let ch = 0; ch < audioBuffer.numberOfChannels; ch++) {
-        out.copyToChannel(linearResampleChannel(audioBuffer.getChannelData(ch), targetLength), ch);
-      }
-      return out;
-    }
-
-    /** Encode an AudioBuffer as a 16-bit mono/stereo WAV data URL. */
-    function audioBufferToWavDataUrl(audioBuffer) {
-      const numChannels = audioBuffer.numberOfChannels;
-      const sampleRate = audioBuffer.sampleRate;
-      const numFrames = audioBuffer.length;
-      const bytesPerSample = 2;
-      const blockAlign = numChannels * bytesPerSample;
-      const dataSize = numFrames * blockAlign;
-      const buffer = new ArrayBuffer(44 + dataSize);
-      const view = new DataView(buffer);
-
-      const writeStr = (offset, str) => {
-        for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
-      };
-      writeStr(0, "RIFF");
-      view.setUint32(4, 36 + dataSize, true);
-      writeStr(8, "WAVE");
-      writeStr(12, "fmt ");
-      view.setUint32(16, 16, true);
-      view.setUint16(20, 1, true);
-      view.setUint16(22, numChannels, true);
-      view.setUint32(24, sampleRate, true);
-      view.setUint32(28, sampleRate * blockAlign, true);
-      view.setUint16(32, blockAlign, true);
-      view.setUint16(34, bytesPerSample * 8, true);
-      writeStr(36, "data");
-      view.setUint32(40, dataSize, true);
-
-      const channels = [];
-      for (let ch = 0; ch < numChannels; ch++) channels.push(audioBuffer.getChannelData(ch));
-      let offset = 44;
-      for (let i = 0; i < numFrames; i++) {
-        for (let ch = 0; ch < numChannels; ch++) {
-          let s = channels[ch][i];
-          s = Math.max(-1, Math.min(1, s));
-          view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
-          offset += 2;
-        }
-      }
-
-      const bytes = new Uint8Array(buffer);
-      let binary = "";
-      const chunk = 0x8000;
-      for (let i = 0; i < bytes.length; i += chunk) {
-        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
-      }
-      return `data:audio/wav;base64,${btoa(binary)}`;
     }
 
     async function ensureAudioCtx() {
@@ -4018,151 +3765,77 @@
       return ctx;
     }
 
-    async function decodeToBuffer(arrayBuffer) {
-      const ctx = await ensureAudioCtx();
-      return ctx.decodeAudioData(arrayBuffer.slice(0));
-    }
-
-    /** Bake current speed into a clip; identity speed keeps original encoding. */
-    async function bakeSpeedIntoAudioData(audioSource) {
-      const speed = parseFloat(speedSlider.value) || 1.0;
-      const speedIdentity = Math.abs(speed - 1) < 1e-6;
-
-      let arrayBuffer;
-      if (typeof audioSource === "string") {
-        if (speedIdentity) return { dataUrl: audioSource, effectsBaked: false };
-        const res = await fetch(audioSource);
-        if (!res.ok) throw new Error("fetch failed");
-        arrayBuffer = await res.arrayBuffer();
-      } else if (audioSource instanceof Blob) {
-        if (speedIdentity) return { dataUrl: await blobToDataUrl(audioSource), effectsBaked: false };
-        arrayBuffer = await audioSource.arrayBuffer();
-      } else if (audioSource instanceof ArrayBuffer) {
-        arrayBuffer = audioSource;
-        if (speedIdentity) {
-          return { dataUrl: audioBufferToWavDataUrl(await decodeToBuffer(arrayBuffer)), effectsBaked: true };
-        }
-      } else {
-        throw new Error("unsupported audio source");
-      }
-
-      const ctx = await ensureAudioCtx();
-      let audioBuffer = await ctx.decodeAudioData(arrayBuffer.slice(0));
-      audioBuffer = applySpeedToBuffer(ctx, audioBuffer, speed);
-      return { dataUrl: audioBufferToWavDataUrl(audioBuffer), effectsBaked: true };
+    /**
+     * Bake local speed + pitch once (for history / assign). Identity leaves original encoding.
+     * @param {Blob|string|ArrayBuffer} audioSource
+     * @param {{ speed?: number, pitch?: number }} [fx]
+     */
+    async function bakeEffectsIntoAudioData(audioSource, fx = null) {
+      if (!AudioFx) throw new Error("AacAudioFx missing");
+      const nfx = AudioFx.normalizeFx(fx != null ? fx : getSpeechFx());
+      return AudioFx.bakeEffects(audioSource, nfx, { getContext: ensureAudioCtx });
     }
 
     /**
-     * Play audio with raw gain (1…10) via Web Audio GainNode.
-     * Falls back to HTMLAudioElement at full element volume if decode path fails
-     * (element volume cannot exceed 1, so boost needs the Web Audio path).
+     * Play with gain. Apply fx at most once (null/identity = already processed).
      * @param {HTMLAudioElement} audioElement
      * @param {number} gainValue
-     * @param {{ applySpeed?: boolean, speed?: number, onStarted?: Function }} [opts]
+     * @param {{ fx?: { speed?: number, pitch?: number }|null, onStarted?: Function, onEnded?: Function }} [opts]
      */
     async function playAudioWithGain(audioElement, gainValue, opts = {}) {
-      const applySpeed = opts.applySpeed !== false;
-      const speed = applySpeed
-        ? (opts.speed != null ? opts.speed : (audioElement.playbackRate || 1))
-        : 1;
-      const rate = clamp(speed, 0.25, 4);
-      const onEnded = typeof audioElement.onended === "function" ? audioElement.onended.bind(audioElement) : null;
-      const onStarted = typeof opts.onStarted === "function" ? opts.onStarted : null;
-      // Raw multiplier — do not normalize into 0…1
-      const safeGain = clamp(parseFloat(gainValue) || 1, 0.05, VOLUME_GAIN_MAX);
-      const url = audioElement?.src || "";
-
-      let endedFired = false;
-      const fireEnded = () => {
-        if (endedFired) return;
-        endedFired = true;
-        if (onEnded) {
-          try { onEnded(); } catch (_) {}
-        }
-      };
-
-      const playHtmlFallback = async () => {
+      if (!AudioFx) {
         try {
-          stopActiveHtmlAudio();
-          activeHtmlAudio = audioElement;
-          // Element volume is capped at 1 by the platform; do not scale gain into 0…1
           audioElement.volume = 1;
-          try {
-            audioElement.preservesPitch = true;
-            audioElement.mozPreservesPitch = true;
-            audioElement.webkitPreservesPitch = true;
-          } catch (_) {}
-          audioElement.playbackRate = rate;
-          audioElement.onended = () => {
-            if (activeHtmlAudio === audioElement) activeHtmlAudio = null;
-            fireEnded();
-          };
-          audioElement.onerror = () => {
-            if (activeHtmlAudio === audioElement) activeHtmlAudio = null;
-            fireEnded();
-          };
-          await applySinkToMediaElement(audioElement);
           await audioElement.play();
-          try { if (onStarted) onStarted(); } catch (_) {}
-        } catch (_) {
-          if (activeHtmlAudio === audioElement) activeHtmlAudio = null;
-          fireEnded();
-        }
-      };
-
-      const ctx = getSharedAudioContext();
-      if (!ctx || !url) {
-        await playHtmlFallback();
+        } catch (_) {}
         return;
       }
+      const onEndedEl = typeof audioElement.onended === "function"
+        ? audioElement.onended.bind(audioElement)
+        : null;
+      const onEnded = typeof opts.onEnded === "function" ? opts.onEnded : onEndedEl;
+      const onStarted = typeof opts.onStarted === "function" ? opts.onStarted : null;
+      // Explicit fx only — do not re-read sliders here (avoids double application).
+      const fx = opts.fx != null ? AudioFx.normalizeFx(opts.fx) : { speed: 1, pitch: 1 };
 
-      try {
-        if (ctx.state === "suspended") await ctx.resume();
-        stopActiveBufferSources();
-
-        const response = await fetch(url);
-        if (!response.ok) throw new Error("fetch failed");
-        const arrayBuffer = await response.arrayBuffer();
-        const audioBuffer = await ctx.decodeAudioData(arrayBuffer.slice(0));
-
-        const source = ctx.createBufferSource();
-        source.buffer = audioBuffer;
-        source.playbackRate.value = rate;
-
-        const gainNode = ctx.createGain();
-        gainNode.gain.value = safeGain;
-        source.connect(gainNode);
-        gainNode.connect(ctx.destination);
-
-        source.onended = () => {
+      await AudioFx.playUrl({
+        url: audioElement?.src || "",
+        gain: gainValue,
+        gainMax: VOLUME_GAIN_MAX,
+        fx,
+        getContext: getSharedAudioContext,
+        stopPrevious: stopActiveBufferSources,
+        trackSource: (source) => { activeBufferSources.push(source); },
+        untrackSource: (source) => {
           activeBufferSources = activeBufferSources.filter((s) => s !== source);
-          try { source.disconnect(); } catch (_) {}
-          try { gainNode.disconnect(); } catch (_) {}
-          fireEnded();
-        };
-        activeBufferSources.push(source);
-        source.start(0);
-        try { if (onStarted) onStarted(); } catch (_) {}
-      } catch (_) {
-        await playHtmlFallback();
-      }
+        },
+        applySink: async (el) => {
+          activeHtmlAudio = el;
+          await applySinkToMediaElement(el);
+        },
+        fallbackElement: audioElement,
+        onStarted,
+        onEnded: () => {
+          if (activeHtmlAudio === audioElement) activeHtmlAudio = null;
+          if (onEnded) {
+            try { onEnded(); } catch (_) {}
+          }
+        }
+      });
     }
 
-    /** ElevenLabs-style [tag] directives. */
     function phraseHasInlineTags(text) {
-      return /\[[^\]]*\]/.test(String(text || ""));
+      return Eleven ? Eleven.phraseHasInlineTags(text) : /\[[^\]]*\]/.test(String(text || ""));
     }
 
-    /** Non-tag spoken content (tags stripped). Empty when phrase is blank or tags-only. */
     function stripInlineTags(text) {
-      return String(text || "")
-        .replace(/\[[^\]]*\]/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
+      return Eleven
+        ? Eleven.stripInlineTags(text)
+        : String(text || "").replace(/\[[^\]]*\]/g, " ").replace(/\s+/g, " ").trim();
     }
 
     function hasNonTagSpeechContent(text) {
-      return stripInlineTags(text).length > 0;
+      return Eleven ? Eleven.hasNonTagSpeechContent(text) : stripInlineTags(text).length > 0;
     }
 
     /** Screen-reader / status announcements */
@@ -4244,7 +3917,8 @@
       if (!phrase) return;
 
       const gainSetting = getVolumeGain();
-      const speed = parseFloat(speedSlider.value) || 1.0;
+      const speed = getSpeechSpeed();
+      const pitch = getSpeechPitch();
       const hasTags = phraseHasInlineTags(phrase);
       const hasSpeechBody = hasNonTagSpeechContent(phrase);
       const apiKey = lsGet("elevenlabs_key", "");
@@ -4270,7 +3944,6 @@
 
       try { window.speechSynthesis.cancel(); } catch (_) {}
       stopActiveBufferSources();
-      stopActiveHtmlAudio();
 
       const myGen = ++speakGeneration;
       const stillCurrent = () => myGen === speakGeneration;
@@ -4287,11 +3960,13 @@
 
       try {
         if (useBrowser) {
-          const utterance = new SpeechSynthesisUtterance(phrase);
+          // Browser path: strip [tags] — only v3 understands them
+          const browserText = stripInlineTags(phrase) || phrase;
+          const utterance = new SpeechSynthesisUtterance(browserText);
           // Raw gain (browsers may clamp to [0,1]; do not pre-scale by /10)
           utterance.volume = gainSetting;
           utterance.rate = speed;
-          utterance.pitch = 1;
+          utterance.pitch = pitch;
           const voices = window.speechSynthesis.getVoices();
           const voiceIdx = (activeBrowserVoiceIndex !== "" && voices[activeBrowserVoiceIndex])
             ? activeBrowserVoiceIndex
@@ -4319,8 +3994,14 @@
             focusDisplayInput();
             return;
           }
-          // Tags need v3; otherwise use the selected Eleven model
-          const modelToUse = hasTags ? "eleven_v3" : modelSelect.value;
+          if (!Eleven) throw new Error("AacEleven missing");
+
+          const prepared = Eleven.prepareSpeakRequest({
+            phrase,
+            selectedModel: modelSelect.value,
+            speed,
+            pitch
+          });
 
           const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
           const fetchTimeout = setTimeout(() => { try { controller?.abort(); } catch (_) {} }, 25000);
@@ -4329,14 +4010,7 @@
             res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${activeElevenVoiceId}`, {
               method: "POST",
               headers: { Accept: "audio/mpeg", "Content-Type": "application/json", "xi-api-key": apiKey },
-              body: JSON.stringify({
-                text: phrase,
-                model_id: modelToUse,
-                voice_settings: {
-                  stability: parseFloat(stabilitySlider.value),
-                  similarity_boost: parseFloat(similaritySlider.value)
-                }
-              }),
+              body: JSON.stringify(prepared.body),
               signal: controller ? controller.signal : undefined
             });
           } finally {
@@ -4351,8 +4025,14 @@
           let saveDataUrl = null;
           let effectsBaked = false;
           const objectUrl = URL.createObjectURL(blob);
+          // Prefer bake once; if bake fails, apply prepared.fx once at play.
+          let playFx = prepared.fx;
           try {
-            const baked = await withTimeout(bakeSpeedIntoAudioData(blob), 6000, "bake timeout");
+            const baked = await withTimeout(
+              bakeEffectsIntoAudioData(blob, prepared.fx),
+              8000,
+              "bake timeout"
+            );
             if (!stillCurrent()) {
               try { URL.revokeObjectURL(objectUrl); } catch (_) {}
               return;
@@ -4360,9 +4040,11 @@
             saveDataUrl = baked.dataUrl;
             effectsBaked = !!baked.effectsBaked;
             playUrl = saveDataUrl || objectUrl;
+            if (effectsBaked) playFx = null;
           } catch (_) {
             playUrl = objectUrl;
             effectsBaked = false;
+            playFx = prepared.fx;
             try {
               saveDataUrl = await blobToDataUrl(blob);
             } catch (__) {
@@ -4371,7 +4053,6 @@
           }
 
           const audio = new Audio(playUrl);
-          audio.playbackRate = effectsBaked ? 1 : speed;
 
           let cleaned = false;
           const cleanup = () => {
@@ -4387,8 +4068,7 @@
 
           audio.onended = cleanup;
           await playAudioWithGain(audio, gainSetting, {
-            applySpeed: !effectsBaked,
-            speed: effectsBaked ? 1 : speed,
+            fx: playFx,
             onStarted: () => {
               playbackStarted = true;
               if (stillCurrent()) setSpeakBtnSpeaking();
@@ -4405,7 +4085,7 @@
           focusDisplayInput();
 
           if (recordHistory && saveDataUrl) {
-            addToHistory(phrase, modelToUse, activeElevenVoiceId, saveDataUrl, { effectsBaked });
+            addToHistory(phrase, prepared.modelId, activeElevenVoiceId, saveDataUrl, { effectsBaked });
           }
         }
       } catch (_) {
@@ -4529,7 +4209,7 @@
       el.addEventListener("input", () => { paint(); lsSet(storeKey, el.value); });
     }
 
-    /** Volume Percent: 10 stops → gain 1…10; label shows 100%…1000%. */
+    /** Amplifier: 10 stops → gain 1…10; label shows 100%…1000%. */
     function syncVolumeSlider() {
       if (!volumeSlider || !valVolume) return;
       const saved = lsGet("elevenlabs_volume");
@@ -4554,8 +4234,18 @@
       $("group-eleven-settings").style.display = isBrowser ? "none" : "flex";
     }
 
-    modelSelect.value = lsGet("elevenlabs_model", "browser_tts") || "browser_tts";
-    modelSelect.addEventListener("change", (e) => { lsSet("elevenlabs_model", e.target.value); updateSettingsVisibility(); });
+    {
+      const savedModel = normalizeElevenModelId(lsGet("elevenlabs_model", "browser_tts") || "browser_tts");
+      modelSelect.value = savedModel;
+      // Persist migration of legacy model ids
+      if (lsGet("elevenlabs_model", "") !== savedModel) lsSet("elevenlabs_model", savedModel);
+    }
+    modelSelect.addEventListener("change", (e) => {
+      const mid = normalizeElevenModelId(e.target.value);
+      modelSelect.value = mid;
+      lsSet("elevenlabs_model", mid);
+      updateSettingsVisibility();
+    });
 
     // ==================== VOICES & API KEY MANAGEMENT ====================
     const previewText = "This is a preview.";
@@ -4684,9 +4374,9 @@
           window.speechSynthesis.cancel();
           const utterance = new SpeechSynthesisUtterance(previewText);
           utterance.voice = voice;
-          utterance.rate = parseFloat(speedSlider.value) || 1.0;
+          utterance.rate = getSpeechSpeed();
           utterance.volume = getVolumeGain();
-          utterance.pitch = 1;
+          utterance.pitch = getSpeechPitch();
           window.speechSynthesis.speak(utterance);
         });
         list.appendChild(item);
@@ -4776,20 +4466,38 @@
           icon.textContent = "hourglass_top";
           previewBtn.disabled = true;
           const apiKey = lsGet("elevenlabs_key", "");
-          const previewModel = modelSelect.value === "browser_tts" ? "eleven_v3" : modelSelect.value;
+          const previewModel = modelSelect.value === "browser_tts"
+            ? "eleven_v3"
+            : normalizeElevenModelId(modelSelect.value);
           try {
             if (!apiKey) throw new Error("No API key");
+            if (!Eleven) throw new Error("AacEleven missing");
+            const speed = getSpeechSpeed();
+            const pitch = getSpeechPitch();
+            const { apiSpeed, localSpeed } = Eleven.splitSpeed(speed, previewModel);
+            const body = { text: previewText, model_id: previewModel };
+            if (apiSpeed != null) body.voice_settings = { speed: apiSpeed };
+            const fx = { speed: localSpeed, pitch };
             const synRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice.voice_id}`, {
               method: "POST",
               headers: { Accept: "audio/mpeg", "Content-Type": "application/json", "xi-api-key": apiKey },
-              body: JSON.stringify({ text: previewText, model_id: previewModel })
+              body: JSON.stringify(body)
             });
             if (!synRes.ok) throw new Error("API Error");
-            const audio = new Audio(URL.createObjectURL(await synRes.blob()));
-            audio.playbackRate = parseFloat(speedSlider.value) || 1.0;
+            const blob = await synRes.blob();
+            let playUrl = URL.createObjectURL(blob);
+            let playFx = fx;
+            try {
+              const baked = await bakeEffectsIntoAudioData(blob, fx);
+              if (baked.dataUrl) {
+                playUrl = baked.dataUrl;
+                if (baked.effectsBaked) playFx = null;
+              }
+            } catch (_) {}
+            const audio = new Audio(playUrl);
             audio.onended = resetPreview;
             audio.onerror = resetPreview;
-            playAudioWithGain(audio, getVolumeGain());
+            playAudioWithGain(audio, getVolumeGain(), { fx: playFx });
           } catch (_) {
             alert("Could not preview voice.");
             resetPreview();
@@ -4913,10 +4621,9 @@
       window.addEventListener("offline", syncOfflineBanner);
       registerServiceWorker();
 
-      syncSlider(stabilitySlider, valStability, "elevenlabs_stability");
-      syncSlider(similaritySlider, valSimilarity, "elevenlabs_similarity");
       syncVolumeSlider();
       syncSlider(speedSlider, valSpeed, "elevenlabs_speed");
+      syncSlider(pitchSlider, valPitch, "aac_pitch");
 
       updateSettingsVisibility();
       updateApiKeyStatus();
@@ -4928,9 +4635,6 @@
       });
       document.getElementById("opt-message-words")?.addEventListener("change", (e) => {
         setFeatureFlag("messageWords", e.target.checked);
-      });
-      document.getElementById("opt-recents")?.addEventListener("change", (e) => {
-        setFeatureFlag("recents", e.target.checked);
       });
       document.getElementById("opt-button-insert")?.addEventListener("change", (e) => {
         setFeatureFlag("buttonInsert", e.target.checked);
@@ -4992,31 +4696,8 @@
         loadBrowserVoices();
       }
 
-      // Keep body height in sync with mobile browser chrome / keyboard when possible
-      const setAppHeight = () => {
-        const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-        if (isMobileLayout()) {
-          document.body.style.height = `${h}px`;
-        } else {
-          document.body.style.height = "";
-        }
-        // After keyboard resize, only keep page pan if the text box would be covered
-        neutralizeUnneededKeyboardScroll();
-      };
-      setAppHeight();
-      window.addEventListener("resize", setAppHeight);
-      if (window.visualViewport) {
-        window.visualViewport.addEventListener("resize", setAppHeight);
-        window.visualViewport.addEventListener("scroll", () => {
-          neutralizeUnneededKeyboardScroll();
-        });
-      }
-      // Catch iOS layout viewport pans that leave window.scrollY non-zero
-      window.addEventListener("scroll", () => {
-        if (document.activeElement === displayInput && !isDisplayInputCoveredByKeyboard()) {
-          try { window.scrollTo(0, 0); } catch (_) {}
-        }
-      }, { passive: true });
+      // Soft keyboard / visual viewport (js/keyboard.js)
+      ensureKeyboard()?.bind();
 
       renderTopics();
       applyAdvancedFeatures();

@@ -178,70 +178,6 @@
     }
     #topics-list { flex: 1; overflow-y: auto; min-height: 0; }
 
-    /* Recent phrases under the display */
-    .recents-strip {
-      display: none;
-      flex-direction: column;
-      gap: 4px;
-      flex-shrink: 0;
-      min-width: 0;
-    }
-    .recents-strip.has-items { display: flex; }
-    .recents-strip-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      padding: 0 2px;
-    }
-    .recents-strip-label {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-secondary);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-    .recents-clear-btn {
-      background: none;
-      border: none;
-      color: var(--text-secondary);
-      font-size: 11px;
-      font-weight: 600;
-      cursor: pointer;
-      padding: 4px 6px;
-      border-radius: 6px;
-      min-height: 28px;
-    }
-    .recents-clear-btn:hover { color: var(--danger); background: var(--danger-bg); }
-    .recents-chips {
-      display: flex;
-      flex-wrap: nowrap;
-      gap: 6px;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      padding: 2px 0 4px;
-      scrollbar-width: thin;
-    }
-    .recents-chip {
-      flex: 0 0 auto;
-      max-width: 11em;
-      background: var(--key-bg);
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: 999px;
-      padding: 6px 12px;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      min-height: 34px;
-      transition: background 0.15s, border-color 0.15s;
-    }
-    .recents-chip:hover { border-color: var(--accent); background: var(--key-hover); }
-    .recents-chip:active { background: var(--key-active); }
-
     .key.tts-btn.speaking {
       background-color: color-mix(in srgb, var(--accent) 70%, #fff);
       animation: speak-pulse 1.2s ease-in-out infinite;
@@ -287,6 +223,53 @@
       .sidebar-setting-group select, .sidebar-setting-group input[type="text"] { background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 10px 12px; border-radius: 8px; font-size: 16px; outline: none; width: 100%; min-height: 44px; }
         .sidebar-setting-group select:focus, .sidebar-setting-group input[type="text"]:focus { border-color: var(--accent); }
       .sidebar-setting-group input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; height: 28px; }
+
+    /* Range with a tick at the control's default value */
+    .range-field {
+      position: relative;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      /* Fraction 0–1 of the track where the default sits */
+      --range-mark: 0.5;
+      /* Approximate thumb size so the tick lines up with the thumb center */
+      --range-thumb: 16px;
+    }
+    .range-field input[type="range"] {
+      position: relative;
+      z-index: 1;
+      margin: 0;
+    }
+    .range-default-tick {
+      position: absolute;
+      left: calc(
+        (var(--range-thumb) / 2)
+        + (100% - var(--range-thumb)) * var(--range-mark)
+      );
+      top: 50%;
+      width: 3px;
+      height: 12px;
+      transform: translate(-50%, -50%);
+      background: var(--text-secondary);
+      border-radius: 1px;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.75;
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--bg-surface) 70%, transparent);
+    }
+    .range-default-tick::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 100%;
+      width: 0;
+      height: 0;
+      margin-left: -3px;
+      border-left: 3px solid transparent;
+      border-right: 3px solid transparent;
+      border-top: 4px solid var(--text-secondary);
+      opacity: 0.9;
+    }
     .settings-stack { display: flex; flex-direction: column; gap: 4px; }
     .setting-divider { border: 0; border-top: 1px solid var(--border); margin: 6px 0; }
 
@@ -338,8 +321,6 @@
     }
     /* Feature flags: hide optional UI when off (default) */
     body:not([data-feat-message-words="1"]) .compose-strip { display: none !important; }
-    body:not([data-feat-recents="1"]) .recents-strip,
-    body:not([data-feat-recents="1"]) #insert-toolbar { display: none !important; }
     body:not([data-feat-compose-new="1"]) #compose-new-message-btn { display: none !important; }
     body:not([data-feat-compose-pin="1"]) #compose-pin-btn { display: none !important; }
     body:not([data-feat-compose-replay="1"]) #compose-replay-btn { display: none !important; }
@@ -403,6 +384,30 @@
 
     /* ==================== MAIN WORKSPACE ==================== */
     .app-main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 5px; padding: 6px; overflow: hidden; height: 100%; position: relative; }
+
+    /* Soft keyboard: keep compose dock at the visual bottom (keyboard top) */
+    html.keyboard-open .app-main {
+      min-height: 0;
+    }
+    html.keyboard-open .sound-canvas {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: auto;
+    }
+    html.keyboard-open .bottom-dock-wrap {
+      flex-shrink: 0;
+      margin-top: auto;
+    }
+    html.keyboard-open .coach-banner,
+    html.keyboard-open .offline-banner {
+      flex-shrink: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+    /* Cap growth against visible area so the field expands upward above the keyboard */
+    html.keyboard-open .display-textarea {
+      max-height: min(180px, calc(var(--vv-height, 100dvh) * 0.4));
+    }
 
     /* Collapsible header shell (all screen sizes) */
     .workspace-header-shell {
@@ -831,7 +836,7 @@
     }
     .coach-banner-actions .modal-btn { min-height: 36px; padding: 8px 14px; font-size: 13px; }
 
-    /* Three chats (workspace header): each stores text + topic + recents */
+    /* Topic chats (workspace header): each stores text + topic */
     .chat-slots {
       display: flex;
       align-items: center;
@@ -1361,30 +1366,6 @@
       font-size: 13px;
       color: var(--text-secondary);
       text-align: center;
-    }
-
-    /* Recents row: hidden until there are phrases */
-    .insert-toolbar {
-      display: none;
-      align-items: center;
-      flex-wrap: nowrap;
-      gap: 6px;
-      min-height: 0;
-    }
-    .insert-toolbar.has-items {
-      display: flex;
-      min-height: var(--sound-row-height, 44px);
-    }
-    .insert-toolbar .recents-strip {
-      flex: 1 1 auto;
-      min-width: 0;
-      gap: 2px;
-    }
-    .insert-toolbar .recents-strip-header {
-      padding: 0;
-    }
-    .insert-toolbar .recents-chips {
-      padding: 0;
     }
 
     .key { background-color: var(--key-bg); border: 1px solid var(--border); border-radius: 7px; color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 3px; transition: all 0.15s; padding: 0; white-space: nowrap; min-height: 34px; height: 34px; width: 34px; min-width: 34px; flex-shrink: 0; }

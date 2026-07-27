@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
   <meta name="theme-color" content="#131314" media="(prefers-color-scheme: dark)">
   <meta name="theme-color" content="#f0f4f9" media="(prefers-color-scheme: light)">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -59,8 +59,7 @@
           <select id="model-select">
             <option value="browser_tts">Local Browser (Utterance)</option>
             <option value="eleven_v3">Eleven v3</option>
-            <option value="eleven_multilingual_v2">Eleven Multilingual v2</option>
-            <option value="eleven_flash_v2">Eleven Flash v2</option>
+            <option value="eleven_flash_v2_5">Eleven Flash v2.5</option>
           </select>
         </div>
 
@@ -82,23 +81,34 @@
               <span class="material-symbols-outlined icon-small">chevron_right</span>
             </button>
           </div>
-          <div class="sidebar-setting-group">
-            <label><span>Stability</span><span id="val-stability">0.50</span></label>
-            <input type="range" id="stability-slider" min="0.0" max="1.0" step="0.05" value="0.5">
-          </div>
-          <div class="sidebar-setting-group">
-            <label><span>Similarity</span><span id="val-similarity">0.75</span></label>
-            <input type="range" id="similarity-slider" min="0.0" max="1.0" step="0.05" value="0.75">
-          </div>
         </div>
 
         <div class="sidebar-setting-group">
-          <label><span>Volume Percent</span><span id="val-volume">300%</span></label>
-          <input type="range" id="volume-slider" min="1" max="10" step="1" value="3" aria-valuemin="1" aria-valuemax="10">
+          <label><span>Amplifier</span><span id="val-volume">100%</span></label>
+          <!-- Default mark at 100% (stop 1 of 1–10) -->
+          <div class="range-field" style="--range-mark: 0;">
+            <input type="range" id="volume-slider" min="1" max="10" step="1" value="1" aria-valuemin="1" aria-valuemax="10" list="volume-default-mark">
+            <span class="range-default-tick" title="Default (100%)" aria-hidden="true"></span>
+          </div>
+          <datalist id="volume-default-mark"><option value="1" label="Default"></option></datalist>
         </div>
         <div class="sidebar-setting-group">
           <label><span>Speech Speed</span><span id="val-speed">1.00</span></label>
-          <input type="range" id="speed-slider" min="0.5" max="2.0" step="0.1" value="1.0">
+          <!-- Default mark at 1.0 (mid of 0.5–2.0 → 1/3) -->
+          <div class="range-field" style="--range-mark: 0.333333;">
+            <input type="range" id="speed-slider" min="0.5" max="2.0" step="0.1" value="1.0" list="speed-default-mark">
+            <span class="range-default-tick" title="Default (1.00)" aria-hidden="true"></span>
+          </div>
+          <datalist id="speed-default-mark"><option value="1.0" label="Default"></option></datalist>
+        </div>
+        <div class="sidebar-setting-group">
+          <label><span>Pitch</span><span id="val-pitch">1.00</span></label>
+          <!-- Default mark at 1.0 (mid of 0.5–2.0 → 1/3) -->
+          <div class="range-field" style="--range-mark: 0.333333;">
+            <input type="range" id="pitch-slider" min="0.5" max="2.0" step="0.1" value="1.0" aria-valuemin="0.5" aria-valuemax="2" list="pitch-default-mark">
+            <span class="range-default-tick" title="Default (1.00)" aria-hidden="true"></span>
+          </div>
+          <datalist id="pitch-default-mark"><option value="1.0" label="Default"></option></datalist>
         </div>
 
         <hr class="setting-divider">
@@ -278,15 +288,6 @@
             </div>
           </div>
         </div>
-        <div class="toolbar insert-toolbar" id="insert-toolbar">
-          <div class="recents-strip" id="recents-strip" aria-label="Recent phrases">
-            <div class="recents-strip-header">
-              <span class="recents-strip-label">Recent</span>
-              <button type="button" class="recents-clear-btn" id="recents-clear-btn" title="Clear recent phrases">Clear</button>
-            </div>
-            <div class="recents-chips" id="recents-chips" role="list"></div>
-          </div>
-        </div>
       </div>
     </div>
   </main>
@@ -342,13 +343,6 @@
             <span class="setting-toggle-desc">Words under the text box with remove and option to Replay</span>
           </span>
           <input type="checkbox" id="opt-message-words" class="setting-toggle-input">
-        </label>
-        <label class="setting-toggle-row" for="opt-recents">
-          <span class="setting-toggle-text">
-            <span class="setting-toggle-title">Recent phrases</span>
-            <span class="setting-toggle-desc">Quick-insert strip under the text box</span>
-          </span>
-          <input type="checkbox" id="opt-recents" class="setting-toggle-input">
         </label>
         <label class="setting-toggle-row" for="opt-button-insert">
           <span class="setting-toggle-text">
@@ -496,7 +490,7 @@
       </div>
       <div class="sidebar-setting-group" id="topic-buttons-organizer-group">
         <label>Sound buttons</label>
-        <div class="modal-description">Drag to reorder. Tap a button to edit. Use × to remove. Changes apply when you Save.</div>
+        <div class="modal-description">Drag to reorder. Tap buttons to edit or remove.</div>
         <div class="topic-btn-organizer" id="topic-btn-organizer" role="list" aria-label="Sound buttons layout"></div>
       </div>
       <div class="sidebar-setting-group">
@@ -644,6 +638,9 @@
     <div id="voice-list-eleven" class="voice-list"></div>
   </div>
 
+  <script src="js/audio-fx.js" defer></script>
+  <script src="js/keyboard.js" defer></script>
+  <script src="js/eleven.js" defer></script>
   <script src="js/app.js" defer></script>
 </body>
 </html>
