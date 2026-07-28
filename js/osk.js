@@ -11,14 +11,83 @@
  *   (b) caret moves without a text mutation (click/select/keyup), or
  *   (c) host undo/redo that does not go through setText.
  * Keystrokes do not schedule here — they go through setText via composeInsert.
+ *
+ * Layout: one declarative layer per mode (alpha / alpha⇧ / sym / sym⇧).
+ * Each layer is 4 rows of key descriptors; insertable glyphs are unique within a layer.
  */
 (function (global) {
   "use strict";
 
-  const LETTERS = "qwertyuiopasdfghjkl,'zxcvbnm.".split("");
-  const LETTERS_SHIFT = "qwertyuiopasdfghjkl?\"zxcvbnm!".split("");
-  const SYMBOLS = "1234567890!@#$%^&*();-+=/[]<>".split("");
-  const SYMBOLS_SHIFT = "1234567890!@#$%^&*():-+=/{}<>".split("");
+  /* ---- key descriptors: { ch } | { action, label } + optional width ---- */
+  function ch(c, width) {
+    return width ? { ch: c, width: width } : { ch: c };
+  }
+  function act(action, label, width) {
+    const k = { action: action, label: label };
+    if (width) k.width = width;
+    return k;
+  }
+  function chars(s) {
+    return String(s).split("").map((c) => ch(c));
+  }
+
+  /** Shift-dependent punctuation (always on chrome slots; never on face rows). */
+  function punct(shift) {
+    return {
+      apos: shift ? "\"" : "'",
+      comma: shift ? "?" : ",",
+      period: shift ? "!" : "."
+    };
+  }
+
+  /** symbolsLabel is honest per layer: "123?" on alpha, "ABC" on symbols. */
+  function bottomRow(p, symbolsLabel) {
+    return [
+      act("symbols", symbolsLabel, "wide"),
+      act("ctrl", "⌘", "wide"),
+      act("space", "⎵", "space"),
+      ch(p.comma, "slim"),
+      ch(p.period, "slim"),
+      act("enter", "↵", "wide")
+    ];
+  }
+
+  /**
+   * Four modes via layoutAlpha / layoutSym × shift.
+   * Insertable uniqueness = inventory of `ch` values in the active layer
+   * (actions excluded). Symbols shift face rows omit " ? ! — those are punct only.
+   */
+  function layoutAlpha(shift) {
+    const letter = (s) => chars(shift ? s.toUpperCase() : s);
+    const p = punct(shift);
+    return [
+      letter("qwertyuiop"),
+      letter("asdfghjkl"),
+      [act("shift", "⇧"), ...letter("zxcvbnm"), ch(p.apos), act("backspace", "⌫")],
+      bottomRow(p, "123?")
+    ];
+  }
+
+  function layoutSym(shift) {
+    /* r1 digits stable; r2/r3 complementary; punct never duplicates face rows */
+    const p = punct(shift);
+    const r2 = chars(shift ? "'`~^|\\/{}±" : "@#$%&*()-+");
+    const r3 = chars(shift ? ":·°§¶…—" : "_=[]<>;");
+    return [
+      chars("1234567890"),
+      r2,
+      [act("shift", "⇧"), ...r3, ch(p.apos), act("backspace", "⌫")],
+      bottomRow(p, "ABC")
+    ];
+  }
+
+  function currentLayout() {
+    if (isSymbol) return layoutSym(isShift);
+    return layoutAlpha(isShift);
+  }
+
+  /** Single source for pred chip gap; applied to --osk-pred-gap on the row. */
+  const PRED_GAP_PX = 6;
 
   let opts = null;
   let root = null;
@@ -30,6 +99,7 @@
   let isSymbol = false;
   let predTimer = 0;
   let lastSnap = { chips: [], prefix: "", ctxWords: [] };
+  let predResizeObserver = null;
 
   function el(tag, cls, text) {
     const n = document.createElement(tag);
@@ -38,40 +108,33 @@
     return n;
   }
 
-  function currentFaces() {
-    if (isSymbol) return isShift ? SYMBOLS_SHIFT : SYMBOLS;
-    if (isShift) return LETTERS_SHIFT.map((c) => (/[a-z]/i.test(c) ? c.toUpperCase() : c));
-    return LETTERS.slice();
+  function keyClass(k) {
+    const parts = [];
+    if (k.action) {
+      parts.push("action");
+      if (k.action === "shift" && isShift) parts.push("latched");
+      if (k.action === "ctrl" && isCtrl) parts.push("latched");
+    } else {
+      parts.push("char");
+    }
+    if (k.width) parts.push(k.width);
+    return parts.join(" ");
+  }
+
+  function renderKey(k) {
+    if (k.action) return keyBtn(k.label, keyClass(k), k.action);
+    return keyBtn(k.ch, keyClass(k), null, k.ch);
   }
 
   function renderKeys() {
     if (!keysEl) return;
     keysEl.innerHTML = "";
-    const faces = currentFaces();
-
-    const row1 = el("div", "osk-row");
-    for (let i = 0; i < 10; i++) row1.appendChild(charBtn(faces[i]));
-    row1.appendChild(keyBtn("⌫", "action", "backspace"));
-    keysEl.appendChild(row1);
-
-    const row2 = el("div", "osk-row");
-    row2.appendChild(keyBtn("⇧", "action narrow" + (isShift ? " latched" : ""), "shift"));
-    for (let i = 10; i < 21; i++) {
-      row2.appendChild(charBtn(faces[i], i === 20 ? "char narrow" : "char"));
-    }
-    keysEl.appendChild(row2);
-
-    const row3 = el("div", "osk-row");
-    row3.appendChild(keyBtn("⌘", "action" + (isCtrl ? " latched" : ""), "ctrl"));
-    for (let i = 21; i < 25; i++) row3.appendChild(charBtn(faces[i]));
-    row3.appendChild(keyBtn("⎵", "action space", "space"));
-    for (let i = 25; i < 29; i++) row3.appendChild(charBtn(faces[i]));
-    row3.appendChild(keyBtn(isSymbol ? "ABC" : "123?", "action", "symbols"));
-    keysEl.appendChild(row3);
-  }
-
-  function charBtn(label, cls) {
-    return keyBtn(label, cls || "char", null, label);
+    const rows = currentLayout();
+    rows.forEach((rowKeys, i) => {
+      const row = el("div", i === rows.length - 1 ? "osk-row osk-row-bottom" : "osk-row");
+      rowKeys.forEach((k) => row.appendChild(renderKey(k)));
+      keysEl.appendChild(row);
+    });
   }
 
   function keyBtn(label, cls, action, char) {
@@ -126,20 +189,25 @@
       consumeModifiers();
       return;
     }
-    const ch = btn.dataset.char;
-    if (ch != null) {
+    if (action === "enter") {
+      insert("\n");
+      consumeModifiers();
+      return;
+    }
+    const chVal = btn.dataset.char;
+    if (chVal != null) {
       if (isCtrl) {
-        handleCtrlChord(ch);
+        handleCtrlChord(chVal);
         consumeModifiers();
         return;
       }
-      insert(ch);
+      insert(chVal);
       consumeModifiers();
     }
   }
 
-  function handleCtrlChord(ch) {
-    const lower = String(ch).toLowerCase();
+  function handleCtrlChord(chVal) {
+    const lower = String(chVal).toLowerCase();
     if (lower === "a" && typeof opts.selectAll === "function") {
       opts.selectAll();
       return;
@@ -220,20 +288,64 @@
     if (opts.onChange) opts.onChange();
   }
 
+  function makePredChip(label) {
+    const b = el("button", "osk-pred-chip", label);
+    b.type = "button";
+    b.addEventListener("pointerdown", (e) => e.preventDefault());
+    b.addEventListener("click", () => applyPrediction(label));
+    return b;
+  }
+
+  /**
+   * Render only as many prediction chips as fit in the pred-row viewport.
+   * Batch-append then prune the tail (one construction pass).
+   * Width 0 → leave empty; ResizeObserver re-runs after layout.
+   */
   function renderPredictions(chips) {
     if (!predRow) return;
     predRow.innerHTML = "";
     const list = chips && chips.length ? chips : [];
-    list.slice(0, 9).forEach((label) => {
-      const b = el("button", "osk-pred-chip", label);
-      b.type = "button";
-      b.addEventListener("pointerdown", (e) => e.preventDefault());
-      b.addEventListener("click", () => applyPrediction(label));
-      predRow.appendChild(b);
-    });
     if (!list.length) {
       predRow.appendChild(el("span", "osk-pred-empty", "Predictions appear as you type"));
+      return;
     }
+
+    const available = predRow.clientWidth;
+    if (available <= 0) return;
+
+    const frag = document.createDocumentFragment();
+    const buttons = [];
+    for (let i = 0; i < list.length; i++) {
+      const b = makePredChip(list[i]);
+      frag.appendChild(b);
+      buttons.push(b);
+    }
+    predRow.appendChild(frag);
+
+    let used = 0;
+    for (let i = 0; i < buttons.length; i++) {
+      const w = buttons[i].offsetWidth;
+      const need = i === 0 ? w : used + PRED_GAP_PX + w;
+      if (need > available && i > 0) {
+        for (let j = i; j < buttons.length; j++) predRow.removeChild(buttons[j]);
+        break;
+      }
+      // Single chip wider than the row: keep it (overflow:hidden) rather than empty.
+      used = need;
+    }
+  }
+
+  function recapPredictions() {
+    if (!visible) return;
+    renderPredictions(lastSnap.chips || []);
+  }
+
+  function ensurePredResizeObserver() {
+    if (!predRow || predResizeObserver || typeof ResizeObserver === "undefined") return;
+    predResizeObserver = new ResizeObserver(() => {
+      if (visible) recapPredictions();
+    });
+    predResizeObserver.observe(predRow);
   }
 
   function schedulePredict() {
@@ -248,16 +360,15 @@
     const caret = opts.getCaret ? opts.getCaret() : { start: text.length, end: text.length };
     const pos = caret.end != null ? caret.end : caret.start;
     let chips = [];
+    let prefix = "";
+    let ctxWords = [];
     if (global.VoicePredict && typeof VoicePredict.suggest === "function") {
       try {
         if (!VoicePredict.ready) VoicePredict.init();
         const res = VoicePredict.suggest(text, pos);
         chips = res.chips || [];
-        lastSnap = {
-          chips,
-          prefix: res.activePrefix || "",
-          ctxWords: res.ctxWords || []
-        };
+        prefix = res.activePrefix || "";
+        ctxWords = res.ctxWords || [];
       } catch (e) {
         console.warn("[VoiceOsk] predict failed", e);
       }
@@ -265,27 +376,29 @@
     if (!chips.length && !String(text).trim()) {
       chips = ["I", "You", "Can", "Please", "Hello", "What", "Yes", "No", "Thank"];
     }
+    lastSnap = { chips, prefix, ctxWords };
     renderPredictions(chips);
   }
 
   function buildShell() {
+    if (predResizeObserver) {
+      predResizeObserver.disconnect();
+      predResizeObserver = null;
+    }
     root.innerHTML = "";
     root.classList.add("osk-panel");
     const top = el("div", "osk-top-strip");
     predRow = el("div", "osk-pred-row");
+    predRow.style.setProperty("--osk-pred-gap", PRED_GAP_PX + "px");
     predRow.setAttribute("role", "list");
     predRow.setAttribute("aria-label", "Word predictions");
-    const hide = el("button", "osk-hide-btn", "Hide");
-    hide.type = "button";
-    hide.title = "Hide keyboard";
-    hide.addEventListener("click", () => setVisible(false));
     top.appendChild(predRow);
-    top.appendChild(hide);
     keysEl = el("div", "osk-keys");
     root.appendChild(top);
     root.appendChild(keysEl);
     renderKeys();
     renderPredictions([]);
+    ensurePredResizeObserver();
   }
 
   /** Internal mount — not on public API; use bindCompose. */
@@ -316,6 +429,7 @@
       root.classList.toggle("osk-open", visible);
       document.body.classList.toggle("osk-visible", visible);
     }
+    // Width may still be 0 on first show; ResizeObserver re-caps after layout.
     if (visible) refresh();
     if (opts && typeof opts.onVisibility === "function") opts.onVisibility(visible);
   }

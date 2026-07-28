@@ -409,39 +409,72 @@
       max-height: min(180px, calc(var(--vv-height, 100dvh) * 0.4));
     }
 
-    /* Collapsible header shell (all screen sizes) */
+    /* Collapsible header shell — default is collapsed (float over canvas, no layout height) */
     .workspace-header-shell {
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
       align-items: stretch;
       gap: 0;
-      z-index: 30;
       touch-action: pan-y;
-      position: relative;
       overflow: visible;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 0;
+      margin: 0;
+      padding: 0;
+      pointer-events: none;
+      z-index: 40;
+    }
+    .workspace-header-shell .header-expand-handle {
+      pointer-events: auto;
+    }
+    /* Expanded: in normal column flow */
+    .workspace-header-shell[data-expanded="1"] {
+      position: relative;
+      top: auto;
+      left: auto;
+      right: auto;
+      height: auto;
+      pointer-events: auto;
+      z-index: 30;
     }
     .workspace-header-shell.menu-open {
       z-index: 400;
     }
-    /* Visible only when header is collapsed */
+    /* Floating pull-tab (collapsed only). ::after extends hit target without painting. */
     .header-expand-handle {
+      position: relative;
       align-self: center;
       display: flex;
       align-items: center;
       justify-content: center;
-      width: min(120px, 40vw);
-      height: 22px;
-      min-height: 22px;
+      width: min(108px, 42vw);
+      height: 21px;
+      min-height: 21px;
       padding: 0;
       margin: 0;
       border: 1px solid var(--border);
+      border-top: none;
       border-radius: 0 0 12px 12px;
-      background: var(--bg-surface);
+      background: color-mix(in srgb, var(--bg-surface) 92%, transparent);
       color: var(--text-secondary);
       cursor: pointer;
-      box-shadow: 0 2px 8px color-mix(in srgb, var(--shadow) 40%, transparent);
+      box-shadow: 0 2px 6px color-mix(in srgb, var(--shadow) 45%, transparent);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
       transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .header-expand-handle::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      /* ~36px total touch height; invisible */
+      bottom: -15px;
     }
     .header-expand-handle:hover {
       color: var(--accent);
@@ -1910,7 +1943,7 @@
     }
 
 /* ==================== ON-SCREEN KEYBOARD + PREDICTIONS ==================== */
-/* Prototype 3-row layout; Speak/Clear stay on compose dock */
+/* 4-row QWERTY; Speak/Clear stay on compose dock. Pred chips cap to viewport width. */
 .osk-panel {
   display: none;
   flex-direction: column;
@@ -1934,34 +1967,23 @@
 .osk-top-strip {
   display: flex;
   align-items: center;
-  gap: 6px;
   min-height: 40px;
+  min-width: 0;
+  width: 100%;
 }
-.osk-hide-btn {
-  flex: 0 0 auto;
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
-  border-radius: 8px;
-  padding: 4px 10px;
-  font-size: 12px;
-  cursor: pointer;
-  min-height: 36px;
-}
-.osk-hide-btn:hover { color: var(--text); border-color: var(--text-secondary); }
 
 .osk-pred-row {
+  /* --osk-pred-gap set from JS (PRED_GAP_PX) so fit math and CSS share one value */
   flex: 1 1 auto;
   display: flex;
   flex-wrap: nowrap;
-  gap: 6px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 2px 2px;
+  gap: var(--osk-pred-gap, 6px);
+  overflow: hidden;
+  padding: 2px 0;
   min-height: 36px;
   min-width: 0;
+  width: 100%;
   align-items: center;
-  -webkit-overflow-scrolling: touch;
 }
 .osk-pred-chip {
   flex: 0 0 auto;
@@ -1985,20 +2007,35 @@
 }
 
 .osk-keys {
+  --osk-gap: 4px;
+  --osk-cols: 10;
+  /* Shared unit width so rows 1–3 keys match (10-col grid) */
+  --osk-key-w: calc((100% - (var(--osk-cols) - 1) * var(--osk-gap)) / var(--osk-cols));
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 .osk-row {
   display: flex;
-  gap: 4px;
+  gap: var(--osk-gap);
   justify-content: center;
 }
-.osk-key {
+/* Rows 1–3: every key is one equal column unit */
+.osk-row:not(.osk-row-bottom) .osk-key {
+  flex: 0 0 var(--osk-key-w);
+  width: var(--osk-key-w);
+  max-width: var(--osk-key-w);
+  min-width: 0;
+}
+/* Bottom row: proportional flex (space widest; symbols/cmd/enter wide; comma/period slim) */
+.osk-row-bottom .osk-key {
   flex: 1 1 0;
   min-width: 0;
-  /* Taller rows on desktop */
-  min-height: 56px;
+  max-width: none;
+  width: auto;
+}
+.osk-key {
+  min-height: 52px;
   background: var(--key-bg);
   color: var(--text);
   border: 1px solid transparent;
@@ -2010,10 +2047,17 @@
 }
 .osk-key:hover { background: var(--key-hover); }
 .osk-key:active { background: var(--key-active); }
-.osk-key.narrow { flex: 0 0 9%; max-width: 48px; }
-/* Space matches letter-key width (same flex as other keys) */
-.osk-key.space {
-  flex: 1 1 0;
+/* Change-keyboard, Cmd, Enter: wider than a standard letter key */
+.osk-row-bottom .osk-key.wide {
+  flex: 1.45 1 0;
+}
+/* Comma + period: equal, slightly narrower than standard */
+.osk-row-bottom .osk-key.slim {
+  flex: 0.78 1 0;
+}
+/* Space: widest key on the board */
+.osk-row-bottom .osk-key.space {
+  flex: 3.6 1 0;
   font-size: 14px;
   color: var(--text-secondary);
 }
@@ -2029,13 +2073,13 @@
 }
 
 @media (max-width: 600px) {
-  .osk-key { min-height: 48px; font-size: 16px; }
-  .osk-panel { max-height: min(52vh, 420px); }
+  .osk-key { min-height: 44px; font-size: 15px; }
+  .osk-panel { max-height: min(58vh, 480px); }
+  .osk-keys { --osk-gap: 3px; }
 }
 
 @media (min-width: 901px) {
-  .osk-key { min-height: 64px; font-size: 17px; }
-  .osk-keys { gap: 8px; }
-  .osk-row { gap: 6px; }
+  .osk-key { min-height: 58px; font-size: 17px; }
+  .osk-keys { gap: 8px; --osk-gap: 6px; }
   .osk-panel { max-height: min(50vh, 560px); padding: 10px 12px calc(10px + var(--safe-bottom, 0px)); }
 }
