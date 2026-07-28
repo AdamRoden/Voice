@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>VoicePredictType tests</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 16px; background: #111; color: #eee; }
+    .pass { color: #6d6; }
+    .fail { color: #f66; }
+    pre { background: #1a1a1a; padding: 12px; border-radius: 8px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <h1>predict-type tests</h1>
+  <pre id="out">Running…</pre>
+  <script src="../js/predict-data.js"></script>
+  <script src="../js/predict-type.js"></script>
+  <script>
+    (function () {
+      const out = document.getElementById("out");
+      const lines = [];
+      let failed = 0;
+      let passed = 0;
+
+      function assert(name, cond, detail) {
+        if (cond) {
+          passed++;
+          lines.push("PASS  " + name);
+        } else {
+          failed++;
+          lines.push("FAIL  " + name + (detail ? " — " + detail : ""));
+        }
+      }
+
+      function eq(a, b) {
+        return a === b;
+      }
+
+      const T = window.VoicePredictType;
+      assert("VoicePredictType loaded", !!T);
+      assert("VoicePredictData loaded", !!window.VoicePredictData);
+
+      // formatSuggestion / canonicalize
+      assert("i → I", eq(T.formatSuggestion("i", false), "I"));
+      assert("i'm → I'm", eq(T.formatSuggestion("i'm", false), "I'm"));
+      assert("hello sentence", eq(T.formatSuggestion("hello", true), "Hello"));
+      assert("hello mid", eq(T.formatSuggestion("hello", false), "hello"));
+      assert("ID preserved", eq(T.formatSuggestion("ID", false), "ID"));
+      assert("ill word", eq(T.formatSuggestion("ill", false), "ill"));
+
+      // orthographyFor: i-family
+      {
+        const o = T.orthographyFor("i", { midWord: true, isSentenceStart: true, prev1: "" });
+        assert("i pins I", o.pinChips[0] === "I");
+        assert("i includes I'm", o.pinChips.includes("I'm"));
+        assert("i boosts I", (o.boosts.get("i") || 0) > 0);
+      }
+
+      // orthographyFor: im
+      {
+        const o = T.orthographyFor("im", { midWord: true, prev1: "" });
+        assert("im pins I'm", o.pinChips[0] === "I'm");
+        assert("im candidates include I'm", o.candidates.some((c) => c.toLowerCase() === "i'm"));
+      }
+
+      // orthographyFor: ill context
+      {
+        const sick = T.orthographyFor("ill", { midWord: true, prev1: "feel" });
+        assert("feel ill prefers ill", sick.pinChips[0] === "ill");
+        const start = T.orthographyFor("ill", { midWord: true, prev1: "", isSentenceStart: true });
+        assert("start ill prefers I'll", start.pinChips[0] === "I'll");
+      }
+
+      // orthographyFor: id context
+      {
+        const badge = T.orthographyFor("id", { midWord: true, prev1: "my" });
+        assert("my id prefers ID", badge.pinChips[0] === "ID");
+        const start = T.orthographyFor("id", { midWord: true, prev1: "" });
+        assert("start id prefers I'd", start.pinChips[0] === "I'd");
+      }
+
+      // applyInsert: i + space
+      {
+        const r = T.applyInsert("i", 1, 1, " ");
+        assert("i+space → I ", eq(r.text, "I "), "got " + JSON.stringify(r.text));
+      }
+
+      // applyInsert: im + space
+      {
+        const r = T.applyInsert("im", 2, 2, " ");
+        assert("im+space → I'm ", eq(r.text, "I'm "), "got " + JSON.stringify(r.text));
+      }
+
+      // applyInsert: im + period
+      {
+        const r = T.applyInsert("im", 2, 2, ".");
+        assert("im+. → I'm.", eq(r.text, "I'm."), "got " + JSON.stringify(r.text));
+      }
+
+      // applyInsert: space-eating after chip space
+      {
+        const r = T.applyInsert("word ", 5, 5, ".");
+        assert("word + space + . → word.", eq(r.text, "word."), "got " + JSON.stringify(r.text));
+      }
+
+      // applyInsert: sentence start cap
+      {
+        const r = T.applyInsert("", 0, 0, "h");
+        assert("start h → H", eq(r.text, "H"), "got " + JSON.stringify(r.text));
+      }
+      {
+        const r = T.applyInsert("Hi. ", 4, 4, "t");
+        assert("after period t → T", eq(r.text, "Hi. T"), "got " + JSON.stringify(r.text));
+      }
+
+      // applyInsert: feel ill + space keeps ill
+      {
+        const r = T.applyInsert("feel ill", 8, 8, " ");
+        assert("feel ill+space stays", eq(r.text, "feel ill "), "got " + JSON.stringify(r.text));
+      }
+
+      // applyInsert: ill at start + space → I'll
+      {
+        const r = T.applyInsert("ill", 3, 3, " ");
+        assert("ill+space → I'll ", eq(r.text, "I'll "), "got " + JSON.stringify(r.text));
+      }
+
+      // dont + space
+      {
+        const r = T.applyInsert("dont", 4, 4, " ");
+        assert("dont+space → don't ", eq(r.text, "don't "), "got " + JSON.stringify(r.text));
+      }
+
+      lines.push("");
+      lines.push(failed ? failed + " failed, " + passed + " passed" : "All " + passed + " passed");
+      out.textContent = lines.join("\n");
+      out.className = failed ? "fail" : "pass";
+      document.title = (failed ? "FAIL" : "PASS") + " — predict-type tests";
+    })();
+  </script>
+</body>
+</html>

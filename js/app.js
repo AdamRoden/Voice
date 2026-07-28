@@ -2791,6 +2791,73 @@
       autosizeDisplayInput();
       syncGeneratedAudioActions();
       syncComposeStrip();
+      // Only refresh chips when OSK is open (not on history restore / bulk setText)
+      if (window.VoiceOsk && VoiceOsk.isVisible() && typeof VoiceOsk.schedulePredict === "function") {
+        try { VoiceOsk.schedulePredict(); } catch (_) {}
+      }
+    }
+
+    /**
+     * Canonical compose typing path: orthography (im→I'm, sentence cap, …) then setText.
+     * Used by system keyboard (beforeinput) and OSK insertText.
+     */
+    /**
+     * Canonical compose typing path: orthography then setText.
+     * setText schedules chip refresh when OSK is visible (single ownership).
+     */
+    function composeInsert(chunk) {
+      const text = getText();
+      const { start, end } = getDisplayCaretRange();
+      if (window.VoicePredict && typeof VoicePredict.applyInsert === "function") {
+        const res = VoicePredict.applyInsert(text, start, end, chunk);
+        setText(res.text, res.caret);
+      } else {
+        setText(text.substring(0, start) + chunk + text.substring(end), start + String(chunk).length);
+      }
+      focusDisplayInput();
+    }
+
+    /** Wire OSK + system keyboard (VoiceOsk.bindCompose). */
+    function initVoiceOsk() {
+      const panel = $("osk-panel");
+      if (!panel || !window.VoiceOsk || typeof VoiceOsk.bindCompose !== "function") return;
+
+      VoiceOsk.bindCompose({
+        panel,
+        toggleBtn: $("compose-osk-btn"),
+        displayInput,
+        getText,
+        setText,
+        getCaret: getDisplayCaretRange,
+        focus: focusDisplayInput,
+        composeInsert,
+        lsGet,
+        lsSet,
+        // setText already syncs strip/audio; onChange kept for non-setText paths
+        onChange: null,
+        selectAll: () => {
+          try {
+            displayInput.focus();
+            displayInput.select();
+          } catch (_) {}
+        },
+        clipboard: async (op) => {
+          const text = getText();
+          const { start, end } = getDisplayCaretRange();
+          const a = Math.min(start, end);
+          const b = Math.max(start, end);
+          if (op === "copy" || op === "cut") {
+            const slice = a !== b ? text.slice(a, b) : text;
+            if (slice && navigator.clipboard?.writeText) {
+              await navigator.clipboard.writeText(slice).catch(() => {});
+            }
+            if (op === "cut" && a !== b) setText(text.slice(0, a) + text.slice(b), a);
+          } else if (op === "paste" && navigator.clipboard?.readText) {
+            const clip = await navigator.clipboard.readText().catch(() => "");
+            if (clip) composeInsert(clip);
+          }
+        }
+      });
     }
 
     // ==================== COMPOSITION WORD CHIPS ====================
@@ -4107,6 +4174,10 @@
         focusDisplayInput();
         return;
       }
+      // Teach the offline Word LM from spoken text (personalization)
+      if (window.VoicePredict && typeof VoicePredict.learnText === "function") {
+        try { VoicePredict.learnText(text); } catch (_) {}
+      }
       await speakPhrase(text, { recordHistory: true, showLoading: true, alertOnError: true });
     }
 
@@ -4712,6 +4783,9 @@
 
       // Soft keyboard / visual viewport (js/keyboard.js)
       ensureKeyboard()?.bind();
+
+      // Custom OSK + word prediction (js/predict.js + js/osk.js) — no Smol
+      initVoiceOsk();
 
       renderTopics();
       applyAdvancedFeatures();

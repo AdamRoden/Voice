@@ -259,6 +259,9 @@
             </div>
             <textarea class="display-textarea" id="display-input" spellcheck="true" autocomplete="off" autocapitalize="sentences" placeholder="Type anything…" rows="1" aria-label="Message text"></textarea>
             <div class="compose-trailing" id="compose-trailing" aria-label="Message controls">
+              <button type="button" class="compose-icon-btn compose-standalone" id="compose-osk-btn" aria-label="On-screen keyboard" title="On-screen keyboard & word prediction" aria-pressed="false">
+                <span class="material-symbols-outlined">keyboard</span>
+              </button>
               <button type="button" class="compose-icon-btn compose-standalone" id="compose-new-message-btn" aria-label="Clear message" title="Clear message">
                 <span class="material-symbols-outlined">close</span>
               </button>
@@ -288,6 +291,7 @@
             </div>
           </div>
         </div>
+        <div class="osk-panel" id="osk-panel" hidden aria-label="On-screen keyboard"></div>
       </div>
     </div>
   </main>
@@ -641,6 +645,10 @@
   <script src="js/audio-fx.js" defer></script>
   <script src="js/keyboard.js" defer></script>
   <script src="js/eleven.js" defer></script>
+  <script src="js/predict-data.js" defer></script>
+  <script src="js/predict-type.js" defer></script>
+  <script src="js/predict.js" defer></script>
+  <script src="js/osk.js" defer></script>
   <script src="js/app.js" defer></script>
 </body>
 </html>
