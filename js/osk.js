@@ -422,6 +422,48 @@
     setVisible(opts.startVisible === true);
   }
 
+  /**
+   * Soft (touch) keyboard policy for the compose field.
+   * OSK on  → suppress OS virtual keyboard (inputmode=none); physical keys still type.
+   * OSK off → restore normal system keyboard behavior.
+   * Avoid permanent readonly — that blocks hardware keyboards.
+   */
+  function applySoftKeyboardPolicy(oskOn, displayInput) {
+    if (!displayInput) return;
+    if (oskOn) {
+      displayInput.setAttribute("inputmode", "none");
+      displayInput.setAttribute("virtualkeyboardpolicy", "manual");
+      displayInput.removeAttribute("readonly");
+      try {
+        if (navigator.virtualKeyboard) {
+          if (typeof navigator.virtualKeyboard.hide === "function") {
+            navigator.virtualKeyboard.hide();
+          }
+          // Prefer overlay so layout isn’t shoved by a residual system KB.
+          try { navigator.virtualKeyboard.overlaysContent = true; } catch (_) {}
+        }
+      } catch (_) {}
+    } else {
+      displayInput.removeAttribute("inputmode");
+      displayInput.removeAttribute("virtualkeyboardpolicy");
+      displayInput.removeAttribute("readonly");
+    }
+  }
+
+  function syncToggleUi(toggleBtn, on) {
+    if (!toggleBtn) return;
+    toggleBtn.setAttribute("aria-pressed", on ? "true" : "false");
+    toggleBtn.classList.toggle("osk-toggle-active", !!on);
+    // Active = custom OSK; inactive = system / OS keyboard
+    const label = on
+      ? "Use system keyboard"
+      : "Use on-screen keyboard";
+    toggleBtn.setAttribute("aria-label", label);
+    toggleBtn.setAttribute("title", on
+      ? "Show system keyboard (hide on-screen keyboard)"
+      : "Show on-screen keyboard (hide system keyboard)");
+  }
+
   function setVisible(on) {
     visible = !!on;
     if (root) {
@@ -441,6 +483,11 @@
   /**
    * Wire compose dock: OSK + system keyboard beforeinput + toggle.
    * App supplies composeInsert (canonical typing + orthography).
+   *
+   * Keyboard button toggles:
+   *   pressed / OSK visible → custom board, system soft KB suppressed
+   *   released / OSK hidden → system soft KB allowed (focus field to open it)
+   * Physical (hardware) keyboards always type into the field via beforeinput.
    */
   function bindCompose(cfg) {
     const {
@@ -463,7 +510,19 @@
     if (!panel) return;
 
     const LS_OSK = "aac_osk_visible";
-    const startVisible = lsGet ? lsGet(LS_OSK, "0") === "1" : false;
+    const LS_OSK_V2 = "aac_osk_default_v2";
+    // Default ON. Older builds wrote "0" on first load even when the user never
+    // chose; migrate once to the new default, then honor the toggle thereafter.
+    let startVisible = true;
+    if (lsGet && lsSet) {
+      if (lsGet(LS_OSK_V2, null) !== "1") {
+        lsSet(LS_OSK_V2, "1");
+        lsSet(LS_OSK, "1");
+        startVisible = true;
+      } else {
+        startVisible = lsGet(LS_OSK, "1") === "1";
+      }
+    }
 
     mountInternal({
       root: panel,
@@ -483,9 +542,14 @@
       onChange,
       onVisibility: (on) => {
         if (lsSet) lsSet(LS_OSK, on ? "1" : "0");
-        if (toggleBtn) {
-          toggleBtn.setAttribute("aria-pressed", on ? "true" : "false");
-          toggleBtn.classList.toggle("osk-toggle-active", !!on);
+        syncToggleUi(toggleBtn, on);
+        applySoftKeyboardPolicy(on, displayInput);
+        if (on) {
+          try {
+            if (navigator.virtualKeyboard && typeof navigator.virtualKeyboard.hide === "function") {
+              navigator.virtualKeyboard.hide();
+            }
+          } catch (_) {}
         }
       },
       selectAll,
@@ -494,24 +558,40 @@
       redo
     });
 
+    // Apply policy for initial visibility (onVisibility also runs from setVisible).
+    applySoftKeyboardPolicy(startVisible, displayInput);
+    syncToggleUi(toggleBtn, startVisible);
+
     if (toggleBtn) {
-      toggleBtn.setAttribute("aria-pressed", startVisible ? "true" : "false");
-      toggleBtn.classList.toggle("osk-toggle-active", startVisible);
       toggleBtn.addEventListener("click", () => {
         const next = !isVisible();
         setVisible(next);
-        if (next && typeof focus === "function") focus();
+        // Focus so system soft KB opens when OSK hides, and caret stays ready when OSK shows.
+        if (typeof focus === "function") focus();
       });
     }
 
-    if (displayInput && typeof composeInsert === "function") {
-      displayInput.addEventListener("beforeinput", (e) => {
-        if (e.isComposing) return;
-        if (e.inputType !== "insertText" || e.data == null || e.data === "") return;
-        e.preventDefault();
-        composeInsert(e.data);
-        // setText → schedulePredict; no second schedule here
+    if (displayInput) {
+      // Re-assert soft-KB suppression if iOS tries to surface it while OSK is up.
+      displayInput.addEventListener("focus", () => {
+        if (!isVisible()) return;
+        applySoftKeyboardPolicy(true, displayInput);
+        try {
+          if (navigator.virtualKeyboard && typeof navigator.virtualKeyboard.hide === "function") {
+            navigator.virtualKeyboard.hide();
+          }
+        } catch (_) {}
       });
+
+      if (typeof composeInsert === "function") {
+        displayInput.addEventListener("beforeinput", (e) => {
+          if (e.isComposing) return;
+          if (e.inputType !== "insertText" || e.data == null || e.data === "") return;
+          e.preventDefault();
+          composeInsert(e.data);
+          // setText → schedulePredict; no second schedule here
+        });
+      }
       // Caret-only moves (no text mutation) — single path for non-setText refresh
       const onCaret = () => schedulePredict();
       displayInput.addEventListener("keyup", onCaret);

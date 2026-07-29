@@ -4,9 +4,10 @@
   "description": "AAC speech board with browser and ElevenLabs voices",
   "start_url": "./index.html",
   "scope": "./",
+  "id": "./index.html",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#131314",
+  "background_color": "#ececec",
   "theme_color": "#131314",
   "lang": "en",
   "icons": [
@@ -15,12 +16,6 @@
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
-    },
-    {
-      "src": "icon.svg",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
     },
     {
       "src": "icon.svg",

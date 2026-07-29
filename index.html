@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   <link rel="stylesheet" href="css/app.css">
 </head>
-<body>
+<body class="osk-visible">
 
   <div class="sidebar-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
   <div id="sr-live" class="sr-live" aria-live="polite" aria-atomic="true"></div>
@@ -257,9 +257,9 @@
                 <div class="compose-actions-menu mode-topic-menu" id="compose-actions-menu" role="menu" aria-label="Message actions" hidden></div>
               </div>
             </div>
-            <textarea class="display-textarea" id="display-input" spellcheck="true" autocomplete="off" autocapitalize="sentences" placeholder="Type anything…" rows="1" aria-label="Message text"></textarea>
+            <textarea class="display-textarea" id="display-input" spellcheck="true" autocomplete="off" autocapitalize="sentences" inputmode="none" virtualkeyboardpolicy="manual" placeholder="Type anything…" rows="1" aria-label="Message text"></textarea>
             <div class="compose-trailing" id="compose-trailing" aria-label="Message controls">
-              <button type="button" class="compose-icon-btn compose-standalone" id="compose-osk-btn" aria-label="On-screen keyboard" title="On-screen keyboard & word prediction" aria-pressed="false">
+              <button type="button" class="compose-icon-btn compose-standalone" id="compose-osk-btn" aria-label="Use system keyboard" title="Show system keyboard (hide on-screen keyboard)" aria-pressed="true">
                 <span class="material-symbols-outlined">keyboard</span>
               </button>
               <button type="button" class="compose-icon-btn compose-standalone" id="compose-new-message-btn" aria-label="Clear message" title="Clear message">
@@ -291,7 +291,7 @@
             </div>
           </div>
         </div>
-        <div class="osk-panel" id="osk-panel" hidden aria-label="On-screen keyboard"></div>
+        <div class="osk-panel osk-open" id="osk-panel" aria-label="On-screen keyboard"></div>
       </div>
     </div>
   </main>

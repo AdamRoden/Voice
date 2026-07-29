@@ -385,27 +385,33 @@
     /* ==================== MAIN WORKSPACE ==================== */
     .app-main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 5px; padding: 6px; overflow: hidden; height: 100%; position: relative; }
 
-    /* Soft keyboard: keep compose dock at the visual bottom (keyboard top) */
-    html.keyboard-open .app-main {
+    /* Soft keyboard / OSK: keep compose dock at the bottom; canvas fills remainder */
+    html.keyboard-open .app-main,
+    body.osk-visible .app-main {
       min-height: 0;
     }
-    html.keyboard-open .sound-canvas {
+    html.keyboard-open .sound-canvas,
+    body.osk-visible .sound-canvas {
       flex: 1 1 auto;
       min-height: 0;
       overflow: auto;
     }
-    html.keyboard-open .bottom-dock-wrap {
+    html.keyboard-open .bottom-dock-wrap,
+    body.osk-visible .bottom-dock-wrap {
       flex-shrink: 0;
       margin-top: auto;
     }
     html.keyboard-open .coach-banner,
-    html.keyboard-open .offline-banner {
+    html.keyboard-open .offline-banner,
+    body.osk-visible .coach-banner,
+    body.osk-visible .offline-banner {
       flex-shrink: 1;
       min-height: 0;
       overflow: hidden;
     }
     /* Cap growth against visible area so the field expands upward above the keyboard */
-    html.keyboard-open .display-textarea {
+    html.keyboard-open .display-textarea,
+    body.osk-visible .display-textarea {
       max-height: min(180px, calc(var(--vv-height, 100dvh) * 0.4));
     }
 
@@ -419,6 +425,7 @@
       touch-action: pan-y;
       overflow: visible;
       position: absolute;
+      /* top offset: see mobile/standalone rules — must clear status bar / notch */
       top: 0;
       left: 0;
       right: 0;
@@ -1715,6 +1722,23 @@
         gap: 6px;
       }
 
+      /*
+       * Collapsed pull-tab is position:absolute against .app-main's padding box
+       * (top:0 = under the status bar / Dynamic Island). On mobile body padding
+       * is 0 and viewport-fit=cover + black-translucent draws edge-to-edge, so
+       * offset the floating shell by the safe-area inset explicitly.
+       */
+      .workspace-header-shell {
+        top: max(6px, env(safe-area-inset-top, 0px));
+        left: max(6px, env(safe-area-inset-left, 0px));
+        right: max(6px, env(safe-area-inset-right, 0px));
+      }
+      .workspace-header-shell[data-expanded="1"] {
+        top: auto;
+        left: auto;
+        right: auto;
+      }
+
       .workspace-header-shell[data-expanded="1"] .workspace-header {
         gap: 6px;
         padding: 6px 8px;
@@ -1723,6 +1747,25 @@
       .workspace-header .mobile-menu-btn .logo-mark {
         font-size: 24px;
         color: var(--accent);
+      }
+
+      /* Home-screen web app: never put the pull-tab in the system gesture strip */
+      @media (display-mode: standalone), (display-mode: fullscreen) {
+        .workspace-header-shell {
+          /* 47–59px typical on notched iPhones; floor at 44 if env() is wrong */
+          top: max(44px, env(safe-area-inset-top, 0px));
+        }
+        .workspace-header-shell[data-expanded="1"] {
+          top: auto;
+        }
+        /* Slightly taller hit target when chrome is floating under the island */
+        .header-expand-handle {
+          height: 28px;
+          min-height: 28px;
+        }
+        .header-expand-handle::after {
+          bottom: -18px;
+        }
       }
 
       /* Full-screen drawer is never the desktop "collapsed rail" — always show close */
@@ -1955,6 +1998,9 @@
   user-select: none;
   max-height: min(56vh, 520px);
   overflow: hidden;
+  /* Sit at the bottom of the compose dock (system-keyboard style) */
+  width: 100%;
+  margin-top: 0;
 }
 .osk-panel.osk-open,
 .osk-panel:not([hidden]) {
