@@ -1,5 +1,5 @@
 /* AAC Workspace service worker — offline shell + app assets */
-const CACHE_NAME = "aac-workspace-v4";
+const CACHE_NAME = "aac-workspace-v25";
 const PRECACHE = [
   "./",
   "./index.html",
@@ -8,6 +8,22 @@ const PRECACHE = [
   "./js/audio-fx.js",
   "./js/keyboard.js",
   "./js/eleven.js",
+  "./js/piper.js",
+  "./js/speech-engines.js",
+  "./js/speech-playback.js",
+  "./js/voices.js",
+  "./js/topics-edit.js",
+  "./js/topics.js",
+  "./js/workspace.js",
+  "./js/compose.js",
+  "./js/history-ui.js",
+  "./js/shell-ui.js",
+  "./js/icon-studio.js",
+  "./js/board-io.js",
+  "./js/predict-data.js",
+  "./js/predict-type.js",
+  "./js/predict.js",
+  "./js/osk.js",
   "./manifest.webmanifest",
   "./icon.svg"
 ];

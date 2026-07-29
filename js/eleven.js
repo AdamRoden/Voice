@@ -9,18 +9,16 @@
   const ELEVEN_API_SPEED_MIN = 0.7;
   const ELEVEN_API_SPEED_MAX = 1.2;
 
-  /** Canonical model ids + legacy aliases. */
-  const MODEL_ALIASES = {
-    browser_tts: "browser_tts",
-    eleven_v3: "eleven_v3",
-    eleven_flash_v2_5: "eleven_flash_v2_5",
-    eleven_flash_v2: "eleven_flash_v2_5",
-    eleven_multilingual_v2: "eleven_flash_v2_5"
-  };
-
+  /** Model ids: always AacSpeechEngines (loads before this module). */
   function normalizeModelId(id) {
-    const raw = String(id || "");
-    return MODEL_ALIASES[raw] || "browser_tts";
+    if (!global.AacSpeechEngines || typeof global.AacSpeechEngines.normalizeModelId !== "function") {
+      throw new Error("AacSpeechEngines required for model id normalization");
+    }
+    return global.AacSpeechEngines.normalizeModelId(id);
+  }
+
+  function isElevenModelId(id) {
+    return global.AacSpeechEngines.isElevenModel(id);
   }
 
   /** True if text contains Eleven-style [tag] directives. */
@@ -99,15 +97,61 @@
     };
   }
 
+  /**
+   * Fetch TTS audio from ElevenLabs.
+   * @param {{
+   *   phrase: string,
+   *   selectedModel: string,
+   *   voiceId: string,
+   *   apiKey: string,
+   *   speed: number,
+   *   pitch: number,
+   *   timeoutMs?: number
+   * }} opts
+   * @returns {Promise<{ blob: Blob, prepared: object }>}
+   */
+  async function fetchSpeech(opts) {
+    const prepared = prepareSpeakRequest({
+      phrase: opts.phrase,
+      selectedModel: opts.selectedModel,
+      speed: opts.speed,
+      pitch: opts.pitch
+    });
+    const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const fetchTimeout = setTimeout(() => {
+      try { controller?.abort(); } catch (_) {}
+    }, opts.timeoutMs != null ? opts.timeoutMs : 25000);
+    let res;
+    try {
+      res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${opts.voiceId}`, {
+        method: "POST",
+        headers: {
+          Accept: "audio/mpeg",
+          "Content-Type": "application/json",
+          "xi-api-key": opts.apiKey
+        },
+        body: JSON.stringify(prepared.body),
+        signal: controller ? controller.signal : undefined
+      });
+    } finally {
+      clearTimeout(fetchTimeout);
+    }
+    if (!res.ok) throw new Error("API Error");
+    const blob = await res.blob();
+    if (!blob || blob.size < 16) throw new Error("Empty audio");
+    return { blob, prepared };
+  }
+
   global.AacEleven = {
     ELEVEN_API_SPEED_MIN,
     ELEVEN_API_SPEED_MAX,
-    MODEL_ALIASES,
     normalizeModelId,
+    isElevenModelId,
     phraseHasInlineTags,
     stripInlineTags,
     hasNonTagSpeechContent,
     splitSpeed,
-    prepareSpeakRequest
+    prepareSpeakRequest,
+    fetchSpeech
   };
 })(typeof window !== "undefined" ? window : globalThis);
