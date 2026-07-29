@@ -62,16 +62,6 @@
     let speakUiState = "idle";
     let speakGeneration = 0;
 
-    const piperProgress = Piper.createProgressController({
-      getExpectedBytes: () => {
-        const sel = d.getVoiceSelection();
-        return Piper.getVoiceSizeBytes(sel && sel.piperVoiceId);
-      },
-      formatBytes: Piper.formatBytes.bind(Piper),
-      announce: d.announceLive
-    });
-    piperProgress.hide();
-
     function canSelectOutputDevice() {
       const mediaOk = typeof HTMLMediaElement !== "undefined"
         && typeof HTMLMediaElement.prototype.setSinkId === "function";
@@ -490,6 +480,13 @@
         d.announceLive("Offline — Piper voice not cached; using browser voice");
       } else if (engine.reason === "offline_eleven" || engine.reason === "offline_piper_error") {
         d.announceLive("Offline — using browser voice");
+      } else if (engine.reason === "piper_unsupported") {
+        d.announceLive("Piper is not available in this browser; using browser voice");
+      } else if (engine.missingDownload || engine.reason === "piper_not_downloaded") {
+        const msg = "Download this Piper voice in Settings before speaking.";
+        d.announceLive(msg);
+        if (alertOnError) alert(msg);
+        return;
       }
 
       if (engine.id !== "browser" && !hasSpeechBody) {
@@ -562,7 +559,14 @@
             d.focusDisplayInput();
             return;
           }
-          const dl = engine.id === "piper" ? piperProgress.beginSession() : null;
+          if (engine.missingDownload) {
+            const msg = "Download this Piper voice in Settings before speaking.";
+            d.announceLive(msg);
+            if (alertOnError) alert(msg);
+            finishUi();
+            d.focusDisplayInput();
+            return;
+          }
           try {
             const out = await SpeechEngines.produce(engine, {
               phrase,
@@ -571,13 +575,20 @@
               selectedModel: engine.modelId || selectedModel,
               apiKey,
               speed,
-              pitch,
-              onDownloadProgress: dl ? dl.onDownloadProgress : undefined
+              pitch
             }, { Piper, Eleven });
             if (!stillCurrent()) return;
             await playGeneratedBlob(out.blob, out.modelId, out.voiceId, out.fx, playCtx);
-          } finally {
-            if (dl) dl.finish();
+          } catch (err) {
+            if (err && err.code === "piper_not_downloaded") {
+              const msg = "Download this Piper voice in Settings before speaking.";
+              d.announceLive(msg);
+              if (alertOnError) alert(msg);
+              finishUi();
+              d.focusDisplayInput();
+              return;
+            }
+            throw err;
           }
           return;
         }

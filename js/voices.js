@@ -339,6 +339,7 @@ function defaultLoadKeys(storageKey) {
    *   onSelect: (item: object, row: HTMLElement) => void,
    *   onToggleFavorite?: (item: object) => void,
    *   onPreview?: (item: object, previewBtn: HTMLElement) => void|Promise<void>,
+   *   onDownload?: (item: object, downloadBtn: HTMLElement) => void|Promise<void>,
    *   previewTitle?: string
    * }} opts
    */
@@ -355,15 +356,46 @@ function defaultLoadKeys(storageKey) {
 
     items.forEach((item) => {
       const fav = !!item.favorite;
+      const downloading = !!item.downloading;
+      const cached = !!item.cached;
+      const showDownloadUi = !!item.piperDownloadUi;
+      const ready = cached && !downloading;
       const row = document.createElement("div");
-      row.className = `voice-item ${item.selected ? "selected" : ""}${fav ? " is-favorite" : ""}`;
+      const stateClass = !showDownloadUi
+        ? ""
+        : (downloading
+          ? " is-downloading"
+          : (ready ? " is-ready" : " needs-download"));
+      row.className = `voice-item ${item.selected ? "selected" : ""}${fav ? " is-favorite" : ""}${stateClass}`;
       row.dataset.voiceId = String(item.id || "");
       const meta = item.metaHtml || "";
+
+      let downloadHtml = "";
+      if (showDownloadUi) {
+        if (ready) {
+          downloadHtml = `
+        <button type="button" class="voice-download-btn is-ready" disabled title="Voice model downloaded" aria-label="Voice model downloaded">
+          <span class="material-symbols-outlined icon-small">check_circle</span>
+        </button>`;
+        } else if (downloading) {
+          downloadHtml = `
+        <button type="button" class="voice-download-btn is-downloading" disabled title="Downloading voice model…" aria-label="Downloading voice model" aria-busy="true">
+          <span class="material-symbols-outlined icon-small">hourglass_top</span>
+        </button>`;
+        } else {
+          downloadHtml = `
+        <button type="button" class="voice-download-btn" title="Download voice model" aria-label="Download voice model">
+          <span class="material-symbols-outlined icon-small">download</span>
+        </button>`;
+        }
+      }
+
       row.innerHTML = `
         <button type="button" class="voice-fav-btn${fav ? " is-on" : ""}" title="${fav ? "Remove from favorites" : "Add to favorites"}" aria-label="${fav ? "Remove from favorites" : "Add to favorites"}" aria-pressed="${fav ? "true" : "false"}">
           <span class="material-symbols-outlined icon-small">${fav ? "star" : "star_border"}</span>
         </button>
         <span class="voice-item-name">${escapeHtml(item.label)}${meta}</span>
+        ${downloadHtml}
         <button class="voice-preview-btn" type="button" title="${escapeHtml(opts.previewTitle || "Preview Voice")}">
           <span class="material-symbols-outlined icon-small">play_arrow</span>
         </button>
@@ -378,6 +410,14 @@ function defaultLoadKeys(storageKey) {
         e.stopPropagation();
         if (typeof opts.onToggleFavorite === "function") opts.onToggleFavorite(item);
       });
+
+      const downloadBtn = row.querySelector(".voice-download-btn");
+      if (downloadBtn && !downloadBtn.classList.contains("is-ready") && !downloadBtn.classList.contains("is-downloading")) {
+        downloadBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (typeof opts.onDownload === "function") opts.onDownload(item, downloadBtn);
+        });
+      }
 
       const previewBtn = row.querySelector(".voice-preview-btn");
       previewBtn?.addEventListener("click", (e) => {
@@ -411,7 +451,8 @@ function defaultLoadKeys(storageKey) {
    *   previewTitle?: string,
    *   onSelect: function,
    *   onToggleFavorite?: function,
-   *   onPreview?: function
+   *   onPreview?: function,
+   *   onDownload?: function
    * }} opts
    */
   async function renderCatalog(listEl, opts) {
@@ -437,26 +478,38 @@ function defaultLoadKeys(storageKey) {
       previewTitle: opts.previewTitle,
       onSelect: opts.onSelect,
       onToggleFavorite: opts.onToggleFavorite,
-      onPreview: opts.onPreview
+      onPreview: opts.onPreview,
+      onDownload: opts.onDownload
     });
   }
 
   /**
-   * Piper size/cached meta span for a voice row.
+   * Piper size/cached/downloading meta span for a voice row.
    */
-  function piperMetaHtml(voice, cached, Piper, escapeHtml) {
+  function piperMetaHtml(voice, state, Piper, escapeHtml) {
     const esc = escapeHtml || ((s) => String(s ?? ""));
+    const st = typeof state === "boolean"
+      ? { cached: state, downloading: false }
+      : (state || {});
+    const cached = !!st.cached;
+    const downloading = !!st.downloading;
     const sizeBytes = Piper && Piper.getVoiceSizeBytes ? Piper.getVoiceSizeBytes(voice) : null;
     const sizeLabel = sizeBytes && Piper.formatBytes ? Piper.formatBytes(sizeBytes) : "";
     const metaParts = [];
     if (sizeLabel) metaParts.push(sizeLabel);
-    if (cached) metaParts.push("cached");
+    if (downloading) metaParts.push("downloading…");
+    else if (cached) metaParts.push("ready");
+    else metaParts.push("not downloaded");
     if (!metaParts.length) return "";
     const sizeTitle = sizeBytes
       ? `Download size: ${sizeLabel} (${sizeBytes.toLocaleString()} bytes)`
       : "Download size unknown";
-    const metaTitle = cached ? `${sizeTitle} · Model cached on this device` : sizeTitle;
-    return `<span class="voice-item-meta${cached ? " cached" : ""}" title="${esc(metaTitle)}">${esc(metaParts.join(" · "))}</span>`;
+    let metaTitle = sizeTitle;
+    if (downloading) metaTitle = `${sizeTitle} · Download in progress`;
+    else if (cached) metaTitle = `${sizeTitle} · Ready on this device`;
+    else metaTitle = `${sizeTitle} · Download required before use`;
+    const cls = downloading ? " downloading" : (cached ? " cached" : " not-cached");
+    return `<span class="voice-item-meta${cls}" title="${esc(metaTitle)}">${esc(metaParts.join(" · "))}</span>`;
   }
 
   global.AacVoicesPanel = {
@@ -546,6 +599,13 @@ function defaultLoadKeys(storageKey) {
     let languageFilterSource = "";
     let voiceSearchTimeout = null;
     let piperPreviewAudio = null;
+    /** Voice id currently driving the shared download progress bar (for size label). */
+    let piperProgressVoiceId = "";
+    const piperDownloadProgress = Piper.createProgressController({
+      getExpectedBytes: () => Piper.getVoiceSizeBytes(piperProgressVoiceId),
+      formatBytes: Piper.formatBytes.bind(Piper)
+    });
+    try { piperDownloadProgress.hide(); } catch (_) {}
 
     /** null | "voices" | modalId — single return target for API key modal */
     let apiKeyReturnTo = null;
@@ -564,18 +624,47 @@ function defaultLoadKeys(storageKey) {
       return SpeechEngines.normalizeModelId(id);
     }
 
+    function isPiperAvailable() {
+      return !!(Piper && typeof Piper.isSupported === "function" && Piper.isSupported());
+    }
+
+    /** Coerce piper → browser when this runtime cannot run Piper reliably. */
+    function coerceAvailableModel(id) {
+      const mid = modelId(id);
+      if (mid === "piper_tts" && !isPiperAvailable()) return "browser_tts";
+      return mid;
+    }
+
+    /** Hide Piper from the model picker when unsupported (e.g. iPhone Safari). */
+    function applyPiperModelOptionVisibility() {
+      if (!modelSelect) return;
+      const opt = modelSelect.querySelector('option[value="piper_tts"]');
+      if (!opt) return;
+      if (isPiperAvailable()) {
+        opt.hidden = false;
+        opt.disabled = false;
+        opt.removeAttribute("aria-hidden");
+      } else {
+        opt.hidden = true;
+        opt.disabled = true;
+        opt.setAttribute("aria-hidden", "true");
+        // Remove so it cannot be chosen via keyboard/UI on picky mobile browsers.
+        try { opt.remove(); } catch (_) {}
+      }
+    }
+
     function readStoredModel() {
       let raw = lsGet(MODEL_STORAGE_KEY, null);
       if (raw == null || raw === "") {
         raw = lsGet(LEGACY_MODEL_STORAGE_KEY, "browser_tts");
       }
-      const mid = modelId(raw || "browser_tts");
+      const mid = coerceAvailableModel(raw || "browser_tts");
       if (lsGet(MODEL_STORAGE_KEY, "") !== mid) lsSet(MODEL_STORAGE_KEY, mid);
       return mid;
     }
 
     function persistModel(mid) {
-      const id = modelId(mid);
+      const id = coerceAvailableModel(mid);
       lsSet(MODEL_STORAGE_KEY, id);
       lsSet(LEGACY_MODEL_STORAGE_KEY, id);
       return id;
@@ -786,24 +875,95 @@ function defaultLoadKeys(storageKey) {
           langKey: VF.piperVoiceLangKey(voice),
           gender: VF.guessPiperGender(voice),
           searchText: `${voice.name || ""} ${voice.key || ""} ${voice.language?.code || ""}`,
-          sortName: voice.name || voice.key
+          sortName: voice.name || voice.key,
+          piperDownloadUi: true
         }),
         enrich: async (rows) => {
           const flags = await Promise.all(
             rows.map((row) => Piper.isVoiceStored(row.voice.key).catch(() => false))
           );
-          return rows.map((row, idx) => ({
-            ...row,
-            metaHtml: Panel.piperMetaHtml(row.voice, !!flags[idx], Piper, escapeHtml)
-          }));
+          return rows.map((row, idx) => {
+            const cached = !!flags[idx];
+            const downloading = !!(Piper.isVoiceDownloading
+              && Piper.isVoiceDownloading(row.voice.key));
+            return {
+              ...row,
+              cached,
+              downloading,
+              needsDownload: !cached,
+              showDownload: true,
+              piperDownloadUi: true,
+              // Only highlight as selected when ready — undownloaded cannot be used yet.
+              selected: cached && piperVoiceId === row.voice.key,
+              metaHtml: Panel.piperMetaHtml(
+                row.voice,
+                { cached, downloading },
+                Piper,
+                escapeHtml
+              )
+            };
+          });
         },
         onSelect: (item) => {
+          if (!item.cached) {
+            alert("Download this Piper voice first. Tap the download button on the right.");
+            return;
+          }
+          if (item.downloading) {
+            alert("This voice is still downloading. Wait until it finishes before selecting it.");
+            return;
+          }
           selectVoice(() => {
             piperVoiceId = Piper.normalizeVoiceId(item.voice.key);
             lsSet("aac_piper_voice", piperVoiceId);
           });
         },
         onToggleFavorite: (item) => favPiper.toggle(item.voice.key),
+        onDownload: async (item, downloadBtn) => {
+          const voiceId = Piper.normalizeVoiceId(item.voice.key);
+          // Never start a second download for the same voice.
+          if (Piper.isVoiceDownloading && Piper.isVoiceDownloading(voiceId)) {
+            return;
+          }
+          if (item.cached) return;
+
+          piperProgressVoiceId = voiceId;
+          const session = piperDownloadProgress.beginSession();
+          const icon = downloadBtn && downloadBtn.querySelector(".material-symbols-outlined");
+          if (downloadBtn) {
+            downloadBtn.disabled = true;
+            downloadBtn.classList.add("is-downloading");
+            downloadBtn.title = "Downloading voice model…";
+            downloadBtn.setAttribute("aria-busy", "true");
+          }
+          if (icon) icon.textContent = "hourglass_top";
+
+          // Kick off download first so inflight state is set before list re-render.
+          const downloadPromise = Piper.downloadVoice(voiceId, session.onDownloadProgress);
+          if (isVoicesPanelOpen() && currentVoiceGroup() === "piper") {
+            renderProviderCatalog("piper");
+          }
+
+          try {
+            await downloadPromise;
+            session.finish();
+            // Prefer the freshly downloaded voice.
+            piperVoiceId = voiceId;
+            lsSet("aac_piper_voice", piperVoiceId);
+            syncSelectedVoiceSummary();
+            if (isVoicesPanelOpen() && currentVoiceGroup() === "piper") {
+              await renderProviderCatalog("piper");
+            }
+          } catch (_) {
+            session.finish();
+            alert("Failed to download Piper voice. Check your connection and try again.");
+            if (isVoicesPanelOpen() && currentVoiceGroup() === "piper") {
+              await renderProviderCatalog("piper");
+            }
+          } finally {
+            piperProgressVoiceId = "";
+          }
+        },
         onPreview: async (item, previewBtn) => {
           const icon = previewBtn.querySelector(".material-symbols-outlined");
           if (previewBtn.dataset.playing === "1" && piperPreviewAudio) {
@@ -976,7 +1136,10 @@ function defaultLoadKeys(storageKey) {
           provider.onToggleFavorite(item);
           renderProviderCatalog(mode);
         },
-        onPreview: (item, btn) => provider.onPreview(item, btn)
+        onPreview: (item, btn) => provider.onPreview(item, btn),
+        onDownload: provider.onDownload
+          ? (item, btn) => provider.onDownload(item, btn)
+          : undefined
       });
     }
 
@@ -1042,6 +1205,14 @@ function defaultLoadKeys(storageKey) {
       }
     }
 
+    function isCoarsePointerUi() {
+      try {
+        if (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) return true;
+        if (window.matchMedia && window.matchMedia("(max-width: 900px)").matches) return true;
+      } catch (_) {}
+      return false;
+    }
+
     function openApiKeyModal(opts) {
       const options = opts || {};
       if (options.fromVoicesPanel || isVoicesPanelOpen()) {
@@ -1053,7 +1224,17 @@ function defaultLoadKeys(storageKey) {
       }
       if (apiKeyInput) apiKeyInput.value = lsGet("elevenlabs_key", "") || "";
       d.openModal("api-key-modal");
-      requestAnimationFrame(() => { try { apiKeyInput?.focus(); } catch (_) {} });
+      // Desktop: focus the field. Mobile: leave unfocused so the soft keyboard
+      // does not cover Save/Cancel before the user is ready to paste.
+      requestAnimationFrame(() => {
+        try {
+          if (!apiKeyInput || isCoarsePointerUi()) return;
+          apiKeyInput.focus({ preventScroll: true });
+          if (typeof apiKeyInput.select === "function" && apiKeyInput.value) {
+            apiKeyInput.select();
+          }
+        } catch (_) {}
+      });
     }
 
     function closeApiKeyModal(saved) {
@@ -1074,6 +1255,7 @@ function defaultLoadKeys(storageKey) {
     }
 
     function bind() {
+      applyPiperModelOptionVisibility();
       const savedModel = readStoredModel();
       if (modelSelect) modelSelect.value = savedModel;
 
@@ -1116,6 +1298,16 @@ function defaultLoadKeys(storageKey) {
           closeApiKeyModal(true);
         }
       });
+      // Keep the paste field visible above the soft keyboard on small screens.
+      apiKeyInput?.addEventListener("focus", () => {
+        requestAnimationFrame(() => {
+          try {
+            apiKeyInput.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
+          } catch (_) {
+            try { apiKeyInput.scrollIntoView(true); } catch (__) {}
+          }
+        });
+      });
 
       if (typeof window !== "undefined" && window.speechSynthesis) {
         window.speechSynthesis.onvoiceschanged = () => {
@@ -1138,6 +1330,7 @@ function defaultLoadKeys(storageKey) {
     }
 
     function setModel(id) {
+      applyPiperModelOptionVisibility();
       const mid = persistModel(id);
       if (modelSelect) {
         modelSelect.value = mid;

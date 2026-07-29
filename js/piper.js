@@ -56,12 +56,41 @@
   const MODEL_CACHE_NAME = "aac-piper-models-v1";
   /** Session memory: full URL → Blob (avoids re-fetch if disk cache fails). */
   const memoryBlobs = new Map();
+  /** In-flight ensureVoice promises keyed by normalized voiceId (dedupe downloads). */
+  const inflightEnsure = new Map();
   const MIN_MODEL_BYTES = 100000;
   const MIN_CONFIG_BYTES = 50;
   let persistRequested = false;
 
   function clamp(val, min, max) {
     return Math.max(min, Math.min(max, val));
+  }
+
+  /**
+   * Whether Piper ONNX + phonemizer WASM is expected to work in this browser.
+   * Hidden from the UI when false (iOS/iPadOS WebKit is unreliable for large WASM/ONNX).
+   */
+  function isSupported() {
+    try {
+      if (typeof WebAssembly === "undefined") return false;
+      if (typeof fetch !== "function") return false;
+      if (typeof navigator === "undefined") return false;
+
+      const ua = String(navigator.userAgent || "");
+      const platform = String(navigator.platform || "");
+      const maxTouch = Number(navigator.maxTouchPoints) || 0;
+
+      // Classic iPhone / iPod / iPad UAs (all browsers on iOS use WebKit).
+      if (/iPhone|iPod|iPad/i.test(ua)) return false;
+      // iPadOS 13+ desktop-class UA still reports MacIntel + multi-touch.
+      if (platform === "MacIntel" && maxTouch > 1) return false;
+      // Extra guard: iOS WebKit tokens without Android/desktop Chrome.
+      if (/\b(CriOS|FxiOS|EdgiOS|OPiOS)\b/i.test(ua)) return false;
+
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   /** Parse Piper voice keys like en_US-lessac-medium / en_GB-jenny_dioco-medium. */
@@ -465,8 +494,19 @@
     try {
       const path = voicePath(normalizeVoiceId(voiceId));
       const modelUrl = `${HF_BASE}/${path}`;
-      const blob = await readBlob(modelUrl);
-      return !!(blob && isPlausibleCachedBlob(modelUrl, blob));
+      const configUrl = `${modelUrl}.json`;
+      const modelBlob = await readBlob(modelUrl);
+      if (!modelBlob || !isPlausibleCachedBlob(modelUrl, modelBlob)) return false;
+      const configBlob = await readBlob(configUrl);
+      return !!(configBlob && isPlausibleCachedBlob(configUrl, configBlob));
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function isVoiceDownloading(voiceId) {
+    try {
+      return inflightEnsure.has(normalizeVoiceId(voiceId));
     } catch (_) {
       return false;
     }
@@ -523,67 +563,121 @@
   }
 
   /**
-   * Ensure ONNX + config are available. Progress only fires on network model fetch.
-   * @returns {Promise<{ downloaded: boolean, voiceId: string, modelBlob: Blob, config: object }>}
+   * Load ONNX + config from local cache only (no network).
+   * @returns {Promise<{ voiceId: string, modelBlob: Blob, config: object }>}
    */
-  async function ensureVoice(voiceId, onProgress) {
+  async function loadStoredVoice(voiceId) {
     const id = normalizeVoiceId(voiceId);
     const path = voicePath(id);
     const modelUrl = `${HF_BASE}/${path}`;
     const configUrl = `${HF_BASE}/${path}.json`;
-    let downloaded = false;
 
-    let configBlob = await readBlob(configUrl);
-    if (!configBlob || !isPlausibleCachedBlob(configUrl, configBlob)) {
-      configBlob = await fetchBlob(configUrl);
-      await writeBlob(configUrl, configBlob);
-    }
-
-    let modelBlob = await readBlob(modelUrl);
+    const modelBlob = await readBlob(modelUrl);
     if (!modelBlob || !isPlausibleCachedBlob(modelUrl, modelBlob)) {
-      downloaded = true;
-      if (typeof onProgress === "function") {
-        onProgress({ url: modelUrl, total: 0, loaded: 0, percent: null, phase: "model" });
-      }
-      modelBlob = await fetchBlob(modelUrl, (p) => {
-        if (typeof onProgress === "function") onProgress({ ...p, phase: "model" });
-      });
-      if (!isPlausibleCachedBlob(modelUrl, modelBlob)) {
-        throw new Error("Piper model download incomplete or too small");
-      }
-      await writeBlob(modelUrl, modelBlob);
-      if (typeof onProgress === "function") {
-        onProgress({
-          url: modelUrl,
-          total: modelBlob.size,
-          loaded: modelBlob.size,
-          percent: 100,
-          phase: "done"
-        });
-      }
+      const err = new Error("Piper voice not downloaded: " + id);
+      err.code = "piper_not_downloaded";
+      throw err;
     }
-
+    const configBlob = await readBlob(configUrl);
+    if (!configBlob || !isPlausibleCachedBlob(configUrl, configBlob)) {
+      const err = new Error("Piper voice config not downloaded: " + id);
+      err.code = "piper_not_downloaded";
+      throw err;
+    }
     const config = JSON.parse(await configBlob.text());
-    return { downloaded, voiceId: id, modelBlob, config };
+    return { voiceId: id, modelBlob, config };
   }
 
-  async function getSession(voiceId, onProgress) {
+  /**
+   * Ensure ONNX + config are available (downloads if needed). Concurrent calls for the
+   * same voice share one in-flight promise — never starts a second download.
+   * Progress only fires on network model fetch.
+   * @returns {Promise<{ downloaded: boolean, voiceId: string, modelBlob: Blob, config: object }>}
+   */
+  async function ensureVoice(voiceId, onProgress) {
+    const id = normalizeVoiceId(voiceId);
+
+    if (inflightEnsure.has(id)) {
+      return inflightEnsure.get(id);
+    }
+
+    const run = (async () => {
+      const path = voicePath(id);
+      const modelUrl = `${HF_BASE}/${path}`;
+      const configUrl = `${HF_BASE}/${path}.json`;
+      let downloaded = false;
+
+      let configBlob = await readBlob(configUrl);
+      if (!configBlob || !isPlausibleCachedBlob(configUrl, configBlob)) {
+        configBlob = await fetchBlob(configUrl);
+        await writeBlob(configUrl, configBlob);
+      }
+
+      let modelBlob = await readBlob(modelUrl);
+      if (!modelBlob || !isPlausibleCachedBlob(modelUrl, modelBlob)) {
+        downloaded = true;
+        if (typeof onProgress === "function") {
+          onProgress({ url: modelUrl, total: 0, loaded: 0, percent: null, phase: "model" });
+        }
+        modelBlob = await fetchBlob(modelUrl, (p) => {
+          if (typeof onProgress === "function") onProgress({ ...p, phase: "model" });
+        });
+        if (!isPlausibleCachedBlob(modelUrl, modelBlob)) {
+          throw new Error("Piper model download incomplete or too small");
+        }
+        await writeBlob(modelUrl, modelBlob);
+        if (typeof onProgress === "function") {
+          onProgress({
+            url: modelUrl,
+            total: modelBlob.size,
+            loaded: modelBlob.size,
+            percent: 100,
+            phase: "done"
+          });
+        }
+      }
+
+      const config = JSON.parse(await configBlob.text());
+      return { downloaded, voiceId: id, modelBlob, config };
+    })();
+
+    inflightEnsure.set(id, run);
+    try {
+      return await run;
+    } finally {
+      inflightEnsure.delete(id);
+    }
+  }
+
+  /**
+   * Explicit download (alias of ensureVoice with shared in-flight dedupe).
+   * No-ops into the existing promise when a download is already running.
+   */
+  function downloadVoice(voiceId, onProgress) {
+    return ensureVoice(voiceId, onProgress);
+  }
+
+  /**
+   * Create an ONNX session from a fully cached voice only — never downloads.
+   * @returns {Promise<{ session: any, config: object, voiceId: string, downloaded: false }>}
+   */
+  async function getSession(voiceId) {
     const id = normalizeVoiceId(voiceId);
     if (sessionCache.has(id)) {
       return { ...sessionCache.get(id), downloaded: false };
     }
 
     const ort = await ensureOrt();
-    const ensured = await ensureVoice(id, onProgress);
-    const session = await ort.InferenceSession.create(await ensured.modelBlob.arrayBuffer());
-    const entry = { session, config: ensured.config, voiceId: id };
+    const stored = await loadStoredVoice(id);
+    const session = await ort.InferenceSession.create(await stored.modelBlob.arrayBuffer());
+    const entry = { session, config: stored.config, voiceId: id };
     sessionCache.set(id, entry);
-    return { ...entry, downloaded: ensured.downloaded };
+    return { ...entry, downloaded: false };
   }
 
   /**
-   * Ensure model (with optional download progress) and synthesize WAV.
-   * @param {{ text: string, voiceId?: string, speed?: number, speakerId?: number, onDownloadProgress?: function }} opts
+   * Synthesize WAV from a fully downloaded voice only (never starts a model download).
+   * @param {{ text: string, voiceId?: string, speed?: number, speakerId?: number }} opts
    * @returns {Promise<{ blob: Blob, downloaded: boolean, voiceId: string }>}
    */
   async function synthesize(opts) {
@@ -592,9 +686,8 @@
     const voiceId = normalizeVoiceId(opts && opts.voiceId);
     const speed = clamp(parseFloat(opts && opts.speed) || 1, 0.25, 4);
     const speakerId = Number.isFinite(opts && opts.speakerId) ? (opts.speakerId | 0) : 0;
-    const onProgress = opts && opts.onDownloadProgress;
 
-    const { session, config, downloaded } = await getSession(voiceId, onProgress);
+    const { session, config, downloaded } = await getSession(voiceId);
     const espeakVoice =
       (config.espeak && config.espeak.voice) ||
       (String(voiceId).startsWith("en_GB") ? "en-gb" : "en-us");
@@ -747,13 +840,17 @@
     DEFAULT_VOICE_ID,
     OFFERED_QUALITY,
     CURATED_VOICES,
+    isSupported,
     normalizeVoiceId,
     displayName,
     formatBytes,
     getVoiceSizeBytes,
     listVoices,
     isVoiceStored,
+    isVoiceDownloading,
     ensureVoice,
+    downloadVoice,
+    loadStoredVoice,
     getSampleUrl,
     pathFromKey,
     synthesize,

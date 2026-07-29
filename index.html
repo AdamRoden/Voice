@@ -563,18 +563,40 @@
   </div>
 
   <!-- ElevenLabs API Key Modal -->
-  <div class="modal" id="api-key-modal">
-    <div class="modal-title">ElevenLabs API Key</div>
+  <div class="modal api-key-modal" id="api-key-modal" role="dialog" aria-modal="true" aria-labelledby="api-key-modal-title">
+    <div class="modal-title" id="api-key-modal-title">ElevenLabs API Key</div>
     <div class="modal-scroll">
-      <div class="modal-description">Get more voices with ElevenLabs.</div>
-      <div class="modal-choice-group">
-        <a class="modal-btn primary" href="https://elevenlabs.io/app/sign-up" target="_blank" rel="noopener noreferrer">Create Free Account</a>
-        <a class="modal-btn secondary" href="https://elevenlabs.io/app/developers/api-keys" target="_blank" rel="noopener noreferrer">Create Unrestricted Key</a>
+      <p class="modal-description">Get more voices with ElevenLabs. Create an account, copy an unrestricted API key, then paste it below.</p>
+      <div class="modal-choice-group api-key-links" role="group" aria-label="ElevenLabs account links">
+        <a class="modal-btn primary api-key-link" href="https://elevenlabs.io/app/sign-up" target="_blank" rel="noopener noreferrer">
+          <span class="material-symbols-outlined icon-small">person_add</span>
+          <span>Create free account</span>
+        </a>
+        <a class="modal-btn secondary api-key-link" href="https://elevenlabs.io/app/developers/api-keys" target="_blank" rel="noopener noreferrer">
+          <span class="material-symbols-outlined icon-small">key</span>
+          <span>Get API key</span>
+        </a>
       </div>
-      <input type="text" id="api-key-input" class="modal-input" placeholder="Paste key here" autocomplete="off" spellcheck="false" autocapitalize="off">
+      <div class="api-key-field">
+        <label class="api-key-field-label" for="api-key-input">Paste API key</label>
+        <input
+          type="text"
+          id="api-key-input"
+          class="modal-input api-key-input"
+          placeholder="xi-… or paste key here"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+          inputmode="text"
+          enterkeyhint="done"
+          aria-describedby="api-key-help"
+        >
+        <p class="api-key-help" id="api-key-help">Stored only on this device. Never shared with this app’s server.</p>
+      </div>
     </div>
-    <div class="modal-buttons">
-      <button class="modal-btn primary" id="save-api-key-btn" type="button">Save</button>
+    <div class="modal-buttons api-key-actions">
+      <button class="modal-btn primary" id="save-api-key-btn" type="button">Save key</button>
       <button class="modal-btn secondary" type="button" id="cancel-api-key-btn">Cancel</button>
     </div>
   </div>

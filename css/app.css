@@ -384,6 +384,45 @@
       0% { transform: translateX(-120%); }
       100% { transform: translateX(320%); }
     }
+    .voice-item-meta.not-cached { color: var(--text-secondary); opacity: 0.9; }
+    .voice-item-meta.downloading { color: var(--accent); opacity: 0.95; }
+    .voice-item.needs-download .voice-item-name { opacity: 0.92; }
+    .voice-download-btn {
+      background: var(--key-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 8px 10px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+      min-height: 36px;
+      min-width: 40px;
+      flex-shrink: 0;
+    }
+    .voice-download-btn:hover:not(:disabled) {
+      background: var(--key-hover);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+    .voice-download-btn:disabled {
+      cursor: default;
+      opacity: 0.85;
+    }
+    .voice-download-btn.is-downloading {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+    .voice-download-btn.is-ready {
+      color: var(--accent);
+      border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+      background: color-mix(in srgb, var(--accent) 12%, var(--key-bg));
+    }
+
     .voice-item-meta {
       display: inline-flex;
       align-items: center;
@@ -1689,6 +1728,46 @@
     .choice-btn-overwrite { padding: 12px; font-weight: 600; }
     .btn-center { justify-content: center; }
 
+    /* ElevenLabs API key modal */
+    .api-key-modal .modal-description { margin: 0; }
+    .api-key-links { margin-top: 2px; gap: 10px; }
+    .api-key-link {
+      gap: 8px;
+      width: 100%;
+      min-height: 48px;
+      justify-content: center;
+    }
+    .api-key-field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 4px;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--bg-main);
+    }
+    .api-key-field-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .api-key-input {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 16px; /* keep ≥16px to avoid iOS focus zoom */
+      letter-spacing: 0.01em;
+      word-break: break-all;
+      min-height: 48px;
+      width: 100%;
+    }
+    .api-key-help {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.35;
+      color: var(--text-secondary);
+    }
+    .api-key-actions { gap: 10px; }
+
     /* Insert-tag modal: grid of saved tags */
     .tag-insert-grid {
       display: grid;
@@ -2140,6 +2219,66 @@
         flex: 1 1 0;
         padding: 12px 8px;
         font-size: 13px;
+      }
+
+      /* API key sheet: taller touch targets, keyboard-safe height */
+      #api-key-modal {
+        max-height: min(94dvh, var(--vv-height, 94dvh));
+        padding-left: max(16px, env(safe-area-inset-left, 0px));
+        padding-right: max(16px, env(safe-area-inset-right, 0px));
+      }
+      #api-key-modal .modal-title {
+        font-size: 18px;
+        padding-right: 4px;
+      }
+      #api-key-modal .modal-description {
+        font-size: 14px;
+        line-height: 1.45;
+      }
+      #api-key-modal .api-key-link {
+        min-height: 52px;
+        font-size: 15px;
+        border-radius: 12px;
+      }
+      #api-key-modal .api-key-field {
+        padding: 14px;
+        gap: 10px;
+      }
+      #api-key-modal .api-key-input {
+        min-height: 52px;
+        padding: 14px 12px;
+      }
+      #api-key-modal .api-key-actions {
+        flex-direction: column;
+        flex-wrap: nowrap;
+        gap: 8px;
+        margin-left: calc(-1 * max(16px, env(safe-area-inset-left, 0px)));
+        margin-right: calc(-1 * max(16px, env(safe-area-inset-right, 0px)));
+        padding: 12px max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+      }
+      #api-key-modal .api-key-actions .modal-btn {
+        flex: none;
+        width: 100%;
+        min-height: 52px;
+        font-size: 16px;
+      }
+
+      /* Soft keyboard open: keep sheet inside the visual viewport */
+      html.keyboard-open .modal-overlay.open {
+        top: var(--vv-offset-top, 0px);
+        height: var(--vv-height, 100dvh);
+        max-height: var(--vv-height, 100dvh);
+      }
+      html.keyboard-open #api-key-modal.open {
+        max-height: calc(var(--vv-height, 100dvh) - 8px);
+        bottom: 0;
+      }
+      html.keyboard-open #api-key-modal.open .modal-scroll {
+        /* Prefer paste field over tall link list while typing */
+        min-height: 0;
+      }
+      html.keyboard-open #api-key-modal.open .api-key-actions {
+        padding-bottom: 10px; /* keyboard already clears home indicator */
       }
 
       .icon-studio-modal-box {

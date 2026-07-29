@@ -55,13 +55,35 @@
     }
 
     if (model === "piper_tts") {
-      if (offline && Piper && typeof Piper.isVoiceStored === "function") {
+      if (Piper && typeof Piper.isSupported === "function" && !Piper.isSupported()) {
+        return { id: "browser", reason: "piper_unsupported" };
+      }
+      if (Piper && typeof Piper.isVoiceStored === "function") {
         try {
           if (!(await Piper.isVoiceStored(ctx.piperVoiceId))) {
-            return { id: "browser", reason: "offline_piper_uncached" };
+            if (offline) {
+              return { id: "browser", reason: "offline_piper_uncached" };
+            }
+            // Online but model not fully downloaded — do not auto-download on speak.
+            return {
+              id: "piper",
+              voiceId: ctx.piperVoiceId,
+              modelId: "piper_tts",
+              missingDownload: true,
+              reason: "piper_not_downloaded"
+            };
           }
         } catch (_) {
-          return { id: "browser", reason: "offline_piper_error" };
+          if (offline) {
+            return { id: "browser", reason: "offline_piper_error" };
+          }
+          return {
+            id: "piper",
+            voiceId: ctx.piperVoiceId,
+            modelId: "piper_tts",
+            missingDownload: true,
+            reason: "piper_not_downloaded"
+          };
         }
       }
       return { id: "piper", voiceId: ctx.piperVoiceId, modelId: "piper_tts" };
@@ -95,17 +117,22 @@
     }
 
     if (engine.id === "piper") {
+      if (engine.missingDownload) {
+        const err = new Error("Piper voice not downloaded");
+        err.code = "piper_not_downloaded";
+        throw err;
+      }
       if (!Piper || typeof Piper.synthesize !== "function") throw new Error("AacPiper missing");
       const text = String(
         payload.text != null ? payload.text : payload.phrase || ""
       ).trim();
       if (!text) throw new Error("Empty text");
       const voiceId = payload.voiceId || engine.voiceId;
+      // Synthesize uses cache only — never starts a model download.
       const result = await Piper.synthesize({
         text,
         voiceId,
-        speed: payload.speed,
-        onDownloadProgress: payload.onDownloadProgress
+        speed: payload.speed
       });
       const pitch = Number.isFinite(payload.pitch) ? payload.pitch : 1;
       return {
@@ -114,7 +141,7 @@
         modelId: "piper_tts",
         voiceId: result.voiceId || voiceId,
         fx: { speed: 1, pitch },
-        downloaded: !!result.downloaded
+        downloaded: false
       };
     }
 
