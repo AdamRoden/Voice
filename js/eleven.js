@@ -136,10 +136,40 @@
     } finally {
       clearTimeout(fetchTimeout);
     }
-    if (!res.ok) throw new Error("API Error");
+    if (!res.ok) {
+      const err = new Error("ElevenLabs API error (" + res.status + ")");
+      err.status = res.status;
+      if (res.status === 401 || res.status === 403) err.code = "eleven_auth";
+      throw err;
+    }
     const blob = await res.blob();
     if (!blob || blob.size < 16) throw new Error("Empty audio");
     return { blob, prepared };
+  }
+
+  /**
+   * Probe whether an API key can list voices (auth check).
+   * @param {string} apiKey
+   * @returns {Promise<{ ok: true, voices: any[] } | { ok: false, reason: string, status?: number }>}
+   */
+  async function validateApiKey(apiKey) {
+    const key = String(apiKey || "").trim();
+    if (!key) return { ok: false, reason: "empty" };
+    try {
+      const res = await fetch("https://api.elevenlabs.io/v1/voices", {
+        headers: { Accept: "application/json", "xi-api-key": key }
+      });
+      if (res.status === 401 || res.status === 403) {
+        return { ok: false, reason: "invalid", status: res.status };
+      }
+      if (!res.ok) {
+        return { ok: false, reason: "error", status: res.status };
+      }
+      const data = await res.json();
+      return { ok: true, voices: data.voices || [] };
+    } catch (_) {
+      return { ok: false, reason: "network" };
+    }
   }
 
   global.AacEleven = {
@@ -152,6 +182,7 @@
     hasNonTagSpeechContent,
     splitSpeed,
     prepareSpeakRequest,
-    fetchSpeech
+    fetchSpeech,
+    validateApiKey
   };
 })(typeof window !== "undefined" ? window : globalThis);

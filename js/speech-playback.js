@@ -33,7 +33,13 @@
    *   getUtteranceText: (src: any) => string,
    *   focusDisplayInput: () => void,
    *   announceLive: (msg: string) => void,
-   *   onAfterSpeakLearn?: (text: string) => void
+   *   onAfterSpeakLearn?: (text: string) => void,
+   *   onElevenUnavailable?: (opts?: {
+   *     clearKey?: boolean,
+   *     loadError?: boolean,
+   *     silent?: boolean,
+   *     message?: string
+   *   }) => void
    * }} deps
    */
   function create(deps) {
@@ -444,6 +450,44 @@
       }
     }
 
+    function notifyElevenUnavailable(opts) {
+      if (typeof d.onElevenUnavailable === "function") {
+        try { d.onElevenUnavailable(opts || {}); } catch (_) {}
+      }
+    }
+
+    function speakWithBrowser(phrase, ctx) {
+      const {
+        stillCurrent, finishUi, gainSetting, speed, pitch,
+        browserVoiceIndex, recordHistory, setPlaybackStarted
+      } = ctx;
+      const browserText = Eleven.stripInlineTags(phrase) || phrase;
+      const utterance = new SpeechSynthesisUtterance(browserText);
+      utterance.volume = gainSetting;
+      utterance.rate = speed;
+      utterance.pitch = pitch;
+      const voices = window.speechSynthesis.getVoices();
+      const voiceIdx = (browserVoiceIndex !== "" && voices[browserVoiceIndex])
+        ? browserVoiceIndex
+        : 0;
+      utterance.voice = voices[voiceIdx] || null;
+      utterance.onend = () => {
+        if (!stillCurrent()) return;
+        finishUi();
+        d.announceLive("Speech finished");
+        if (recordHistory) d.addToHistory(phrase, "browser_tts", `voice_${voiceIdx}`, null);
+        d.focusDisplayInput();
+      };
+      utterance.onerror = () => {
+        if (!stillCurrent()) return;
+        finishUi();
+      };
+      window.speechSynthesis.speak(utterance);
+      setPlaybackStarted();
+      if (stillCurrent()) setSpeakBtnSpeaking();
+      d.focusDisplayInput();
+    }
+
     async function speakPhrase(text, opts) {
       const o = opts || {};
       const recordHistory = o.recordHistory !== false;
@@ -462,16 +506,16 @@
       const piperVoiceId = sel.piperVoiceId;
       const elevenVoiceId = sel.elevenVoiceId;
       const browserVoiceIndex = sel.browserVoiceIndex;
-      const canUseEleven = !!(apiKey && elevenVoiceId);
+      const hasElevenApiKey = !!(apiKey && String(apiKey).trim());
       const offline = typeof navigator !== "undefined" && navigator.onLine === false;
       const selectedModel = d.modelId(modelSelect?.value);
 
-      const engine = await SpeechEngines.resolveEngine({
+      let engine = await SpeechEngines.resolveEngine({
         selectedModel,
         offline,
         piperVoiceId,
         elevenVoiceId,
-        canUseEleven,
+        hasElevenApiKey,
         Piper,
         Eleven
       });
@@ -484,6 +528,28 @@
         d.announceLive("Piper is not available in this browser; using browser voice");
       } else if (engine.missingDownload || engine.reason === "piper_not_downloaded") {
         const msg = "Download this Piper voice in Settings before speaking.";
+        d.announceLive(msg);
+        if (alertOnError) alert(msg);
+        return;
+      }
+
+      // Missing key → fall back and continue this speak with browser.
+      if (engine.id === "eleven" && engine.missingConfig && engine.reason === "eleven_no_key") {
+        notifyElevenUnavailable({
+          clearKey: false,
+          loadError: false,
+          silent: true
+        });
+        const msg = "ElevenLabs API key is missing. Using browser voice.";
+        d.announceLive(msg);
+        engine = { id: "browser", reason: "eleven_fallback_no_key" };
+      } else if (engine.id === "eleven" && engine.missingConfig && engine.reason === "eleven_no_voice") {
+        const msg = "Select an ElevenLabs voice in Settings before speaking.";
+        d.announceLive(msg);
+        if (alertOnError) alert(msg);
+        return;
+      } else if (engine.id === "eleven" && engine.missingConfig) {
+        const msg = "Please configure your API key and select a voice in Settings.";
         d.announceLive(msg);
         if (alertOnError) alert(msg);
         return;
@@ -521,44 +587,24 @@
         recordHistory,
         setPlaybackStarted
       };
+      const browserCtx = {
+        stillCurrent,
+        finishUi,
+        gainSetting,
+        speed,
+        pitch,
+        browserVoiceIndex,
+        recordHistory,
+        setPlaybackStarted
+      };
 
       try {
         if (engine.id === "browser") {
-          const browserText = Eleven.stripInlineTags(phrase) || phrase;
-          const utterance = new SpeechSynthesisUtterance(browserText);
-          utterance.volume = gainSetting;
-          utterance.rate = speed;
-          utterance.pitch = pitch;
-          const voices = window.speechSynthesis.getVoices();
-          const voiceIdx = (browserVoiceIndex !== "" && voices[browserVoiceIndex])
-            ? browserVoiceIndex
-            : 0;
-          utterance.voice = voices[voiceIdx] || null;
-          utterance.onend = () => {
-            if (!stillCurrent()) return;
-            finishUi();
-            d.announceLive("Speech finished");
-            if (recordHistory) d.addToHistory(phrase, "browser_tts", `voice_${voiceIdx}`, null);
-            d.focusDisplayInput();
-          };
-          utterance.onerror = () => {
-            if (!stillCurrent()) return;
-            finishUi();
-          };
-          window.speechSynthesis.speak(utterance);
-          playbackStarted = true;
-          if (stillCurrent()) setSpeakBtnSpeaking();
-          d.focusDisplayInput();
+          speakWithBrowser(phrase, browserCtx);
           return;
         }
 
         if (engine.id === "piper" || engine.id === "eleven") {
-          if (engine.missingConfig) {
-            if (alertOnError) alert("Please configure your API Key and select a voice in Settings.");
-            finishUi();
-            d.focusDisplayInput();
-            return;
-          }
           if (engine.missingDownload) {
             const msg = "Download this Piper voice in Settings before speaking.";
             d.announceLive(msg);
@@ -586,6 +632,18 @@
               if (alertOnError) alert(msg);
               finishUi();
               d.focusDisplayInput();
+              return;
+            }
+            if (err && err.code === "eleven_auth") {
+              notifyElevenUnavailable({
+                clearKey: true,
+                loadError: true,
+                silent: true
+              });
+              const msg = "ElevenLabs API key is invalid. Using browser voice.";
+              d.announceLive(msg);
+              if (!stillCurrent()) return;
+              speakWithBrowser(phrase, browserCtx);
               return;
             }
             throw err;

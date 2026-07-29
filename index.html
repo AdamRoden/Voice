@@ -28,26 +28,10 @@
     <div class="sidebar-header">
       <button class="logo-btn" id="toggle-sidebar-btn" type="button" title="Toggle sidebar" aria-label="Toggle sidebar">
         <span class="material-symbols-outlined logo-mark">record_voice_over</span>
-        <span class="logo-text">AAC Workspace</span>
+        <span class="logo-text" id="sidebar-section-title">Topics</span>
       </button>
       <button class="icon-btn sidebar-collapse-btn" id="sidebar-collapse-btn" type="button" title="Close sidebar" aria-label="Close sidebar">
         <span class="material-symbols-outlined">close</span>
-      </button>
-    </div>
-
-    <!-- Sidebar Tabs: Voice | History | Topics -->
-    <div class="sidebar-tabs" id="sidebar-tabs">
-      <button class="sidebar-tab" data-tab="voice" id="tab-voice" type="button" title="Voice">
-        <span class="material-symbols-outlined icon-medium">record_voice_over</span>
-        <span class="sidebar-tab-label">Voice</span>
-      </button>
-      <button class="sidebar-tab" data-tab="history" id="tab-history" type="button" title="History">
-        <span class="material-symbols-outlined icon-medium">history</span>
-        <span class="sidebar-tab-label">History</span>
-      </button>
-      <button class="sidebar-tab active" data-tab="topics" id="tab-topics" type="button" title="Topics">
-        <span class="material-symbols-outlined icon-medium">folder</span>
-        <span class="sidebar-tab-label">Topics</span>
       </button>
     </div>
 
@@ -119,28 +103,28 @@
       </div>
     </div>
 
-    <div class="sidebar-footer">
-      <div class="sidebar-more-wrap" id="sidebar-more-wrap">
-        <button class="sidebar-footer-btn" id="sidebar-more-btn" type="button" title="Appearance, settings, and help" aria-label="Open menu" aria-haspopup="menu" aria-expanded="false" aria-controls="sidebar-more-menu">
-          <span class="material-symbols-outlined">menu</span>
-          <span class="sidebar-footer-label">Menu</span>
-        </button>
-        <div class="sidebar-more-menu" id="sidebar-more-menu" role="menu" aria-label="Sidebar menu" hidden>
-          <button type="button" class="sidebar-more-item" role="menuitem" data-more-action="appearance">
-            <span class="material-symbols-outlined">palette</span>
-            <span>Appearance</span>
-          </button>
-          <button type="button" class="sidebar-more-item" role="menuitem" data-more-action="settings">
-            <span class="material-symbols-outlined">settings</span>
-            <span>Settings</span>
-          </button>
-          <button type="button" class="sidebar-more-item" role="menuitem" data-more-action="help">
-            <span class="material-symbols-outlined">help</span>
-            <span>Help</span>
-          </button>
-        </div>
-      </div>
-    </div>
+    <nav class="sidebar-nav" id="sidebar-nav" aria-label="Sidebar">
+      <button type="button" class="sidebar-nav-btn" data-nav="voice" id="nav-voice" title="Voice" aria-label="Voice">
+        <span class="material-symbols-outlined">record_voice_over</span>
+        <span class="sidebar-nav-label">Voice</span>
+      </button>
+      <button type="button" class="sidebar-nav-btn" data-nav="history" id="nav-history" title="History" aria-label="History">
+        <span class="material-symbols-outlined">history</span>
+        <span class="sidebar-nav-label">History</span>
+      </button>
+      <button type="button" class="sidebar-nav-btn active" data-nav="topics" id="nav-topics" title="Topics" aria-label="Topics" aria-current="page">
+        <span class="material-symbols-outlined">folder</span>
+        <span class="sidebar-nav-label">Topics</span>
+      </button>
+      <button type="button" class="sidebar-nav-btn" data-nav="settings" id="nav-settings" title="Settings" aria-label="Settings">
+        <span class="material-symbols-outlined">settings</span>
+        <span class="sidebar-nav-label">Settings</span>
+      </button>
+      <button type="button" class="sidebar-nav-btn" data-nav="help" id="nav-help" title="Help" aria-label="Help">
+        <span class="material-symbols-outlined">help</span>
+        <span class="sidebar-nav-label">Help</span>
+      </button>
+    </nav>
   </aside>
 
   <!-- ==================== MAIN WORKSPACE ==================== -->
@@ -165,25 +149,6 @@
     <div class="offline-banner" id="offline-banner" role="status">
       <span class="material-symbols-outlined icon-medium">wifi_off</span>
       <span>Offline — browser voice still works. Cached Piper voices work offline; ElevenLabs needs a connection.</span>
-    </div>
-
-    <div class="coach-banner" id="coach-banner" role="region" aria-label="Quick start">
-      <div class="coach-banner-header">
-        <div class="coach-banner-title">
-          <span class="material-symbols-outlined icon-medium">lightbulb</span>
-          Quick start
-        </div>
-      </div>
-      <ol>
-        <li><strong>Menu</strong> — <span class="material-symbols-outlined coach-inline-icon">record_voice_over</span> <strong>logo</strong> opens the drawer (Voice, History, Topics). Bottom <span class="material-symbols-outlined coach-inline-icon">menu</span> <strong>Menu</strong> has Appearance, Settings, and Help.</li>
-        <li><strong>Top bar</strong> — pull the <span class="material-symbols-outlined coach-inline-icon">expand_more</span> <strong>chevron</strong> or swipe down to show chats; <span class="material-symbols-outlined coach-inline-icon">close</span> collapses it.</li>
-        <li><strong>Topic chats</strong> — each open topic is its own chat (1–5, no duplicates). Tap an inactive chip to switch; tap the <strong>active</strong> chip for the topics menu.</li>
-        <li><strong>Sounds</strong> — <span class="material-symbols-outlined coach-inline-icon">grid_view</span> <strong>buttons</strong> play their audio.</li>
-        <li><strong>Text box</strong> — <span class="material-symbols-outlined coach-inline-icon">more_horiz</span> <strong>Actions</strong> for clear, pin, replay, tags, and history; <span class="material-symbols-outlined coach-inline-icon">volume_up</span> <strong>speaker</strong> speaks (or press Enter).</li>
-      </ol>
-      <div class="coach-banner-actions">
-        <button type="button" class="modal-btn secondary" id="coach-dismiss-btn">Got it</button>
-      </div>
     </div>
 
     <div class="sound-canvas" id="sound-canvas"></div>
@@ -288,44 +253,58 @@
     <div class="modal-buttons"><button class="modal-btn secondary" onclick="closeModals()" type="button">Cancel</button></div>
   </div>
 
-  <!-- Appearance: font, theme, accent -->
-  <div class="modal" id="modal-appearance">
-    <div class="modal-title">Appearance</div>
+  <!-- Help / Quick start -->
+  <div class="modal modal-full-mobile" id="modal-help" role="dialog" aria-modal="true" aria-labelledby="modal-help-title">
+    <div class="modal-title" id="modal-help-title">
+      <span class="material-symbols-outlined icon-medium" style="vertical-align: -0.15em; margin-right: 6px; color: var(--accent);">help</span>
+      Help
+    </div>
     <div class="modal-scroll">
-      <div class="sidebar-setting-group">
-        <label><span>Font Size</span><span id="font-display">28px</span></label>
-        <div class="font-controls">
-          <button class="font-btn" id="font-down" type="button">A-</button>
-          <button class="font-btn" id="font-up" type="button">A+</button>
-        </div>
-      </div>
-      <div class="sidebar-setting-group">
-        <label>Theme</label>
-        <div class="theme-picker-group">
-          <button class="theme-btn" data-theme="light" onclick="applyTheme('light')" type="button"><span class="material-symbols-outlined icon-small">light_mode</span> Light</button>
-          <button class="theme-btn" data-theme="dark" onclick="applyTheme('dark')" type="button"><span class="material-symbols-outlined icon-small">dark_mode</span> Dark</button>
-          <button class="theme-btn" data-theme="system" onclick="applyTheme('system')" type="button"><span class="material-symbols-outlined icon-small">computer</span> System</button>
-        </div>
-      </div>
-      <div class="sidebar-setting-group">
-        <label>Accent Color</label>
-        <div class="accent-color-row">
-          <input type="color" id="accent-color-picker" value="#8ab4f8" title="Custom accent color">
-          <button class="font-btn" id="accent-color-reset" type="button" title="Reset to theme default">Reset</button>
-        </div>
-      </div>
+      <div class="modal-description">Quick start for Voice boards, chats, and speaking.</div>
+      <ol class="help-list">
+        <li><strong>Sidebar</strong> — bottom icons for <strong>Voice</strong>, <strong>History</strong>, <strong>Topics</strong>, <strong>Settings</strong>, and <strong>Help</strong>. On phone, the <span class="material-symbols-outlined coach-inline-icon">record_voice_over</span> button opens the drawer.</li>
+        <li><strong>Top bar</strong> — pull the <span class="material-symbols-outlined coach-inline-icon">expand_more</span> <strong>chevron</strong> or swipe down to show chats; <span class="material-symbols-outlined coach-inline-icon">close</span> collapses it.</li>
+        <li><strong>Topic chats</strong> — each open topic is its own chat (1–5, no duplicates). Tap an inactive chip to switch; tap the <strong>active</strong> chip for the topics menu.</li>
+        <li><strong>Sounds</strong> — <span class="material-symbols-outlined coach-inline-icon">grid_view</span> <strong>buttons</strong> play their audio.</li>
+        <li><strong>Text box</strong> — <span class="material-symbols-outlined coach-inline-icon">more_horiz</span> <strong>Actions</strong> for clear, pin, replay, tags, and history; <span class="material-symbols-outlined coach-inline-icon">volume_up</span> <strong>speaker</strong> speaks (or press Enter).</li>
+      </ol>
     </div>
     <div class="modal-buttons">
-      <button class="modal-btn secondary" type="button" onclick="closeModals()">Close</button>
+      <button type="button" class="modal-btn primary" id="coach-dismiss-btn">Got it</button>
     </div>
   </div>
 
-  <!-- Settings (was Advanced settings) -->
-  <div class="modal" id="modal-advanced-settings">
+  <!-- Settings (appearance + tools + backup) -->
+  <div class="modal modal-full-mobile" id="modal-settings">
     <div class="modal-title">Settings</div>
     <div class="modal-scroll">
-      <div class="modal-description">Optional tools and backup. Turn on only what you need.</div>
-      <div class="advanced-settings-body">
+      <div class="settings-body">
+        <div class="modal-description settings-section-label">Appearance</div>
+        <div class="sidebar-setting-group">
+          <label><span>Font Size</span><span id="font-display">28px</span></label>
+          <div class="font-controls">
+            <button class="font-btn" id="font-down" type="button">A-</button>
+            <button class="font-btn" id="font-up" type="button">A+</button>
+          </div>
+        </div>
+        <div class="sidebar-setting-group">
+          <label>Theme</label>
+          <div class="theme-picker-group">
+            <button class="theme-btn" data-theme="light" onclick="applyTheme('light')" type="button"><span class="material-symbols-outlined icon-small">light_mode</span> Light</button>
+            <button class="theme-btn" data-theme="dark" onclick="applyTheme('dark')" type="button"><span class="material-symbols-outlined icon-small">dark_mode</span> Dark</button>
+            <button class="theme-btn" data-theme="system" onclick="applyTheme('system')" type="button"><span class="material-symbols-outlined icon-small">computer</span> System</button>
+          </div>
+        </div>
+        <div class="sidebar-setting-group">
+          <label>Accent Color</label>
+          <div class="accent-color-row">
+            <input type="color" id="accent-color-picker" value="#8ab4f8" title="Custom accent color">
+            <button class="font-btn" id="accent-color-reset" type="button" title="Reset to theme default">Reset</button>
+          </div>
+        </div>
+
+        <div class="modal-description settings-section-label">Voice &amp; tools</div>
+        <div class="modal-description settings-section-hint">Optional tools and ElevenLabs. Turn on only what you need.</div>
         <div class="sidebar-setting-group">
           <button id="api-key-btn" class="status-btn missing" type="button">
             <span class="status-btn-text"><span class="material-symbols-outlined icon-small icon-btn-margin">key</span>Missing API Key (Click to Add)</span>
@@ -345,8 +324,8 @@
           </span>
           <input type="checkbox" id="opt-button-insert" class="setting-toggle-input">
         </label>
-        <div class="modal-description advanced-settings-section-label">Compose quick actions</div>
-        <div class="modal-description advanced-settings-section-hint">Each can also open from the Actions menu. Turn on to show a stand-alone button next to the text box.</div>
+        <div class="modal-description settings-section-label">Compose quick actions</div>
+        <div class="modal-description settings-section-hint">Each can also open from the Actions menu. Turn on to show a stand-alone button next to the text box.</div>
         <label class="setting-toggle-row" for="opt-compose-new">
           <span class="setting-toggle-text">
             <span class="setting-toggle-title">Clear message button</span>
@@ -389,8 +368,8 @@
           </select>
           <div class="modal-description" id="output-device-hint">Loading speakers…</div>
         </div>
-        <div class="modal-description advanced-settings-section-label">Backup</div>
-        <div class="modal-description advanced-settings-section-hint">Download or restore topics and buttons as JSON.</div>
+        <div class="modal-description settings-section-label">Backup</div>
+        <div class="modal-description settings-section-hint">Download or restore topics and buttons as JSON.</div>
         <div class="topics-backup-row settings-backup-row">
           <button class="tool-btn" id="export-board-btn" type="button" title="Download topics and buttons as JSON">
             <span class="material-symbols-outlined icon-small">download</span> Export
@@ -437,7 +416,7 @@
   </div>
 
   <!-- Speech history modal -->
-  <div class="modal" id="modal-history">
+  <div class="modal modal-full-mobile" id="modal-history">
     <div class="modal-title">Speech history</div>
     <div class="modal-scroll">
       <div class="history-search-box">
@@ -453,7 +432,7 @@
   </div>
 
   <!-- Insert Tag Modal -->
-  <div class="modal" id="tag-insert-modal">
+  <div class="modal modal-full-mobile" id="tag-insert-modal">
     <div class="modal-title">Insert Tag</div>
     <div class="modal-scroll">
       <div class="sidebar-setting-group">
@@ -473,7 +452,7 @@
   </div>
 
   <!-- Edit / Create Topic Meta Modal -->
-  <div class="modal" id="topic-edit-modal">
+  <div class="modal modal-full-mobile" id="topic-edit-modal">
     <div class="modal-title" id="topic-edit-modal-title">Edit Topic Settings</div>
     <div class="modal-scroll">
       <div class="sidebar-setting-group">
@@ -520,7 +499,7 @@
   </div>
 
   <!-- Edit Sound Button Modal -->
-  <div class="modal" id="button-edit-modal">
+  <div class="modal modal-full-mobile" id="button-edit-modal">
     <div class="modal-title">Edit Sound Button</div>
     <div class="modal-scroll">
       <div class="sidebar-setting-group">
@@ -563,7 +542,7 @@
   </div>
 
   <!-- ElevenLabs API Key Modal -->
-  <div class="modal api-key-modal" id="api-key-modal" role="dialog" aria-modal="true" aria-labelledby="api-key-modal-title">
+  <div class="modal api-key-modal modal-full-mobile" id="api-key-modal" role="dialog" aria-modal="true" aria-labelledby="api-key-modal-title">
     <div class="modal-title" id="api-key-modal-title">ElevenLabs API Key</div>
     <div class="modal-scroll">
       <p class="modal-description">Get more voices with ElevenLabs. Create an account, copy an unrestricted API key, then paste it below.</p>
@@ -602,7 +581,7 @@
   </div>
 
   <!-- Google Fonts Icon Studio Modal -->
-  <div class="modal icon-studio-modal-box" id="icon-studio-modal">
+  <div class="modal icon-studio-modal-box modal-full-mobile" id="icon-studio-modal">
     <div class="modal-title">Google Fonts Icon Studio</div>
     <div class="modal-scroll">
       <div class="icon-studio-search">
@@ -661,8 +640,8 @@
       <select id="model-select" title="Voice model" aria-label="Voice model">
         <option value="browser_tts">Local Browser (Utterance)</option>
         <option value="piper_tts">Piper (Local Neural)</option>
-        <option value="eleven_v3">ElevenLabs v3</option>
         <option value="eleven_flash_v2_5">ElevenLabs Flash v2.5</option>
+        <option value="eleven_v3">ElevenLabs v3</option>
       </select>
     </div>
 
@@ -696,6 +675,7 @@
   <script src="js/keyboard.js" defer></script>
   <script src="js/speech-engines.js" defer></script>
   <script src="js/eleven.js" defer></script>
+  <script src="js/eleven-key.js" defer></script>
   <script src="js/piper.js" defer></script>
   <script src="js/speech-playback.js" defer></script>
   <script src="js/voices.js" defer></script>

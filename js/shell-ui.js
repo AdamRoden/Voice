@@ -1,5 +1,5 @@
 /**
- * Shell chrome: theme/accent, sidebar, routes, modals, coach + advanced feature flags.
+ * Shell chrome: theme/accent, sidebar, routes, modals, help + feature flags.
  * Exposes AacShellUi and AacFeatures.
  */
 
@@ -8,9 +8,17 @@
 
   const VALID_SIDEBAR_TABS = new Set(["voice", "history", "topics"]);
   const DEFAULT_SIDEBAR_TAB = "topics";
-  const COACH_DISMISS_KEY = "aac_coach_dismissed";
+  /** Persisted dismiss for first-run help (legacy key name kept for continuity). */
+  const HELP_DISMISS_KEY = "aac_coach_dismissed";
+  const SETTINGS_MODAL_ID = "modal-settings";
+  const HELP_MODAL_ID = "modal-help";
+  const SECTION_TITLES = {
+    voice: "Voice",
+    history: "History",
+    topics: "Topics"
+  };
   /** Old hash routes map to current tabs. */
-  const TAB_ALIASES = { settings: "voice" };
+  const TAB_ALIASES = { settings: "topics", appearance: "topics" };
 
   /**
    * @param {{
@@ -48,7 +56,6 @@
     const sidebarBackdrop = document.getElementById("sidebar-backdrop");
     const mobileMenuBtn = document.getElementById("mobile-menu-btn");
     const modalOverlay = document.getElementById("modal-overlay");
-    const coachBanner = document.getElementById("coach-banner");
 
     function isMobileLayout() {
       return window.matchMedia(d.mobileLayoutMq).matches;
@@ -152,14 +159,30 @@
       return VALID_SIDEBAR_TABS.has(t) ? t : DEFAULT_SIDEBAR_TAB;
     }
 
+    function updateSectionTitle(tab) {
+      const titleEl = document.getElementById("sidebar-section-title");
+      if (!titleEl) return;
+      titleEl.textContent = SECTION_TITLES[tab] || SECTION_TITLES[DEFAULT_SIDEBAR_TAB];
+    }
+
+    function syncNavActive(tab) {
+      const t = normalizeTab(tab);
+      document.querySelectorAll(".sidebar-nav-btn").forEach((el) => {
+        const nav = el.getAttribute("data-nav");
+        const isContent = nav === t;
+        el.classList.toggle("active", isContent);
+        if (isContent) el.setAttribute("aria-current", "page");
+        else el.removeAttribute("aria-current");
+      });
+    }
+
     function applySidebarTab(tab, expandIfCollapsed = false) {
       const t = normalizeTab(tab);
       if (expandIfCollapsed && !isSidebarOpen()) {
         setSidebarOpen(true, { restoreFocus: false });
       }
-      document.querySelectorAll(".sidebar-tab").forEach((el) => {
-        el.classList.toggle("active", el.dataset.tab === t);
-      });
+      syncNavActive(t);
+      updateSectionTitle(t);
       document.querySelectorAll(".tab-content").forEach((c) => c.classList.remove("active"));
       const content = document.getElementById(`tab-content-${t}`);
       if (content) content.classList.add("active");
@@ -170,34 +193,41 @@
       return t;
     }
 
-    function isMoreMenuOpen() {
-      const menu = document.getElementById("sidebar-more-menu");
-      return !!(menu && !menu.hidden);
-    }
-
-    function setMoreMenuOpen(open) {
-      const menu = document.getElementById("sidebar-more-menu");
-      const btn = document.getElementById("sidebar-more-btn");
-      if (!menu || !btn) return;
-      menu.hidden = !open;
-      btn.setAttribute("aria-expanded", open ? "true" : "false");
-    }
-
-    function runMoreAction(action) {
-      setMoreMenuOpen(false);
-      if (action === "appearance") {
-        openModal("modal-appearance");
-        return;
-      }
-      if (action === "settings") {
-        openModal("modal-advanced-settings");
-        if (typeof d.onOpenSettings === "function") d.onOpenSettings();
-        return;
-      }
-      if (action === "help") {
+    /**
+     * Open a shell modal; optionally close the mobile drawer first.
+     * @param {string} id
+     * @param {{ closeDrawer?: boolean }} [opts]
+     */
+    function openShellModal(id, opts) {
+      const o = opts || {};
+      if (o.closeDrawer !== false && isMobileLayout()) {
         setSidebarOpen(false, { restoreFocus: false });
-        if (coachBanner?.classList.contains("open")) setCoachOpen(false);
-        else showCoach();
+      }
+      openModal(id);
+    }
+
+    function openSettingsModal() {
+      openShellModal(SETTINGS_MODAL_ID, { closeDrawer: true });
+      if (typeof d.onOpenSettings === "function") d.onOpenSettings();
+    }
+
+    function openHelpModal() {
+      openShellModal(HELP_MODAL_ID, { closeDrawer: true });
+    }
+
+    function runNavAction(action) {
+      const a = String(action || "").toLowerCase();
+      if (a === "settings") {
+        openSettingsModal();
+        return;
+      }
+      if (a === "help") {
+        openHelpModal();
+        return;
+      }
+      if (VALID_SIDEBAR_TABS.has(a)) {
+        const wasClosed = !isSidebarOpen();
+        switchSidebarTab(a, wasClosed);
       }
     }
 
@@ -240,32 +270,32 @@
       d.focusDisplayInput();
     }
 
+    function isHelpDismissed() {
+      return d.lsGet(HELP_DISMISS_KEY, "") === "1";
+    }
+
+    /** @deprecated Use isHelpDismissed — alias for app ports. */
     function isCoachDismissed() {
-      return d.lsGet(COACH_DISMISS_KEY, "") === "1";
+      return isHelpDismissed();
     }
 
-    function setCoachOpen(open) {
-      if (!coachBanner) return;
-      coachBanner.classList.toggle("open", !!open);
-    }
-
-    function dismissCoach() {
-      d.lsSet(COACH_DISMISS_KEY, "1");
-      setCoachOpen(false);
+    function dismissHelp() {
+      d.lsSet(HELP_DISMISS_KEY, "1");
+      closeModals();
       d.focusDisplayInput();
     }
 
+    /** First-run / Help entry: same as openHelpModal. */
     function showCoach() {
-      setCoachOpen(true);
+      openHelpModal();
     }
 
     function bind() {
       window.addEventListener("hashchange", onRouteChange);
 
-      document.querySelectorAll(".sidebar-tab").forEach((tabEl) => {
-        tabEl.addEventListener("click", () => {
-          const wasClosed = !isSidebarOpen();
-          switchSidebarTab(tabEl.dataset.tab, wasClosed);
+      document.querySelectorAll(".sidebar-nav-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          runNavAction(btn.getAttribute("data-nav"));
         });
       });
 
@@ -284,10 +314,6 @@
 
       document.addEventListener("keydown", (e) => {
         if (e.key !== "Escape") return;
-        if (isMoreMenuOpen()) {
-          setMoreMenuOpen(false);
-          return;
-        }
         if (typeof d.isHeaderMenuOpen === "function" && d.isHeaderMenuOpen()) {
           if (typeof d.closeHeaderMenu === "function") d.closeHeaderMenu();
           return;
@@ -314,25 +340,8 @@
         }
       });
 
-      document.getElementById("coach-dismiss-btn")?.addEventListener("click", dismissCoach);
+      document.getElementById("coach-dismiss-btn")?.addEventListener("click", dismissHelp);
 
-      const moreBtn = document.getElementById("sidebar-more-btn");
-      const moreMenu = document.getElementById("sidebar-more-menu");
-      moreBtn?.addEventListener("click", (e) => {
-        e.stopPropagation();
-        setMoreMenuOpen(!isMoreMenuOpen());
-      });
-      moreMenu?.querySelectorAll("[data-more-action]").forEach((item) => {
-        item.addEventListener("click", (e) => {
-          e.stopPropagation();
-          runMoreAction(item.getAttribute("data-more-action"));
-        });
-      });
-      document.addEventListener("click", (e) => {
-        if (!isMoreMenuOpen()) return;
-        if (e.target.closest?.("#sidebar-more-wrap")) return;
-        setMoreMenuOpen(false);
-      });
       // Theme buttons use onclick="applyTheme(...)" in index.html via window.applyTheme
 
       if (modalOverlay) {
@@ -371,22 +380,33 @@
       applyAccentColor,
       getDefaultAccentForResolvedTheme,
       openModal,
+      openShellModal,
       closeModals,
+      isHelpDismissed,
       isCoachDismissed,
       showCoach,
-      dismissCoach,
+      dismissHelp,
       tabFromHash,
       switchSidebarTab,
       applySidebarTab,
-      setMoreMenuOpen,
-      isMoreMenuOpen,
+      openSettingsModal,
+      openHelpModal,
       initRoute,
       bind,
-      get modalOverlay() { return modalOverlay; }
+      get modalOverlay() { return modalOverlay; },
+      SETTINGS_MODAL_ID,
+      HELP_MODAL_ID
     };
   }
 
-  global.AacShellUi = { create, VALID_SIDEBAR_TABS, DEFAULT_SIDEBAR_TAB };
+  global.AacShellUi = {
+    create,
+    VALID_SIDEBAR_TABS,
+    DEFAULT_SIDEBAR_TAB,
+    SECTION_TITLES,
+    SETTINGS_MODAL_ID,
+    HELP_MODAL_ID
+  };
 })(typeof window !== "undefined" ? window : globalThis);
 
 (function (global) {

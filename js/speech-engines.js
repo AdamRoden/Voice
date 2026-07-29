@@ -41,7 +41,7 @@
    *   offline: boolean,
    *   piperVoiceId: string,
    *   elevenVoiceId: string,
-   *   canUseEleven: boolean,
+   *   hasElevenApiKey?: boolean,
    *   Piper?: object
    * }} ctx
    */
@@ -49,6 +49,8 @@
     const Piper = ctx.Piper || global.AacPiper;
     const model = normalizeModelId(ctx.selectedModel);
     const offline = !!ctx.offline;
+    const hasKey = !!ctx.hasElevenApiKey;
+    const hasVoice = !!(ctx.elevenVoiceId);
 
     if (model === "browser_tts") {
       return { id: "browser" };
@@ -92,12 +94,22 @@
     if (offline) {
       return { id: "browser", reason: "offline_eleven" };
     }
-    if (!ctx.canUseEleven) {
+    if (!hasKey) {
       return {
         id: "eleven",
         modelId: model,
         voiceId: ctx.elevenVoiceId,
-        missingConfig: true
+        missingConfig: true,
+        reason: "eleven_no_key"
+      };
+    }
+    if (!hasVoice) {
+      return {
+        id: "eleven",
+        modelId: model,
+        voiceId: ctx.elevenVoiceId,
+        missingConfig: true,
+        reason: "eleven_no_voice"
       };
     }
     return { id: "eleven", modelId: model, voiceId: ctx.elevenVoiceId };

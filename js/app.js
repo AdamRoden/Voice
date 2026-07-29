@@ -121,6 +121,7 @@
     const VOLUME_GAIN_MAX = VOLUME_STOP_GAINS[VOLUME_STOP_GAINS.length - 1];
     const AudioFx = window.AacAudioFx;
     const Eleven = window.AacEleven;
+    const ElevenKeyApi = window.AacElevenKey;
     const Piper = window.AacPiper;
     const SpeechEngines = window.AacSpeechEngines;
     const VoicesFilters = window.AacVoicesFilters;
@@ -144,6 +145,7 @@
     }
     requireModule("AacSpeechEngines", SpeechEngines);
     requireModule("AacEleven", Eleven);
+    requireModule("AacElevenKey", ElevenKeyApi);
     requireModule("AacPiper", Piper);
     requireModule("AacVoicesFilters", VoicesFilters);
     requireModule("AacVoicesPanel", VoicesPanel);
@@ -201,6 +203,8 @@
     // State Variables (modules wired after helpers / modals)
     /** @type {ReturnType<typeof VoicesControllerApi.create>|null} */
     let Voices = null;
+    /** @type {ReturnType<typeof ElevenKeyApi.create>|null} */
+    let ElevenKey = null;
     /** @type {ReturnType<typeof SpeechPlaybackApi.create>|null} */
     let Speech = null;
     /** @type {ReturnType<typeof WorkspaceApi.create>|null} */
@@ -598,6 +602,12 @@
       onCloseModal: () => {
         if (Topics) Topics.resetEditState();
         document.getElementById("workspace-header-shell")?.classList.remove("menu-open");
+        // Overlay / Escape: finish API-key cancel (revert model / browser fallback).
+        if (Voices && typeof Voices.onApiKeyModalDismissed === "function") {
+          try { Voices.onApiKeyModalDismissed(); } catch (_) {}
+        } else if (ElevenKey && typeof ElevenKey.onShellModalsClosed === "function") {
+          try { ElevenKey.onShellModalsClosed(); } catch (_) {}
+        }
       }
     });
     Shell.bind();
@@ -814,8 +824,32 @@
         if (window.VoicePredict && typeof VoicePredict.learnText === "function") {
           try { VoicePredict.learnText(text); } catch (_) {}
         }
+      },
+      onElevenUnavailable: (opts) => {
+        if (Voices && typeof Voices.handleInvalidElevenKey === "function") {
+          try { Voices.handleInvalidElevenKey(opts || { silent: true }); } catch (_) {}
+        } else if (ElevenKey && typeof ElevenKey.revokeAndFallback === "function") {
+          try { ElevenKey.revokeAndFallback(opts || { silent: true }); } catch (_) {}
+        }
       }
     });
+
+    ElevenKey = ElevenKeyApi.create({
+      $,
+      lsGet,
+      lsSet,
+      Eleven,
+      openModal: (id) => ports.openModal(id),
+      closeModals: () => ports.closeModals(),
+      isSettingsOpen: () => !!$("modal-settings")?.classList.contains("open"),
+      isVoicesPanelOpen: () => !!(Voices && Voices.isVoicesPanelOpen && Voices.isVoicesPanelOpen()),
+      isElevenModelSelected: () => !!(Voices && Voices.isElevenModelSelected && Voices.isElevenModelSelected()),
+      onNeedBrowserFallback: () => { Voices?.fallbackToDefaultModel(); },
+      onRevertModel: (mid) => { Voices?.applyModelUi(mid, { persist: true }); },
+      onCommitPendingModel: (mid) => { Voices?.applyModelUi(mid, { persist: true }); },
+      onKeyStateChanged: (state) => { Voices?.onElevenKeyStateChanged(state); }
+    });
+    ElevenKey.bind();
 
     Voices = VoicesControllerApi.create({
       $,
@@ -826,6 +860,7 @@
       SpeechEngines,
       Piper,
       Eleven,
+      ElevenKey,
       VoicesFilters,
       VoicesPanel,
       getSpeechSpeed,
@@ -834,8 +869,7 @@
       playPreviewBlob: (blob, fx) => Speech.playPreviewBlob(blob, fx),
       openModal: (id) => ports.openModal(id),
       closeModals: () => ports.closeModals(),
-      focusDisplayInput,
-      isAdvancedSettingsOpen: () => !!$("modal-advanced-settings")?.classList.contains("open")
+      focusDisplayInput
     });
     Voices.bind();
     Speech.bind();

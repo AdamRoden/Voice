@@ -1,5 +1,6 @@
 /**
- * Voices: filters, panel DOM, and controller (model select, catalogs, API key).
+ * Voices: filters, panel DOM, and controller (model select, catalogs).
+ * ElevenLabs API key lifecycle lives in AacElevenKey.
  * Exposes AacVoicesFilters, AacVoicesPanel, AacVoicesController, AacVoicesUi.
  */
 (function (global) {
@@ -548,6 +549,7 @@ function defaultLoadKeys(storageKey) {
    *   SpeechEngines: object,
    *   Piper: object,
    *   Eleven: object,
+   *   ElevenKey: object,
    *   VoicesFilters: object,
    *   VoicesPanel: object,
    *   getSpeechSpeed: () => number,
@@ -556,8 +558,7 @@ function defaultLoadKeys(storageKey) {
    *   playPreviewBlob: (blob: Blob, fx: object|null) => Promise<void>,
    *   openModal: (id: string) => void,
    *   closeModals: () => void,
-   *   focusDisplayInput: () => void,
-   *   isAdvancedSettingsOpen?: () => boolean
+   *   focusDisplayInput: () => void
    * }} deps
    */
   function create(deps) {
@@ -570,11 +571,12 @@ function defaultLoadKeys(storageKey) {
     const SpeechEngines = d.SpeechEngines;
     const Piper = d.Piper;
     const Eleven = d.Eleven;
+    const ElevenKey = d.ElevenKey;
     const VF = d.VoicesFilters;
     const Panel = d.VoicesPanel;
 
-    if (!SpeechEngines || !VF || !Panel || !Piper || !Eleven) {
-      throw new Error("AacVoicesController requires SpeechEngines, Piper, Eleven, VoicesFilters, VoicesPanel");
+    if (!SpeechEngines || !VF || !Panel || !Piper || !Eleven || !ElevenKey) {
+      throw new Error("AacVoicesController requires SpeechEngines, Piper, Eleven, ElevenKey, VoicesFilters, VoicesPanel");
     }
     if (typeof d.playPreviewBlob !== "function") {
       throw new Error("AacVoicesController requires playPreviewBlob");
@@ -606,9 +608,6 @@ function defaultLoadKeys(storageKey) {
       formatBytes: Piper.formatBytes.bind(Piper)
     });
     try { piperDownloadProgress.hide(); } catch (_) {}
-
-    /** null | "voices" | modalId — single return target for API key modal */
-    let apiKeyReturnTo = null;
 
     const favBrowser = Panel.createFavoriteStore(FAV_BROWSER_KEY, {
       keyOf: (voice) => (voice ? `${voice.name || ""}\u0000${voice.lang || ""}` : "")
@@ -679,11 +678,53 @@ function defaultLoadKeys(storageKey) {
     }
 
     function hasElevenApiKey() {
-      return !!(lsGet("elevenlabs_key", "") || "").trim();
+      return ElevenKey.hasApiKey();
     }
 
     function isVoicesPanelOpen() {
       return !!$("voices-panel")?.classList.contains("open");
+    }
+
+    const DEFAULT_VOICE_MODEL = "browser_tts";
+
+    /** Switch off Eleven models when key is missing or rejected by the API. */
+    function fallbackToDefaultModel() {
+      const mid = persistModel(DEFAULT_VOICE_MODEL);
+      if (modelSelect) modelSelect.value = mid;
+      syncSelectedVoiceSummary();
+      if (isVoicesPanelOpen()) {
+        applyVoiceModelList("browser", { resetSearch: false });
+      }
+      return mid;
+    }
+
+    function isElevenModelSelected() {
+      return SpeechEngines.isElevenModel(selectedModel());
+    }
+
+    /** Apply UI model without always persisting (used while API-key sheet is open). */
+    function applyModelUi(mid, { persist = true } = {}) {
+      const id = coerceAvailableModel(mid);
+      if (persist) persistModel(id);
+      if (modelSelect) modelSelect.value = id;
+      syncSelectedVoiceSummary();
+      if (isVoicesPanelOpen()) {
+        applyVoiceModelList(SpeechEngines.voiceListModeForModel(id), { resetSearch: false });
+      }
+      return id;
+    }
+
+    /**
+     * Clear invalid/empty key and return to browser TTS when on an Eleven model.
+     * @param {{ clearKey?: boolean, silent?: boolean, message?: string, loadError?: boolean }} [opts]
+     */
+    function handleInvalidElevenKey(opts) {
+      return ElevenKey.revokeAndFallback(opts);
+    }
+
+    /** Shell overlay/Escape closed modals — finish API-key cancel side effects. */
+    function onApiKeyModalDismissed() {
+      ElevenKey.onShellModalsClosed();
     }
 
     function modelLabelForSummary(model) {
@@ -1021,19 +1062,31 @@ function defaultLoadKeys(storageKey) {
             elevenLoadError = false;
             return elevenVoicesCache;
           }
-          const apiKey = lsGet("elevenlabs_key", "") || "";
+          const apiKey = ElevenKey.getApiKey();
           if (!apiKey) {
             elevenLoadError = false;
+            if (isElevenModelSelected()) fallbackToDefaultModel();
             return [];
           }
           setLoading(listEl, "Loading ElevenLabs voices...");
           try {
-            const res = await fetch("https://api.elevenlabs.io/v1/voices", {
-              headers: { Accept: "application/json", "xi-api-key": apiKey }
-            });
-            if (!res.ok) throw new Error("Could not fetch ElevenLabs voices");
-            const data = await res.json();
-            elevenVoicesCache = data.voices || [];
+            const validated = await Eleven.validateApiKey(apiKey);
+            if (!validated.ok) {
+              if (validated.reason === "invalid") {
+                handleInvalidElevenKey({
+                  clearKey: true,
+                  loadError: true,
+                  silent: false,
+                  message: "ElevenLabs API key is invalid. Switched to browser voice."
+                });
+                return [];
+              }
+              // Network/other — keep key, show error state
+              elevenVoicesCache = [];
+              elevenLoadError = true;
+              return [];
+            }
+            elevenVoicesCache = validated.voices || [];
             elevenLoadError = false;
             return elevenVoicesCache;
           } catch (_) {
@@ -1070,7 +1123,7 @@ function defaultLoadKeys(storageKey) {
             previewBtn.disabled = false;
           };
           try {
-            const apiKey = lsGet("elevenlabs_key", "");
+            const apiKey = ElevenKey.getApiKey();
             if (!apiKey) throw new Error("No API key");
             const selected = SpeechEngines.isElevenModel(modelSelect?.value)
               ? modelSelect.value
@@ -1089,8 +1142,17 @@ function defaultLoadKeys(storageKey) {
             }, { Eleven });
             await d.playPreviewBlob(out.blob, out.fx);
             resetPreview();
-          } catch (_) {
+          } catch (err) {
             resetPreview();
+            if (err && err.code === "eleven_auth") {
+              handleInvalidElevenKey({
+                clearKey: true,
+                loadError: true,
+                silent: false,
+                message: "ElevenLabs API key is invalid. Switched to browser voice."
+              });
+              return;
+            }
             alert("Could not preview voice.");
           }
         }
@@ -1157,7 +1219,11 @@ function defaultLoadKeys(storageKey) {
       const group = applyVoiceModelList(mode || currentVoiceGroup(), { resetSearch: true });
       $("voices-panel")?.classList.add("open");
       if (group === "eleven" && !hasElevenApiKey()) {
-        openApiKeyModal({ fromVoicesPanel: true });
+        ElevenKey.openApiKeyModal({
+          fromVoicesPanel: true,
+          previousModel: readStoredModel(),
+          pendingModel: selectedModel()
+        });
       }
     }
 
@@ -1172,30 +1238,15 @@ function defaultLoadKeys(storageKey) {
       renderProviderCatalog(activeListMode());
     }
 
-    // ---- API key modal ----
-    const apiKeyBtn = $("api-key-btn");
-    const apiKeyInput = $("api-key-input");
-
-    function paintApiKeyButton() {
-      const key = lsGet("elevenlabs_key", "") || "";
-      const label = apiKeyBtn?.querySelector(".status-btn-text");
-      const hasKey = !!key;
-      if (label) {
-        label.innerHTML = hasKey
-          ? `<span class="material-symbols-outlined icon-small icon-btn-margin">key</span>API Key Saved (••••${key.slice(-4)})`
-          : `<span class="material-symbols-outlined icon-small icon-btn-margin">key</span>Missing API Key (Click to Add)`;
-      }
-      if (apiKeyBtn) {
-        apiKeyBtn.classList.toggle("missing", !hasKey);
-        apiKeyBtn.classList.toggle("saved", hasKey);
-      }
-    }
-
     /** Invalidate Eleven cache and refresh list/summary once. */
     function updateApiKeyStatus() {
-      paintApiKeyButton();
+      ElevenKey.paintApiKeyButton();
       elevenVoicesCache = [];
       elevenLoadError = false;
+      if (!hasElevenApiKey() && isElevenModelSelected()) {
+        fallbackToDefaultModel();
+        return;
+      }
       if (isVoicesPanelOpen() && currentVoiceGroup() === "eleven") {
         renderProviderCatalog("eleven");
       } else if (hasElevenApiKey()) {
@@ -1205,53 +1256,28 @@ function defaultLoadKeys(storageKey) {
       }
     }
 
-    function isCoarsePointerUi() {
-      try {
-        if (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) return true;
-        if (window.matchMedia && window.matchMedia("(max-width: 900px)").matches) return true;
-      } catch (_) {}
-      return false;
-    }
-
-    function openApiKeyModal(opts) {
-      const options = opts || {};
-      if (options.fromVoicesPanel || isVoicesPanelOpen()) {
-        apiKeyReturnTo = "voices";
-      } else if (typeof d.isAdvancedSettingsOpen === "function" && d.isAdvancedSettingsOpen()) {
-        apiKeyReturnTo = "modal-advanced-settings";
+    /** Apply cache/load-error updates from AacElevenKey. */
+    function onElevenKeyStateChanged(state) {
+      const s = state || {};
+      if (s.clearCache) elevenVoicesCache = [];
+      if (Array.isArray(s.voices)) elevenVoicesCache = s.voices;
+      if (typeof s.loadError === "boolean") elevenLoadError = s.loadError;
+      if (!s.refreshList) {
+        syncSelectedVoiceSummary();
+        return;
+      }
+      if (!hasElevenApiKey() && isElevenModelSelected()) {
+        // Fallback handled by key module / model revert; still refresh summary.
+        syncSelectedVoiceSummary();
+        return;
+      }
+      if (isVoicesPanelOpen() && currentVoiceGroup() === "eleven") {
+        renderProviderCatalog("eleven");
+      } else if (hasElevenApiKey() && s.voices) {
+        syncSelectedVoiceSummary();
       } else {
-        apiKeyReturnTo = null;
+        syncSelectedVoiceSummary();
       }
-      if (apiKeyInput) apiKeyInput.value = lsGet("elevenlabs_key", "") || "";
-      d.openModal("api-key-modal");
-      // Desktop: focus the field. Mobile: leave unfocused so the soft keyboard
-      // does not cover Save/Cancel before the user is ready to paste.
-      requestAnimationFrame(() => {
-        try {
-          if (!apiKeyInput || isCoarsePointerUi()) return;
-          apiKeyInput.focus({ preventScroll: true });
-          if (typeof apiKeyInput.select === "function" && apiKeyInput.value) {
-            apiKeyInput.select();
-          }
-        } catch (_) {}
-      });
-    }
-
-    function closeApiKeyModal(saved) {
-      if (saved) {
-        lsSet("elevenlabs_key", String(apiKeyInput?.value || "").trim());
-      }
-      const returnTo = apiKeyReturnTo;
-      apiKeyReturnTo = null;
-
-      if (returnTo && returnTo !== "voices") {
-        d.openModal(returnTo);
-      } else {
-        d.closeModals();
-      }
-
-      // Single refresh path after save (no second fetch)
-      if (saved) updateApiKeyStatus();
     }
 
     function bind() {
@@ -1263,15 +1289,19 @@ function defaultLoadKeys(storageKey) {
       $("close-voices-panel-btn")?.addEventListener("click", closeVoicesPanel);
 
       modelSelect?.addEventListener("change", (e) => {
-        const mid = persistModel(e.target.value);
-        modelSelect.value = mid;
-        syncSelectedVoiceSummary();
-        if (!isVoicesPanelOpen()) return;
-        const group = currentVoiceGroup();
-        applyVoiceModelList(group, { resetSearch: false });
-        if (group === "eleven" && !hasElevenApiKey()) {
-          openApiKeyModal({ fromVoicesPanel: true });
+        const previousModel = readStoredModel();
+        const mid = coerceAvailableModel(e.target.value);
+        // Do not persist Eleven until a key is present (or validated via modal).
+        if (SpeechEngines.isElevenModel(mid) && !hasElevenApiKey()) {
+          applyModelUi(mid, { persist: false });
+          ElevenKey.openApiKeyModal({
+            fromVoicesPanel: isVoicesPanelOpen(),
+            previousModel,
+            pendingModel: mid
+          });
+          return;
         }
+        applyModelUi(mid, { persist: true });
       });
 
       $("voice-search-input")?.addEventListener("input", () => {
@@ -1289,26 +1319,6 @@ function defaultLoadKeys(storageKey) {
         refreshActiveVoiceList();
       });
 
-      apiKeyBtn?.addEventListener("click", () => openApiKeyModal());
-      $("save-api-key-btn")?.addEventListener("click", () => closeApiKeyModal(true));
-      $("cancel-api-key-btn")?.addEventListener("click", () => closeApiKeyModal(false));
-      apiKeyInput?.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          closeApiKeyModal(true);
-        }
-      });
-      // Keep the paste field visible above the soft keyboard on small screens.
-      apiKeyInput?.addEventListener("focus", () => {
-        requestAnimationFrame(() => {
-          try {
-            apiKeyInput.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
-          } catch (_) {
-            try { apiKeyInput.scrollIntoView(true); } catch (__) {}
-          }
-        });
-      });
-
       if (typeof window !== "undefined" && window.speechSynthesis) {
         window.speechSynthesis.onvoiceschanged = () => {
           if (currentVoiceGroup() === "browser") {
@@ -1318,7 +1328,7 @@ function defaultLoadKeys(storageKey) {
         };
       }
 
-      paintApiKeyButton();
+      ElevenKey.paintApiKeyButton();
       syncSelectedVoiceSummary();
     }
 
@@ -1348,6 +1358,15 @@ function defaultLoadKeys(storageKey) {
       setPiperVoiceId,
       syncSelectedVoiceSummary,
       updateApiKeyStatus,
+      onElevenKeyStateChanged,
+      onApiKeyModalDismissed,
+      handleInvalidElevenKey,
+      revokeAndFallback: handleInvalidElevenKey,
+      fallbackToDefaultModel,
+      applyModelUi,
+      isElevenModelSelected,
+      isVoicesPanelOpen,
+      hasElevenApiKey,
       getBrowserVoiceIndex: () => browserVoiceIndex,
       getPiperVoiceId: () => piperVoiceId,
       getElevenVoiceId: () => elevenVoiceId

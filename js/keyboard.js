@@ -138,7 +138,19 @@
     function bind() {
       // Single focus entry — covers display + modals (no duplicate focus listeners).
       document.addEventListener("focusin", (e) => {
-        if (isTextEntryElement(e.target)) schedule({ settle: true });
+        if (!isTextEntryElement(e.target)) return;
+        schedule({ settle: true });
+        // Keep focused fields visible inside full-window / scrolling modals.
+        const field = e.target;
+        requestAnimationFrame(() => {
+          try {
+            const modal = field.closest && field.closest(".modal.open");
+            if (!modal) return;
+            field.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
+          } catch (_) {
+            try { field.scrollIntoView(true); } catch (__) {}
+          }
+        });
       });
       document.addEventListener("focusout", () => {
         requestAnimationFrame(() => {
