@@ -2,6 +2,11 @@
  * Soft-keyboard layout: pin the app shell to the visual viewport so the
  * compose dock sits on the keyboard top. One strategy — viewport frame + CSS
  * (html.keyboard-open); no multi-timeout scroll fights.
+ *
+ * iOS home-screen PWAs: never leave a black band under a short body. Mobile
+ * shell is always fixed to the full layout viewport unless the *system*
+ * keyboard is open (then pin to visualViewport). Custom OSK must not pin to
+ * a short visualViewport or home-indicator padding stacks as gray+black bars.
  */
 (function (global) {
   "use strict";
@@ -33,18 +38,6 @@
     return inset > 120 || pan > 80;
   }
 
-  /** Home-screen / installed web app (iOS uses navigator.standalone). */
-  function isStandaloneDisplay() {
-    try {
-      if (typeof navigator !== "undefined" && navigator.standalone === true) return true;
-      if (typeof window !== "undefined" && window.matchMedia) {
-        if (window.matchMedia("(display-mode: standalone)").matches) return true;
-        if (window.matchMedia("(display-mode: fullscreen)").matches) return true;
-      }
-    } catch (_) {}
-    return false;
-  }
-
   /**
    * Layout height when the soft keyboard is closed. Prefer the larger of
    * visualViewport vs innerHeight so iOS home-screen PWAs never leave a gap
@@ -54,6 +47,7 @@
     const layoutH = window.innerHeight || document.documentElement.clientHeight || 0;
     const vv = window.visualViewport;
     const vvH = vv ? Math.round(vv.height) : 0;
+    // Prefer the larger reading; never use a short vv alone (black band).
     return Math.max(1, layoutH, vvH);
   }
 
@@ -69,6 +63,8 @@
     document.body.style.position = "";
     document.body.style.top = "";
     document.body.style.left = "";
+    document.body.style.right = "";
+    document.body.style.bottom = "";
     document.body.style.width = "";
     document.body.style.height = "";
     document.body.style.maxHeight = "";
@@ -96,13 +92,26 @@
       settleTimers = [];
     }
 
-    function clearBodyToClosed() {
-      clearBodyPinStyles();
-      if (isStandaloneDisplay()) {
-        document.body.style.height = "";
-      } else {
-        document.body.style.height = `${closedShellHeight()}px`;
+    /**
+     * Fill the layout viewport edge-to-edge (mobile). Avoids black bands under
+     * the custom OSK when 100dvh / residual pin leaves a short body.
+     * Prefer top/bottom inset over a pixel height so we track the real viewport.
+     */
+    function fillClosedShell() {
+      if (!isMobileLayout()) {
+        clearBodyPinStyles();
+        return;
       }
+      document.body.style.position = "fixed";
+      document.body.style.top = "0";
+      document.body.style.left = "0";
+      document.body.style.right = "0";
+      document.body.style.bottom = "0";
+      document.body.style.width = "100%";
+      document.body.style.height = "auto";
+      document.body.style.maxHeight = "none";
+      document.body.style.transform = "";
+      resetDocumentScroll();
     }
 
     function isCustomOskVisible() {
@@ -122,25 +131,22 @@
       const composing = typing || (dockChrome && (forcePin || softKb));
       const keyboardOpen = softKb && (typing || forcePin || dockChrome);
       /*
-       * Pin the shell only for the *system* soft keyboard (or handoff).
-       * Do NOT pin while the custom OSK is up: focusing the field with
-       * inputmode=none still set pinShell before, which shortened body to a
-       * short visualViewport and stacked home-indicator padding on top —
-       * dark-gray OSK strip + pure-black gap under it on iOS PWAs.
+       * Pin only for the *system* soft keyboard (or OSK→system handoff).
+       * Never pin while the custom OSK is open unless forcePin (handoff):
+       * a false softKb detection with the field focused was shortening the
+       * body to visualViewport and stacking home-indicator padding on top
+       * (gray OSK strip + black gap under it).
        */
       const pinShell = forcePin
-        || keyboardOpen
-        || (isMobileLayout() && composing && !customOsk);
+        || (!customOsk && (keyboardOpen || (isMobileLayout() && composing)));
 
       if (root) {
         root.classList.toggle("keyboard-open", !!pinShell);
-        // System keyboard covers the home indicator — drop CSS safe-bottom.
-        // Custom OSK keeps env() so keys clear the home indicator once.
-        if (pinShell) {
-          root.style.setProperty("--safe-bottom", "0px");
-        } else {
-          root.style.removeProperty("--safe-bottom");
-        }
+        // Do not zero --safe-bottom here. Custom OSK CSS uses env() directly;
+        // system keyboard hides the OSK and zeros dock padding via .keyboard-open.
+        // Zeroing the var while OSK was still visible collapsed key clearance
+        // inconsistently and contributed to double bands after interactions.
+        root.style.removeProperty("--safe-bottom");
         if (vv) {
           root.style.setProperty("--vv-height", `${Math.max(1, Math.round(vv.height))}px`);
           root.style.setProperty("--vv-offset-top", `${Math.round(vv.offsetTop || 0)}px`);
@@ -151,41 +157,39 @@
       }
 
       // Desktop: leave layout alone unless system keyboard is open.
-      if (!isMobileLayout() && !keyboardOpen && !forcePin) {
+      if (!isMobileLayout() && !pinShell) {
         clearBodyPinStyles();
         return;
       }
 
-      // Custom OSK: full-screen CSS shell (no fixed pin).
-      if (customOsk && !forcePin && !keyboardOpen) {
-        clearBodyToClosed();
+      // Custom OSK (and no handoff pin): full layout shell — never short vv.
+      if (customOsk && !forcePin) {
+        fillClosedShell();
         return;
       }
 
-      if (vv) {
-        // When system KB is open use visualViewport; otherwise prefer the larger
-        // closed height so we never leave a black strip under a short vv reading.
+      if (pinShell && vv) {
         const vvH = Math.max(1, Math.round(vv.height));
-        const h = (keyboardOpen || forcePin)
-          ? vvH
-          : Math.max(vvH, closedShellHeight());
         const w = Math.max(1, Math.round(vv.width));
-        const top = (keyboardOpen || forcePin) ? Math.round(vv.offsetTop || 0) : 0;
+        const top = Math.round(vv.offsetTop || 0);
         const left = Math.round(vv.offsetLeft || 0);
-        if (pinShell) {
-          document.body.style.position = "fixed";
-          document.body.style.top = `${top}px`;
-          document.body.style.left = `${left}px`;
-          document.body.style.width = `${w}px`;
-          document.body.style.height = `${h}px`;
-          document.body.style.maxHeight = `${h}px`;
-          document.body.style.transform = "";
-          resetDocumentScroll();
-        } else if (isMobileLayout()) {
-          clearBodyToClosed();
-        }
-      } else if (isMobileLayout()) {
-        clearBodyToClosed();
+        document.body.style.position = "fixed";
+        document.body.style.top = `${top}px`;
+        document.body.style.left = `${left}px`;
+        document.body.style.right = "";
+        document.body.style.bottom = "";
+        document.body.style.width = `${w}px`;
+        document.body.style.height = `${vvH}px`;
+        document.body.style.maxHeight = `${vvH}px`;
+        document.body.style.transform = "";
+        resetDocumentScroll();
+        return;
+      }
+
+      if (isMobileLayout()) {
+        fillClosedShell();
+      } else {
+        clearBodyPinStyles();
       }
     }
 

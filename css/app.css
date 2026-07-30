@@ -1970,17 +1970,36 @@
 
     /* ==================== MOBILE / TABLET ==================== */
     @media (max-width: 900px) {
-      body { padding: 0; }
+      /*
+       * Edge-to-edge shell from first paint (before keyboard.js).
+       * position:fixed + top/bottom:0 fills the layout viewport without relying
+       * on 100dvh (often short on iOS home-screen PWAs → black band under OSK).
+       * keyboard.js still pins body to visualViewport when the system KB is open.
+       */
+      html {
+        height: 100%;
+        background-color: var(--bg-main);
+      }
+      body {
+        padding: 0;
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: auto;
+        max-height: none;
+        min-height: 0;
+        overflow: hidden;
+      }
 
-      /* iOS Add to Home Screen: fill the device screen edge-to-edge */
+      /* Standalone: keep html painted so any residual gap is never pure black */
       @media (display-mode: standalone), (display-mode: fullscreen) {
-        html, body {
+        html {
           height: 100%;
-          height: -webkit-fill-available;
-          height: 100dvh;
           min-height: 100%;
-          min-height: -webkit-fill-available;
-          min-height: 100dvh;
+          background-color: var(--bg-main);
         }
       }
 
@@ -2064,11 +2083,10 @@
       }
 
       /*
-       * Single bottom safe-area owner:
-       * - No OSK: dock-wrap clears the home indicator (bg from body).
-       * - Custom OSK: OSK panel paints into the home indicator (bg-surface).
+       * Single bottom safe-area owner (never stack — that made gray+black bands):
+       * - No OSK / no system KB: dock-wrap clears the home indicator.
+       * - Custom OSK: only .osk-panel uses env(safe-area-inset-bottom); dock = 0.
        * - System keyboard (html.keyboard-open): zero inset; KB covers it.
-       * Never stack app-main + dock + OSK insets (that made gray+black bands).
        */
       .bottom-dock-wrap {
         padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -2076,6 +2094,14 @@
       body.osk-visible .bottom-dock-wrap,
       html.keyboard-open .bottom-dock-wrap {
         padding-bottom: 0;
+      }
+      /*
+       * OSK is the bottom chrome: paint home-indicator strip with OSK surface
+       * only (one owner). Keys sit above the inset; no second bar under the panel.
+       */
+      body.osk-visible .osk-panel {
+        /* env() — not --safe-bottom (JS must not zero it while OSK is open) */
+        padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
       }
 
       /*
@@ -2441,8 +2467,11 @@
   display: none;
   flex-direction: column;
   gap: 6px;
-  /* One home-indicator clearance only (not 8px + inset — that doubled the gray). */
-  padding: 8px 8px max(8px, var(--safe-bottom, 0px));
+  /*
+   * One home-indicator clearance only (env directly — never 8px + inset, and
+   * never a JS-zeroed --safe-bottom that desyncs from dock rules).
+   */
+  padding: 8px 8px max(8px, env(safe-area-inset-bottom, 0px));
   background: var(--bg-surface);
   border-top: 1px solid var(--border);
   flex-shrink: 0;
@@ -2578,5 +2607,5 @@
 @media (min-width: 901px) {
   .osk-key { min-height: 58px; font-size: 17px; }
   .osk-keys { gap: 8px; --osk-gap: 6px; }
-  .osk-panel { max-height: min(50vh, 560px); padding: 10px 12px max(10px, var(--safe-bottom, 0px)); }
+  .osk-panel { max-height: min(50vh, 560px); padding: 10px 12px max(10px, env(safe-area-inset-bottom, 0px)); }
 }
