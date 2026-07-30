@@ -2056,18 +2056,19 @@
         width: 100%;
         padding: 6px;
         padding-top: max(6px, env(safe-area-inset-top, 0px));
-        /* Bottom inset is owned by the dock / OSK / system keyboard — not here.
-           Doubling safe-area under the dock leaves a dark band on iOS PWAs. */
-        padding-bottom: 6px;
+        /* Bottom inset is owned only by the dock / OSK — never stack under keys. */
+        padding-bottom: 0;
         padding-left: max(6px, env(safe-area-inset-left, 0px));
         padding-right: max(6px, env(safe-area-inset-right, 0px));
         gap: 6px;
       }
 
       /*
-       * Home-indicator clearance lives on the dock so it paints with dock/OSK
-       * chrome. Drop it when the custom OSK or system keyboard already covers
-       * that strip (otherwise a black/dark band sits under the keyboard).
+       * Single bottom safe-area owner:
+       * - No OSK: dock-wrap clears the home indicator (bg from body).
+       * - Custom OSK: OSK panel paints into the home indicator (bg-surface).
+       * - System keyboard (html.keyboard-open): zero inset; KB covers it.
+       * Never stack app-main + dock + OSK insets (that made gray+black bands).
        */
       .bottom-dock-wrap {
         padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -2076,12 +2077,6 @@
       html.keyboard-open .bottom-dock-wrap {
         padding-bottom: 0;
       }
-      html.keyboard-open .app-main {
-        padding-bottom: 0;
-      }
-      /* When the system soft keyboard is up, --safe-bottom is forced to 0 in JS
-         so .osk-panel's calc(8px + var(--safe-bottom)) drops the home-indicator
-         inset. Custom OSK (no system keyboard) keeps env() via --safe-bottom. */
 
       /*
        * Collapsed pull-tab is position:absolute against .app-main's padding box
@@ -2446,7 +2441,8 @@
   display: none;
   flex-direction: column;
   gap: 6px;
-  padding: 8px 8px calc(8px + var(--safe-bottom, 0px));
+  /* One home-indicator clearance only (not 8px + inset — that doubled the gray). */
+  padding: 8px 8px max(8px, var(--safe-bottom, 0px));
   background: var(--bg-surface);
   border-top: 1px solid var(--border);
   flex-shrink: 0;
@@ -2582,5 +2578,5 @@
 @media (min-width: 901px) {
   .osk-key { min-height: 58px; font-size: 17px; }
   .osk-keys { gap: 8px; --osk-gap: 6px; }
-  .osk-panel { max-height: min(50vh, 560px); padding: 10px 12px calc(10px + var(--safe-bottom, 0px)); }
+  .osk-panel { max-height: min(50vh, 560px); padding: 10px 12px max(10px, var(--safe-bottom, 0px)); }
 }

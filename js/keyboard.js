@@ -105,6 +105,10 @@
       }
     }
 
+    function isCustomOskVisible() {
+      return !!(document.body && document.body.classList.contains("osk-visible"));
+    }
+
     function sync() {
       const vv = window.visualViewport;
       const root = document.documentElement;
@@ -113,21 +117,26 @@
       const dockChrome = isComposeDockChrome(active);
       const forcePin = Date.now() < forcePinUntil;
       const softKb = isSoftKeyboardOpen();
-      // Treat dock chrome as "still composing" so the OSK toggle click does not
-      // unpin and drop the textbox under the rising system keyboard.
-      const composing = typing || (dockChrome && (forcePin || softKb || isMobileLayout()));
+      const customOsk = isCustomOskVisible();
+      // Dock chrome counts while handing off to the system keyboard.
+      const composing = typing || (dockChrome && (forcePin || softKb));
       const keyboardOpen = softKb && (typing || forcePin || dockChrome);
-      const pinShell = keyboardOpen
-        || forcePin
-        || (isMobileLayout() && composing);
+      /*
+       * Pin the shell only for the *system* soft keyboard (or handoff).
+       * Do NOT pin while the custom OSK is up: focusing the field with
+       * inputmode=none still set pinShell before, which shortened body to a
+       * short visualViewport and stacked home-indicator padding on top —
+       * dark-gray OSK strip + pure-black gap under it on iOS PWAs.
+       */
+      const pinShell = forcePin
+        || keyboardOpen
+        || (isMobileLayout() && composing && !customOsk);
 
       if (root) {
-        // CSS dock rules must match the pinned shell, not only late OSK detection.
         root.classList.toggle("keyboard-open", !!pinShell);
-        // Soft keyboard covers the home indicator; force zero bottom safe-area so
-        // OSK/dock padding does not leave a dark band under the keys on iOS PWAs.
-        // (env(safe-area-inset-bottom) often stays non-zero while the keyboard is up.)
-        if (keyboardOpen || (pinShell && softKb)) {
+        // System keyboard covers the home indicator — drop CSS safe-bottom.
+        // Custom OSK keeps env() so keys clear the home indicator once.
+        if (pinShell) {
           root.style.setProperty("--safe-bottom", "0px");
         } else {
           root.style.removeProperty("--safe-bottom");
@@ -147,12 +156,22 @@
         return;
       }
 
+      // Custom OSK: full-screen CSS shell (no fixed pin).
+      if (customOsk && !forcePin && !keyboardOpen) {
+        clearBodyToClosed();
+        return;
+      }
+
       if (vv) {
-        const h = Math.max(1, Math.round(vv.height));
+        // When system KB is open use visualViewport; otherwise prefer the larger
+        // closed height so we never leave a black strip under a short vv reading.
+        const vvH = Math.max(1, Math.round(vv.height));
+        const h = (keyboardOpen || forcePin)
+          ? vvH
+          : Math.max(vvH, closedShellHeight());
         const w = Math.max(1, Math.round(vv.width));
-        const top = Math.round(vv.offsetTop || 0);
+        const top = (keyboardOpen || forcePin) ? Math.round(vv.offsetTop || 0) : 0;
         const left = Math.round(vv.offsetLeft || 0);
-        // Pin shell to visual viewport so body bottom = keyboard top.
         if (pinShell) {
           document.body.style.position = "fixed";
           document.body.style.top = `${top}px`;
