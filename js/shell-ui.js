@@ -1,24 +1,190 @@
 /**
  * Shell chrome: theme/accent, sidebar, routes, modals, help + feature flags.
- * Exposes AacShellUi and AacFeatures.
+ * Also hosts AacFloatMenu (shared fixed placement for floating menus).
+ * Exposes AacFloatMenu, AacShellUi, and AacFeatures.
  */
+
+/**
+ * Fixed placement for floating menus (topic picker, compose actions).
+ * Escapes parent overflow:hidden; clamps to visualViewport when available.
+ *
+ * overflow "shift" — full natural height, no scrollbar; clamp top/left
+ *   (caller should keep content short enough to fit the viewport).
+ * overflow "scroll" — cap maxHeight and allow overflow-y: auto.
+ */
+(function (global) {
+  "use strict";
+
+  function viewportRect() {
+    const vv = window.visualViewport;
+    if (vv) {
+      const top = vv.offsetTop || 0;
+      const left = vv.offsetLeft || 0;
+      return {
+        top,
+        left,
+        bottom: top + vv.height,
+        right: left + vv.width,
+        width: vv.width,
+        height: vv.height
+      };
+    }
+    return {
+      top: 0,
+      left: 0,
+      bottom: window.innerHeight,
+      right: window.innerWidth,
+      width: window.innerWidth,
+      height: window.innerHeight
+    };
+  }
+
+  /**
+   * @param {HTMLElement} menu
+   * @param {Element|DOMRect} anchor
+   * @param {{
+   *   prefer?: "above"|"below",
+   *   overflow?: "shift"|"scroll",
+   *   pad?: number,
+   *   gap?: number,
+   *   width?: number,
+   *   maxHeight?: number,
+   *   zIndex?: string|number
+   * }} [opts]
+   */
+  function place(menu, anchor, opts) {
+    if (!menu || menu.hidden) return;
+    const o = opts || {};
+    const pad = o.pad != null ? o.pad : 8;
+    const gap = o.gap != null ? o.gap : 8;
+    const prefer = o.prefer === "below" ? "below" : "above";
+    const overflow = o.overflow === "scroll" ? "scroll" : "shift";
+    const anchorRect = typeof anchor.getBoundingClientRect === "function"
+      ? anchor.getBoundingClientRect()
+      : anchor;
+
+    menu.style.position = "fixed";
+    menu.style.top = "0";
+    menu.style.left = "0";
+    menu.style.right = "auto";
+    menu.style.bottom = "auto";
+    menu.style.transform = "none";
+    if (o.width != null) menu.style.width = `${Math.round(o.width)}px`;
+    if (o.zIndex != null) menu.style.zIndex = String(o.zIndex);
+
+    if (overflow === "shift") {
+      menu.style.maxHeight = "none";
+      menu.style.overflow = "visible";
+    }
+
+    const view = viewportRect();
+    const mw = o.width != null ? o.width : menu.offsetWidth;
+    let mh = menu.offsetHeight;
+
+    if (overflow === "scroll") {
+      const cap = o.maxHeight != null ? o.maxHeight : 320;
+      const roomBelow = Math.max(0, view.bottom - pad - (anchorRect.bottom + gap));
+      const roomAbove = Math.max(0, anchorRect.top - gap - (view.top + pad));
+      let maxH = Math.min(cap, Math.max(120, prefer === "below" ? roomBelow : roomAbove));
+      let top;
+      if (prefer === "below") {
+        top = anchorRect.bottom + gap;
+        // Flip above when there is little room below and more above.
+        if (maxH < 140 && roomAbove > roomBelow && roomAbove >= 120) {
+          maxH = Math.min(cap, roomAbove);
+          top = Math.max(view.top + pad, anchorRect.top - gap - maxH);
+        }
+      } else {
+        maxH = Math.min(cap, Math.max(120, roomAbove));
+        top = anchorRect.top - gap - Math.min(mh, maxH);
+        if (top < view.top + pad) {
+          top = anchorRect.bottom + gap;
+          maxH = Math.min(cap, Math.max(80, roomBelow));
+        }
+      }
+      menu.style.maxHeight = `${Math.round(Math.max(80, maxH))}px`;
+      menu.style.overflowY = "auto";
+      menu.style.overflowX = "hidden";
+
+      let left = anchorRect.left + (anchorRect.width / 2) - (mw / 2);
+      if (left + mw > view.right - pad) left = view.right - pad - mw;
+      if (left < view.left + pad) left = view.left + pad;
+
+      menu.style.top = `${Math.round(top)}px`;
+      menu.style.left = `${Math.round(left)}px`;
+      return;
+    }
+
+    // shift: prefer side, flip if needed, then clamp (no internal scroll)
+    let top = prefer === "above"
+      ? anchorRect.top - mh - gap
+      : anchorRect.bottom + gap;
+
+    if (prefer === "above" && top < view.top + pad) {
+      const below = anchorRect.bottom + gap;
+      if (below + mh <= view.bottom - pad || (view.bottom - below) >= (anchorRect.top - view.top)) {
+        top = below;
+      } else {
+        top = view.top + pad;
+      }
+    } else if (prefer === "below" && top + mh > view.bottom - pad) {
+      const above = anchorRect.top - mh - gap;
+      if (above >= view.top + pad || (anchorRect.top - view.top) >= (view.bottom - anchorRect.bottom)) {
+        top = above;
+      } else {
+        top = Math.max(view.top + pad, view.bottom - pad - mh);
+      }
+    }
+
+    if (top + mh > view.bottom - pad) {
+      top = Math.max(view.top + pad, view.bottom - pad - mh);
+    }
+    if (top < view.top + pad) top = view.top + pad;
+
+    let left = anchorRect.left;
+    if (left + mw > view.right - pad) left = view.right - pad - mw;
+    left = Math.max(view.left + pad, left);
+
+    menu.style.top = `${Math.round(top)}px`;
+    menu.style.left = `${Math.round(left)}px`;
+  }
+
+  /** Clear inline placement set by place(). */
+  function clear(menu) {
+    if (!menu) return;
+    menu.style.position = "";
+    menu.style.top = "";
+    menu.style.left = "";
+    menu.style.right = "";
+    menu.style.bottom = "";
+    menu.style.width = "";
+    menu.style.maxHeight = "";
+    menu.style.overflow = "";
+    menu.style.overflowX = "";
+    menu.style.overflowY = "";
+    menu.style.transform = "";
+    menu.style.zIndex = "";
+  }
+
+  global.AacFloatMenu = { place, clear, viewportRect };
+})(typeof window !== "undefined" ? window : globalThis);
 
 (function (global) {
   "use strict";
 
-  const VALID_SIDEBAR_TABS = new Set(["voice", "history", "topics"]);
+  const VALID_SIDEBAR_TABS = new Set(["voice", "history", "topics", "settings"]);
   const DEFAULT_SIDEBAR_TAB = "topics";
   /** Persisted dismiss for first-run help (legacy key name kept for continuity). */
   const HELP_DISMISS_KEY = "aac_coach_dismissed";
-  const SETTINGS_MODAL_ID = "modal-settings";
   const HELP_MODAL_ID = "modal-help";
   const SECTION_TITLES = {
     voice: "Voice",
     history: "History",
-    topics: "Topics"
+    topics: "Topics",
+    settings: "Settings"
   };
   /** Old hash routes map to current tabs. */
-  const TAB_ALIASES = { settings: "topics", appearance: "topics" };
+  const TAB_ALIASES = { appearance: "settings" };
 
   /**
    * @param {{
@@ -34,7 +200,7 @@
    *   setAccent: (c: string) => void,
    *   onHistoryTab?: () => void,
    *   onVoiceTab?: () => void,
-   *   onOpenSettings?: () => void,
+   *   onSettingsTab?: () => void,
    *   isHeaderMenuOpen?: () => boolean,
    *   closeHeaderMenu?: () => void,
    *   isComposeMenuOpen?: () => boolean,
@@ -189,7 +355,9 @@
 
       if (t === "history" && typeof d.onHistoryTab === "function") d.onHistoryTab();
       if (t === "voice" && typeof d.onVoiceTab === "function") d.onVoiceTab();
-      d.focusDisplayInput();
+      if (t === "settings" && typeof d.onSettingsTab === "function") d.onSettingsTab();
+      // Settings is interactive in the sidebar — don't steal focus to the compose field.
+      if (t !== "settings") d.focusDisplayInput();
       return t;
     }
 
@@ -206,9 +374,14 @@
       openModal(id);
     }
 
-    function openSettingsModal() {
-      openShellModal(SETTINGS_MODAL_ID, { closeDrawer: true });
-      if (typeof d.onOpenSettings === "function") d.onOpenSettings();
+    /** Open Settings as a sidebar tab (expands drawer / desktop rail if needed). */
+    function openSettings() {
+      const wasClosed = !isSidebarOpen();
+      switchSidebarTab("settings", wasClosed);
+    }
+
+    function isSettingsOpen() {
+      return !!document.getElementById("tab-content-settings")?.classList.contains("active");
     }
 
     function openHelpModal() {
@@ -217,10 +390,6 @@
 
     function runNavAction(action) {
       const a = String(action || "").toLowerCase();
-      if (a === "settings") {
-        openSettingsModal();
-        return;
-      }
       if (a === "help") {
         openHelpModal();
         return;
@@ -389,12 +558,12 @@
       tabFromHash,
       switchSidebarTab,
       applySidebarTab,
-      openSettingsModal,
+      openSettings,
+      isSettingsOpen,
       openHelpModal,
       initRoute,
       bind,
       get modalOverlay() { return modalOverlay; },
-      SETTINGS_MODAL_ID,
       HELP_MODAL_ID
     };
   }
@@ -404,7 +573,6 @@
     VALID_SIDEBAR_TABS,
     DEFAULT_SIDEBAR_TAB,
     SECTION_TITLES,
-    SETTINGS_MODAL_ID,
     HELP_MODAL_ID
   };
 })(typeof window !== "undefined" ? window : globalThis);

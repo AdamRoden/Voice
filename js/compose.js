@@ -390,6 +390,19 @@
       });
     }
 
+    function fitMenuToViewport() {
+      if (!composeActionsMenu || !composeActionsBtn || composeActionsMenu.hidden) return;
+      const FloatMenu = global.AacFloatMenu;
+      if (!FloatMenu) return;
+      // Short fixed action list: shift into view, no scrollbar (must fit viewport).
+      FloatMenu.place(composeActionsMenu, composeActionsBtn, {
+        prefer: "above",
+        overflow: "shift",
+        gap: 8,
+        pad: 8
+      });
+    }
+
     function setOpen(open) {
       if (!composeActionsMenu || !composeActionsBtn) return;
       composeActionsMenu.hidden = !open;
@@ -397,6 +410,9 @@
       if (open) {
         d.setHeaderTopicMenuOpen(false);
         render();
+        requestAnimationFrame(() => fitMenuToViewport());
+      } else if (global.AacFloatMenu) {
+        global.AacFloatMenu.clear(composeActionsMenu);
       }
     }
 
@@ -433,6 +449,15 @@
         const wrap = e.target.closest?.("#compose-actions-wrap");
         if (!wrap) setOpen(false);
       });
+      // Re-fit when viewport/OSK size changes while the menu is open
+      const onViewportChange = () => {
+        if (isOpen()) fitMenuToViewport();
+      };
+      window.addEventListener("resize", onViewportChange);
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", onViewportChange);
+        window.visualViewport.addEventListener("scroll", onViewportChange);
+      }
       document.getElementById("compose-replay-btn")?.addEventListener("click", () => replayLastGenerated());
       document.getElementById("compose-history-btn")?.addEventListener("click", () => openHistoryModal());
     }

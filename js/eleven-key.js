@@ -7,7 +7,6 @@
 
   const API_KEY_MODAL_ID = "api-key-modal";
   const KEY_STORAGE = "elevenlabs_key";
-  const SETTINGS_MODAL_ID = "modal-settings";
 
   /**
    * @param {{
@@ -17,8 +16,6 @@
    *   Eleven: { validateApiKey: (key: string) => Promise<object> },
    *   openModal: (id: string) => void,
    *   closeModals: () => void,
-   *   isSettingsOpen?: () => boolean,
-   *   isVoicesPanelOpen?: () => boolean,
    *   isElevenModelSelected?: () => boolean,
    *   onNeedBrowserFallback?: () => void,
    *   onRevertModel?: (modelId: string) => void,
@@ -48,7 +45,7 @@
     const apiKeyBtn = $("api-key-btn");
     const apiKeyInput = $("api-key-input");
 
-    /** @type {null | { id: number, returnTo: string|null, previousModel: string|null, pendingModel: string|null, checking: boolean }} */
+    /** @type {null | { id: number, returnToModal: string|null, previousModel: string|null, pendingModel: string|null, checking: boolean }} */
     let session = null;
     let sessionSeq = 0;
     let closingInternally = false;
@@ -114,14 +111,16 @@
       notifyKeyState({ clearCache: !hasApiKey(), loadError: false, refreshList: true });
     }
 
-    function finishModalUi(returnTo) {
+    /**
+     * Close the key modal. Optional returnToModal re-opens a real modal id;
+     * sidebar tab / voices panel stay put without any return token.
+     * @param {string|null|undefined} returnToModal
+     */
+    function finishModalUi(returnToModal) {
       closingInternally = true;
       try {
-        if (returnTo && returnTo !== "voices") {
-          d.openModal(returnTo);
-        } else {
-          d.closeModals();
-        }
+        if (returnToModal) d.openModal(returnToModal);
+        else d.closeModals();
       } finally {
         closingInternally = false;
       }
@@ -129,23 +128,20 @@
 
     /**
      * @param {{
-     *   fromVoicesPanel?: boolean,
+     *   returnToModal?: string|null,
      *   previousModel?: string|null,
      *   pendingModel?: string|null
      * }} [opts]
      */
     function openApiKeyModal(opts) {
       const options = opts || {};
-      let returnTo = null;
-      if (options.fromVoicesPanel || (typeof d.isVoicesPanelOpen === "function" && d.isVoicesPanelOpen())) {
-        returnTo = "voices";
-      } else if (typeof d.isSettingsOpen === "function" && d.isSettingsOpen()) {
-        returnTo = SETTINGS_MODAL_ID;
-      }
+      // Sidebar tab / voices panel remain under this modal; only pass a modal id
+      // when something must re-open after close.
+      const returnToModal = options.returnToModal || null;
 
       session = {
         id: ++sessionSeq,
-        returnTo,
+        returnToModal,
         previousModel: options.previousModel != null ? options.previousModel : null,
         pendingModel: options.pendingModel != null ? options.pendingModel : null,
         checking: false
@@ -178,7 +174,7 @@
     async function closeApiKeyModal(saved) {
       if (!saved) {
         const s = takeSession();
-        finishModalUi(s?.returnTo ?? null);
+        finishModalUi(s?.returnToModal ?? null);
         applyCancelEffects(s);
         return;
       }
@@ -189,7 +185,7 @@
       }
 
       const sid = session.id;
-      const returnTo = session.returnTo;
+      const returnToModal = session.returnToModal;
       const pendingModel = session.pendingModel;
       const key = String(apiKeyInput?.value || "").trim();
       const saveBtn = $("save-api-key-btn");
@@ -198,7 +194,7 @@
         lsSet(KEY_STORAGE, "");
         if (apiKeyInput) apiKeyInput.value = "";
         const s = takeSession();
-        finishModalUi(returnTo);
+        finishModalUi(returnToModal);
         applyCancelEffects(s || { previousModel: null, pendingModel: null });
         paintApiKeyButton();
         return;
@@ -247,7 +243,7 @@
         if (pendingModel && typeof d.onCommitPendingModel === "function") {
           try { d.onCommitPendingModel(pendingModel); } catch (_) {}
         }
-        finishModalUi(returnTo);
+        finishModalUi(returnToModal);
       } finally {
         if (isSessionAlive(sid) && session) session.checking = false;
         if (saveBtn) {
@@ -319,7 +315,6 @@
       revokeAndFallback,
       handleInvalidElevenKey,
       isSessionOpen: () => !!session,
-      SETTINGS_MODAL_ID,
       API_KEY_MODAL_ID
     };
   }
@@ -327,7 +322,6 @@
   global.AacElevenKey = {
     create,
     API_KEY_MODAL_ID,
-    SETTINGS_MODAL_ID,
     KEY_STORAGE
   };
 })(typeof window !== "undefined" ? window : globalThis);

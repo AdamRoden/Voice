@@ -294,12 +294,18 @@
         !before.trim() || /[.!?]["')\]]*\s*$/.test(before);
       if (atSentenceStart) insert = insert.toUpperCase();
       else if (insert === "i" || insert === "I") {
+        // Only force pronoun "I" when the letter is already a complete token
+        // (word boundary after). Empty next means the user may still be typing
+        // "if" / "in" / "interesting" — bare "i" is fixed on space/punct via
+        // correctTokenBeforeCaret instead.
         const prevCh = s > 0 ? src[s - 1] : " ";
-        const nextCh = e < src.length ? src[e] : " ";
-        if (/\s/.test(prevCh) || s === 0) {
-          if (/\s/.test(nextCh) || nextCh === "" || /[.,!?;:]/.test(nextCh)) {
-            insert = "I";
-          }
+        const nextCh = e < src.length ? src[e] : "";
+        if (
+          (/\s/.test(prevCh) || s === 0) &&
+          nextCh !== "" &&
+          (/\s/.test(nextCh) || /[.,!?;:]/.test(nextCh))
+        ) {
+          insert = "I";
         }
       }
     }

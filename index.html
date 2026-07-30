@@ -101,6 +101,110 @@
         </button>
         <div id="topics-list"></div>
       </div>
+
+      <!-- Settings Tab Content -->
+      <div id="tab-content-settings" class="tab-content">
+        <div class="settings-body">
+          <div class="modal-description settings-section-label">Appearance</div>
+          <div class="sidebar-setting-group">
+            <label><span>Font Size</span><span id="font-display">28px</span></label>
+            <div class="font-controls">
+              <button class="font-btn" id="font-down" type="button">A-</button>
+              <button class="font-btn" id="font-up" type="button">A+</button>
+            </div>
+          </div>
+          <div class="sidebar-setting-group">
+            <label>Theme</label>
+            <div class="theme-picker-group">
+              <button class="theme-btn" data-theme="light" onclick="applyTheme('light')" type="button"><span class="material-symbols-outlined icon-small">light_mode</span> Light</button>
+              <button class="theme-btn" data-theme="dark" onclick="applyTheme('dark')" type="button"><span class="material-symbols-outlined icon-small">dark_mode</span> Dark</button>
+              <button class="theme-btn" data-theme="system" onclick="applyTheme('system')" type="button"><span class="material-symbols-outlined icon-small">computer</span> System</button>
+            </div>
+          </div>
+          <div class="sidebar-setting-group">
+            <label>Accent Color</label>
+            <div class="accent-color-row">
+              <input type="color" id="accent-color-picker" value="#8ab4f8" title="Custom accent color">
+              <button class="font-btn" id="accent-color-reset" type="button" title="Reset to theme default">Reset</button>
+            </div>
+          </div>
+
+          <div class="modal-description settings-section-label">Features</div>
+          <div class="sidebar-setting-group">
+            <button id="api-key-btn" class="status-btn missing" type="button">
+              <span class="status-btn-text"><span class="material-symbols-outlined icon-small icon-btn-margin">key</span>Missing API Key (Click to Add)</span>
+            </button>
+          </div>
+          <label class="setting-toggle-row" for="opt-message-words">
+            <span class="setting-toggle-text">
+              <span class="setting-toggle-title">Message word chips</span>
+              <span class="setting-toggle-desc">Words under the text box with remove and option to Replay</span>
+            </span>
+            <input type="checkbox" id="opt-message-words" class="setting-toggle-input">
+          </label>
+          <label class="setting-toggle-row" for="opt-button-insert">
+            <span class="setting-toggle-text">
+              <span class="setting-toggle-title">Insert from sound buttons</span>
+              <span class="setting-toggle-desc">Show + on sound buttons to add text to the message</span>
+            </span>
+            <input type="checkbox" id="opt-button-insert" class="setting-toggle-input">
+          </label>
+          <div class="modal-description settings-section-label">Compose quick actions</div>
+          <label class="setting-toggle-row" for="opt-compose-new">
+            <span class="setting-toggle-text">
+              <span class="setting-toggle-title">Clear message button</span>
+              <span class="setting-toggle-desc">Show × to the right of the text box</span>
+            </span>
+            <input type="checkbox" id="opt-compose-new" class="setting-toggle-input">
+          </label>
+          <label class="setting-toggle-row" for="opt-compose-pin">
+            <span class="setting-toggle-text">
+              <span class="setting-toggle-title">Pin to button</span>
+              <span class="setting-toggle-desc">Show pin to the right of the text box</span>
+            </span>
+            <input type="checkbox" id="opt-compose-pin" class="setting-toggle-input">
+          </label>
+          <label class="setting-toggle-row" for="opt-compose-replay">
+            <span class="setting-toggle-text">
+              <span class="setting-toggle-title">Replay button</span>
+              <span class="setting-toggle-desc">Show replay to the right of the text box</span>
+            </span>
+            <input type="checkbox" id="opt-compose-replay" class="setting-toggle-input">
+          </label>
+          <label class="setting-toggle-row" for="opt-insert-tag">
+            <span class="setting-toggle-text">
+              <span class="setting-toggle-title">Insert tag button</span>
+              <span class="setting-toggle-desc">Show + next to the text box to insert [tags]</span>
+            </span>
+            <input type="checkbox" id="opt-insert-tag" class="setting-toggle-input">
+          </label>
+          <label class="setting-toggle-row" for="opt-compose-history">
+            <span class="setting-toggle-text">
+              <span class="setting-toggle-title">History button</span>
+              <span class="setting-toggle-desc">Open speech history from the text box</span>
+            </span>
+            <input type="checkbox" id="opt-compose-history" class="setting-toggle-input">
+          </label>
+          <div class="sidebar-setting-group" id="group-output-device">
+            <label>Speaker / Output Device</label>
+            <select id="output-device-select" aria-describedby="output-device-hint">
+              <option value="">System default</option>
+            </select>
+            <div class="modal-description" id="output-device-hint">Loading speakers…</div>
+          </div>
+          <div class="modal-description settings-section-label">Backup</div>
+          <div class="modal-description settings-section-hint">Download or restore topics and buttons as JSON.</div>
+          <div class="topics-backup-row settings-backup-row">
+            <button class="tool-btn" id="export-board-btn" type="button" title="Download topics and buttons as JSON">
+              <span class="material-symbols-outlined icon-small">download</span> Export
+            </button>
+            <button class="tool-btn" id="import-board-btn" type="button" title="Import boards from a JSON file">
+              <span class="material-symbols-outlined icon-small">upload</span> Import
+            </button>
+            <input type="file" id="import-board-file" accept="application/json,.json" hidden>
+          </div>
+        </div>
+      </div>
     </div>
 
     <nav class="sidebar-nav" id="sidebar-nav" aria-label="Sidebar">
@@ -138,7 +242,7 @@
           <span class="material-symbols-outlined logo-mark">record_voice_over</span>
         </button>
         <div class="chat-slots" id="chat-slots" role="group" aria-label="Topic chats">
-          <div class="header-topic-menu mode-topic-menu" id="header-topic-menu" role="listbox" aria-label="Topics" hidden></div>
+          <div class="header-topic-menu float-menu float-menu--scroll" id="header-topic-menu" role="listbox" aria-label="Topics" hidden></div>
         </div>
         <button type="button" class="icon-btn header-collapse-btn" id="header-collapse-btn" title="Collapse top bar" aria-label="Collapse top bar">
           <span class="material-symbols-outlined">close</span>
@@ -177,7 +281,7 @@
                   <span class="compose-mode-label">Actions</span>
                   <span class="material-symbols-outlined compose-mode-caret">expand_more</span>
                 </button>
-                <div class="compose-actions-menu mode-topic-menu" id="compose-actions-menu" role="menu" aria-label="Message actions" hidden></div>
+                <div class="compose-actions-menu float-menu float-menu--shift" id="compose-actions-menu" role="menu" aria-label="Message actions" hidden></div>
               </div>
             </div>
             <textarea class="display-textarea" id="display-input" spellcheck="true" autocomplete="off" autocapitalize="sentences" inputmode="none" virtualkeyboardpolicy="manual" placeholder="Type anything…" rows="1" aria-label="Message text"></textarea>
@@ -271,118 +375,6 @@
     </div>
     <div class="modal-buttons">
       <button type="button" class="modal-btn primary" id="coach-dismiss-btn">Got it</button>
-    </div>
-  </div>
-
-  <!-- Settings (appearance + tools + backup) -->
-  <div class="modal modal-full-mobile" id="modal-settings">
-    <div class="modal-title">Settings</div>
-    <div class="modal-scroll">
-      <div class="settings-body">
-        <div class="modal-description settings-section-label">Appearance</div>
-        <div class="sidebar-setting-group">
-          <label><span>Font Size</span><span id="font-display">28px</span></label>
-          <div class="font-controls">
-            <button class="font-btn" id="font-down" type="button">A-</button>
-            <button class="font-btn" id="font-up" type="button">A+</button>
-          </div>
-        </div>
-        <div class="sidebar-setting-group">
-          <label>Theme</label>
-          <div class="theme-picker-group">
-            <button class="theme-btn" data-theme="light" onclick="applyTheme('light')" type="button"><span class="material-symbols-outlined icon-small">light_mode</span> Light</button>
-            <button class="theme-btn" data-theme="dark" onclick="applyTheme('dark')" type="button"><span class="material-symbols-outlined icon-small">dark_mode</span> Dark</button>
-            <button class="theme-btn" data-theme="system" onclick="applyTheme('system')" type="button"><span class="material-symbols-outlined icon-small">computer</span> System</button>
-          </div>
-        </div>
-        <div class="sidebar-setting-group">
-          <label>Accent Color</label>
-          <div class="accent-color-row">
-            <input type="color" id="accent-color-picker" value="#8ab4f8" title="Custom accent color">
-            <button class="font-btn" id="accent-color-reset" type="button" title="Reset to theme default">Reset</button>
-          </div>
-        </div>
-
-        <div class="modal-description settings-section-label">Voice &amp; tools</div>
-        <div class="modal-description settings-section-hint">Optional tools and ElevenLabs. Turn on only what you need.</div>
-        <div class="sidebar-setting-group">
-          <button id="api-key-btn" class="status-btn missing" type="button">
-            <span class="status-btn-text"><span class="material-symbols-outlined icon-small icon-btn-margin">key</span>Missing API Key (Click to Add)</span>
-          </button>
-        </div>
-        <label class="setting-toggle-row" for="opt-message-words">
-          <span class="setting-toggle-text">
-            <span class="setting-toggle-title">Message word chips</span>
-            <span class="setting-toggle-desc">Words under the text box with remove and option to Replay</span>
-          </span>
-          <input type="checkbox" id="opt-message-words" class="setting-toggle-input">
-        </label>
-        <label class="setting-toggle-row" for="opt-button-insert">
-          <span class="setting-toggle-text">
-            <span class="setting-toggle-title">Insert from sound buttons</span>
-            <span class="setting-toggle-desc">Show + on sound buttons to add text to the message</span>
-          </span>
-          <input type="checkbox" id="opt-button-insert" class="setting-toggle-input">
-        </label>
-        <div class="modal-description settings-section-label">Compose quick actions</div>
-        <div class="modal-description settings-section-hint">Each can also open from the Actions menu. Turn on to show a stand-alone button next to the text box.</div>
-        <label class="setting-toggle-row" for="opt-compose-new">
-          <span class="setting-toggle-text">
-            <span class="setting-toggle-title">Clear message button</span>
-            <span class="setting-toggle-desc">Show × to the right of the text box to clear it</span>
-          </span>
-          <input type="checkbox" id="opt-compose-new" class="setting-toggle-input">
-        </label>
-        <label class="setting-toggle-row" for="opt-compose-pin">
-          <span class="setting-toggle-text">
-            <span class="setting-toggle-title">Pin to button</span>
-            <span class="setting-toggle-desc">Show pin to the right of the text box</span>
-          </span>
-          <input type="checkbox" id="opt-compose-pin" class="setting-toggle-input">
-        </label>
-        <label class="setting-toggle-row" for="opt-compose-replay">
-          <span class="setting-toggle-text">
-            <span class="setting-toggle-title">Replay button</span>
-            <span class="setting-toggle-desc">Show replay to the right of the text box</span>
-          </span>
-          <input type="checkbox" id="opt-compose-replay" class="setting-toggle-input">
-        </label>
-        <label class="setting-toggle-row" for="opt-insert-tag">
-          <span class="setting-toggle-text">
-            <span class="setting-toggle-title">Insert tag button</span>
-            <span class="setting-toggle-desc">Show + next to the text box to insert [tags]</span>
-          </span>
-          <input type="checkbox" id="opt-insert-tag" class="setting-toggle-input">
-        </label>
-        <label class="setting-toggle-row" for="opt-compose-history">
-          <span class="setting-toggle-text">
-            <span class="setting-toggle-title">History button</span>
-            <span class="setting-toggle-desc">Open speech history from the text box</span>
-          </span>
-          <input type="checkbox" id="opt-compose-history" class="setting-toggle-input">
-        </label>
-        <div class="sidebar-setting-group" id="group-output-device">
-          <label>Speaker / Output Device</label>
-          <select id="output-device-select" aria-describedby="output-device-hint">
-            <option value="">System default</option>
-          </select>
-          <div class="modal-description" id="output-device-hint">Loading speakers…</div>
-        </div>
-        <div class="modal-description settings-section-label">Backup</div>
-        <div class="modal-description settings-section-hint">Download or restore topics and buttons as JSON.</div>
-        <div class="topics-backup-row settings-backup-row">
-          <button class="tool-btn" id="export-board-btn" type="button" title="Download topics and buttons as JSON">
-            <span class="material-symbols-outlined icon-small">download</span> Export
-          </button>
-          <button class="tool-btn" id="import-board-btn" type="button" title="Import boards from a JSON file">
-            <span class="material-symbols-outlined icon-small">upload</span> Import
-          </button>
-          <input type="file" id="import-board-file" accept="application/json,.json" hidden>
-        </div>
-      </div>
-    </div>
-    <div class="modal-buttons">
-      <button class="modal-btn secondary" type="button" onclick="closeModals()">Close</button>
     </div>
   </div>
 

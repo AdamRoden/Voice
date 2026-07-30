@@ -24,6 +24,30 @@
     return (layoutH - vv.height) > 120;
   }
 
+  /** Home-screen / installed web app (iOS uses navigator.standalone). */
+  function isStandaloneDisplay() {
+    try {
+      if (typeof navigator !== "undefined" && navigator.standalone === true) return true;
+      if (typeof window !== "undefined" && window.matchMedia) {
+        if (window.matchMedia("(display-mode: standalone)").matches) return true;
+        if (window.matchMedia("(display-mode: fullscreen)").matches) return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  /**
+   * Layout height when the soft keyboard is closed. Prefer the larger of
+   * visualViewport vs innerHeight so iOS home-screen PWAs never leave a gap
+   * under a short visualViewport reading.
+   */
+  function closedShellHeight() {
+    const layoutH = window.innerHeight || document.documentElement.clientHeight || 0;
+    const vv = window.visualViewport;
+    const vvH = vv ? Math.round(vv.height) : 0;
+    return Math.max(1, layoutH, vvH);
+  }
+
   function resetDocumentScroll() {
     try {
       if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
@@ -102,14 +126,25 @@
           document.body.style.top = "";
           document.body.style.left = "";
           document.body.style.width = "";
-          document.body.style.height = `${h}px`;
+          // Standalone: clear inline height and let CSS fill the screen.
+          // In-browser mobile: size to the larger viewport so chrome hide/show
+          // still works without a bottom dead band on iPhone PWAs.
+          if (isStandaloneDisplay()) {
+            document.body.style.height = "";
+          } else {
+            document.body.style.height = `${closedShellHeight()}px`;
+          }
         }
       } else if (isMobileLayout()) {
         document.body.style.position = "";
         document.body.style.top = "";
         document.body.style.left = "";
         document.body.style.width = "";
-        document.body.style.height = `${window.innerHeight}px`;
+        if (isStandaloneDisplay()) {
+          document.body.style.height = "";
+        } else {
+          document.body.style.height = `${closedShellHeight()}px`;
+        }
       }
     }
 

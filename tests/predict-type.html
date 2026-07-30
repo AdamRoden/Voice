@@ -85,6 +85,26 @@
         assert("i+space → I ", eq(r.text, "I "), "got " + JSON.stringify(r.text));
       }
 
+      // applyInsert: bare i while still typing must stay lowercase mid-sentence
+      // (do not capitalise the start of if/in/interesting)
+      {
+        const r = T.applyInsert("hello ", 6, 6, "i");
+        assert("mid-sentence i stays i", eq(r.text, "hello i"), "got " + JSON.stringify(r.text));
+      }
+      {
+        const r = T.applyInsert("hello i", 7, 7, "f");
+        assert("if stays if", eq(r.text, "hello if"), "got " + JSON.stringify(r.text));
+      }
+      {
+        const r = T.applyInsert("hello i", 7, 7, " ");
+        assert("hello i+space → hello I ", eq(r.text, "hello I "), "got " + JSON.stringify(r.text));
+      }
+      // insert i between existing word boundaries (already complete token)
+      {
+        const r = T.applyInsert("a  b", 2, 2, "i");
+        assert("insert i between spaces → I", eq(r.text, "a I b"), "got " + JSON.stringify(r.text));
+      }
+
       // applyInsert: im + space
       {
         const r = T.applyInsert("im", 2, 2, " ");

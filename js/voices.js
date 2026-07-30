@@ -1220,7 +1220,6 @@ function defaultLoadKeys(storageKey) {
       $("voices-panel")?.classList.add("open");
       if (group === "eleven" && !hasElevenApiKey()) {
         ElevenKey.openApiKeyModal({
-          fromVoicesPanel: true,
           previousModel: readStoredModel(),
           pendingModel: selectedModel()
         });
@@ -1295,7 +1294,6 @@ function defaultLoadKeys(storageKey) {
         if (SpeechEngines.isElevenModel(mid) && !hasElevenApiKey()) {
           applyModelUi(mid, { persist: false });
           ElevenKey.openApiKeyModal({
-            fromVoicesPanel: isVoicesPanelOpen(),
             previousModel,
             pendingModel: mid
           });

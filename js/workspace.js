@@ -142,28 +142,20 @@
     function positionHeaderTopicMenu() {
       const anchor = getActiveChatChip();
       if (!headerTopicMenu || !anchor || headerTopicMenu.hidden) return;
+      const FloatMenu = global.AacFloatMenu;
+      if (!FloatMenu) return;
       const pad = 8;
-      const r = anchor.getBoundingClientRect();
       const menuW = Math.min(320, Math.max(200, window.innerWidth - pad * 2));
-      let left = r.left + (r.width / 2) - (menuW / 2);
-      if (left + menuW > window.innerWidth - pad) left = window.innerWidth - pad - menuW;
-      if (left < pad) left = pad;
-      let top = r.bottom + 6;
-      const maxH = Math.min(320, Math.max(120, window.innerHeight - top - pad));
-      if (maxH < 140 && r.top > 160) {
-        const upH = Math.min(320, r.top - pad - 6);
-        top = Math.max(pad, r.top - 6 - upH);
-        headerTopicMenu.style.maxHeight = `${upH}px`;
-      } else {
-        headerTopicMenu.style.maxHeight = `${maxH}px`;
-      }
-      headerTopicMenu.style.position = "fixed";
-      headerTopicMenu.style.left = `${Math.round(left)}px`;
-      headerTopicMenu.style.top = `${Math.round(top)}px`;
-      headerTopicMenu.style.right = "auto";
-      headerTopicMenu.style.bottom = "auto";
-      headerTopicMenu.style.width = `${Math.round(menuW)}px`;
-      headerTopicMenu.style.zIndex = "450";
+      // Long topic lists: scroll inside the menu when needed.
+      FloatMenu.place(headerTopicMenu, anchor, {
+        prefer: "below",
+        overflow: "scroll",
+        gap: 6,
+        pad,
+        width: menuW,
+        maxHeight: 320,
+        zIndex: 450
+      });
     }
 
     function setHeaderExpanded(open) {
@@ -280,6 +272,8 @@
         if (!headerExpanded) setHeaderExpanded(true);
         renderHeaderTopicMenu();
         requestAnimationFrame(() => positionHeaderTopicMenu());
+      } else if (global.AacFloatMenu) {
+        global.AacFloatMenu.clear(headerTopicMenu);
       }
       syncChatUi();
     }

@@ -6,14 +6,42 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
 
-    html { height: 100%; height: -webkit-fill-available; }
+    /*
+     * Full-viewport shell (incl. iOS home-screen / standalone).
+     * Avoid max-height: -webkit-fill-available on body — on iPhone PWAs it often
+     * caps shorter than the screen and leaves an empty band under the app.
+     * Paint html the same color so any residual gap is never a blank strip.
+     */
+    html {
+      height: 100%;
+      height: -webkit-fill-available;
+      /* 100dvh last so modern Safari/iOS prefer it over fill-available */
+      height: 100dvh;
+      background-color: var(--bg-main);
+    }
 
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
       ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
 
-    body { background-color: var(--bg-main); color: var(--text); display: flex; height: 100vh; height: 100dvh; max-height: -webkit-fill-available; overflow: hidden; transition: background-color 0.2s ease, color 0.2s ease; overscroll-behavior: none; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left); }
+    body {
+      background-color: var(--bg-main);
+      color: var(--text);
+      display: flex;
+      min-height: 100%;
+      min-height: -webkit-fill-available;
+      min-height: 100dvh;
+      height: 100%;
+      height: -webkit-fill-available;
+      height: 100dvh;
+      overflow: hidden;
+      transition: background-color 0.2s ease, color 0.2s ease;
+      overscroll-behavior: none;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+      padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+    }
     body.modal-open { overflow: hidden; }
 
     button, input, select, textarea { font: inherit; touch-action: manipulation; }
@@ -85,7 +113,8 @@
     .logo-text { font-size: 16px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 1; transition: opacity 0.2s; }
     .sidebar.collapsed .logo-text { opacity: 0; width: 0; margin: 0; pointer-events: none; }
     .sidebar.collapsed .logo-btn { justify-content: center; padding: 6px; gap: 0; }
-    .sidebar.collapsed .sidebar-header { justify-content: center; padding: 8px 0; }
+    /* Desktop collapsed rail: no header/toggle — nav icons open sections */
+    .sidebar.collapsed .sidebar-header { display: none; }
 
     /* Bottom nav: Voice | History | Topics | Settings | Help */
     .sidebar-nav {
@@ -425,7 +454,12 @@
     }
     .voice-item-meta.cached { color: var(--accent); opacity: 0.95; }
 
-    /* Advanced settings modal + feature toggles */
+    /* Settings sidebar tab + feature toggles */
+    #tab-content-settings {
+      overflow-y: auto;
+      min-height: 0;
+      padding-bottom: 8px;
+    }
     .settings-body,
     .advanced-settings-body {
       display: flex;
@@ -468,7 +502,7 @@
       cursor: pointer;
       flex-shrink: 0;
     }
-    #modal-settings .sidebar-setting-group {
+    #tab-content-settings .sidebar-setting-group {
       margin-top: 8px;
       padding: 4px 8px;
     }
@@ -1386,9 +1420,10 @@
       flex: 0 0 auto;
       align-self: flex-end;
       margin-bottom: 2px;
+      z-index: 1;
     }
-    .compose-actions-menu {
-      min-width: min(240px, 80vw);
+    .compose-actions-wrap:has(.float-menu--shift:not([hidden])) {
+      z-index: 60;
     }
     .compose-actions-item {
       display: flex;
@@ -1461,14 +1496,16 @@
     }
     .compose-mode-caret { font-size: 18px; flex-shrink: 0; opacity: 0.75; }
 
-    .mode-topic-menu {
+    /*
+     * Floating menus: shared chrome + explicit overflow policy.
+     * --scroll: cap height (topic lists). --shift: full height, JS clamps position.
+     */
+    .float-menu {
       position: absolute;
       left: 0;
       bottom: calc(100% + 8px);
       min-width: min(260px, 80vw);
       max-width: min(320px, 90vw);
-      max-height: min(40vh, 280px);
-      overflow-y: auto;
       background: var(--bg-surface);
       border: 1px solid var(--border);
       border-radius: 14px;
@@ -1476,7 +1513,18 @@
       padding: 6px;
       z-index: 40;
     }
-    .mode-topic-menu[hidden] { display: none !important; }
+    .float-menu[hidden] { display: none !important; }
+    .float-menu--scroll {
+      max-height: min(40vh, 280px);
+      overflow-y: auto;
+    }
+    .float-menu--shift {
+      min-width: min(240px, 80vw);
+      max-height: none;
+      overflow: visible;
+      top: auto;
+      z-index: 50;
+    }
     .mode-topic-sep {
       height: 1px;
       margin: 6px 8px;
@@ -1924,6 +1972,18 @@
     @media (max-width: 900px) {
       body { padding: 0; }
 
+      /* iOS Add to Home Screen: fill the device screen edge-to-edge */
+      @media (display-mode: standalone), (display-mode: fullscreen) {
+        html, body {
+          height: 100%;
+          height: -webkit-fill-available;
+          height: 100dvh;
+          min-height: 100%;
+          min-height: -webkit-fill-available;
+          min-height: 100dvh;
+        }
+      }
+
       .mobile-only { display: flex !important; }
 
       .sidebar-backdrop { display: block; }
@@ -1938,6 +1998,7 @@
         width: 100vw;
         max-width: none;
         height: 100%;
+        height: -webkit-fill-available;
         height: 100dvh;
         border-right: none;
         transform: translateX(-105%);
@@ -1954,7 +2015,11 @@
         max-width: none;
       }
       /* Always full drawer content on mobile (not icon rail) */
-      .sidebar.collapsed .sidebar-header { justify-content: flex-start; padding: 8px 10px; }
+      .sidebar.collapsed .sidebar-header {
+        display: flex;
+        justify-content: flex-start;
+        padding: 8px 10px;
+      }
       .sidebar.collapsed .logo-text { opacity: 1; width: auto; pointer-events: auto; }
       .sidebar.collapsed .sidebar-content { display: flex; }
       .sidebar.collapsed .sidebar-nav {
@@ -2126,13 +2191,10 @@
         align-self: center;
         justify-self: end;
       }
-      .compose-actions-menu,
-      .mode-topic-menu {
+      /* Topic picker opens down under the chip; compose uses JS fixed + prefer above */
+      .float-menu--scroll {
         bottom: auto;
         top: calc(100% + 6px);
-        left: 0;
-        min-width: min(260px, 80vw);
-        max-width: min(320px, 90vw);
       }
 
       .key {

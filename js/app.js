@@ -594,7 +594,7 @@
       onVoiceTab: () => {
         if (Voices) Voices.syncSelectedVoiceSummary();
       },
-      onOpenSettings: () => ports.refreshOutputDevices(),
+      onSettingsTab: () => ports.refreshOutputDevices(),
       isHeaderMenuOpen: () => !!(Workspace && Workspace.isHeaderTopicMenuOpen()),
       closeHeaderMenu: () => Workspace?.setHeaderTopicMenuOpen(false),
       isComposeMenuOpen: () => !!(Compose && Compose.isOpen()),
@@ -841,8 +841,6 @@
       Eleven,
       openModal: (id) => ports.openModal(id),
       closeModals: () => ports.closeModals(),
-      isSettingsOpen: () => !!$("modal-settings")?.classList.contains("open"),
-      isVoicesPanelOpen: () => !!(Voices && Voices.isVoicesPanelOpen && Voices.isVoicesPanelOpen()),
       isElevenModelSelected: () => !!(Voices && Voices.isElevenModelSelected && Voices.isElevenModelSelected()),
       onNeedBrowserFallback: () => { Voices?.fallbackToDefaultModel(); },
       onRevertModel: (mid) => { Voices?.applyModelUi(mid, { persist: true }); },
