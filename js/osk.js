@@ -447,6 +447,12 @@
       displayInput.removeAttribute("inputmode");
       displayInput.removeAttribute("virtualkeyboardpolicy");
       displayInput.removeAttribute("readonly");
+      // System keyboard should resize / report visualViewport — not overlay.
+      try {
+        if (navigator.virtualKeyboard) {
+          try { navigator.virtualKeyboard.overlaysContent = false; } catch (_) {}
+        }
+      } catch (_) {}
     }
   }
 
@@ -490,6 +496,7 @@
    * Physical (hardware) keyboards always type into the field via beforeinput.
    */
   function bindCompose(cfg) {
+    const optsIn = cfg || {};
     const {
       panel,
       toggleBtn,
@@ -506,7 +513,7 @@
       clipboard,
       undo,
       redo
-    } = cfg || {};
+    } = optsIn;
     if (!panel) return;
 
     const LS_OSK = "aac_osk_visible";
@@ -551,6 +558,9 @@
             }
           } catch (_) {}
         }
+        if (typeof optsIn.onLayout === "function") {
+          optsIn.onLayout({ oskVisible: on });
+        }
       },
       selectAll,
       clipboard,
@@ -565,9 +575,17 @@
     if (toggleBtn) {
       toggleBtn.addEventListener("click", () => {
         const next = !isVisible();
+        // Before hide: pin shell so the dock cannot drop under the rising iOS keyboard
+        // during the button blur → field focus handoff.
+        if (!next && typeof optsIn.onSystemKeyboard === "function") {
+          optsIn.onSystemKeyboard();
+        }
         setVisible(next);
         // Focus so system soft KB opens when OSK hides, and caret stays ready when OSK shows.
         if (typeof focus === "function") focus();
+        if (typeof optsIn.onLayout === "function") {
+          optsIn.onLayout({ oskVisible: next });
+        }
       });
     }
 

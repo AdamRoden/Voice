@@ -1,5 +1,5 @@
 /* AAC Workspace service worker — offline shell + app assets */
-const CACHE_NAME = "aac-workspace-v33";
+const CACHE_NAME = "aac-workspace-v35";
 const PRECACHE = [
   "./",
   "./index.html",

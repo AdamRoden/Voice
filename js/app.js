@@ -252,11 +252,12 @@
             end = Math.max(0, Math.min(end, len));
           }
           displayInput.setSelectionRange(start, end);
-          scheduleKeyboardAlign();
+          // Settle through iOS system-keyboard open (especially after OSK → iOS switch).
+          scheduleKeyboardAlign({ settle: true });
         } catch (_) {
           try {
             displayInput.focus({ preventScroll: true });
-            scheduleKeyboardAlign();
+            scheduleKeyboardAlign({ settle: true });
           } catch (__) {}
         }
       });
@@ -272,8 +273,13 @@
       }
       return keyboardCtl;
     }
-    function scheduleKeyboardAlign() {
-      ensureKeyboard()?.schedule();
+    function scheduleKeyboardAlign(opts) {
+      ensureKeyboard()?.schedule(opts && opts.settle ? { settle: true } : undefined);
+    }
+    function expectSystemKeyboard() {
+      const ctl = ensureKeyboard();
+      if (ctl && typeof ctl.expectSystemKeyboard === "function") ctl.expectSystemKeyboard();
+      else scheduleKeyboardAlign({ settle: true });
     }
     displayInput.addEventListener("blur", saveDisplaySelection);
     document.addEventListener("selectionchange", () => {
@@ -442,6 +448,8 @@
         lsGet,
         lsSet,
         onChange: null,
+        onSystemKeyboard: expectSystemKeyboard,
+        onLayout: () => scheduleKeyboardAlign({ settle: true }),
         selectAll: () => {
           try {
             displayInput.focus();

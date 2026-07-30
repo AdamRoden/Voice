@@ -17,11 +17,20 @@
     return !!el.isContentEditable;
   }
 
+  /** Compose dock chrome (OSK toggle, speak, etc.) — keep pin while focusing these. */
+  function isComposeDockChrome(el) {
+    if (!el || !el.closest) return false;
+    return !!el.closest(".bottom-dock-wrap, .bottom-dock, .osk-panel");
+  }
+
   function isSoftKeyboardOpen() {
     const vv = window.visualViewport;
     if (!vv) return false;
     const layoutH = window.innerHeight || document.documentElement.clientHeight || 0;
-    return (layoutH - vv.height) > 120;
+    // iOS keyboard animation: also treat a large offsetTop pan as "open".
+    const inset = Math.max(0, layoutH - vv.height);
+    const pan = Math.max(0, vv.offsetTop || 0);
+    return inset > 120 || pan > 80;
   }
 
   /** Home-screen / installed web app (iOS uses navigator.standalone). */
@@ -56,10 +65,20 @@
     } catch (_) {}
   }
 
+  function clearBodyPinStyles() {
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.width = "";
+    document.body.style.height = "";
+    document.body.style.maxHeight = "";
+    document.body.style.transform = "";
+  }
+
   /**
    * @param {object} opts
    * @param {() => boolean} opts.isMobileLayout
-   * @returns {{ sync: Function, schedule: Function, bind: Function, isTextEntryElement: Function }}
+   * @returns {{ sync: Function, schedule: Function, bind: Function, expectSystemKeyboard: Function, isTextEntryElement: Function }}
    */
   function createController(opts) {
     const isMobileLayout = typeof opts.isMobileLayout === "function"
@@ -67,27 +86,52 @@
       : () => false;
 
     let raf = 0;
-    let settleTimer = 0;
+    /** @type {number[]} */
+    let settleTimers = [];
+    /** Keep shell pinned while OSK → system keyboard handoff (iOS focus dance). */
+    let forcePinUntil = 0;
 
     function clearSettle() {
-      if (settleTimer) {
-        clearTimeout(settleTimer);
-        settleTimer = 0;
+      for (let i = 0; i < settleTimers.length; i++) clearTimeout(settleTimers[i]);
+      settleTimers = [];
+    }
+
+    function clearBodyToClosed() {
+      clearBodyPinStyles();
+      if (isStandaloneDisplay()) {
+        document.body.style.height = "";
+      } else {
+        document.body.style.height = `${closedShellHeight()}px`;
       }
     }
 
     function sync() {
       const vv = window.visualViewport;
       const root = document.documentElement;
-      const typing = isTextEntryElement(document.activeElement);
-      const osk = isSoftKeyboardOpen();
-      const keyboardOpen = osk && typing;
-      // Pin as soon as a field is focused on mobile (OSK often lags visualViewport).
-      const pinShell = keyboardOpen || (isMobileLayout() && typing);
+      const active = document.activeElement;
+      const typing = isTextEntryElement(active);
+      const dockChrome = isComposeDockChrome(active);
+      const forcePin = Date.now() < forcePinUntil;
+      const softKb = isSoftKeyboardOpen();
+      // Treat dock chrome as "still composing" so the OSK toggle click does not
+      // unpin and drop the textbox under the rising system keyboard.
+      const composing = typing || (dockChrome && (forcePin || softKb || isMobileLayout()));
+      const keyboardOpen = softKb && (typing || forcePin || dockChrome);
+      const pinShell = keyboardOpen
+        || forcePin
+        || (isMobileLayout() && composing);
 
       if (root) {
         // CSS dock rules must match the pinned shell, not only late OSK detection.
         root.classList.toggle("keyboard-open", !!pinShell);
+        // Soft keyboard covers the home indicator; force zero bottom safe-area so
+        // OSK/dock padding does not leave a dark band under the keys on iOS PWAs.
+        // (env(safe-area-inset-bottom) often stays non-zero while the keyboard is up.)
+        if (keyboardOpen || (pinShell && softKb)) {
+          root.style.setProperty("--safe-bottom", "0px");
+        } else {
+          root.style.removeProperty("--safe-bottom");
+        }
         if (vv) {
           root.style.setProperty("--vv-height", `${Math.max(1, Math.round(vv.height))}px`);
           root.style.setProperty("--vv-offset-top", `${Math.round(vv.offsetTop || 0)}px`);
@@ -97,14 +141,9 @@
         }
       }
 
-      // Desktop: leave layout alone unless OSK is open.
-      // Mobile: track visual viewport height (browser chrome + keyboard).
-      if (!isMobileLayout() && !keyboardOpen) {
-        document.body.style.height = "";
-        document.body.style.width = "";
-        document.body.style.top = "";
-        document.body.style.left = "";
-        document.body.style.position = "";
+      // Desktop: leave layout alone unless system keyboard is open.
+      if (!isMobileLayout() && !keyboardOpen && !forcePin) {
+        clearBodyPinStyles();
         return;
       }
 
@@ -113,44 +152,27 @@
         const w = Math.max(1, Math.round(vv.width));
         const top = Math.round(vv.offsetTop || 0);
         const left = Math.round(vv.offsetLeft || 0);
-        // Pin shell to visual viewport while typing so body bottom = keyboard top.
+        // Pin shell to visual viewport so body bottom = keyboard top.
         if (pinShell) {
           document.body.style.position = "fixed";
           document.body.style.top = `${top}px`;
           document.body.style.left = `${left}px`;
           document.body.style.width = `${w}px`;
           document.body.style.height = `${h}px`;
+          document.body.style.maxHeight = `${h}px`;
+          document.body.style.transform = "";
           resetDocumentScroll();
         } else if (isMobileLayout()) {
-          document.body.style.position = "";
-          document.body.style.top = "";
-          document.body.style.left = "";
-          document.body.style.width = "";
-          // Standalone: clear inline height and let CSS fill the screen.
-          // In-browser mobile: size to the larger viewport so chrome hide/show
-          // still works without a bottom dead band on iPhone PWAs.
-          if (isStandaloneDisplay()) {
-            document.body.style.height = "";
-          } else {
-            document.body.style.height = `${closedShellHeight()}px`;
-          }
+          clearBodyToClosed();
         }
       } else if (isMobileLayout()) {
-        document.body.style.position = "";
-        document.body.style.top = "";
-        document.body.style.left = "";
-        document.body.style.width = "";
-        if (isStandaloneDisplay()) {
-          document.body.style.height = "";
-        } else {
-          document.body.style.height = `${closedShellHeight()}px`;
-        }
+        clearBodyToClosed();
       }
     }
 
     /**
-     * Coalesce focus/resize/growth into one frame + one follow-up (iOS pan),
-     * plus a short settle pass after OSK animation (~300ms on iOS/Android).
+     * Coalesce focus/resize into rAF passes, plus multi-stage settle for iOS
+     * system-keyboard animation (~250–500ms on open).
      */
     function schedule(opts) {
       const withSettle = !!(opts && opts.settle);
@@ -163,20 +185,35 @@
       });
       if (withSettle) {
         clearSettle();
-        settleTimer = setTimeout(() => {
-          settleTimer = 0;
-          sync();
-        }, 300);
+        // Staggered samples through the keyboard slide-up (iOS PWA is slow).
+        const delays = [80, 200, 350, 500, 700];
+        for (let i = 0; i < delays.length; i++) {
+          const t = setTimeout(() => {
+            settleTimers = settleTimers.filter((id) => id !== t);
+            sync();
+          }, delays[i]);
+          settleTimers.push(t);
+        }
       }
+    }
+
+    /**
+     * Call when switching custom OSK → system keyboard so the shell stays
+     * pinned through the blur/focus handoff and keyboard animation.
+     */
+    function expectSystemKeyboard() {
+      forcePinUntil = Date.now() + 900;
+      schedule({ settle: true });
     }
 
     function bind() {
       // Single focus entry — covers display + modals (no duplicate focus listeners).
       document.addEventListener("focusin", (e) => {
-        if (!isTextEntryElement(e.target)) return;
+        if (!isTextEntryElement(e.target) && !isComposeDockChrome(e.target)) return;
         schedule({ settle: true });
         // Keep focused fields visible inside full-window / scrolling modals.
         const field = e.target;
+        if (!isTextEntryElement(field)) return;
         requestAnimationFrame(() => {
           try {
             const modal = field.closest && field.closest(".modal.open");
@@ -189,21 +226,33 @@
       });
       document.addEventListener("focusout", () => {
         requestAnimationFrame(() => {
-          if (!isTextEntryElement(document.activeElement)) {
-            clearSettle();
-            document.documentElement.classList.remove("keyboard-open");
+          const active = document.activeElement;
+          if (isTextEntryElement(active) || isComposeDockChrome(active)) {
+            // Stay pinned while the OSK toggle (or other dock control) has focus.
             sync();
+            return;
           }
+          if (Date.now() < forcePinUntil) {
+            // Handoff window: OSK → system keyboard; do not unpin yet.
+            schedule({ settle: true });
+            return;
+          }
+          clearSettle();
+          forcePinUntil = 0;
+          document.documentElement.classList.remove("keyboard-open");
+          sync();
         });
       });
-      window.addEventListener("resize", schedule);
+      window.addEventListener("resize", () => schedule({ settle: true }));
       window.addEventListener("orientationchange", () => schedule({ settle: true }));
       if (window.visualViewport) {
-        window.visualViewport.addEventListener("resize", schedule);
+        window.visualViewport.addEventListener("resize", () => schedule({ settle: true }));
         window.visualViewport.addEventListener("scroll", schedule);
       }
       window.addEventListener("scroll", () => {
-        if (isTextEntryElement(document.activeElement)) resetDocumentScroll();
+        if (isTextEntryElement(document.activeElement) || Date.now() < forcePinUntil) {
+          resetDocumentScroll();
+        }
       }, { passive: true });
       schedule();
     }
@@ -212,6 +261,7 @@
       sync,
       schedule,
       bind,
+      expectSystemKeyboard,
       isTextEntryElement
     };
   }
