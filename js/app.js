@@ -642,6 +642,7 @@
       setText,
       focusDisplayInput,
       closeModals: () => ports.closeModals(),
+      triggerBlobDownload: BoardIoApi.triggerBlobDownload,
       onLastGenerated: (item) => {
         lastGeneratedAudio = item;
         syncGeneratedAudioActions();
@@ -986,6 +987,14 @@
       ports.syncChatUi();
       if (!ports.isCoachDismissed()) ports.showCoach();
       if (!ports.isMobileLayout()) focusDisplayInput();
+
+      AudioFx?.scheduleMigrateStoredWavAudio?.({
+        getContext: () => Speech?.getSharedAudioContext?.() || null,
+        historyItems: HistoryUi?.getHistory?.() || [],
+        topicList: Topics?.getTopicsList?.() || [],
+        onHistoryMigrated: () => { HistoryUi?.saveHistory(); HistoryUi?.renderHistory(); },
+        onTopicsMigrated: () => Topics?.saveTopicsList?.()
+      });
     }
 
     window.addEventListener("DOMContentLoaded", init);

@@ -296,7 +296,7 @@
 
       Topics.setActiveTopicId(tid || Topics.getActiveTopicId());
       d.lsSet("aac_active_tab", Topics.getActiveTopicId());
-      Topics.expandTopic(tid);
+      // Sidebar expand state is independent of top-bar topic switches
       Topics.renderTopics();
       Topics.renderSoundButtons();
       d.syncComposeStrip();
@@ -396,7 +396,6 @@
       if (existing === activeChat) {
         Topics.setActiveTopicId(topicId);
         d.lsSet("aac_active_tab", Topics.getActiveTopicId());
-        Topics.expandTopic(topicId);
         Topics.renderTopics();
         Topics.renderSoundButtons();
         syncChatUi();

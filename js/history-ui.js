@@ -129,6 +129,7 @@
    *   focusDisplayInput: () => void,
    *   closeModals: () => void,
    *   onLastGenerated: (item: object|null) => void,
+   *   triggerBlobDownload: (blob: Blob, filename: string) => void,
    *   storageKey?: string,
    *   maxItems?: number
    * }} deps
@@ -138,7 +139,8 @@
     for (const key of [
       "$", "escapeHtml", "lsSet", "lsGetJson", "asArray", "makeSpeechItem",
       "isUtteranceSource", "canUseGeneratedActions", "playSpeechSource",
-      "setText", "focusDisplayInput", "closeModals", "onLastGenerated"
+      "setText", "focusDisplayInput", "closeModals", "onLastGenerated",
+      "triggerBlobDownload"
     ]) {
       if (typeof d[key] !== "function") {
         throw new Error(`AacHistoryUi missing required dep: ${key}`);
@@ -235,6 +237,43 @@
       d.focusDisplayInput();
     }
 
+    function audioFileStem(text) {
+      const raw = String(text || "")
+        .trim()
+        .slice(0, 48)
+        .replace(/[^\w\s-]+/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "");
+      return raw || "speech";
+    }
+
+    /** Stored clips are MP3; keep a tiny map for odd legacy types. */
+    function extensionForMime(mime) {
+      const m = String(mime || "").toLowerCase();
+      if (m.includes("ogg")) return "ogg";
+      if (m.includes("webm")) return "webm";
+      if (m.includes("wav")) return "wav";
+      return "mp3";
+    }
+
+    /** Download stored clip (data URL). No-op when button is disabled (live TTS). */
+    async function downloadHistoryAudio(item) {
+      const dataUrl = item && item.audioData;
+      if (!dataUrl || typeof dataUrl !== "string") return;
+      try {
+        const blob = await (await fetch(dataUrl)).blob();
+        if (!blob || !blob.size) throw new Error("empty");
+        const ext = extensionForMime(blob.type);
+        const stem = audioFileStem(item.text);
+        const stamp = (item.timestamp || "").replace(/[^\d]/g, "").slice(0, 6)
+          || String(Date.now()).slice(-6);
+        d.triggerBlobDownload(blob, `${stem}-${stamp}.${ext}`);
+      } catch (_) {
+        alert("Could not download this audio clip.");
+      }
+    }
+
     function addToHistory(textSpoken, model, voiceId, audioBlob, extra = {}) {
       const isUtt = model === "browser_tts" && !audioBlob;
       const item = d.makeSpeechItem({
@@ -279,6 +318,7 @@
         const el = document.createElement("div");
         el.className = "history-item";
         const isUtt = d.isUtteranceSource(item);
+        const hasClip = !!(item && item.audioData);
         el.innerHTML = `
           <div class="history-item-header">
             <span class="history-item-text">${d.escapeHtml(item.text)}</span>
@@ -287,7 +327,8 @@
           <div class="history-actions">
             <button class="history-btn replay-btn" type="button"><span class="material-symbols-outlined icon-small">play_arrow</span> Play</button>
             <button class="history-btn restore restore-btn" type="button"><span class="material-symbols-outlined icon-small">restore</span> Restore</button>
-            <button class="history-btn delete delete-btn" type="button"><span class="material-symbols-outlined icon-small">delete</span></button>
+            <button class="history-btn download download-btn" type="button" ${hasClip ? "" : "disabled"} title="${hasClip ? "Download audio" : "No saved audio (live TTS)"}" aria-label="Download audio"><span class="material-symbols-outlined icon-small">download</span></button>
+            <button class="history-btn delete delete-btn" type="button" aria-label="Delete"><span class="material-symbols-outlined icon-small">delete</span></button>
           </div>
         `;
 
@@ -296,6 +337,11 @@
           restoreSpeechToDisplay(item);
           d.closeModals();
         });
+        if (hasClip) {
+          el.querySelector(".download-btn")?.addEventListener("click", () => {
+            downloadHistoryAudio(item);
+          });
+        }
         el.querySelector(".delete-btn")?.addEventListener("click", () => {
           audioHistory = audioHistory.filter((h) => h.id !== item.id);
           saveHistory();

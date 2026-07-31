@@ -192,52 +192,94 @@
     return applyWsolaToBuffer(ctx, buf, targetLen / buf.length);
   }
 
-  function audioBufferToWavDataUrl(audioBuffer) {
-    const numChannels = audioBuffer.numberOfChannels;
-    const sampleRate = audioBuffer.sampleRate;
-    const numFrames = audioBuffer.length;
-    const bytesPerSample = 2;
-    const blockAlign = numChannels * bytesPerSample;
-    const dataSize = numFrames * blockAlign;
-    const buffer = new ArrayBuffer(44 + dataSize);
-    const view = new DataView(buffer);
+  /** Stored clips always use CBR MP3 at this rate (kbps). */
+  const STORE_MP3_KBPS = 192;
+  const MP3_BLOCK = 1152;
 
-    const writeStr = (offset, str) => {
-      for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
-    };
-    writeStr(0, "RIFF");
-    view.setUint32(4, 36 + dataSize, true);
-    writeStr(8, "WAVE");
-    writeStr(12, "fmt ");
-    view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true);
-    view.setUint16(22, numChannels, true);
-    view.setUint32(24, sampleRate, true);
-    view.setUint32(28, sampleRate * blockAlign, true);
-    view.setUint16(32, blockAlign, true);
-    view.setUint16(34, bytesPerSample * 8, true);
-    writeStr(36, "data");
-    view.setUint32(40, dataSize, true);
+  function getLame() {
+    const L = global.lamejs;
+    if (!L || typeof L.Mp3Encoder !== "function") {
+      throw new Error("lamejs Mp3Encoder not loaded");
+    }
+    return L;
+  }
 
-    const channels = [];
-    for (let ch = 0; ch < numChannels; ch++) channels.push(audioBuffer.getChannelData(ch));
-    let offset = 44;
-    for (let i = 0; i < numFrames; i++) {
-      for (let ch = 0; ch < numChannels; ch++) {
-        let s = channels[ch][i];
-        s = Math.max(-1, Math.min(1, s));
-        view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
-        offset += 2;
+  function isMpegDataUrl(url) {
+    if (!url || typeof url !== "string") return false;
+    const head = url.slice(0, 32).toLowerCase();
+    return head.startsWith("data:audio/mpeg") || head.startsWith("data:audio/mp3");
+  }
+
+  function isWavDataUrl(url) {
+    if (!url || typeof url !== "string") return false;
+    return url.slice(0, 24).toLowerCase().startsWith("data:audio/wav");
+  }
+
+  function isMpegBlob(blob) {
+    if (!blob || typeof blob.type !== "string") return false;
+    const t = blob.type.toLowerCase();
+    return t.includes("mpeg") || t === "audio/mp3";
+  }
+
+  function floatTo16BitPCM(float32) {
+    const out = new Int16Array(float32.length);
+    for (let i = 0; i < float32.length; i++) {
+      let s = float32[i];
+      if (s > 1) s = 1;
+      else if (s < -1) s = -1;
+      out[i] = s < 0 ? (s * 0x8000) | 0 : (s * 0x7fff) | 0;
+    }
+    return out;
+  }
+
+  /** MPEG-1 sample rates that support CBR 192 kbps in LAME. */
+  function mp3EncodeSampleRate(nativeRate) {
+    const sr = nativeRate || 22050;
+    if (sr === 44100 || sr === 48000 || sr === 32000) return sr;
+    return 44100;
+  }
+
+  /**
+   * Encode AudioBuffer to CBR MP3 (default 192 kbps).
+   * Low sample rates (e.g. Piper 22050) are resampled to 44.1 kHz so 192 kbps is valid.
+   * @returns {Blob} type audio/mpeg
+   */
+  function audioBufferToMp3Blob(audioBuffer, kbps) {
+    if (!audioBuffer) throw new Error("no audio buffer");
+    const L = getLame();
+    const rate = kbps != null ? kbps : STORE_MP3_KBPS;
+    const numCh = Math.min(2, Math.max(1, audioBuffer.numberOfChannels || 1));
+    const nativeRate = audioBuffer.sampleRate || 22050;
+    const sampleRate = mp3EncodeSampleRate(nativeRate);
+
+    let leftF = audioBuffer.getChannelData(0);
+    let rightF = numCh > 1 ? audioBuffer.getChannelData(1) : null;
+    if (sampleRate !== nativeRate) {
+      const newLen = Math.max(1, Math.round(audioBuffer.length * (sampleRate / nativeRate)));
+      leftF = linearResampleChannel(leftF, newLen);
+      if (rightF) rightF = linearResampleChannel(rightF, newLen);
+    }
+
+    const left = floatTo16BitPCM(leftF);
+    const right = rightF ? floatTo16BitPCM(rightF) : null;
+    const encoder = new L.Mp3Encoder(numCh, sampleRate, rate);
+
+    const parts = [];
+    for (let i = 0; i < left.length; i += MP3_BLOCK) {
+      const leftChunk = left.subarray(i, i + MP3_BLOCK);
+      let mp3buf;
+      if (numCh === 1) {
+        mp3buf = encoder.encodeBuffer(leftChunk);
+      } else {
+        const rightChunk = right.subarray(i, i + MP3_BLOCK);
+        mp3buf = encoder.encodeBuffer(leftChunk, rightChunk);
       }
+      if (mp3buf && mp3buf.length > 0) parts.push(new Uint8Array(mp3buf));
     }
-
-    const bytes = new Uint8Array(buffer);
-    let binary = "";
-    const chunk = 0x8000;
-    for (let i = 0; i < bytes.length; i += chunk) {
-      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
-    }
-    return `data:audio/wav;base64,${btoa(binary)}`;
+    const end = encoder.flush();
+    if (end && end.length > 0) parts.push(new Uint8Array(end));
+    if (!parts.length) throw new Error("mp3 encode empty");
+    return new Blob(parts, { type: "audio/mpeg" });
   }
 
   const blobToDataUrl = (blob) => new Promise((resolve, reject) => {
@@ -247,8 +289,27 @@
     reader.readAsDataURL(blob);
   });
 
+  async function audioBufferToMp3DataUrl(audioBuffer, kbps) {
+    return blobToDataUrl(audioBufferToMp3Blob(audioBuffer, kbps));
+  }
+
+  async function sourceToArrayBuffer(audioSource) {
+    if (typeof audioSource === "string") {
+      const res = await fetch(audioSource);
+      if (!res.ok) throw new Error("fetch failed");
+      return res.arrayBuffer();
+    }
+    if (typeof Blob !== "undefined" && audioSource instanceof Blob) {
+      return audioSource.arrayBuffer();
+    }
+    if (audioSource instanceof ArrayBuffer) return audioSource;
+    throw new Error("unsupported audio source");
+  }
+
   /**
-   * Decode + apply FX once + encode WAV.
+   * Decode + apply FX (if any) + encode stored clip as 192 kbps MP3.
+   * Already-MP3 sources with identity FX pass through without re-encode.
+   * Single door for storable audio (history, buttons, migration).
    * @param {Blob|string|ArrayBuffer} audioSource
    * @param {{ speed?: number, pitch?: number }} fx
    * @param {{ getContext: () => AudioContext|Promise<AudioContext> }} deps
@@ -260,31 +321,101 @@
     const getContext = deps && deps.getContext;
     if (typeof getContext !== "function") throw new Error("bakeEffects requires deps.getContext");
 
-    let arrayBuffer;
-    if (typeof audioSource === "string") {
-      if (identity) return { dataUrl: audioSource, effectsBaked: false };
-      const res = await fetch(audioSource);
-      if (!res.ok) throw new Error("fetch failed");
-      arrayBuffer = await res.arrayBuffer();
-    } else if (typeof Blob !== "undefined" && audioSource instanceof Blob) {
-      if (identity) return { dataUrl: await blobToDataUrl(audioSource), effectsBaked: false };
-      arrayBuffer = await audioSource.arrayBuffer();
-    } else if (audioSource instanceof ArrayBuffer) {
-      arrayBuffer = audioSource;
-    } else {
-      throw new Error("unsupported audio source");
+    // Pass through MPEG only when no FX bake is needed
+    if (identity) {
+      if (typeof audioSource === "string" && isMpegDataUrl(audioSource)) {
+        return { dataUrl: audioSource, effectsBaked: false };
+      }
+      if (typeof Blob !== "undefined" && audioSource instanceof Blob && isMpegBlob(audioSource)) {
+        return { dataUrl: await blobToDataUrl(audioSource), effectsBaked: false };
+      }
     }
 
     const ctx = await getContext();
     if (!ctx) throw new Error("no audio context");
     if (ctx.state === "suspended") await ctx.resume();
 
+    const arrayBuffer = await sourceToArrayBuffer(audioSource);
     let audioBuffer = await ctx.decodeAudioData(arrayBuffer.slice(0));
     if (!identity) {
       audioBuffer = applyFxToBuffer(ctx, audioBuffer, nfx);
     }
-    // effectsBaked true when the clip is ready to play with identity FX
-    return { dataUrl: audioBufferToWavDataUrl(audioBuffer), effectsBaked: true };
+    const dataUrl = await audioBufferToMp3DataUrl(audioBuffer, STORE_MP3_KBPS);
+    // effectsBaked when pitch/speed are baked into the clip (format convert alone is not bake)
+    return { dataUrl, effectsBaked: !identity };
+  }
+
+  /** Identity bake → 192 kbps MP3 data URL (or pass-through if already MPEG). */
+  async function toMp3DataUrl(audioSource, deps) {
+    const baked = await bakeEffects(audioSource, { speed: 1, pitch: 1 }, deps);
+    return baked.dataUrl;
+  }
+
+  /**
+   * Convert legacy data:audio/wav on history items and topic buttons to 192 kbps MP3.
+   * Encodes first, then applies mutations and save callbacks (best-effort atomic per bucket).
+   * @param {{
+   *   getContext: () => AudioContext|null|Promise<AudioContext|null>,
+   *   historyItems?: object[],
+   *   topicList?: object[],
+   *   onHistoryMigrated?: () => void,
+   *   onTopicsMigrated?: () => void
+   * }} opts
+   * @returns {Promise<{ converted: number }>}
+   */
+  async function migrateStoredWavAudio(opts) {
+    const o = opts || {};
+    if (typeof o.getContext !== "function") return { converted: 0 };
+    const ctx = await o.getContext();
+    if (!ctx) return { converted: 0 };
+
+    const deps = { getContext: o.getContext };
+    const jobs = [];
+    const history = Array.isArray(o.historyItems) ? o.historyItems : [];
+    for (const item of history) {
+      if (item && isWavDataUrl(item.audioData)) {
+        jobs.push({ target: item, source: item.audioData, bucket: "history" });
+      }
+    }
+    const topics = Array.isArray(o.topicList) ? o.topicList : [];
+    for (const topic of topics) {
+      const buttons = topic && topic.buttons;
+      if (!Array.isArray(buttons)) continue;
+      for (const btn of buttons) {
+        if (btn && isWavDataUrl(btn.audioData)) {
+          jobs.push({ target: btn, source: btn.audioData, bucket: "topics" });
+        }
+      }
+    }
+    if (!jobs.length) return { converted: 0 };
+
+    const ready = [];
+    for (const job of jobs) {
+      try {
+        const dataUrl = await toMp3DataUrl(job.source, deps);
+        ready.push({ target: job.target, dataUrl, bucket: job.bucket });
+      } catch (_) {}
+    }
+    if (!ready.length) return { converted: 0 };
+
+    let historyChanged = false;
+    let topicsChanged = false;
+    for (const row of ready) {
+      row.target.audioData = row.dataUrl;
+      if (row.bucket === "history") historyChanged = true;
+      else topicsChanged = true;
+    }
+    if (historyChanged && typeof o.onHistoryMigrated === "function") o.onHistoryMigrated();
+    if (topicsChanged && typeof o.onTopicsMigrated === "function") o.onTopicsMigrated();
+    return { converted: ready.length };
+  }
+
+  /** Idle schedule for migrateStoredWavAudio (keeps app shell thin). */
+  function scheduleMigrateStoredWavAudio(opts, delayMs) {
+    const ms = delayMs != null ? delayMs : 800;
+    setTimeout(() => {
+      migrateStoredWavAudio(opts).catch(() => {});
+    }, ms);
   }
 
   /**
@@ -391,11 +522,18 @@
   }
 
   global.AacAudioFx = {
+    STORE_MP3_KBPS,
     normalizeFx,
     isIdentityFx,
     applyFxToBuffer,
-    audioBufferToWavDataUrl,
+    audioBufferToMp3Blob,
+    audioBufferToMp3DataUrl,
+    isMpegDataUrl,
+    isWavDataUrl,
+    toMp3DataUrl,
     bakeEffects,
+    migrateStoredWavAudio,
+    scheduleMigrateStoredWavAudio,
     playUrl,
     blobToDataUrl
   };

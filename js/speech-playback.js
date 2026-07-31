@@ -515,8 +515,9 @@
         playUrl = objectUrl;
         effectsBaked = false;
         playFx = fx;
+        // Store as MP3 even if FX bake timed out / failed
         try {
-          saveDataUrl = await d.blobToDataUrl(blob);
+          saveDataUrl = await AudioFx.toMp3DataUrl(blob, { getContext: ensureAudioCtx });
         } catch (__) {
           saveDataUrl = null;
         }

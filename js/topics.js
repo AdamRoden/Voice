@@ -236,6 +236,113 @@
       ctx.soundCanvas.style.height = `${height}px`;
     }
 
+    function fillSoundButtonInner(inner, btnData) {
+      if (btnData.symbol) {
+        const sym = document.createElement("span");
+        sym.className = "material-symbols-outlined sound-button-symbol";
+        sym.textContent = btnData.symbol;
+        inner.appendChild(sym);
+      }
+      const labelEl = document.createElement("div");
+      labelEl.className = "sound-button-label";
+      labelEl.textContent = btnData.label || "Button";
+      inner.appendChild(labelEl);
+    }
+
+    /**
+     * Canonical sound-button chrome (canvas grid + topic sidebar list).
+     * @param {object} btnData
+     * @param {{
+     *   mode?: "overwrite" | "speak" | "speak-insert",
+     *   layout?: "canvas" | "list",
+     *   onOverwrite?: (btnId: string) => void
+     * }} [opts]
+     * List: speak / speak-insert only (no overwrite). Canvas: all modes.
+     */
+    function createSoundButtonEl(btnData, opts) {
+      const o = opts || {};
+      const mode = o.mode || "speak";
+      const layout = o.layout || "canvas";
+      const isUtteranceBtn = !!(btnData.utteranceText || "").trim();
+      const btnColor = btnData.color || "#3f3f4e";
+      const label = btnData.label || "Button";
+      const insertText = ctx.getButtonSourceText(btnData) || ctx.trim(btnData.label) || "";
+
+      const btnEl = document.createElement("div");
+      const classes = ["sound-button"];
+      if (layout === "list") classes.push("topic-list-sound-button");
+      if (mode === "overwrite") classes.push("overwrite-target");
+      if (isUtteranceBtn) classes.push("utterance-button");
+      if (mode === "speak-insert") classes.push("speak-layout");
+      btnEl.className = classes.join(" ");
+
+      if (layout === "canvas") {
+        btnEl.id = `btn-${btnData.id}`;
+        btnEl.style.gridColumn = `${btnData.col + 1} / span ${btnData.colSpan}`;
+        btnEl.style.gridRow = `${btnData.row + 1} / span ${btnData.rowSpan}`;
+      }
+
+      if (isUtteranceBtn) {
+        btnEl.style.backgroundColor = "transparent";
+        btnEl.style.borderColor = btnColor;
+        btnEl.style.color = btnColor;
+      } else {
+        btnEl.style.backgroundColor = btnColor;
+      }
+
+      if (mode === "overwrite") {
+        const inner = document.createElement("div");
+        inner.className = "sound-button-inner";
+        inner.style.width = "100%";
+        inner.style.padding = "0 8px";
+        fillSoundButtonInner(inner, btnData);
+        btnEl.appendChild(inner);
+        btnEl.addEventListener("click", () => {
+          if (typeof o.onOverwrite === "function") o.onOverwrite(btnData.id);
+        });
+        return btnEl;
+      }
+
+      const main = document.createElement("button");
+      main.type = "button";
+      main.className = "sound-button-main";
+      main.title = "Speak";
+      main.setAttribute("aria-label", `Speak ${label}`);
+      if (mode === "speak") main.style.padding = "0 8px";
+      const inner = document.createElement("div");
+      inner.className = "sound-button-inner";
+      fillSoundButtonInner(inner, btnData);
+      main.appendChild(inner);
+      main.addEventListener("click", (e) => {
+        e.stopPropagation();
+        ctx.playSpeechSource(btnData);
+      });
+      btnEl.appendChild(main);
+
+      if (mode === "speak-insert") {
+        const insertBtn = document.createElement("button");
+        insertBtn.type = "button";
+        insertBtn.className = "sound-button-insert";
+        insertBtn.title = "Insert into message";
+        insertBtn.setAttribute("aria-label", `Insert ${label} into message`);
+        insertBtn.innerHTML = `<span class="material-symbols-outlined">add</span>`;
+        insertBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          ctx.insertTextAtDisplayCaret(insertText);
+          ctx.announceLive(`Inserted ${label}`);
+        });
+        btnEl.appendChild(insertBtn);
+      }
+
+      return btnEl;
+    }
+
+    function canvasButtonMode() {
+      if (ctx.isOverwriteMode) return "overwrite";
+      if (ctx.isFeatButtonInsert()) return "speak-insert";
+      return "speak";
+    }
+
     function renderSoundButtons() {
       const activeTab = ctx.getActiveTopic();
       if (!activeTab) return;
@@ -279,72 +386,13 @@
       ctx.soundCanvas.style.minHeight = "";
       autosizeSoundCanvas(activeTab);
 
+      const mode = canvasButtonMode();
       activeTab.buttons.forEach((btnData) => {
-        const isUtteranceBtn = !!(btnData.utteranceText || "").trim();
-        const btnColor = btnData.color || "#3f3f4e";
-        const btnEl = document.createElement("div");
-        btnEl.className = `sound-button${ctx.isOverwriteMode ? " overwrite-target" : ""}${isUtteranceBtn ? " utterance-button" : ""}${!ctx.isOverwriteMode && ctx.isFeatButtonInsert() ? " speak-layout" : ""}`;
-        btnEl.id = `btn-${btnData.id}`;
-        btnEl.style.gridColumn = `${btnData.col + 1} / span ${btnData.colSpan}`;
-        btnEl.style.gridRow = `${btnData.row + 1} / span ${btnData.rowSpan}`;
-        if (isUtteranceBtn) {
-          btnEl.style.backgroundColor = "transparent";
-          btnEl.style.borderColor = btnColor;
-          btnEl.style.color = btnColor;
-        } else {
-          btnEl.style.backgroundColor = btnColor;
-        }
-
-        const symbolPart = btnData.symbol
-          ? `<span class="material-symbols-outlined sound-button-symbol">${btnData.symbol}</span>`
-          : "";
-        const label = btnData.label || "Button";
-        const insertText = ctx.getButtonSourceText(btnData) || ctx.trim(btnData.label) || "";
-
-        if (ctx.isOverwriteMode) {
-          btnEl.innerHTML = `
-            <div class="sound-button-inner" style="width:100%;padding:0 8px;">
-              ${symbolPart}
-              <div class="sound-button-label">${label}</div>
-            </div>
-          `;
-          btnEl.addEventListener("click", () => executeOverwrite(btnData.id));
-        } else if (ctx.isFeatButtonInsert()) {
-          btnEl.innerHTML = `
-            <button type="button" class="sound-button-main" title="Speak" aria-label="Speak ${label}">
-              <div class="sound-button-inner">
-                ${symbolPart}
-                <div class="sound-button-label">${label}</div>
-              </div>
-            </button>
-            <button type="button" class="sound-button-insert" title="Insert into message" aria-label="Insert ${label} into message">
-              <span class="material-symbols-outlined">add</span>
-            </button>
-          `;
-          btnEl.querySelector(".sound-button-main")?.addEventListener("click", (e) => {
-            e.stopPropagation();
-            ctx.playSpeechSource(btnData);
-          });
-          btnEl.querySelector(".sound-button-insert")?.addEventListener("click", (e) => {
-            e.stopPropagation();
-            ctx.insertTextAtDisplayCaret(insertText);
-            ctx.announceLive(`Inserted ${label}`);
-          });
-        } else {
-          btnEl.innerHTML = `
-            <button type="button" class="sound-button-main" title="Speak" aria-label="Speak ${label}" style="padding:0 8px;">
-              <div class="sound-button-inner">
-                ${symbolPart}
-                <div class="sound-button-label">${label}</div>
-              </div>
-            </button>
-          `;
-          btnEl.querySelector(".sound-button-main")?.addEventListener("click", (e) => {
-            e.stopPropagation();
-            ctx.playSpeechSource(btnData);
-          });
-        }
-        ctx.soundCanvas.appendChild(btnEl);
+        ctx.soundCanvas.appendChild(createSoundButtonEl(btnData, {
+          mode,
+          layout: "canvas",
+          onOverwrite: (id) => executeOverwrite(id)
+        }));
       });
     }
 
@@ -419,6 +467,7 @@
 
     return {
       autosizeSoundCanvas,
+      createSoundButtonEl,
       renderSoundButtons,
       applyGeneratedSpeechToButton,
       startAssignFromDisplay,
@@ -431,6 +480,30 @@
   function installSidebar(ctx) {
     function expandTopic(id) {
       if (id) ctx.expandedTopicIds.add(id);
+    }
+
+    /** List row: same sound-button as canvas (+ insert when feat on) and edit to the right. */
+    function createTopicListSoundRow(btn, topicId) {
+      const row = document.createElement("div");
+      row.className = "topic-sound-row";
+      const mode = ctx.isFeatButtonInsert() ? "speak-insert" : "speak";
+      const btnEl = ctx.createSoundButtonEl(btn, { mode, layout: "list" });
+      const label = btn.label || "Button";
+
+      const editBtn = document.createElement("button");
+      editBtn.type = "button";
+      editBtn.className = "topic-sound-edit-btn";
+      editBtn.title = "Edit button";
+      editBtn.setAttribute("aria-label", `Edit ${label}`);
+      editBtn.innerHTML = `<span class="material-symbols-outlined icon-small">edit</span>`;
+      editBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        ctx.openButtonEditModal(btn.id, topicId);
+      });
+
+      row.appendChild(btnEl);
+      row.appendChild(editBtn);
+      return row;
     }
 
     function renderTopics() {
@@ -485,25 +558,7 @@
             buttonsList.innerHTML = `<div class="topic-buttons-empty">No sound buttons yet</div>`;
           } else {
             buttons.forEach((btn) => {
-              const row = document.createElement("div");
-              row.className = "topic-sound-item";
-              const symbolHtml = btn.symbol
-                ? `<span class="material-symbols-outlined topic-sound-symbol">${btn.symbol}</span>`
-                : "";
-              row.innerHTML = `
-                <span class="topic-sound-swatch" style="background-color: ${btn.color || "#8ab4f8"};"></span>
-                ${symbolHtml}
-                <span class="topic-sound-label"></span>
-                <button class="topic-sound-edit-btn" type="button" title="Edit button">
-                  <span class="material-symbols-outlined icon-small">edit</span>
-                </button>
-              `;
-              row.querySelector(".topic-sound-label").textContent = btn.label || "Button";
-              row.querySelector(".topic-sound-edit-btn")?.addEventListener("click", (e) => {
-                e.stopPropagation();
-                ctx.openButtonEditModal(btn.id, topic.id);
-              });
-              buttonsList.appendChild(row);
+              buttonsList.appendChild(createTopicListSoundRow(btn, topic.id));
             });
           }
           item.appendChild(buttonsList);

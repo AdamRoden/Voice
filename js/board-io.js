@@ -8,6 +8,21 @@
   const BOARD_EXPORT_FORMAT = "aac-workspace";
   const BOARD_EXPORT_VERSION = 1;
 
+  /** Click-to-download a Blob (shared by board export + history audio). */
+  function triggerBlobDownload(blob, filename) {
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename || "download";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => {
+      try { URL.revokeObjectURL(url); } catch (_) {}
+    }, 1500);
+  }
+
   function exportButtonPayload(btn) {
     return {
       id: btn.id,
@@ -114,15 +129,8 @@
           json = JSON.stringify(payload, null, 2);
         }
         const blob = new Blob([json], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
         const stamp = new Date().toISOString().slice(0, 10);
-        a.href = url;
-        a.download = `aac-workspace-${stamp}.json`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(() => { try { URL.revokeObjectURL(url); } catch (_) {} }, 1500);
+        triggerBlobDownload(blob, `aac-workspace-${stamp}.json`);
       } catch (_) {
         alert("Could not export boards. Try removing large audio clips first.");
       }
@@ -262,6 +270,7 @@
   global.AacBoardIo = {
     BOARD_EXPORT_FORMAT,
     BOARD_EXPORT_VERSION,
+    triggerBlobDownload,
     exportButtonPayload,
     exportTopicPayload,
     create
