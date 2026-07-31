@@ -1,4 +1,4 @@
-﻿    /* ==================== THEME VARIABLES & ROOT ==================== */
+    /* ==================== THEME VARIABLES & ROOT ==================== */
     :root { --sound-row-height: 44px; }
     :root, :root[data-theme="dark"] { --bg-main: #131314; --bg-surface: #1e1f20; --bg-surface-hover: #282a2c; --bg-surface-active: #333537; --border: #333537; --accent: #8ab4f8; --accent-hover: #aecbfa; --text: #e3e3e3; --text-secondary: #8e918f; --key-bg: #282a2c; --key-hover: #333537; --key-active: #444746; --danger: #f2b8b5; --danger-bg: #601410; --shadow: rgba(0, 0, 0, 0.4); --icon-fill: 0; --icon-wght: 400; --icon-grad: 0; --icon-opsz: 24; --safe-top: env(safe-area-inset-top, 0px); --safe-right: env(safe-area-inset-right, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px); --safe-left: env(safe-area-inset-left, 0px); color-scheme: dark; }
 
@@ -39,8 +39,9 @@
       transition: background-color 0.2s ease, color 0.2s ease;
       overscroll-behavior: none;
       -webkit-text-size-adjust: 100%;
-      text-size-adjust: 100%;
+      text-size-adjust: 100%;0
       padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     }
     body.modal-open { overflow: hidden; }
 
