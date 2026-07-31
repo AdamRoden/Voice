@@ -55,6 +55,8 @@
    *   escapeHtml: (s: string) => string,
    *   openModal: (id: string) => void,
    *   closeModals: () => void,
+   *   openNestedModal?: (id: string) => string|null,
+   *   closeNestedModal?: (returnId: string|null) => void,
    *   modalOverlay: HTMLElement|null,
    *   lsSet: (k: string, v: any) => void,
    *   getIconStyles: () => { fill: number, wght: number, grad: number, opsz: number },
@@ -69,6 +71,8 @@
     const escapeHtml = d.escapeHtml;
     const openModal = d.openModal;
     const closeModals = d.closeModals;
+    const openNestedModal = typeof d.openNestedModal === "function" ? d.openNestedModal : null;
+    const closeNestedModal = typeof d.closeNestedModal === "function" ? d.closeNestedModal : null;
     const modalOverlay = d.modalOverlay;
     const lsSet = d.lsSet;
 
@@ -329,17 +333,20 @@ function openIconStudio(targetInputId) {
   const currentVal = document.getElementById(targetInputId)?.value || "chat";
   selectedStudioIcon = mapSymbol(currentVal, "chat");
 
-  // Remember which edit modal to restore after picking an icon
-  const openParent = document.querySelector(".modal.open:not(#icon-studio-modal)");
-  iconStudioReturnModalId = openParent ? openParent.id : null;
-
   initialIconStyles = { fill: iconFill, wght: iconWght, grad: iconGrad, opsz: iconOpsz };
   const searchInput = document.getElementById("icon-search-input");
   if (searchInput) searchInput.value = "";
   document.getElementById("icon-studio-status").textContent = `Selected: ${selectedStudioIcon}`;
   applyGlobalIconStyles();
   renderIconStudioGrid("");
-  openModal("icon-studio-modal");
+  if (openNestedModal) {
+    iconStudioReturnModalId = openNestedModal("icon-studio-modal");
+  } else {
+    const openParent = Array.from(document.querySelectorAll(".modal.open"))
+      .find((m) => m.id !== "icon-studio-modal");
+    iconStudioReturnModalId = openParent ? openParent.id : null;
+    openModal("icon-studio-modal");
+  }
   // Prefetch catalog as soon as studio opens
   ensureIconCatalog().catch(() => {});
 }
@@ -354,10 +361,12 @@ function closeIconStudio(save) {
   }
   const returnTo = iconStudioReturnModalId;
   iconStudioReturnModalId = null;
-  if (returnTo) {
-    document.querySelectorAll(".modal").forEach(m => m.classList.remove("open"));
+  if (closeNestedModal) {
+    closeNestedModal(returnTo);
+  } else if (returnTo) {
+    document.querySelectorAll(".modal").forEach((m) => m.classList.remove("open"));
     document.getElementById(returnTo)?.classList.add("open");
-    modalOverlay.classList.add("open");
+    if (modalOverlay) modalOverlay.classList.add("open");
     document.body.classList.add("modal-open");
   } else {
     closeModals();

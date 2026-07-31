@@ -308,16 +308,27 @@
       if (!chatSlotsEl || !Topics) return;
       const menuOpen = isHeaderTopicMenuOpen();
       const menuEl = headerTopicMenu;
+      const topicsList = Topics.getTopicsList() || [];
 
       chatSlotsEl.querySelectorAll(".chat-chip[data-chat]").forEach((el) => el.remove());
 
-      chats.forEach((chatRow, idx) => {
+      // Display order only: left→right follows topicsList index.
+      // chats[] storage order is independent (open/active slots); data-chat keeps chats[] idx.
+      const chipOrder = chats.map((chatRow, idx) => {
+        const topicId = idx === activeChat
+          ? (chats[idx]?.topicId || Topics.getActiveTopicId())
+          : chatRow?.topicId;
+        const topicIndex = topicsList.findIndex((t) => t.id === topicId);
+        return { chatRow, idx, topicIndex: topicIndex < 0 ? Number.MAX_SAFE_INTEGER : topicIndex };
+      }).sort((a, b) => a.topicIndex - b.topicIndex || a.idx - b.idx);
+
+      chipOrder.forEach(({ chatRow, idx }) => {
         const chat = idx === activeChat
           ? { text: d.getText(), topicId: chats[idx]?.topicId || Topics.getActiveTopicId() }
           : chatRow;
         const filled = chatHasContent(chat);
-        const topic = Topics.getTopicsList().find((t) => t.id === chat?.topicId)
-          || Topics.getTopicsList()[0]
+        const topic = topicsList.find((t) => t.id === chat?.topicId)
+          || topicsList[0]
           || null;
         const topicName = topic?.name || `Chat ${idx + 1}`;
         const icon = topic?.icon || "folder";

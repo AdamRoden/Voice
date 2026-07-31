@@ -131,6 +131,7 @@
     const KeyboardApi = window.AacKeyboard;
     const TopicsApi = window.AacTopics;
     const IconStudioApi = window.AacIconStudio;
+    const ColorPickerApi = window.AacColorPicker;
     const BoardIoApi = window.AacBoardIo;
     const WorkspaceApi = window.AacWorkspace;
     const ComposeApi = window.AacCompose;
@@ -157,6 +158,7 @@
     requireModule("AacCompose", ComposeApi);
     requireModule("AacHistoryUi", HistoryUiApi);
     requireModule("AacIconStudio", IconStudioApi);
+    requireModule("AacColorPicker", ColorPickerApi);
     requireModule("AacBoardIo", BoardIoApi);
     requireModule("AacSpeechItems", SpeechItemsApi);
     requireModule("AacShellUi", ShellUiApi);
@@ -215,6 +217,8 @@
     let Compose = null;
     /** @type {ReturnType<typeof IconStudioApi.create>|null} */
     let Icons = null;
+    /** @type {ReturnType<typeof ColorPickerApi.create>|null} */
+    let ColorPicker = null;
     /** @type {ReturnType<typeof BoardIoApi.create>|null} */
     let BoardIo = null;
     /** @type {ReturnType<typeof HistoryUiApi.create>|null} */
@@ -550,6 +554,11 @@
         if (Icons) Icons.closeIconStudio(false);
         return;
       }
+      if (ColorPicker?.isOpen()) {
+        e.preventDefault();
+        ColorPicker.closeColorPicker(false);
+        return;
+      }
       if (document.body.classList.contains("modal-open") || document.getElementById("modal-overlay")?.classList.contains("open")) {
         e.preventDefault();
         ports.closeModals();
@@ -650,6 +659,8 @@
       escapeHtml,
       openModal: (id) => ports.openModal(id),
       closeModals: () => ports.closeModals(),
+      openNestedModal: (id) => Shell.openNestedModal(id),
+      closeNestedModal: (id) => Shell.closeNestedModal(id),
       modalOverlay: Shell.modalOverlay,
       lsSet,
       getIconStyles: () => ({ fill: iconFill, wght: iconWght, grad: iconGrad, opsz: iconOpsz }),
@@ -660,6 +671,23 @@
         iconOpsz = s.opsz;
       },
       applyGlobalIconStyles
+    });
+
+    ColorPicker = ColorPickerApi.create({
+      COLOR_PALETTE,
+      openModal: (id) => ports.openModal(id),
+      closeModals: () => ports.closeModals(),
+      openNestedModal: (id) => Shell.openNestedModal(id),
+      closeNestedModal: (id) => Shell.closeNestedModal(id),
+      modalOverlay: Shell.modalOverlay
+    });
+    ColorPicker.bindField("topic-color-field", { title: "Topic color", fallback: "#3f3f4e" });
+    ColorPicker.bindField("button-color-field", { title: "Button color", fallback: "#3f3f4e" });
+    ColorPicker.bindField("accent-color-field", {
+      title: "Accent color",
+      fallback: "#8ab4f8",
+      // Live apply while typing / after picker (persist via shell)
+      onApply: (hex) => ports.applyAccentColor(hex)
     });
 
     // Shared ports bag for Topics (no per-call identity re-wraps inside Topics).
@@ -691,6 +719,8 @@
       isFeatButtonInsert: () => Features.get("buttonInsert"),
       closeMobileSidebar: () => ports.closeMobileSidebar(),
       insertTextAtDisplayCaret,
+      setColorField: (...a) => ColorPickerApi.setFieldColor(...a),
+      getColorField: (...a) => ColorPickerApi.getFieldColor(...a),
       initialTopicsRaw: lsGetJson("aac_tabs", null)
     };
 
@@ -927,11 +957,8 @@
 
       if (ports.isMobileLayout()) ports.setSidebarOpen(false, { restoreFocus: false });
 
-      const accentPicker = document.getElementById("accent-color-picker");
-      if (accentPicker) {
-        accentPicker.value = customAccentColor || Shell.getDefaultAccentForResolvedTheme();
-        accentPicker.addEventListener("input", (e) => ports.applyAccentColor(e.target.value));
-      }
+      // Accent field is bound via ColorPicker; sync initial swatch from stored accent
+      ports.applyAccentColor(customAccentColor || "", { persist: false });
       document.getElementById("accent-color-reset")?.addEventListener("click", () => {
         ports.applyAccentColor("");
       });

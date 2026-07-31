@@ -18,12 +18,18 @@
 (function (global) {
   "use strict";
 
-  /* ---- key descriptors: { ch } | { action, label } + optional width ---- */
+  /* ---- key descriptors: { ch } | { action, label|icon } + optional width ---- */
   function ch(c, width) {
     return width ? { ch: c, width: width } : { ch: c };
   }
   function act(action, label, width) {
     const k = { action: action, label: label };
+    if (width) k.width = width;
+    return k;
+  }
+  /** Action key with a Material Symbol ligature (no text label). */
+  function actIcon(action, icon, width) {
+    const k = { action: action, icon: icon };
     if (width) k.width = width;
     return k;
   }
@@ -44,11 +50,11 @@
   function bottomRow(p, symbolsLabel) {
     return [
       act("symbols", symbolsLabel, "wide"),
-      act("ctrl", "⌘", "wide"),
-      act("space", "⎵", "space"),
+      actIcon("ctrl", "keyboard_command_key", "wide"),
+      actIcon("space", "space_bar", "space"),
       ch(p.comma, "slim"),
       ch(p.period, "slim"),
-      act("enter", "↵", "wide")
+      actIcon("enter", "keyboard_return", "wide")
     ];
   }
 
@@ -63,7 +69,7 @@
     return [
       letter("qwertyuiop"),
       letter("asdfghjkl"),
-      [act("shift", "⇧"), ...letter("zxcvbnm"), ch(p.apos), act("backspace", "⌫")],
+      [actIcon("shift", "shift"), ...letter("zxcvbnm"), ch(p.apos), actIcon("backspace", "backspace")],
       bottomRow(p, "123?")
     ];
   }
@@ -76,7 +82,7 @@
     return [
       chars("1234567890"),
       r2,
-      [act("shift", "⇧"), ...r3, ch(p.apos), act("backspace", "⌫")],
+      [actIcon("shift", "shift"), ...r3, ch(p.apos), actIcon("backspace", "backspace")],
       bottomRow(p, "ABC")
     ];
   }
@@ -121,8 +127,17 @@
     return parts.join(" ");
   }
 
+  const ACTION_ARIA = {
+    shift: "Shift",
+    ctrl: "Command",
+    space: "Space",
+    backspace: "Backspace",
+    enter: "Enter",
+    symbols: "Symbols"
+  };
+
   function renderKey(k) {
-    if (k.action) return keyBtn(k.label, keyClass(k), k.action);
+    if (k.action) return keyBtn(k.label, keyClass(k), k.action, null, k.icon);
     return keyBtn(k.ch, keyClass(k), null, k.ch);
   }
 
@@ -140,9 +155,17 @@
     });
   }
 
-  function keyBtn(label, cls, action, char) {
-    const b = el("button", "osk-key " + (cls || ""), label);
+  function keyBtn(label, cls, action, char, icon) {
+    const b = el("button", "osk-key " + (cls || ""));
     b.type = "button";
+    if (icon) {
+      const span = el("span", "material-symbols-outlined", icon);
+      span.setAttribute("aria-hidden", "true");
+      b.appendChild(span);
+      if (action && ACTION_ARIA[action]) b.setAttribute("aria-label", ACTION_ARIA[action]);
+    } else if (label != null) {
+      b.textContent = label;
+    }
     if (action) b.dataset.action = action;
     else b.dataset.char = char != null ? char : label;
     b.addEventListener("click", onKeyClick);

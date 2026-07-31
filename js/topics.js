@@ -13,7 +13,8 @@
     "isUtteranceSource", "getUtteranceText", "getButtonSourceText",
     "isMobileLayout", "isFeatButtonInsert",
     "syncChatUi", "closeMobileSidebar", "openTopic", "onTopicDeleted",
-    "insertTextAtDisplayCaret"
+    "insertTextAtDisplayCaret",
+    "setColorField", "getColorField"
   ];
 
   function requireDeps(d) {
@@ -552,6 +553,8 @@
       editingButtonTopicId: null,
       modalButtonIndex: 1,
       modalButtonIndexMax: 1,
+      modalTopicIndex: 1,
+      modalTopicIndexMax: 1,
       editingTopicId: null,
       pendingNewTopic: null,
       modalButtonsDraft: null,
@@ -627,6 +630,7 @@
       resetEditState,
       stepModalGrid: (...a) => ctx.stepModalGrid(...a),
       stepModalButtonIndex: (...a) => ctx.stepModalButtonIndex(...a),
+      stepModalTopicIndex: (...a) => ctx.stepModalTopicIndex(...a),
       get isOverwriteMode() { return ctx.isOverwriteMode; },
       get editingTopicId() { return ctx.editingTopicId; }
     };

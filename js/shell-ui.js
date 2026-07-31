@@ -287,8 +287,10 @@
         root.style.removeProperty("--accent-hover");
         if (persist) d.lsDel("aac_accent_color");
       }
-      const picker = document.getElementById("accent-color-picker");
-      if (picker) picker.value = d.getAccent() || getDefaultAccentForResolvedTheme();
+      const hex = d.getAccent() || getDefaultAccentForResolvedTheme();
+      if (global.AacColorPicker && typeof global.AacColorPicker.setFieldColor === "function") {
+        global.AacColorPicker.setFieldColor("accent-color-field", hex);
+      }
     }
 
     function syncThemeColorMeta() {
@@ -439,6 +441,31 @@
       d.focusDisplayInput();
     }
 
+    /**
+     * Open a modal over the currently open one (Icon Studio, color picker).
+     * Returns parent modal id (or null). Restore with closeNestedModal — does
+     * not run onCloseModal, so parent edit state is preserved.
+     */
+    function openNestedModal(modalId) {
+      const openParent = Array.from(document.querySelectorAll(".modal.open"))
+        .find((m) => m.id !== modalId);
+      const returnId = openParent ? openParent.id : null;
+      openModal(modalId);
+      return returnId;
+    }
+
+    /** Restore parent modal from openNestedModal, or full close if none. */
+    function closeNestedModal(returnId) {
+      if (returnId) {
+        document.querySelectorAll(".modal").forEach((m) => m.classList.remove("open"));
+        document.getElementById(returnId)?.classList.add("open");
+        if (modalOverlay) modalOverlay.classList.add("open");
+        document.body.classList.add("modal-open");
+      } else {
+        closeModals();
+      }
+    }
+
     function isHelpDismissed() {
       return d.lsGet(HELP_DISMISS_KEY, "") === "1";
     }
@@ -549,6 +576,8 @@
       applyAccentColor,
       getDefaultAccentForResolvedTheme,
       openModal,
+      openNestedModal,
+      closeNestedModal,
       openShellModal,
       closeModals,
       isHelpDismissed,

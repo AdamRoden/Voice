@@ -300,8 +300,47 @@
     .offline-banner.open { display: flex; }
 
     .accent-color-row { display: flex; align-items: center; gap: 8px; }
-    .accent-color-row input[type="color"] { width: 44px; height: 36px; padding: 2px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-main); cursor: pointer; flex-shrink: 0; }
-    .accent-color-row .font-btn { flex: 1; }
+    .accent-color-row .color-field { flex: 1; min-width: 0; }
+    .accent-color-row .font-btn { flex: 0 0 auto; }
+
+    /* Color field: rounded swatch opens picker; hex input is editable */
+    .color-field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      min-width: 0;
+    }
+    .color-field-swatch-btn {
+      flex-shrink: 0;
+      width: 52px;
+      height: 44px;
+      min-width: 52px;
+      min-height: 44px;
+      padding: 0;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, #000 12%, transparent);
+      transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+    }
+    .color-field-swatch-btn:hover {
+      border-color: var(--accent);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, #000 12%, transparent), 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
+    }
+    .color-field-swatch-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .color-field-swatch-btn:active { transform: scale(0.97); }
+    .color-field-hex {
+      flex: 1 1 auto;
+      min-width: 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.04em;
+      text-transform: lowercase;
+    }
 
     /* Settings Groups */
     .sidebar-setting-group { display: flex; flex-direction: column; gap: 4px; padding: 4px; margin-bottom: 6px; }
@@ -605,12 +644,12 @@
 
     /*
      * Workspace header — always in layout flow.
-     * data-size="normal" | "slim". Slim uses shell tokens only (height 50%, no pad).
+     * data-size="normal" | "slim". Slim: height 50%; pad-y 0; pad-x same as normal.
      * Empty bar chrome toggles size (JS hit-test); chips/menu keep their own clicks.
      */
     .workspace-header-shell {
       --wh-h: 1;
-      --wh-pad-y: 4px;
+      --wh-pad-y: 0px;
       --wh-pad-x: 8px;
       --wh-gap: 8px;
       --wh-chip-gap: 6px;
@@ -635,7 +674,8 @@
     .workspace-header-shell[data-size="slim"] {
       --wh-h: 0.5;
       --wh-pad-y: 0px;
-      --wh-pad-x: 0px;
+      /* keep horizontal pad same as normal */
+      --wh-pad-x: 8px;
       --wh-gap: 0px;
       --wh-chip-gap: 6px;
       --wh-radius-btn: 4px;
@@ -701,12 +741,10 @@
       width: auto;
       min-width: 40px;
       max-width: min(148px, 36vw);
-      padding: 0 calc(6px * var(--wh-h, 1)) 0 calc(8px * var(--wh-h, 1));
+      /* top/bottom 0; left/right fixed so slim matches normal */
+      padding: 0 6px 0 8px;
       gap: 4px;
       border-radius: var(--wh-radius-chip-active, 12px);
-    }
-    .workspace-header-shell[data-size="slim"] .chat-chip.is-topic-dropdown {
-      padding: 0;
     }
     .workspace-header .chat-chip:not(.is-topic-dropdown) {
       flex-shrink: 0;
@@ -914,6 +952,21 @@
     .tool-btn { background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; transition: all 0.2s; white-space: nowrap; min-height: 40px; height: auto; }
       .tool-btn:hover { background-color: var(--key-hover); border-color: var(--text-secondary); }
       .tool-btn:active { background-color: var(--key-active); }
+
+    /* Two fields side-by-side in modals (name+symbol, etc.) */
+    .modal-field-row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      width: 100%;
+    }
+    .modal-field-row > .sidebar-setting-group {
+      min-width: 0;
+      margin-bottom: 0;
+    }
+    .modal-field-row .modal-field-color { flex: 1 1 0; }
+    .modal-field-row .modal-field-symbol { flex: 1 1 0; }
+    .modal-field-row .color-field { min-width: 0; }
 
     /* Grid size steppers (topic edit modal) */
     .grid-size-controls { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -1657,11 +1710,126 @@
     .input-margin-bottom { margin-bottom: 6px; }
 
     .modal-color-picker { display: flex; gap: 8px; flex-wrap: wrap; }
-    .color-option { width: 28px; height: 28px; border: 2px solid transparent; border-radius: 50%; cursor: pointer; transition: transform 0.2s; }
-      .color-option:hover { transform: scale(1.15); }
+    .color-option {
+      width: 32px;
+      height: 32px;
+      border: 2px solid transparent;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.15s;
+      padding: 0;
+      flex-shrink: 0;
+      background: transparent;
+    }
+      .color-option:hover { transform: scale(1.12); }
       .color-option.selected { border-color: #fff; box-shadow: 0 0 0 2px var(--accent); }
       .color-option.custom { padding: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
     .color-picker-input { -webkit-appearance: none; appearance: none; width: 28px; height: 28px; padding: 0; border: none; background: transparent; border-radius: 50%; cursor: pointer; }
+
+    /* Shared color picker modal — inline HSV spectrum (no system color dialog) */
+    .color-picker-modal-box { min-width: min(360px, calc(100vw - 32px)); width: min(420px, calc(100vw - 32px)); }
+    .color-picker-inline {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+    }
+    .color-picker-sv {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1.35 / 1;
+      max-height: min(200px, 32vh);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      cursor: crosshair;
+      touch-action: none;
+      overflow: hidden;
+      background:
+        linear-gradient(to top, #000 0%, transparent 100%),
+        linear-gradient(to right, #fff 0%, var(--cp-hue, #ff0000) 100%);
+    }
+    .color-picker-sv:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .color-picker-sv-cursor {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      margin: -8px 0 0 -8px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 1px 4px rgba(0, 0, 0, 0.35);
+      pointer-events: none;
+      left: 100%;
+      top: 0;
+      z-index: 1;
+    }
+    .color-picker-hue {
+      position: relative;
+      width: 100%;
+      height: 28px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      touch-action: none;
+      background: linear-gradient(
+        to right,
+        #ff0000 0%,
+        #ffff00 17%,
+        #00ff00 33%,
+        #00ffff 50%,
+        #0000ff 67%,
+        #ff00ff 83%,
+        #ff0000 100%
+      );
+    }
+    .color-picker-hue:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .color-picker-hue-cursor {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 10px;
+      height: 22px;
+      margin: -11px 0 0 -5px;
+      border-radius: 4px;
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.3);
+      background: transparent;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .color-picker-spectrum-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+    }
+    .color-picker-preview {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 2px solid color-mix(in srgb, var(--text) 18%, transparent);
+      flex-shrink: 0;
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, #000 12%, transparent);
+    }
+    .color-picker-hex-input {
+      flex: 1 1 auto;
+      min-width: 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.04em;
+      text-transform: lowercase;
+    }
+    .color-picker-palette {
+      max-height: min(200px, 32vh);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 4px 2px;
+    }
 
     /* Google Fonts Icon Studio */
     .icon-studio-modal-box { min-width: min(460px, calc(100vw - 32px)); width: min(600px, calc(100vw - 32px)); max-width: calc(100vw - 32px); }
@@ -2392,6 +2560,7 @@
   padding: 4px;
   background: var(--bg-surface);
   border-top: 1px solid var(--border);
+  border-radius: 8px;
   flex-shrink: 0;
   max-height: min(56vh, 520px);
   overflow: hidden;
@@ -2442,11 +2611,10 @@
   color: var(--text-secondary);
 }
 
-/* Key grid */
+/* Key grid — one font size/weight for every key (letters, chrome, icons) */
 .osk-keys {
   --gap: 4px;
-  --fs-face: 18px;
-  --fs-chrome: 22px;
+  --fs-key: 18px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -2474,33 +2642,33 @@
 }
 
 .osk-key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-height: 52px;
   border: 1px solid transparent;
   border-radius: 8px;
   background: var(--key-bg);
   color: var(--text);
-  font-size: var(--fs-face);
+  font-size: var(--fs-key);
   font-weight: 500;
   cursor: pointer;
   touch-action: manipulation;
 }
+.osk-key .material-symbols-outlined {
+  font-size: 1.3em;
+  font-weight: 600;
+  line-height: 1;
+  font-variation-settings: 'FILL' var(--icon-fill, 0), 'wght' 600, 'GRAD' var(--icon-grad, 0), 'opsz' var(--icon-opsz, 24);
+}
 .osk-key:hover { background: var(--key-hover); }
 .osk-key:active { background: var(--key-active); }
 .osk-key.action {
-  font-weight: 600;
   color: var(--text-secondary);
-}
-.osk-key[data-action="shift"],
-.osk-key[data-action="space"],
-.osk-key[data-action="backspace"],
-.osk-key[data-action="enter"] {
-  font-size: var(--fs-chrome);
-  font-weight: 700;
 }
 .osk-key.latched {
   background: color-mix(in srgb, var(--accent) 55%, var(--key-bg));
   color: #fff;
-  font-weight: 700;
 }
 
 .compose-icon-btn.osk-toggle-active {
@@ -2512,8 +2680,7 @@
   .osk-panel { max-height: min(58vh, 480px); }
   .osk-keys {
     --gap: 3px;
-    --fs-face: 16px;
-    --fs-chrome: 20px;
+    --fs-key: 16px;
   }
   .osk-key { min-height: 44px; }
 }
@@ -2522,8 +2689,7 @@
   .osk-panel { max-height: min(50vh, 560px); }
   .osk-keys {
     --gap: 6px;
-    --fs-face: 18px;
-    --fs-chrome: 24px;
+    --fs-key: 18px;
     gap: 8px;
   }
   .osk-key { min-height: 58px; }

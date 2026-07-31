@@ -68,7 +68,17 @@
       ctx.modalGridCols = ctx.clamp(parseInt(topic.gridCols, 10) || ctx.getDefaultGridCols(), 1, 12);
       ctx.modalGridRows = ctx.clamp(parseInt(topic.gridRows, 10) || ctx.DEFAULT_GRID_ROWS, 1, 8);
       ctx.syncModalGridLabels();
-      ctx.fillColorPicker(ctx.$("topic-color-picker"), topic.color);
+      // 1-based list position: sidebar top→bottom, header menu top→bottom
+      if (isCreate) {
+        ctx.modalTopicIndexMax = Math.max(1, ctx.topicsList.length + 1);
+        ctx.modalTopicIndex = ctx.modalTopicIndexMax;
+      } else {
+        const idx = ctx.topicsList.findIndex((t) => t.id === topic.id);
+        ctx.modalTopicIndexMax = Math.max(1, ctx.topicsList.length);
+        ctx.modalTopicIndex = idx >= 0 ? idx + 1 : 1;
+      }
+      ctx.syncModalTopicIndexLabels();
+      ctx.setColorField("topic-color-field", topic.color, "#3f3f4e");
       ctx.modalButtonsDraft = Array.isArray(topic.buttons)
         ? topic.buttons.map((b, i) => ctx.normalizeButton({ ...b }, i))
         : [];
@@ -181,9 +191,10 @@
       ctx.topicEditFormSnapshot = {
         name: ctx.$("topic-name-input")?.value || "",
         icon: ctx.$("topic-icon-input")?.value || "folder",
-        color: ctx.getSelectedPickerColor("topic-color-picker"),
+        color: ctx.getColorField("topic-color-field", "#3f3f4e"),
         cols: ctx.modalGridCols,
         rows: ctx.modalGridRows,
+        topicIndex: ctx.modalTopicIndex,
         isCreate: !!(ctx.pendingNewTopic && ctx.pendingNewTopic.id === ctx.editingTopicId),
         topicId: ctx.editingTopicId,
         buttons: Array.isArray(ctx.modalButtonsDraft)
@@ -224,7 +235,11 @@
         ctx.modalGridCols = ctx.clamp(snap.cols, 1, 12);
         ctx.modalGridRows = ctx.clamp(snap.rows, 1, 8);
         ctx.syncModalGridLabels();
-        if (snap.color) ctx.fillColorPicker(ctx.$("topic-color-picker"), snap.color);
+        if (snap.color) ctx.setColorField("topic-color-field", snap.color, "#3f3f4e");
+        if (Number.isFinite(snap.topicIndex)) {
+          ctx.modalTopicIndex = ctx.clamp(snap.topicIndex, 1, ctx.modalTopicIndexMax);
+          ctx.syncModalTopicIndexLabels();
+        }
         ctx.modalButtonsDraft = snap.buttons.map((b, i) => ctx.normalizeButton({ ...b }, i));
         ctx.repackSequentialGrid({ buttons: ctx.modalButtonsDraft, gridCols: ctx.modalGridCols });
         ctx.renderTopicButtonOrganizer();
@@ -246,7 +261,7 @@
       ctx.modalButtonIndexMax = Math.max(1, ctx.modalButtonsDraft.length);
       ctx.modalButtonIndex = currentIdx >= 0 ? currentIdx + 1 : 1;
       ctx.syncModalButtonIndexLabels();
-      ctx.fillColorPicker(ctx.$("button-color-picker"), btn.color);
+      ctx.setColorField("button-color-field", btn.color, "#3f3f4e");
       ctx.openModal("button-edit-modal");
     }
     
@@ -403,60 +418,6 @@
       });
     }
     
-    function normalizeToHex(col) {
-      if (!col) return "";
-      col = String(col).trim();
-      if (col.startsWith("#")) return col;
-      const m = col.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
-      if (!m) return col;
-      const toHex = n => ("0" + Number(n).toString(16)).slice(-2);
-      return `#${toHex(m[1])}${toHex(m[2])}${toHex(m[3])}`;
-    }
-    
-    /** Build palette + custom color swatches into a picker container. */
-    function fillColorPicker(picker, selectedColor, fallback = "#3f3f4e") {
-      if (!picker) return;
-      picker.innerHTML = "";
-      const selectedHex = ctx.normalizeToHex(selectedColor);
-      const clearSel = () => picker.querySelectorAll(".color-option").forEach((o) => o.classList.remove("selected"));
-    
-      ctx.COLOR_PALETTE.forEach(col => {
-        const opt = document.createElement("div");
-        opt.className = `color-option${selectedHex === ctx.normalizeToHex(col) ? " selected" : ""}`;
-        opt.style.backgroundColor = col;
-        opt.addEventListener("click", () => { clearSel(); opt.classList.add("selected"); });
-        picker.appendChild(opt);
-      });
-    
-      const customOpt = document.createElement("div");
-      customOpt.className = "color-option custom";
-      if (selectedHex && !ctx.COLOR_PALETTE.some(c => ctx.normalizeToHex(c) === selectedHex)) {
-        customOpt.classList.add("selected");
-      }
-      const colorInput = document.createElement("input");
-      colorInput.type = "color";
-      colorInput.className = "color-picker-input";
-      colorInput.value = selectedHex || fallback;
-      customOpt.style.backgroundColor = colorInput.value;
-      colorInput.addEventListener("input", (e) => {
-        customOpt.style.backgroundColor = e.target.value;
-        clearSel();
-        customOpt.classList.add("selected");
-      });
-      customOpt.addEventListener("click", () => {
-        clearSel();
-        customOpt.classList.add("selected");
-        colorInput.focus();
-      });
-      customOpt.appendChild(colorInput);
-      picker.appendChild(customOpt);
-    }
-    
-    function getSelectedPickerColor(pickerId) {
-      const sel = document.querySelector(`#${pickerId} .color-option.selected`);
-      return sel ? sel.style.backgroundColor : null;
-    }
-    
     function openTopicEditModal(topicId) {
       const topic = ctx.topicsList.find(t => t.id === topicId);
       if (!topic) return;
@@ -474,6 +435,16 @@
       ctx.closeModals();
     }
     
+    function moveTopicToIndex(topicId, zeroBasedIndex) {
+      if (!topicId || !Array.isArray(ctx.topicsList)) return;
+      const from = ctx.topicsList.findIndex((t) => t.id === topicId);
+      if (from < 0) return;
+      const to = ctx.clamp(zeroBasedIndex, 0, ctx.topicsList.length - 1);
+      if (from === to) return;
+      const [item] = ctx.topicsList.splice(from, 1);
+      ctx.topicsList.splice(to, 0, item);
+    }
+
     ctx.$("save-topic-meta-btn").addEventListener("click", () => {
       const isCreate = !!(ctx.pendingNewTopic && ctx.pendingNewTopic.id === ctx.editingTopicId);
       let topic = isCreate
@@ -482,8 +453,7 @@
       if (!topic) return;
       topic.name = ctx.trim(ctx.$("topic-name-input").value) || (isCreate ? "New Topic" : "Untitled");
       topic.icon = ctx.mapSymbol(ctx.$("topic-icon-input").value, "folder");
-      const col = ctx.getSelectedPickerColor("topic-color-picker");
-      if (col) topic.color = col;
+      topic.color = ctx.getColorField("topic-color-field", topic.color || "#3f3f4e");
       topic.gridCols = ctx.clamp(ctx.modalGridCols, 1, 12);
       // Rows grow with buttons; keep existing/default row count for storage
       topic.gridRows = ctx.clamp(ctx.modalGridRows, 1, 8);
@@ -495,14 +465,16 @@
       // Keep previewed columns; no restore on successful save
       ctx.clearLiveGridColsPreview(false);
       if (isCreate) {
-        ctx.topicsList.push(topic);
+        const insertAt = ctx.clamp(ctx.modalTopicIndex - 1, 0, ctx.topicsList.length);
+        ctx.topicsList.splice(insertAt, 0, topic);
         ctx.pendingNewTopic = null;
         ctx.saveTopicsList();
         // New topic opens as its own chat (if under max)
         ctx.switchTopic(topic.id);
       } else {
+        moveTopicToIndex(topic.id, ctx.modalTopicIndex - 1);
+        // commitTopicsUi → save + renderTopics + renderSoundButtons + syncChatUi
         ctx.commitTopicsUi();
-        try { ctx.syncChatUi(); } catch (_) {}
       }
       ctx.closeModals();
     });
@@ -516,7 +488,6 @@
       // Workspace owns chats — single mutation path
       ctx.onTopicDeleted(ctx.editingTopicId);
       ctx.commitTopicsUi();
-      ctx.syncChatUi();
       ctx.closeModals();
     });
     
@@ -526,25 +497,59 @@
       cancelTopicEditModal();
     });
     
-    function syncModalButtonIndexLabels() {
-      const valEl = document.getElementById("button-index-val");
-      const hintEl = document.getElementById("button-index-hint");
-      if (valEl) valEl.textContent = String(ctx.modalButtonIndex);
+    /** Shared 1-based list-index stepper UI (buttons + topics). */
+    function syncIndexStepper({ valId, hintId, downId, upId, index, max, emptyHint, formatHint }) {
+      const valEl = document.getElementById(valId);
+      const hintEl = document.getElementById(hintId);
+      if (valEl) valEl.textContent = String(index);
       if (hintEl) {
-        hintEl.textContent = ctx.modalButtonIndexMax <= 0
-          ? "No buttons"
-          : `${ctx.modalButtonIndex} of ${ctx.modalButtonIndexMax} (1 = first)`;
+        hintEl.textContent = max <= 0 ? emptyHint : formatHint(index, max);
       }
-      const downBtn = document.getElementById("button-index-down");
-      const upBtn = document.getElementById("button-index-up");
-      if (downBtn) downBtn.disabled = ctx.modalButtonIndex <= 1;
-      if (upBtn) upBtn.disabled = ctx.modalButtonIndex >= ctx.modalButtonIndexMax;
+      const downBtn = document.getElementById(downId);
+      const upBtn = document.getElementById(upId);
+      if (downBtn) downBtn.disabled = index <= 1;
+      if (upBtn) upBtn.disabled = index >= max;
     }
-    
+
+    function stepIndexState(indexKey, maxKey, delta, syncFn) {
+      const max = ctx[maxKey];
+      if (max <= 0) return;
+      ctx[indexKey] = ctx.clamp(ctx[indexKey] + delta, 1, max);
+      syncFn();
+    }
+
+    function syncModalButtonIndexLabels() {
+      syncIndexStepper({
+        valId: "button-index-val",
+        hintId: "button-index-hint",
+        downId: "button-index-down",
+        upId: "button-index-up",
+        index: ctx.modalButtonIndex,
+        max: ctx.modalButtonIndexMax,
+        emptyHint: "No buttons",
+        formatHint: (i, m) => `${i} of ${m} (1 = first)`
+      });
+    }
+
     function stepModalButtonIndex(delta) {
-      if (ctx.modalButtonIndexMax <= 0) return;
-      ctx.modalButtonIndex = ctx.clamp(ctx.modalButtonIndex + delta, 1, ctx.modalButtonIndexMax);
-      ctx.syncModalButtonIndexLabels();
+      stepIndexState("modalButtonIndex", "modalButtonIndexMax", delta, syncModalButtonIndexLabels);
+    }
+
+    function syncModalTopicIndexLabels() {
+      syncIndexStepper({
+        valId: "topic-index-val",
+        hintId: "topic-index-hint",
+        downId: "topic-index-down",
+        upId: "topic-index-up",
+        index: ctx.modalTopicIndex,
+        max: ctx.modalTopicIndexMax,
+        emptyHint: "No topics",
+        formatHint: (i, m) => `${i} of ${m} (1 = left / top)`
+      });
+    }
+
+    function stepModalTopicIndex(delta) {
+      stepIndexState("modalTopicIndex", "modalTopicIndexMax", delta, syncModalTopicIndexLabels);
     }
     
     function moveButtonToIndex(tab, btnId, zeroBasedIndex) {
@@ -579,12 +584,14 @@
       ctx.modalButtonIndexMax = Math.max(1, tab.buttons.length);
       ctx.modalButtonIndex = currentIdx >= 0 ? currentIdx + 1 : 1;
       ctx.syncModalButtonIndexLabels();
-      ctx.fillColorPicker(ctx.$("button-color-picker"), btn.color);
+      ctx.setColorField("button-color-field", btn.color, "#3f3f4e");
       ctx.openModal("button-edit-modal");
     }
     
     ctx.$("button-index-down")?.addEventListener("click", () => ctx.stepModalButtonIndex(-1));
     ctx.$("button-index-up")?.addEventListener("click", () => ctx.stepModalButtonIndex(1));
+    document.getElementById("topic-index-down")?.addEventListener("click", () => ctx.stepModalTopicIndex(-1));
+    document.getElementById("topic-index-up")?.addEventListener("click", () => ctx.stepModalTopicIndex(1));
     
     function finishButtonEditAndMaybeResume(didMutate) {
       if (ctx.topicEditResumeId) {
@@ -605,8 +612,7 @@
         if (!btn) return;
         btn.label = ctx.trim(ctx.$("button-label-input").value) || "Button";
         btn.symbol = ctx.mapSymbol(ctx.$("button-symbol-input").value);
-        const col = ctx.getSelectedPickerColor("button-color-picker");
-        if (col) btn.color = col;
+        btn.color = ctx.getColorField("button-color-field", btn.color || "#3f3f4e");
         // Reorder within draft
         const from = ctx.modalButtonsDraft.findIndex((b) => b.id === ctx.editingButtonId);
         const to = ctx.clamp(ctx.modalButtonIndex - 1, 0, ctx.modalButtonsDraft.length - 1);
@@ -625,8 +631,7 @@
       if (!btn || !tab) return;
       btn.label = ctx.trim(ctx.$("button-label-input").value) || "Button";
       btn.symbol = ctx.mapSymbol(ctx.$("button-symbol-input").value);
-      const col = ctx.getSelectedPickerColor("button-color-picker");
-      if (col) btn.color = col;
+      btn.color = ctx.getColorField("button-color-field", btn.color || "#3f3f4e");
       ctx.moveButtonToIndex(tab, ctx.editingButtonId, ctx.modalButtonIndex - 1);
       ctx.repackSequentialGrid(tab);
       ctx.finishButtonEditAndMaybeResume(true);
@@ -674,13 +679,13 @@
       resumeTopicEditModal,
       openOrganizerButtonEdit,
       renderTopicButtonOrganizer,
-      normalizeToHex,
-      fillColorPicker,
-      getSelectedPickerColor,
       openTopicEditModal,
       cancelTopicEditModal,
       syncModalButtonIndexLabels,
       stepModalButtonIndex,
+      syncModalTopicIndexLabels,
+      stepModalTopicIndex,
+      moveTopicToIndex,
       moveButtonToIndex,
       findTopicForEdit,
       openButtonEditModal,

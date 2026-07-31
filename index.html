@@ -124,7 +124,10 @@
           <div class="sidebar-setting-group">
             <label>Accent Color</label>
             <div class="accent-color-row">
-              <input type="color" id="accent-color-picker" value="#8ab4f8" title="Custom accent color">
+              <div class="color-field" id="accent-color-field" data-color="#8ab4f8">
+                <button type="button" class="color-field-swatch-btn" style="background-color:#8ab4f8" title="Open color picker" aria-label="Open color picker"></button>
+                <input type="text" class="modal-input color-field-hex" value="#8ab4f8" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Accent hex color" inputmode="text">
+              </div>
               <button class="font-btn" id="accent-color-reset" type="button" title="Reset to theme default">Reset</button>
             </div>
           </div>
@@ -442,30 +445,37 @@
     <div class="modal-title" id="topic-edit-modal-title">Edit Topic Settings</div>
     <div class="modal-scroll">
       <div class="sidebar-setting-group">
-        <label>Topic Name</label>
+        <label for="topic-name-input">Name</label>
         <input type="text" id="topic-name-input" class="modal-input" placeholder="Topic name" maxlength="30">
       </div>
-      <div class="sidebar-setting-group">
-        <label for="topic-icon-input">Material Symbol Icon</label>
-        <div class="icon-field-row">
-          <input type="text" id="topic-icon-input" class="modal-input icon-name-input" maxlength="48" spellcheck="false" autocomplete="off" aria-label="Topic icon">
-          <button class="icon-studio-inline-btn" onclick="openIconStudio('topic-icon-input')" type="button" title="Open Icon Studio" aria-label="Open Icon Studio">
-            <span class="material-symbols-outlined">search</span>
-          </button>
+      <div class="modal-field-row">
+        <div class="sidebar-setting-group modal-field-color">
+          <label>Color</label>
+          <div class="color-field" id="topic-color-field" data-color="#3f3f4e">
+            <button type="button" class="color-field-swatch-btn" style="background-color:#3f3f4e" title="Open color picker" aria-label="Open color picker"></button>
+            <input type="text" class="modal-input color-field-hex" value="#3f3f4e" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Topic hex color" inputmode="text">
+          </div>
+        </div>
+        <div class="sidebar-setting-group modal-field-symbol">
+          <label for="topic-icon-input">Symbol</label>
+          <div class="icon-field-row">
+            <input type="text" id="topic-icon-input" class="modal-input icon-name-input" maxlength="48" spellcheck="false" autocomplete="off" aria-label="Topic icon">
+            <button class="icon-studio-inline-btn" onclick="openIconStudio('topic-icon-input')" type="button" title="Open Icon Studio" aria-label="Open Icon Studio">
+              <span class="material-symbols-outlined">search</span>
+            </button>
+          </div>
         </div>
       </div>
       <div class="sidebar-setting-group">
-        <label>Color Accent</label>
-        <div class="modal-color-picker" id="topic-color-picker"></div>
-      </div>
-      <div class="sidebar-setting-group" id="topic-buttons-organizer-group">
-        <label>Sound buttons</label>
-        <div class="modal-description">Drag to reorder. Tap buttons to edit or remove.</div>
-        <div class="topic-btn-organizer" id="topic-btn-organizer" role="list" aria-label="Sound buttons layout"></div>
-      </div>
-      <div class="sidebar-setting-group">
-        <label>Columns</label>
         <div class="grid-size-controls">
+          <div class="header-stepper-group">
+            <span>Index</span>
+            <div class="num-control-wrapper">
+              <button class="num-control-btn" type="button" id="topic-index-down" aria-label="Earlier in list">-</button>
+              <span class="num-control-val" id="topic-index-val">1</span>
+              <button class="num-control-btn" type="button" id="topic-index-up" aria-label="Later in list">+</button>
+            </div>
+          </div>
           <div class="header-stepper-group">
             <span>Cols</span>
             <div class="num-control-wrapper">
@@ -475,6 +485,12 @@
             </div>
           </div>
         </div>
+        <div class="modal-description" id="topic-index-hint">1 of 1 (left / top = 1)</div>
+      </div>
+      <div class="sidebar-setting-group" id="topic-buttons-organizer-group">
+        <label>Sound buttons</label>
+        <div class="modal-description">Drag to reorder. Tap buttons to edit or remove.</div>
+        <div class="topic-btn-organizer" id="topic-btn-organizer" role="list" aria-label="Sound buttons layout"></div>
       </div>
     </div>
     <div class="modal-buttons">
@@ -489,21 +505,26 @@
     <div class="modal-title">Edit Sound Button</div>
     <div class="modal-scroll">
       <div class="sidebar-setting-group">
-        <label>Label</label>
+        <label for="button-label-input">Name</label>
         <input type="text" id="button-label-input" class="modal-input" placeholder="Button label" maxlength="30">
       </div>
-      <div class="sidebar-setting-group">
-        <label for="button-symbol-input">Symbol (optional)</label>
-        <div class="icon-field-row">
-          <input type="text" id="button-symbol-input" class="modal-input icon-name-input" maxlength="48" spellcheck="false" autocomplete="off" placeholder="" aria-label="Button symbol">
-          <button class="icon-studio-inline-btn" onclick="openIconStudio('button-symbol-input')" type="button" title="Open Icon Studio" aria-label="Open Icon Studio">
-            <span class="material-symbols-outlined">search</span>
-          </button>
+      <div class="modal-field-row">
+        <div class="sidebar-setting-group modal-field-color">
+          <label>Color</label>
+          <div class="color-field" id="button-color-field" data-color="#3f3f4e">
+            <button type="button" class="color-field-swatch-btn" style="background-color:#3f3f4e" title="Open color picker" aria-label="Open color picker"></button>
+            <input type="text" class="modal-input color-field-hex" value="#3f3f4e" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Button hex color" inputmode="text">
+          </div>
         </div>
-      </div>
-      <div class="sidebar-setting-group">
-        <label>Color</label>
-        <div class="modal-color-picker" id="button-color-picker"></div>
+        <div class="sidebar-setting-group modal-field-symbol">
+          <label for="button-symbol-input">Symbol</label>
+          <div class="icon-field-row">
+            <input type="text" id="button-symbol-input" class="modal-input icon-name-input" maxlength="48" spellcheck="false" autocomplete="off" placeholder="" aria-label="Button symbol">
+            <button class="icon-studio-inline-btn" onclick="openIconStudio('button-symbol-input')" type="button" title="Open Icon Studio" aria-label="Open Icon Studio">
+              <span class="material-symbols-outlined">search</span>
+            </button>
+          </div>
+        </div>
       </div>
       <div class="sidebar-setting-group">
         <label>Position in list</label>
@@ -612,6 +633,53 @@
     </div>
   </div>
 
+  <!-- Shared color picker (accent, topics, sound buttons) -->
+  <div class="modal color-picker-modal-box modal-full-mobile" id="color-picker-modal" role="dialog" aria-modal="true" aria-labelledby="color-picker-modal-title">
+    <div class="modal-title" id="color-picker-modal-title">Choose color</div>
+    <div class="modal-scroll">
+      <div class="sidebar-setting-group">
+        <label id="color-picker-spectrum-label">Spectrum</label>
+        <div class="color-picker-inline" role="group" aria-labelledby="color-picker-spectrum-label">
+          <div
+            class="color-picker-sv"
+            id="color-picker-sv"
+            tabindex="0"
+            role="slider"
+            aria-label="Saturation and brightness"
+            aria-valuemin="0"
+            aria-valuemax="100"
+          >
+            <div class="color-picker-sv-cursor" id="color-picker-sv-cursor" aria-hidden="true"></div>
+          </div>
+          <div
+            class="color-picker-hue"
+            id="color-picker-hue"
+            tabindex="0"
+            role="slider"
+            aria-label="Hue"
+            aria-valuemin="0"
+            aria-valuemax="360"
+            aria-orientation="horizontal"
+          >
+            <div class="color-picker-hue-cursor" id="color-picker-hue-cursor" aria-hidden="true"></div>
+          </div>
+          <div class="color-picker-spectrum-row">
+            <div class="color-picker-preview" id="color-picker-preview" style="background-color:#8ab4f8" aria-hidden="true"></div>
+            <input type="text" class="modal-input color-picker-hex-input" id="color-picker-hex-input" value="#8ab4f8" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Hex color" inputmode="text">
+          </div>
+        </div>
+      </div>
+      <div class="sidebar-setting-group">
+        <label>Sample colors</label>
+        <div class="modal-color-picker color-picker-palette" id="color-picker-palette" role="listbox" aria-label="Sample colors"></div>
+      </div>
+    </div>
+    <div class="modal-buttons">
+      <button class="modal-btn primary" id="color-picker-apply" type="button">Apply</button>
+      <button class="modal-btn secondary" id="color-picker-cancel" type="button">Cancel</button>
+    </div>
+  </div>
+
   <!-- Voices Panel Drawer -->
   <div class="voices-panel" id="voices-panel">
     <div class="voices-panel-header">
@@ -672,6 +740,7 @@
   <script src="js/history-ui.js" defer></script>
   <script src="js/shell-ui.js" defer></script>
   <script src="js/icon-studio.js" defer></script>
+  <script src="js/color-picker.js" defer></script>
   <script src="js/board-io.js" defer></script>
   <script src="js/predict-data.js" defer></script>
   <script src="js/predict-type.js" defer></script>
