@@ -86,7 +86,7 @@
     return layoutAlpha(isShift);
   }
 
-  /** Single source for pred chip gap; applied to --osk-pred-gap on the row. */
+  /** Single source for pred chip gap; applied as --osk-pred-gap on the row. */
   const PRED_GAP_PX = 6;
 
   let opts = null;
@@ -131,7 +131,10 @@
     keysEl.innerHTML = "";
     const rows = currentLayout();
     rows.forEach((rowKeys, i) => {
-      const row = el("div", i === rows.length - 1 ? "osk-row osk-row-bottom" : "osk-row");
+      const isBottom = i === rows.length - 1;
+      const row = el("div", isBottom ? "osk-row osk-row-bottom" : "osk-row");
+      // Face rows: equal key width from count (9-key home row is naturally wider).
+      if (!isBottom) row.style.setProperty("--cols", String(rowKeys.length));
       rowKeys.forEach((k) => row.appendChild(renderKey(k)));
       keysEl.appendChild(row);
     });

@@ -19,6 +19,8 @@
    *   getSpeechFx: () => { speed: number, pitch: number },
    *   modelId: (id: string) => string,
    *   lsGet: (k: string, fb?: any) => any,
+   *   lsSet?: (k: string, v: string) => void,
+   *   lsDel?: (k: string) => void,
    *   trim: (v: any) => string,
    *   withTimeout: (p: Promise<any>, ms: number, label?: string) => Promise<any>,
    *   blobToDataUrl: (blob: Blob) => Promise<string>,
@@ -56,17 +58,35 @@
       throw new Error("AacSpeechPlayback requires AudioFx, Eleven, Piper, SpeechEngines");
     }
 
-    let activeOutputDeviceId = "";
-    try {
-      activeOutputDeviceId = d.lsGet("aac_output_device", "") || "";
-    } catch (_) {
-      activeOutputDeviceId = "";
-    }
+    const OUTPUT_DEVICE_KEY = "aac_output_device";
+    const OUTPUT_DEVICE_LABEL_KEY = "aac_output_device_label";
+
+    const lsGet = typeof d.lsGet === "function"
+      ? d.lsGet
+      : (k, fb = null) => {
+        try {
+          const v = localStorage.getItem(k);
+          return v == null ? fb : v;
+        } catch (_) {
+          return fb;
+        }
+      };
+    const lsSet = typeof d.lsSet === "function"
+      ? d.lsSet
+      : (k, v) => { try { localStorage.setItem(k, v); } catch (_) {} };
+    const lsDel = typeof d.lsDel === "function"
+      ? d.lsDel
+      : (k) => { try { localStorage.removeItem(k); } catch (_) {} };
+
+    let activeOutputDeviceId = lsGet(OUTPUT_DEVICE_KEY, "") || "";
+    let activeOutputDeviceLabel = lsGet(OUTPUT_DEVICE_LABEL_KEY, "") || "";
 
     let activeBufferSources = [];
     let activeHtmlAudio = null;
     let speakUiState = "idle";
     let speakGeneration = 0;
+    /** Invalidates in-flight enumerateDevices so a newer selection wins. */
+    let outputDeviceRefreshGen = 0;
 
     function canSelectOutputDevice() {
       const mediaOk = typeof HTMLMediaElement !== "undefined"
@@ -76,76 +96,154 @@
       return !!(navigator.mediaDevices && navigator.mediaDevices.enumerateDevices && (mediaOk || ctxOk));
     }
 
-    function updateOutputDeviceHint(outputCount) {
+    function persistOutputDevice(deviceId, label) {
+      activeOutputDeviceId = deviceId || "";
+      activeOutputDeviceLabel = activeOutputDeviceId ? (label || activeOutputDeviceLabel || "") : "";
+      if (activeOutputDeviceId) {
+        lsSet(OUTPUT_DEVICE_KEY, activeOutputDeviceId);
+        if (activeOutputDeviceLabel) lsSet(OUTPUT_DEVICE_LABEL_KEY, activeOutputDeviceLabel);
+        else lsDel(OUTPUT_DEVICE_LABEL_KEY);
+      } else {
+        lsDel(OUTPUT_DEVICE_KEY);
+        lsDel(OUTPUT_DEVICE_LABEL_KEY);
+      }
+    }
+
+    function updateOutputDeviceHint(kind, outputCount) {
       const hint = document.getElementById("output-device-hint");
       if (!hint) return;
       if (!canSelectOutputDevice()) {
         hint.textContent = "Output device selection is not supported in this browser.";
         return;
       }
-      if (outputCount === 0) {
+      if (kind === "unavailable") {
+        hint.textContent = "Saved speaker is offline or not listed yet. Preference kept; using system default until it returns.";
+        return;
+      }
+      if (kind === "list-error") {
+        hint.textContent = activeOutputDeviceId
+          ? "Could not list speakers. Saved preference kept."
+          : "Could not list speakers. Check browser permissions.";
+        return;
+      }
+      if (!outputCount) {
         hint.textContent = "No speakers found. Connect a device or use system default.";
         return;
       }
       hint.textContent = "Applies to Piper, ElevenLabs, and sound-button playback. Browser TTS uses the system default speaker.";
     }
 
+    /**
+     * Match preferred sink: deviceId first, then label (adopt new id when ids rotate).
+     * @returns {{ id: string, label: string, matched: boolean, persist: boolean }}
+     */
+    function resolvePreferredOutput(outputs) {
+      const preferredId = activeOutputDeviceId || "";
+      const preferredLabel = (activeOutputDeviceLabel || "").trim().toLowerCase();
+      if (!preferredId && !preferredLabel) {
+        return { id: "", label: "", matched: true, persist: false };
+      }
+      if (preferredId) {
+        const byId = outputs.find((dev) => dev.deviceId === preferredId);
+        if (byId) {
+          const label = byId.label || activeOutputDeviceLabel || "";
+          return {
+            id: byId.deviceId,
+            label,
+            matched: true,
+            persist: !!(label && label !== activeOutputDeviceLabel)
+          };
+        }
+      }
+      if (preferredLabel) {
+        const byLabel = outputs.find((dev) =>
+          (dev.label || "").trim().toLowerCase() === preferredLabel
+        );
+        if (byLabel && byLabel.deviceId) {
+          return {
+            id: byLabel.deviceId,
+            label: byLabel.label || activeOutputDeviceLabel || "",
+            matched: true,
+            persist: byLabel.deviceId !== preferredId
+              || (byLabel.label && byLabel.label !== activeOutputDeviceLabel)
+          };
+        }
+      }
+      return {
+        id: preferredId,
+        label: activeOutputDeviceLabel || "",
+        matched: false,
+        persist: false
+      };
+    }
+
+    function appendUnavailableOption(select) {
+      if (!select || !activeOutputDeviceId) return;
+      const opt = document.createElement("option");
+      opt.value = activeOutputDeviceId;
+      opt.textContent = `${activeOutputDeviceLabel || "Saved speaker"} (unavailable)`;
+      select.appendChild(opt);
+      select.value = activeOutputDeviceId;
+    }
+
+    function fillOutputSelect(select, outputs) {
+      select.innerHTML = "";
+      const defOpt = document.createElement("option");
+      defOpt.value = "";
+      defOpt.textContent = "System default";
+      select.appendChild(defOpt);
+      outputs.forEach((device, index) => {
+        const opt = document.createElement("option");
+        opt.value = device.deviceId;
+        opt.textContent = device.label || `Speaker ${index + 1}`;
+        select.appendChild(opt);
+      });
+    }
+
     async function refreshOutputDevices() {
       const select = document.getElementById("output-device-select");
       if (!select) return;
+      const gen = ++outputDeviceRefreshGen;
 
       if (!navigator.mediaDevices || typeof navigator.mediaDevices.enumerateDevices !== "function") {
         select.innerHTML = `<option value="">Not supported</option>`;
         select.disabled = true;
-        updateOutputDeviceHint(0);
-        const hint = document.getElementById("output-device-hint");
-        if (hint) hint.textContent = "Output device selection is not supported in this browser.";
+        updateOutputDeviceHint("unsupported", 0);
         return;
       }
 
       if (!canSelectOutputDevice()) {
         select.disabled = true;
-        updateOutputDeviceHint(0);
+        updateOutputDeviceHint("unsupported", 0);
         return;
       }
 
       try {
         const devices = await navigator.mediaDevices.enumerateDevices();
-        const outputs = devices.filter((dev) => dev.kind === "audiooutput");
-        const previous = activeOutputDeviceId;
+        if (gen !== outputDeviceRefreshGen) return;
 
-        select.innerHTML = "";
-        const defOpt = document.createElement("option");
-        defOpt.value = "";
-        defOpt.textContent = "System default";
-        select.appendChild(defOpt);
+        const outputs = devices.filter((dev) => dev.kind === "audiooutput" && dev.deviceId);
+        const resolved = resolvePreferredOutput(outputs);
+        if (resolved.persist) persistOutputDevice(resolved.id, resolved.label);
 
-        outputs.forEach((device, index) => {
-          const opt = document.createElement("option");
-          opt.value = device.deviceId;
-          opt.textContent = device.label || `Speaker ${index + 1}`;
-          select.appendChild(opt);
-        });
-
-        const stillThere = previous && [...select.options].some((o) => o.value === previous);
-        if (stillThere) {
-          select.value = previous;
+        fillOutputSelect(select, outputs);
+        if (!resolved.matched && activeOutputDeviceId) {
+          appendUnavailableOption(select);
+          updateOutputDeviceHint("unavailable", outputs.length);
         } else {
-          select.value = "";
-          if (previous) {
-            activeOutputDeviceId = "";
-            try { localStorage.removeItem("aac_output_device"); } catch (_) {}
-            applyOutputDeviceToAudioGraph("").catch(() => {});
-          }
+          select.value = resolved.matched ? (resolved.id || "") : "";
+          updateOutputDeviceHint("ok", outputs.length);
         }
         select.disabled = false;
-        updateOutputDeviceHint(outputs.length);
+        if (resolved.matched && resolved.id) {
+          applyOutputDeviceToAudioGraph(resolved.id).catch(() => {});
+        }
       } catch (_) {
+        if (gen !== outputDeviceRefreshGen) return;
         select.innerHTML = `<option value="">System default</option>`;
+        appendUnavailableOption(select);
         select.disabled = false;
-        updateOutputDeviceHint(0);
-        const hint = document.getElementById("output-device-hint");
-        if (hint) hint.textContent = "Could not list speakers. Check browser permissions.";
+        updateOutputDeviceHint("list-error", 0);
       }
     }
 
@@ -167,11 +265,20 @@
     }
 
     async function setActiveOutputDevice(deviceId) {
-      activeOutputDeviceId = deviceId || "";
-      try {
-        if (activeOutputDeviceId) localStorage.setItem("aac_output_device", activeOutputDeviceId);
-        else localStorage.removeItem("aac_output_device");
-      } catch (_) {}
+      const id = deviceId || "";
+      let label = "";
+      if (id) {
+        const select = document.getElementById("output-device-select");
+        const opt = select && [...select.options].find((o) => o.value === id);
+        if (opt) {
+          label = (opt.textContent || "")
+            .replace(/\s*\(unavailable\)\s*$/i, "")
+            .trim();
+        }
+        if (!label) label = activeOutputDeviceLabel || "";
+      }
+      outputDeviceRefreshGen += 1;
+      persistOutputDevice(id, label);
       await applyOutputDeviceToAudioGraph(activeOutputDeviceId);
     }
 
@@ -501,7 +608,7 @@
       const pitch = d.getSpeechPitch();
       const hasTags = Eleven.phraseHasInlineTags(phrase);
       const hasSpeechBody = Eleven.hasNonTagSpeechContent(phrase);
-      const apiKey = d.lsGet("elevenlabs_key", "");
+      const apiKey = lsGet("elevenlabs_key", "");
       const sel = d.getVoiceSelection() || {};
       const piperVoiceId = sel.piperVoiceId;
       const elevenVoiceId = sel.elevenVoiceId;

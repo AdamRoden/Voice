@@ -233,20 +233,14 @@
 
   <!-- ==================== MAIN WORKSPACE ==================== -->
   <main class="app-main">
-    <div class="workspace-header-shell" id="workspace-header-shell" data-expanded="0">
-      <button type="button" class="header-expand-handle" id="header-expand-handle" aria-expanded="false" aria-controls="workspace-header" title="Show chats" aria-label="Show chats">
-        <span class="material-symbols-outlined">expand_more</span>
-      </button>
-      <div class="workspace-header" id="workspace-header">
+    <div class="workspace-header-shell" id="workspace-header-shell" data-size="normal">
+      <div class="workspace-header" id="workspace-header" title="Tap empty space to slim the top bar">
         <button class="icon-btn mobile-only mobile-menu-btn" id="mobile-menu-btn" type="button" title="Open menu" aria-label="Open menu">
           <span class="material-symbols-outlined logo-mark">record_voice_over</span>
         </button>
         <div class="chat-slots" id="chat-slots" role="group" aria-label="Topic chats">
           <div class="header-topic-menu float-menu float-menu--scroll" id="header-topic-menu" role="listbox" aria-label="Topics" hidden></div>
         </div>
-        <button type="button" class="icon-btn header-collapse-btn" id="header-collapse-btn" title="Collapse top bar" aria-label="Collapse top bar">
-          <span class="material-symbols-outlined">close</span>
-        </button>
       </div>
     </div>
 
@@ -367,7 +361,7 @@
       <div class="modal-description">Quick start for Voice boards, chats, and speaking.</div>
       <ol class="help-list">
         <li><strong>Sidebar</strong> — bottom icons for <strong>Voice</strong>, <strong>History</strong>, <strong>Topics</strong>, <strong>Settings</strong>, and <strong>Help</strong>. On phone, the <span class="material-symbols-outlined coach-inline-icon">record_voice_over</span> button opens the drawer.</li>
-        <li><strong>Top bar</strong> — pull the <span class="material-symbols-outlined coach-inline-icon">expand_more</span> <strong>chevron</strong> or swipe down to show chats; <span class="material-symbols-outlined coach-inline-icon">close</span> collapses it.</li>
+        <li><strong>Top bar</strong> — always visible; tap empty space on the bar (or swipe up/down) to toggle between normal and slim (50% height). Chat chips and the menu button stay full width.</li>
         <li><strong>Topic chats</strong> — each open topic is its own chat (1–5, no duplicates). Tap an inactive chip to switch; tap the <strong>active</strong> chip for the topics menu.</li>
         <li><strong>Sounds</strong> — <span class="material-symbols-outlined coach-inline-icon">grid_view</span> <strong>buttons</strong> play their audio.</li>
         <li><strong>Text box</strong> — <span class="material-symbols-outlined coach-inline-icon">more_horiz</span> <strong>Actions</strong> for clear, pin, replay, tags, and history; <span class="material-symbols-outlined coach-inline-icon">volume_up</span> <strong>speaker</strong> speaks (or press Enter).</li>

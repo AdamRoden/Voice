@@ -27,13 +27,13 @@
 
     const chatSlotsEl = document.getElementById("chat-slots");
     const headerShell = document.getElementById("workspace-header-shell");
-    const headerExpandHandle = document.getElementById("header-expand-handle");
-    const headerCollapseBtn = document.getElementById("header-collapse-btn");
+    const workspaceHeader = document.getElementById("workspace-header");
     const headerTopicMenu = document.getElementById("header-topic-menu");
 
     let chats = [];
     let activeChat = 0;
-    let headerExpanded = false;
+    /** Slim = 50% bar height; never fully hidden. */
+    let headerSlim = false;
     /** @type {ReturnType<typeof global.AacTopics.create>|null} */
     let Topics = null;
 
@@ -127,12 +127,20 @@
 
     function syncHeaderChrome() {
       if (!headerShell) return;
-      headerShell.dataset.expanded = headerExpanded ? "1" : "0";
-      if (headerExpandHandle) {
-        headerExpandHandle.setAttribute("aria-expanded", headerExpanded ? "true" : "false");
-        headerExpandHandle.title = "Show chats";
-        headerExpandHandle.setAttribute("aria-label", "Show chats");
+      headerShell.dataset.size = headerSlim ? "slim" : "normal";
+      if (workspaceHeader) {
+        workspaceHeader.title = headerSlim
+          ? "Tap empty space to expand the top bar"
+          : "Tap empty space to slim the top bar";
       }
+    }
+
+    /** True when the click should not toggle slim/normal (chips, menu, buttons). */
+    function isHeaderInteractiveTarget(target) {
+      if (!target || !(target instanceof Element)) return false;
+      return !!target.closest(
+        ".chat-chip, #header-topic-menu, .mobile-menu-btn, button, a, input, select, textarea, [role='option']"
+      );
     }
 
     function isHeaderTopicMenuOpen() {
@@ -146,7 +154,6 @@
       if (!FloatMenu) return;
       const pad = 8;
       const menuW = Math.min(320, Math.max(200, window.innerWidth - pad * 2));
-      // Long topic lists: scroll inside the menu when needed.
       FloatMenu.place(headerTopicMenu, anchor, {
         prefer: "below",
         overflow: "scroll",
@@ -158,10 +165,10 @@
       });
     }
 
-    function setHeaderExpanded(open) {
-      headerExpanded = !!open;
+    function setHeaderSlim(slim) {
+      headerSlim = !!slim;
       syncHeaderChrome();
-      if (!headerExpanded) setHeaderTopicMenuOpen(false);
+      if (headerSlim) setHeaderTopicMenuOpen(false);
     }
 
     function renderHeaderTopicMenu() {
@@ -269,7 +276,7 @@
       if (chip) chip.setAttribute("aria-expanded", open ? "true" : "false");
       headerShell?.classList.toggle("menu-open", !!open);
       if (open) {
-        if (!headerExpanded) setHeaderExpanded(true);
+        if (headerSlim) setHeaderSlim(false);
         renderHeaderTopicMenu();
         requestAnimationFrame(() => positionHeaderTopicMenu());
       } else if (global.AacFloatMenu) {
@@ -509,14 +516,10 @@
     }
     applyChatToWorkspace(chats[activeChat]);
 
-    // Header expand / collapse / swipe
-    headerExpandHandle?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      setHeaderExpanded(true);
-    });
-    headerCollapseBtn?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      setHeaderExpanded(false);
+    // Header normal / slim: empty-space click or swipe
+    headerShell?.addEventListener("click", (e) => {
+      if (isHeaderInteractiveTarget(e.target)) return;
+      setHeaderSlim(!headerSlim);
     });
     (function setupHeaderSwipe() {
       if (!headerShell) return;
@@ -538,8 +541,8 @@
         startY = null;
         startX = null;
         if (dx > Math.abs(dy) || Math.abs(dy) < THRESH) return;
-        if (dy > 0) setHeaderExpanded(true);
-        else setHeaderExpanded(false);
+        // Swipe down → normal; swipe up → slim
+        setHeaderSlim(dy < 0);
       }, { passive: true });
     })();
     syncHeaderChrome();
@@ -593,7 +596,7 @@
       isHeaderTopicMenuOpen,
       setHeaderTopicMenuOpen,
       positionHeaderTopicMenu,
-      setHeaderExpanded,
+      setHeaderSlim,
       getActiveChatChip,
       /** Snapshot active chat text while typing (call from display input). */
       onDisplayInput() {

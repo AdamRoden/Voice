@@ -808,6 +808,8 @@
       getSpeechFx,
       modelId,
       lsGet,
+      lsSet,
+      lsDel,
       trim,
       withTimeout,
       blobToDataUrl,

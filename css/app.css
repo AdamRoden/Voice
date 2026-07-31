@@ -603,8 +603,22 @@
       max-height: min(180px, calc(var(--vv-height, 100dvh) * 0.4));
     }
 
-    /* Collapsible header shell — default is collapsed (float over canvas, no layout height) */
+    /*
+     * Workspace header — always in layout flow.
+     * data-size="normal" | "slim". Slim uses shell tokens only (height 50%, no pad).
+     * Empty bar chrome toggles size (JS hit-test); chips/menu keep their own clicks.
+     */
     .workspace-header-shell {
+      --wh-h: 1;
+      --wh-pad-y: 4px;
+      --wh-pad-x: 8px;
+      --wh-gap: 8px;
+      --wh-chip-gap: 6px;
+      --wh-radius-btn: 10px;
+      --wh-radius-chip-active: 12px;
+      --wh-icon: 22px;
+      --wh-icon-lg: 24px;
+      --wh-caret: 18px;
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
@@ -612,134 +626,87 @@
       gap: 0;
       touch-action: pan-y;
       overflow: visible;
-      position: absolute;
-      /* top offset: see mobile/standalone rules — must clear status bar / notch */
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 0;
+      position: relative;
       margin: 0;
       padding: 0;
-      pointer-events: none;
-      z-index: 40;
-    }
-    .workspace-header-shell .header-expand-handle {
-      pointer-events: auto;
-    }
-    /* Expanded: in normal column flow */
-    .workspace-header-shell[data-expanded="1"] {
-      position: relative;
-      top: auto;
-      left: auto;
-      right: auto;
-      height: auto;
       pointer-events: auto;
       z-index: 30;
+    }
+    .workspace-header-shell[data-size="slim"] {
+      --wh-h: 0.5;
+      --wh-pad-y: 0px;
+      --wh-pad-x: 0px;
+      --wh-gap: 0px;
+      --wh-chip-gap: 6px;
+      --wh-radius-btn: 4px;
+      --wh-radius-chip-active: 5px;
+      --wh-icon: 11px;
+      --wh-icon-lg: 12px;
+      --wh-caret: 9px;
     }
     .workspace-header-shell.menu-open {
       z-index: 400;
     }
-    /* Floating pull-tab (collapsed only). ::after extends hit target without painting. */
-    .header-expand-handle {
-      position: relative;
-      align-self: center;
+
+    .workspace-header {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: min(108px, 42vw);
-      height: 21px;
-      min-height: 21px;
-      padding: 0;
-      margin: 0;
-      border: 1px solid var(--border);
-      border-top: none;
-      border-radius: 0 0 12px 12px;
-      background: color-mix(in srgb, var(--bg-surface) 92%, transparent);
-      color: var(--text-secondary);
-      cursor: pointer;
-      box-shadow: 0 2px 6px color-mix(in srgb, var(--shadow) 45%, transparent);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-      transition: background 0.15s, color 0.15s, border-color 0.15s;
-    }
-    .header-expand-handle::after {
-      content: "";
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: 0;
-      /* ~36px total touch height; invisible */
-      bottom: -15px;
-    }
-    .header-expand-handle:hover {
-      color: var(--accent);
-      border-color: var(--accent);
-    }
-    .header-expand-handle .material-symbols-outlined {
-      font-size: 20px;
-      line-height: 1;
-    }
-    .workspace-header-shell[data-expanded="1"] .header-expand-handle {
-      display: none;
-    }
-
-    .workspace-header {
-      display: none;
-      align-items: center;
-      justify-content: center;
+      position: relative;
       background-color: var(--bg-surface);
-      padding: 6px 8px;
+      padding: var(--wh-pad-y) var(--wh-pad-x);
       border: 1px solid var(--border);
       border-radius: 14px;
-      min-height: 48px;
+      min-height: calc(48px * var(--wh-h));
       flex-shrink: 0;
-      gap: 8px;
-      flex-wrap: wrap;
+      gap: var(--wh-gap);
+      flex-wrap: nowrap;
       overflow: visible;
-      position: relative;
       z-index: 1;
+      cursor: pointer;
+      transition: min-height 0.15s ease, padding 0.15s ease;
     }
-    .workspace-header-shell[data-expanded="1"] .workspace-header {
-      display: grid;
-      grid-template-columns: 40px 1fr 40px;
-      align-items: center;
-      justify-items: center;
+    .workspace-header .icon-btn {
+      width: 40px;
+      min-width: 40px;
+      height: calc(40px * var(--wh-h));
+      min-height: calc(40px * var(--wh-h));
+      border-radius: var(--wh-radius-btn);
+      cursor: pointer;
     }
-    .workspace-header .icon-btn { width: 40px; height: 40px; min-width: 40px; min-height: 40px; }
+    .workspace-header .icon-btn .material-symbols-outlined {
+      font-size: var(--wh-icon);
+      line-height: 1;
+    }
     .workspace-header .mobile-menu-btn {
-      grid-column: 1;
-      justify-self: start;
+      position: absolute;
+      left: var(--wh-pad-x);
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 2;
     }
     .workspace-header .chat-slots {
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
-      justify-self: center;
-      grid-column: 2;
-      gap: 6px;
+      gap: var(--wh-chip-gap);
       flex: 0 1 auto;
       flex-wrap: nowrap;
       min-width: 0;
-      max-width: 100%;
-    }
-    .workspace-header .header-collapse-btn {
-      grid-column: 3;
-      justify-self: end;
-      color: var(--text-secondary);
-    }
-    .header-collapse-btn:hover {
-      color: var(--danger);
-      border-color: var(--danger);
+      max-width: calc(100% - 48px);
     }
     /* Active chat doubles as topics dropdown (icon + topic name + caret) */
     .chat-chip.is-topic-dropdown {
       width: auto;
       min-width: 40px;
       max-width: min(148px, 36vw);
-      padding: 0 6px 0 8px;
+      padding: 0 calc(6px * var(--wh-h, 1)) 0 calc(8px * var(--wh-h, 1));
       gap: 4px;
-      border-radius: 12px;
+      border-radius: var(--wh-radius-chip-active, 12px);
+    }
+    .workspace-header-shell[data-size="slim"] .chat-chip.is-topic-dropdown {
+      padding: 0;
     }
     .workspace-header .chat-chip:not(.is-topic-dropdown) {
       flex-shrink: 0;
@@ -757,7 +724,7 @@
       font-variant-numeric: normal;
     }
     .chat-chip.is-topic-dropdown .chat-chip-caret {
-      font-size: 18px;
+      font-size: var(--wh-caret, 18px);
       opacity: 0.75;
       flex-shrink: 0;
     }
@@ -1043,10 +1010,10 @@
     }
     .chat-chip {
       width: 40px;
-      height: 40px;
       min-width: 40px;
-      min-height: 40px;
-      border-radius: 10px;
+      height: calc(40px * var(--wh-h, 1));
+      min-height: calc(40px * var(--wh-h, 1));
+      border-radius: var(--wh-radius-btn, 10px);
       border: 1px solid var(--border);
       background: var(--key-bg);
       color: var(--text-secondary);
@@ -1058,11 +1025,12 @@
       align-items: center;
       justify-content: center;
       padding: 0;
-      transition: background 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s;
+      overflow: hidden;
+      transition: background 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s, height 0.15s ease, border-radius 0.15s ease;
       flex-shrink: 0;
     }
     .chat-chip .material-symbols-outlined {
-      font-size: 22px;
+      font-size: var(--wh-icon, 22px);
       line-height: 1;
       font-weight: normal;
     }
@@ -1075,7 +1043,7 @@
     }
     .chat-chip.has-text:not(.active) { color: var(--text); }
     .chat-chip .chat-chip-icon {
-      font-size: 22px;
+      font-size: var(--wh-icon, 22px);
       line-height: 1;
       font-weight: normal;
     }
@@ -2096,50 +2064,9 @@
         padding-bottom: 0;
       }
 
-      /*
-       * Collapsed pull-tab is position:absolute against .app-main's padding box
-       * (top:0 = under the status bar / Dynamic Island). On mobile body padding
-       * is 0 and viewport-fit=cover + black-translucent draws edge-to-edge, so
-       * offset the floating shell by the safe-area inset explicitly.
-       */
-      .workspace-header-shell {
-        top: max(6px, env(safe-area-inset-top, 0px));
-        left: max(6px, env(safe-area-inset-left, 0px));
-        right: max(6px, env(safe-area-inset-right, 0px));
-      }
-      .workspace-header-shell[data-expanded="1"] {
-        top: auto;
-        left: auto;
-        right: auto;
-      }
-
-      .workspace-header-shell[data-expanded="1"] .workspace-header {
-        gap: 6px;
-        padding: 6px 8px;
-        min-height: 48px;
-      }
       .workspace-header .mobile-menu-btn .logo-mark {
-        font-size: 24px;
+        font-size: var(--wh-icon-lg, 24px);
         color: var(--accent);
-      }
-
-      /* Home-screen web app: never put the pull-tab in the system gesture strip */
-      @media (display-mode: standalone), (display-mode: fullscreen) {
-        .workspace-header-shell {
-          /* 47–59px typical on notched iPhones; floor at 44 if env() is wrong */
-          top: max(44px, env(safe-area-inset-top, 0px));
-        }
-        .workspace-header-shell[data-expanded="1"] {
-          top: auto;
-        }
-        /* Slightly taller hit target when chrome is floating under the island */
-        .header-expand-handle {
-          height: 28px;
-          min-height: 28px;
-        }
-        .header-expand-handle::after {
-          bottom: -18px;
-        }
       }
 
       /* Full-screen drawer is never the desktop "collapsed rail" — always show close */
@@ -2436,7 +2363,8 @@
 
     /* Prefer reduced motion */
     @media (prefers-reduced-motion: reduce) {
-      .header-expand-handle { transition: none; }
+      .workspace-header { transition: none; }
+      .chat-chip { transition: none; }
       .topic-org-tile { transition: none; }
       *, *::before, *::after {
         animation-duration: 0.01ms !important;
@@ -2453,148 +2381,150 @@
       .sound-button-play:active { transform: scale(0.96); }
     }
 
-/* ==================== ON-SCREEN KEYBOARD + PREDICTIONS ==================== */
-/* 4-row QWERTY; Speak/Clear stay on compose dock. Pred chips cap to viewport width. */
+/* ==================== ON-SCREEN KEYBOARD ==================== */
+/* Non-bottom rows size keys via --cols (set from JS = key count). */
+
 .osk-panel {
   display: none;
   flex-direction: column;
   gap: 6px;
-  /* No home-indicator clearance — panel sits flush with the screen bottom. */
-  padding: 8px;
+  width: 100%;
+  padding: 4px;
   background: var(--bg-surface);
   border-top: 1px solid var(--border);
   flex-shrink: 0;
-  user-select: none;
   max-height: min(56vh, 520px);
   overflow: hidden;
-  /* Sit at the bottom of the compose dock (system-keyboard style) */
-  width: 100%;
-  margin-top: 0;
+  user-select: none;
 }
-.osk-panel.osk-open,
-.osk-panel:not([hidden]) {
-  display: flex;
-}
-.osk-panel[hidden] {
-  display: none !important;
-}
+.osk-panel.osk-open { display: flex; }
+.osk-panel[hidden] { display: none !important; }
 
+/* Predictions — gap from --osk-pred-gap (set in js/osk.js PRED_GAP_PX) */
 .osk-top-strip {
   display: flex;
   align-items: center;
   min-height: 40px;
   min-width: 0;
-  width: 100%;
 }
-
 .osk-pred-row {
-  /* --osk-pred-gap set from JS (PRED_GAP_PX) so fit math and CSS share one value */
-  flex: 1 1 auto;
   display: flex;
-  flex-wrap: nowrap;
+  flex: 1;
+  align-items: center;
   gap: var(--osk-pred-gap, 6px);
+  min-width: 0;
+  min-height: 36px;
   overflow: hidden;
   padding: 2px 0;
-  min-height: 36px;
-  min-width: 0;
-  width: 100%;
-  align-items: center;
 }
 .osk-pred-chip {
   flex: 0 0 auto;
-  background: var(--key-bg);
-  color: var(--text);
+  min-height: 36px;
+  padding: 8px 14px;
   border: 1px solid var(--border);
   border-radius: 999px;
-  padding: 8px 14px;
+  background: var(--key-bg);
+  color: var(--text);
   font-size: 14px;
   font-weight: 600;
-  cursor: pointer;
-  min-height: 36px;
   white-space: nowrap;
+  cursor: pointer;
 }
-.osk-pred-chip:hover { background: var(--key-hover); border-color: var(--accent); color: var(--accent); }
+.osk-pred-chip:hover {
+  background: var(--key-hover);
+  border-color: var(--accent);
+  color: var(--accent);
+}
 .osk-pred-chip:active { background: var(--key-active); }
 .osk-pred-empty {
+  padding: 0 8px;
   font-size: 12px;
   color: var(--text-secondary);
-  padding: 0 8px;
 }
 
+/* Key grid */
 .osk-keys {
-  --osk-gap: 4px;
-  --osk-cols: 10;
-  /* Shared unit width so rows 1–3 keys match (10-col grid) */
-  --osk-key-w: calc((100% - (var(--osk-cols) - 1) * var(--osk-gap)) / var(--osk-cols));
+  --gap: 4px;
+  --fs-face: 18px;
+  --fs-chrome: 22px;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 .osk-row {
   display: flex;
-  gap: var(--osk-gap);
   justify-content: center;
+  gap: var(--gap);
 }
-/* Rows 1–3: every key is one equal column unit */
+/* Face rows: equal keys; --cols defaults to 10, JS sets actual count */
+.osk-row:not(.osk-row-bottom) {
+  --cols: 10;
+}
 .osk-row:not(.osk-row-bottom) .osk-key {
-  flex: 0 0 var(--osk-key-w);
-  width: var(--osk-key-w);
-  max-width: var(--osk-key-w);
+  flex: 0 0 calc((100% - (var(--cols) - 1) * var(--gap)) / var(--cols));
   min-width: 0;
 }
-/* Bottom row: proportional flex (space widest; symbols/cmd/enter wide; comma/period slim) */
-.osk-row-bottom .osk-key {
-  flex: 1 1 0;
-  min-width: 0;
-  max-width: none;
-  width: auto;
+/* Bottom row: proportional widths */
+.osk-row-bottom .osk-key { flex: 1 1 0; min-width: 0; }
+.osk-row-bottom .osk-key.wide { flex: 1.45 1 0; }
+.osk-row-bottom .osk-key.slim { flex: 0.78 1 0; }
+.osk-row-bottom .osk-key.space {
+  flex: 3.6 1 0;
+  color: var(--text-secondary);
 }
+
 .osk-key {
   min-height: 52px;
-  background: var(--key-bg);
-  color: var(--text);
   border: 1px solid transparent;
   border-radius: 8px;
-  font-size: 16px;
+  background: var(--key-bg);
+  color: var(--text);
+  font-size: var(--fs-face);
   font-weight: 500;
   cursor: pointer;
   touch-action: manipulation;
 }
 .osk-key:hover { background: var(--key-hover); }
 .osk-key:active { background: var(--key-active); }
-/* Change-keyboard, Cmd, Enter: wider than a standard letter key */
-.osk-row-bottom .osk-key.wide {
-  flex: 1.45 1 0;
-}
-/* Comma + period: equal, slightly narrower than standard */
-.osk-row-bottom .osk-key.slim {
-  flex: 0.78 1 0;
-}
-/* Space: widest key on the board */
-.osk-row-bottom .osk-key.space {
-  flex: 3.6 1 0;
-  font-size: 14px;
+.osk-key.action {
+  font-weight: 600;
   color: var(--text-secondary);
 }
-.osk-key.action { font-size: 14px; font-weight: 600; color: var(--text-secondary); }
+.osk-key[data-action="shift"],
+.osk-key[data-action="space"],
+.osk-key[data-action="backspace"],
+.osk-key[data-action="enter"] {
+  font-size: var(--fs-chrome);
+  font-weight: 700;
+}
 .osk-key.latched {
   background: color-mix(in srgb, var(--accent) 55%, var(--key-bg));
   color: #fff;
   font-weight: 700;
 }
+
 .compose-icon-btn.osk-toggle-active {
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
 @media (max-width: 600px) {
-  .osk-key { min-height: 44px; font-size: 15px; }
   .osk-panel { max-height: min(58vh, 480px); }
-  .osk-keys { --osk-gap: 3px; }
+  .osk-keys {
+    --gap: 3px;
+    --fs-face: 16px;
+    --fs-chrome: 20px;
+  }
+  .osk-key { min-height: 44px; }
 }
 
 @media (min-width: 901px) {
-  .osk-key { min-height: 58px; font-size: 17px; }
-  .osk-keys { gap: 8px; --osk-gap: 6px; }
-  .osk-panel { max-height: min(50vh, 560px); padding: 10px 12px; }
+  .osk-panel { max-height: min(50vh, 560px); }
+  .osk-keys {
+    --gap: 6px;
+    --fs-face: 18px;
+    --fs-chrome: 24px;
+    gap: 8px;
+  }
+  .osk-key { min-height: 58px; }
 }
