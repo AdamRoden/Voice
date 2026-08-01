@@ -39,7 +39,7 @@
       transition: background-color 0.2s ease, color 0.2s ease;
       overscroll-behavior: none;
       -webkit-text-size-adjust: 100%;
-      text-size-adjust: 100%;0
+      text-size-adjust: 100%;
       padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
     padding-bottom: env(safe-area-inset-bottom, 0px);
     }
