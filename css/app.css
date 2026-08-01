@@ -2216,10 +2216,6 @@
         transform: translateX(-105%);
         box-shadow: none;
         z-index: 120;
-        padding-top: env(safe-area-inset-top, 0px);
-        padding-bottom: env(safe-area-inset-bottom, 0px);
-        padding-left: env(safe-area-inset-left, 0px);
-        padding-right: env(safe-area-inset-right, 0px);
       }
       .sidebar.collapsed {
         width: 100%;
@@ -2238,7 +2234,6 @@
         flex: 0 0 auto;
         flex-direction: row;
         border-top: 1px solid var(--border);
-        padding: 6px 4px max(6px, env(safe-area-inset-bottom, 0px));
         gap: 2px;
         overflow: visible;
       }
@@ -2282,7 +2277,6 @@
        * - System keyboard (html.keyboard-open): zero inset; KB covers it.
        */
       .bottom-dock-wrap {
-        padding-bottom: env(safe-area-inset-bottom, 0px);
       }
       body.osk-visible .bottom-dock-wrap,
       html.keyboard-open .bottom-dock-wrap {
@@ -2308,7 +2302,6 @@
       .sidebar .logo-text { opacity: 1; width: auto; pointer-events: auto; }
       .sidebar.collapsed .logo-btn { justify-content: flex-start; padding: 6px 8px; gap: 10px; }
       .sidebar .sidebar-nav {
-        padding-bottom: max(6px, env(safe-area-inset-bottom, 0px));
       }
 
       .sound-canvas {
