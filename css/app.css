@@ -40,7 +40,7 @@
       overscroll-behavior: none;
       -webkit-text-size-adjust: 100%;
       text-size-adjust: 100%;
-      padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+      padding: 0px;
     }
     body.modal-open { overflow: hidden; }
 
