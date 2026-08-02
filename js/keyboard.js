@@ -3,10 +3,10 @@
  * compose dock sits on the keyboard top. One strategy — viewport frame + CSS
  * (html.keyboard-open); no multi-timeout scroll fights.
  *
- * iOS home-screen PWAs: never leave a black band under a short body. Mobile
- * shell is always fixed to the full layout viewport unless the *system*
- * keyboard is open (then pin to visualViewport). Custom OSK must not pin to
- * a short visualViewport or home-indicator padding stacks as gray+black bars.
+ * Closed shell: always fixed to the full layout viewport (L/R/B screen edges;
+ * no home-indicator / side safe-area padding). System soft keyboard: pin to
+ * visualViewport. Custom OSK must not pin to a short visualViewport or a
+ * black band appears under the panel.
  */
 (function (global) {
   "use strict";
@@ -93,15 +93,11 @@
     }
 
     /**
-     * Fill the layout viewport edge-to-edge (mobile). Avoids black bands under
-     * the custom OSK when 100dvh / residual pin leaves a short body.
-     * Prefer top/bottom inset over a pixel height so we track the real viewport.
+     * Fill the layout viewport edge-to-edge on L/R/B (all layouts). Avoids
+     * black bands under the OSK when 100dvh / residual pin leaves a short body.
+     * Prefer top/right/bottom/left inset over a pixel height.
      */
     function fillClosedShell() {
-      if (!isMobileLayout()) {
-        clearBodyPinStyles();
-        return;
-      }
       document.body.style.position = "fixed";
       document.body.style.top = "0";
       document.body.style.left = "0";
@@ -151,14 +147,8 @@
         }
       }
 
-      // Desktop: leave layout alone unless system keyboard is open.
-      if (!isMobileLayout() && !pinShell) {
-        clearBodyPinStyles();
-        return;
-      }
-
-      // Custom OSK (and no handoff pin): full layout shell — never short vv.
-      if (customOsk && !forcePin) {
+      // Custom OSK / idle: full layout shell — L/R/B flush, never short vv.
+      if (!pinShell || (customOsk && !forcePin)) {
         fillClosedShell();
         return;
       }
@@ -181,11 +171,7 @@
         return;
       }
 
-      if (isMobileLayout()) {
-        fillClosedShell();
-      } else {
-        clearBodyPinStyles();
-      }
+      fillClosedShell();
     }
 
     /**

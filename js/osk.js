@@ -50,6 +50,8 @@
       act("symbols", symbolsLabel, "wide"),
       actIcon("ctrl", "keyboard_command_key", "wide"),
       actIcon("space", "space_bar", "space"),
+      actIcon("arrowLeft", "keyboard_arrow_left"),
+      actIcon("arrowRight", "keyboard_arrow_right"),
       actIcon("enter", "keyboard_return", "wide")
     ];
   }
@@ -82,11 +84,12 @@
   }
 
   function layoutSym(shift) {
-    /* Digits + bksp; r2/r3 omit alpha-owned punct (; ' , . /) */
-    const r2 = chars(shift ? "`~^|\\{}±§" : "@#$%&*()-+");
+    /* Digits shift to US top-row punct (!@#$…); r2/r3 omit alpha-owned punct (; ' , . /) */
+    const r1 = chars(shift ? "!@#$%^&*()" : "1234567890");
+    const r2 = chars(shift ? "`~^|\\{}±§" : "!@#$%&*()-+");
     const r3 = chars(shift ? "·°¶…—" : "_=[]<>");
     return [
-      face([...chars("1234567890"), actIcon("backspace", "backspace")]),
+      face([...r1, actIcon("backspace", "backspace")]),
       face(r2, 0.3),
       face([actIcon("shift", "shift"), ...r3]),
       bottomRow("ABC")
@@ -184,7 +187,9 @@
     space: "Space",
     backspace: "Backspace",
     enter: "Enter",
-    symbols: "Symbols"
+    symbols: "Symbols",
+    arrowLeft: "Move caret left",
+    arrowRight: "Move caret right"
   };
 
   function renderKey(k) {
@@ -268,6 +273,14 @@
       consumeModifiers();
       return;
     }
+    if (action === "arrowLeft") {
+      moveCaret(-1);
+      return;
+    }
+    if (action === "arrowRight") {
+      moveCaret(1);
+      return;
+    }
     if (action === "enter") {
       insert("\n");
       consumeModifiers();
@@ -331,6 +344,23 @@
     while (i > 0 && /\s/.test(text[i - 1])) i--;
     while (i > 0 && !/\s/.test(text[i - 1])) i--;
     return i;
+  }
+
+  /** Move caret by delta (collapses a selection to the near edge first). */
+  function moveCaret(delta) {
+    if (!opts || typeof opts.getText !== "function" || typeof opts.setText !== "function") return;
+    const text = opts.getText();
+    const caret = opts.getCaret ? opts.getCaret() : { start: text.length, end: text.length };
+    let start = caret.start != null ? caret.start : text.length;
+    let end = caret.end != null ? caret.end : start;
+    let pos;
+    if (start !== end) {
+      pos = delta < 0 ? start : end;
+    } else {
+      pos = Math.max(0, Math.min(text.length, start + delta));
+    }
+    opts.setText(text, pos);
+    if (opts.onChange) opts.onChange();
   }
 
   function doBackspace(ctrl) {
