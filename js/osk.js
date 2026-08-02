@@ -84,7 +84,11 @@
   }
 
   function layoutSym(shift) {
-    /* Digits shift to US top-row punct (!@#$…); r2/r3 omit alpha-owned punct (; ' , . /) */
+    /*
+     * Digits shift to US top-row punct (!@#$…).
+     * `!` is dual-homed: shift+1 and unshifted r2[0] for one-tap access.
+     * r2/r3 omit alpha-owned punct (; ' , . /).
+     */
     const r1 = chars(shift ? "!@#$%^&*()" : "1234567890");
     const r2 = chars(shift ? "`~^|\\{}±§" : "!@#$%&*()-+");
     const r3 = chars(shift ? "·°¶…—" : "_=[]<>");
@@ -244,58 +248,57 @@
     if (dirty) renderKeys();
   }
 
-  function onKeyClick(e) {
-    const btn = e.currentTarget;
-    const action = btn.dataset.action;
-    if (action === "backspace") {
+  /** Action key handlers — keep onKeyClick a thin dispatcher. */
+  const ACTION_HANDLERS = {
+    backspace() {
       doBackspace(isCtrl);
       consumeModifiers();
-      return;
-    }
-    if (action === "shift") {
+    },
+    shift() {
       isShift = !isShift;
       renderKeys();
-      return;
-    }
-    if (action === "ctrl") {
+    },
+    ctrl() {
       isCtrl = !isCtrl;
       renderKeys();
-      return;
-    }
-    if (action === "symbols") {
+    },
+    symbols() {
       isSymbol = !isSymbol;
       isShift = false;
       renderKeys();
-      return;
-    }
-    if (action === "space") {
+    },
+    space() {
       insert(" ");
       consumeModifiers();
-      return;
-    }
-    if (action === "arrowLeft") {
+    },
+    arrowLeft() {
       moveCaret(-1);
-      return;
-    }
-    if (action === "arrowRight") {
+    },
+    arrowRight() {
       moveCaret(1);
-      return;
-    }
-    if (action === "enter") {
+    },
+    enter() {
       insert("\n");
       consumeModifiers();
+    }
+  };
+
+  function onKeyClick(e) {
+    const btn = e.currentTarget;
+    const action = btn.dataset.action;
+    if (action && ACTION_HANDLERS[action]) {
+      ACTION_HANDLERS[action]();
       return;
     }
     const chVal = btn.dataset.char;
-    if (chVal != null) {
-      if (isCtrl) {
-        handleCtrlChord(chVal);
-        consumeModifiers();
-        return;
-      }
-      insert(chVal);
+    if (chVal == null) return;
+    if (isCtrl) {
+      handleCtrlChord(chVal);
       consumeModifiers();
+      return;
     }
+    insert(chVal);
+    consumeModifiers();
   }
 
   function handleCtrlChord(chVal) {
@@ -348,7 +351,7 @@
 
   /** Move caret by delta (collapses a selection to the near edge first). */
   function moveCaret(delta) {
-    if (!opts || typeof opts.getText !== "function" || typeof opts.setText !== "function") return;
+    if (!opts || typeof opts.getText !== "function") return;
     const text = opts.getText();
     const caret = opts.getCaret ? opts.getCaret() : { start: text.length, end: text.length };
     let start = caret.start != null ? caret.start : text.length;
@@ -359,7 +362,13 @@
     } else {
       pos = Math.max(0, Math.min(text.length, start + delta));
     }
-    opts.setText(text, pos);
+    if (typeof opts.setCaret === "function") {
+      opts.setCaret(pos);
+    } else if (typeof opts.setText === "function") {
+      opts.setText(text, pos);
+    } else {
+      return;
+    }
     if (opts.onChange) opts.onChange();
   }
 

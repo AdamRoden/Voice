@@ -3,10 +3,10 @@
  * compose dock sits on the keyboard top. One strategy — viewport frame + CSS
  * (html.keyboard-open); no multi-timeout scroll fights.
  *
- * Closed shell: always fixed to the full layout viewport (L/R/B screen edges;
- * no home-indicator / side safe-area padding). System soft keyboard: pin to
- * visualViewport. Custom OSK must not pin to a short visualViewport or a
- * black band appears under the panel.
+ * Two frames only:
+ *   closed — fixed inset 0 (layout viewport). Standalone min-height/paint is CSS.
+ *   keyboard — pin body to visualViewport while the *system* soft keyboard is up.
+ * Custom OSK never uses the keyboard frame (avoids short vv + black band).
  */
 (function (global) {
   "use strict";
@@ -38,39 +38,6 @@
     return inset > 120 || pan > 80;
   }
 
-  /**
-   * Tallest reliable layout height for a closed shell.
-   * iPad landscape / home-screen PWAs often report a short 100dvh or
-   * visualViewport while the physical display is taller — that leaves a
-   * pure-black band under the app. Prefer the max of every useful signal.
-   */
-  function closedShellHeight() {
-    const layoutH = window.innerHeight || 0;
-    const clientH = document.documentElement ? document.documentElement.clientHeight || 0 : 0;
-    const vv = window.visualViewport;
-    // Extent of the visual viewport within the layout viewport (not just vv.height).
-    const vvExtent = vv ? Math.ceil((vv.offsetTop || 0) + vv.height) : 0;
-    /*
-     * iOS screen.width/height usually stay in portrait coordinates. Match the
-     * current orientation so landscape can use the short side as a floor
-     * (covers home-indicator bands when 100dvh is short) without crushing
-     * portrait to the short side.
-     */
-    let screenH = 0;
-    try {
-      if (window.screen) {
-        const sw = window.screen.width || 0;
-        const sh = window.screen.height || 0;
-        if (sw && sh) {
-          const landscape = (window.innerWidth || 0) > (window.innerHeight || 0);
-          screenH = landscape ? Math.min(sw, sh) : Math.max(sw, sh);
-        }
-      }
-    } catch (_) {}
-    // Prefer the larger reading; never use a short vv alone (black band).
-    return Math.max(1, layoutH, clientH, vvExtent, screenH);
-  }
-
   function resetDocumentScroll() {
     try {
       if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
@@ -79,20 +46,25 @@
     } catch (_) {}
   }
 
-  function clearBodyPinStyles() {
-    document.body.style.position = "";
-    document.body.style.top = "";
-    document.body.style.left = "";
-    document.body.style.right = "";
-    document.body.style.bottom = "";
-    document.body.style.width = "";
-    document.body.style.height = "";
-    document.body.style.minHeight = "";
-    document.body.style.maxHeight = "";
-    document.body.style.transform = "";
-    if (document.documentElement) {
-      document.documentElement.style.height = "";
-      document.documentElement.style.minHeight = "";
+  /** Clear every inline shell property this module may set (closed or keyboard). */
+  function clearShellInlineStyles() {
+    const b = document.body;
+    if (b) {
+      b.style.position = "";
+      b.style.top = "";
+      b.style.left = "";
+      b.style.right = "";
+      b.style.bottom = "";
+      b.style.width = "";
+      b.style.height = "";
+      b.style.minHeight = "";
+      b.style.maxHeight = "";
+      b.style.transform = "";
+    }
+    const root = document.documentElement;
+    if (root) {
+      root.style.height = "";
+      root.style.minHeight = "";
     }
   }
 
@@ -117,34 +89,57 @@
       settleTimers = [];
     }
 
+    function isCustomOskVisible() {
+      return !!(document.body && document.body.classList.contains("osk-visible"));
+    }
+
     /**
-     * Fill the display edge-to-edge on L/R/B (all layouts). Uses an explicit
-     * pixel height (max of inner/client/vv/screen) because iPad landscape
-     * often leaves a black strip when body is only top/bottom:0 against a
-     * short layout viewport.
+     * Closed frame: layout viewport, L/R/B flush. No screen.* / pixel height —
+     * browser chrome stays correct; standalone home-indicator paint is CSS.
      */
-    function fillClosedShell() {
-      const h = closedShellHeight();
-      const root = document.documentElement;
-      if (root) {
-        root.style.height = `${h}px`;
-        root.style.minHeight = `${h}px`;
-      }
+    function applyClosedShell() {
+      clearShellInlineStyles();
       document.body.style.position = "fixed";
       document.body.style.top = "0";
       document.body.style.left = "0";
       document.body.style.right = "0";
-      document.body.style.bottom = "auto";
+      document.body.style.bottom = "0";
       document.body.style.width = "100%";
-      document.body.style.height = `${h}px`;
-      document.body.style.minHeight = `${h}px`;
+      document.body.style.height = "auto";
+      document.body.style.minHeight = "0";
       document.body.style.maxHeight = "none";
       document.body.style.transform = "";
       resetDocumentScroll();
     }
 
-    function isCustomOskVisible() {
-      return !!(document.body && document.body.classList.contains("osk-visible"));
+    /** System soft keyboard: pin body to visualViewport (clears closed-frame styles first). */
+    function applyKeyboardPin(vv) {
+      clearShellInlineStyles();
+      const vvH = Math.max(1, Math.round(vv.height));
+      const w = Math.max(1, Math.round(vv.width));
+      const top = Math.round(vv.offsetTop || 0);
+      const left = Math.round(vv.offsetLeft || 0);
+      document.body.style.position = "fixed";
+      document.body.style.top = `${top}px`;
+      document.body.style.left = `${left}px`;
+      document.body.style.width = `${w}px`;
+      document.body.style.height = `${vvH}px`;
+      document.body.style.maxHeight = `${vvH}px`;
+      document.body.style.transform = "";
+      resetDocumentScroll();
+    }
+
+    /**
+     * Prefer closed shell. Only pin for system soft keyboard (or OSK→system handoff).
+     * Custom OSK always stays on the closed frame.
+     */
+    function shouldPinToKeyboard(state) {
+      if (state.forcePin) return true;
+      if (state.customOsk) return false;
+      if (state.keyboardOpen) return true;
+      // Mobile: pin early while composing so the shell tracks the system KB open.
+      if (isMobileLayout() && state.composing) return true;
+      return false;
     }
 
     function sync() {
@@ -156,21 +151,12 @@
       const forcePin = Date.now() < forcePinUntil;
       const softKb = isSoftKeyboardOpen();
       const customOsk = isCustomOskVisible();
-      // Dock chrome counts while handing off to the system keyboard.
       const composing = typing || (dockChrome && (forcePin || softKb));
       const keyboardOpen = softKb && (typing || forcePin || dockChrome);
-      /*
-       * Pin only for the *system* soft keyboard (or OSK→system handoff).
-       * Never pin while the custom OSK is open unless forcePin (handoff):
-       * a false softKb detection with the field focused was shortening the
-       * body to visualViewport and stacking home-indicator padding on top
-       * (gray OSK strip + black gap under it).
-       */
-      const pinShell = forcePin
-        || (!customOsk && (keyboardOpen || (isMobileLayout() && composing)));
+      const pin = shouldPinToKeyboard({ forcePin, customOsk, keyboardOpen, composing });
 
       if (root) {
-        root.classList.toggle("keyboard-open", !!pinShell);
+        root.classList.toggle("keyboard-open", !!pin);
         if (vv) {
           root.style.setProperty("--vv-height", `${Math.max(1, Math.round(vv.height))}px`);
           root.style.setProperty("--vv-offset-top", `${Math.round(vv.offsetTop || 0)}px`);
@@ -180,31 +166,11 @@
         }
       }
 
-      // Custom OSK / idle: full layout shell — L/R/B flush, never short vv.
-      if (!pinShell || (customOsk && !forcePin)) {
-        fillClosedShell();
+      if (pin && vv) {
+        applyKeyboardPin(vv);
         return;
       }
-
-      if (pinShell && vv) {
-        const vvH = Math.max(1, Math.round(vv.height));
-        const w = Math.max(1, Math.round(vv.width));
-        const top = Math.round(vv.offsetTop || 0);
-        const left = Math.round(vv.offsetLeft || 0);
-        document.body.style.position = "fixed";
-        document.body.style.top = `${top}px`;
-        document.body.style.left = `${left}px`;
-        document.body.style.right = "";
-        document.body.style.bottom = "";
-        document.body.style.width = `${w}px`;
-        document.body.style.height = `${vvH}px`;
-        document.body.style.maxHeight = `${vvH}px`;
-        document.body.style.transform = "";
-        resetDocumentScroll();
-        return;
-      }
-
-      fillClosedShell();
+      applyClosedShell();
     }
 
     /**

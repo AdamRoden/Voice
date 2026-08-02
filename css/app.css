@@ -18,21 +18,26 @@
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
 /*
  * Full-viewport shell (incl. iOS home-screen / standalone).
- * L/R/B: always flush to the screen edges (no safe-area inset).
- * Top only: --safe-top for status bar / notch.
- * iPad landscape: 100dvh / fixed top+bottom:0 often stop short of the home
- * indicator → pure black under the OSK. Use lvh + JS pixel height (keyboard.js).
- * Paint html/body the app color so any residual gap is never pure black.
+ * L/R/B: flush to screen edges (no safe-area inset). Top only: --safe-top.
+ * Geometry: one closed frame — fixed inset 0 + 100dvh. keyboard.js re-asserts
+ * inset 0 when idle; pins to visualViewport only for the system soft keyboard.
+ * Standalone: 100lvh floor + html paint cover home-indicator gaps (no JS screen.*).
  */
-html { width: 100%; height: 100%; min-height: 100%; min-height: -webkit-fill-available; min-height: 100dvh; min-height: 100lvh; margin: 0; overflow: hidden; background-color: var(--bg-main); }
-/* When the shell is short of the display (iPad landscape), match residual gap to OSK surface not pure black. */
+html { width: 100%; height: 100%; min-height: 100%; min-height: -webkit-fill-available; min-height: 100dvh; margin: 0; overflow: hidden; background-color: var(--bg-main); }
+/* Residual gap under a short shell matches OSK surface, not pure black. */
 html:has(body.osk-visible) { background-color: var(--bg-surface); }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
-body { background-color: var(--bg-main); color: var(--text); display: flex; flex-direction: column; position: fixed; top: 0; right: 0; bottom: 0; left: 0; width: 100%; height: auto; min-height: 100%; min-height: -webkit-fill-available; min-height: 100dvh; min-height: 100lvh; max-height: none; margin: 0; overflow: hidden; transition: background-color 0.2s ease, color 0.2s ease; overscroll-behavior: none; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; padding: var(--safe-top) 0 0; }
+body { background-color: var(--bg-main); color: var(--text); display: flex; flex-direction: column; position: fixed; top: 0; right: 0; bottom: 0; left: 0; width: 100%; height: auto; min-height: 100%; min-height: -webkit-fill-available; min-height: 100dvh; max-height: none; margin: 0; overflow: hidden; transition: background-color 0.2s ease, color 0.2s ease; overscroll-behavior: none; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; padding: var(--safe-top) 0 0; }
 body.modal-open { overflow: hidden; }
+/* Home-screen only: large viewport (no browser chrome). Browser tabs stay on 100dvh. */
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  html { min-height: 100lvh; height: 100lvh; }
+  body { min-height: 100lvh; }
+  html:has(body.osk-visible) { background-color: var(--bg-surface); }
+}
 /* Only in-flow column under body (shell + OSK). Backdrop / modals are position:fixed outside this tree. */
 .app-layout { flex: 1 1 auto; min-height: 0; min-width: 0; width: 100%; max-width: 100%; display: flex; flex-direction: column; overflow: hidden; }
 /* Sidebar + main; bottom edge meets the full-width OSK. */

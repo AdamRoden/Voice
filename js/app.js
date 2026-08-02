@@ -349,6 +349,16 @@
         try { VoiceOsk.schedulePredict(); } catch (_) {}
       }
     }
+    /** Caret-only move (no text mutation side effects beyond chip refresh). */
+    function setCaret(pos) {
+      const len = displayInput.value.length;
+      const p = Math.max(0, Math.min(pos == null ? len : pos, len));
+      try { displayInput.setSelectionRange(p, p); } catch (_) {}
+      savedDisplaySelection = { start: p, end: p };
+      if (window.VoiceOsk && VoiceOsk.isVisible() && typeof VoiceOsk.schedulePredict === "function") {
+        try { VoiceOsk.schedulePredict(); } catch (_) {}
+      }
+    }
 
     // Ports: late modules close over these; methods call current instances (no rebind).
     const ports = {
@@ -446,6 +456,7 @@
         displayInput,
         getText,
         setText,
+        setCaret,
         getCaret: getDisplayCaretRange,
         focus: focusDisplayInput,
         composeInsert,
