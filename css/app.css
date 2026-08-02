@@ -8,7 +8,7 @@
  */
 /* ==================== 1. TOKENS & THEMES ==================== */
 /* Shared design tokens (themes override colors below) */
-:root { --sound-row-height: 44px; --sidebar-width: 300px; --sidebar-rail-width: 52px; --touch-min: 44px; --gap-xs: 2px; --gap-sm: 4px; --gap-md: 6px; --gap-lg: 8px; --gap-xl: 10px; --gap-2xl: 12px; --pad-sm: 6px; --pad-md: 8px; --pad-lg: 10px; --pad-xl: 12px; --radius-xs: 4px; --radius-sm: 6px; --radius-md: 8px; --radius-lg: 10px; --radius-xl: 14px; --radius-pill: 999px; --z-header: 30; --z-float: 40; --z-float-shift: 50; --z-compose-raised: 60; --z-sidebar-backdrop: 99; --z-sidebar: 100; --z-osk: 110; --z-mobile-drawer: 120; --z-header-elevated: 400; --z-header-menu: 450; --z-voices-panel: 1500; --z-modal-overlay: 2000; --z-modal: 2001; --ease-standard: cubic-bezier(0.4, 0, 0.2, 1); --duration-fast: 0.15s; --duration-normal: 0.2s; --icon-fill: 0; --icon-wght: 400; --icon-grad: 0; --icon-opsz: 24; --safe-top: env(safe-area-inset-top, 0px); --safe-right: env(safe-area-inset-right, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px); --safe-left: env(safe-area-inset-left, 0px); }
+:root { --sound-row-height: 44px; --sidebar-width: 300px; --sidebar-rail-width: 52px; --touch-min: 44px; --gap-xs: 2px; --gap-sm: 4px; --gap-md: 6px; --gap-lg: 8px; --gap-xl: 10px; --gap-2xl: 12px; --pad-sm: 6px; --pad-md: 8px; --pad-lg: 10px; --pad-xl: 12px; --radius-xs: 4px; --radius-sm: 6px; --radius-md: 8px; --radius-lg: 10px; --radius-xl: 14px; --radius-pill: 999px; --z-header: 30; --z-float: 40; --z-float-shift: 50; --z-compose-raised: 60; --z-sidebar-backdrop: 99; --z-sidebar: 100; --z-osk: 110; --z-mobile-drawer: 120; --z-header-elevated: 400; --z-header-menu: 450; --z-voices-panel: 1500; --z-modal-overlay: 2000; --z-modal: 2001; --ease-standard: cubic-bezier(0.4, 0, 0.2, 1); --duration-fast: 0.15s; --duration-normal: 0.2s; --icon-fill: 0; --icon-wght: 400; --icon-grad: 0; --icon-opsz: 24; --safe-top: env(safe-area-inset-top, 0px); }
 /* Dark theme (default) */
 :root,
 :root[data-theme="dark"] { --bg-main: #131314; --bg-surface: #1e1f20; --bg-surface-hover: #282a2c; --bg-surface-active: #333537; --border: #333537; --accent: #8ab4f8; --accent-hover: #aecbfa; --text: #e3e3e3; --text-secondary: #8e918f; --key-bg: #282a2c; --key-hover: #333537; --key-active: #444746; --danger: #f2b8b5; --danger-bg: #601410; --shadow: rgba(0, 0, 0, 0.4); color-scheme: dark; }
@@ -22,7 +22,7 @@ html { height: 100%; height: -webkit-fill-available; height: 100dvh; background-
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
-body { background-color: var(--bg-main); color: var(--text); display: flex; flex-direction: column; min-height: 100%; min-height: -webkit-fill-available; min-height: 100dvh; height: 100%; height: -webkit-fill-available; height: 100dvh; overflow: hidden; transition: background-color 0.2s ease, color 0.2s ease; overscroll-behavior: none; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left); }
+body { background-color: var(--bg-main); color: var(--text); display: flex; flex-direction: column; min-height: 100%; min-height: -webkit-fill-available; min-height: 100dvh; height: 100%; height: -webkit-fill-available; height: 100dvh; overflow: hidden; transition: background-color 0.2s ease, color 0.2s ease; overscroll-behavior: none; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; padding: var(--safe-top) 0 0; }
 body.modal-open { overflow: hidden; }
 /* Only in-flow column under body (shell + OSK). Backdrop / modals are position:fixed outside this tree. */
 .app-layout { flex: 1 1 auto; min-height: 0; min-width: 0; width: 100%; display: flex; flex-direction: column; overflow: hidden; }
@@ -459,8 +459,8 @@ body:not([data-feat-compose-history="1"]) #compose-history-btn { display: none !
 .audio-action-btn.play { color: var(--accent); border-color: var(--accent); }
 /* ==================== 7. ON-SCREEN KEYBOARD ==================== */
 /* Full-width bottom panel of <body> (left edge → right edge). */
-/* Non-bottom rows size keys via --cols (set from JS = key count). */
-.osk-panel { display: none; flex-direction: column; gap: var(--gap-md); width: 100%; flex: 0 0 auto; flex-shrink: 0; padding: 4px; padding-left: max(4px, env(safe-area-inset-left, 0px)); padding-right: max(4px, env(safe-area-inset-right, 0px)); padding-bottom: max(4px, env(safe-area-inset-bottom, 0px)); background: var(--bg-surface); border-top: 1px solid var(--border); border-radius: 0; max-height: min(56vh, 520px); overflow: hidden; user-select: none; z-index: var(--z-osk); box-sizing: border-box; }
+/* Face-row units: --u / --row-units / --gaps from js/osk.js. */
+.osk-panel { display: none; flex-direction: column; gap: var(--gap-md); width: 100%; flex: 0 0 auto; flex-shrink: 0; padding: 4px; background: var(--bg-surface); border-top: 1px solid var(--border); border-radius: 0; max-height: min(56vh, 520px); overflow: hidden; user-select: none; z-index: var(--z-osk); box-sizing: border-box; }
 .osk-panel.osk-open { display: flex; }
 .osk-panel[hidden] { display: none !important; }
 /* System soft keyboard: hide custom OSK panel entirely from layout. */
@@ -475,9 +475,13 @@ html.keyboard-open .osk-panel { display: none !important; }
 /* Key grid — one font size/weight for every key (letters, chrome, icons) */
 .osk-keys { --gap: var(--gap-sm); --fs-key: 18px; display: flex; flex-direction: column; gap: var(--gap-md); }
 .osk-row { display: flex; justify-content: center; gap: var(--gap); }
-/* Face rows: equal keys; --cols defaults to 10, JS sets actual count */
-.osk-row:not(.osk-row-bottom) { --cols: 10; }
-.osk-row:not(.osk-row-bottom) .osk-key { flex: 0 0 calc((100% - (var(--cols) - 1) * var(--gap)) / var(--cols)); min-width: 0; }
+/* Face rows: letter unit = 1; ;/' = 0.85; indent spacer uses --u */
+.osk-row:not(.osk-row-bottom) .osk-key,
+.osk-row:not(.osk-row-bottom) .osk-indent {
+  flex: 0 0 calc((100% - var(--gaps, 0) * var(--gap)) * var(--u, 1) / var(--row-units, 1));
+  min-width: 0;
+}
+.osk-indent { pointer-events: none; visibility: hidden; }
 /* Bottom row: proportional widths */
 .osk-row-bottom .osk-key { flex: 1 1 0; min-width: 0; }
 .osk-row-bottom .osk-key.wide { flex: 1.45 1 0; }
@@ -491,11 +495,19 @@ html.keyboard-open .osk-panel { display: none !important; }
 .osk-key.latched { background: color-mix(in srgb, var(--accent) 55%, var(--key-bg)); color: #fff; }
 .compose-icon-btn.osk-toggle-active { color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
 
+/*
+ * Phones: system keyboard only (desktop + iPad keep custom OSK).
+ * Breakpoint must match js/osk.js PHONE_OSK_MQ (max-width: 600px).
+ * body.osk-unavailable is set by VoiceOsk when the same MQ matches.
+ */
 @media (max-width: 600px) {
-  .osk-panel { max-height: min(58vh, 480px); }
-.osk-keys { --gap: 3px; --fs-key: 16px; }
-.osk-key { min-height: var(--touch-min); }
+  .osk-panel,
+  .osk-panel.osk-open,
+  #compose-osk-btn { display: none !important; }
 }
+body.osk-unavailable .osk-panel,
+body.osk-unavailable .osk-panel.osk-open,
+body.osk-unavailable #compose-osk-btn { display: none !important; }
 
 @media (min-width: 901px) {
   .osk-panel { max-height: min(50vh, 560px); }
@@ -582,7 +594,7 @@ a.modal-btn { text-decoration: none; display: flex; align-items: center; justify
 .tag-insert-empty { grid-column: 1 / -1; padding: 16px; text-align: center; color: var(--text-secondary); font-size: 13px; }
 .tag-list-input { min-height: 72px; resize: vertical; font-size: 14px; line-height: 1.4; font-family: inherit; }
 /* Voices Drawer (Left Side Positioned with Right Shadow) */
-.voices-panel { position: fixed; top: 0; left: -360px; width: min(360px, 100vw); height: 100%; height: 100dvh; background-color: var(--bg-surface); border-right: 1px solid var(--border); box-shadow: 8px 0 24px var(--shadow); transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 16px; padding-top: max(16px, env(safe-area-inset-top, 0px)); padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: var(--gap-2xl); overflow: hidden; z-index: var(--z-voices-panel); }
+.voices-panel { position: fixed; top: 0; left: -360px; width: min(360px, 100vw); height: 100%; height: 100dvh; background-color: var(--bg-surface); border-right: 1px solid var(--border); box-shadow: 8px 0 24px var(--shadow); transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 16px; padding-top: max(16px, env(safe-area-inset-top, 0px)); display: flex; flex-direction: column; gap: var(--gap-2xl); overflow: hidden; z-index: var(--z-voices-panel); }
 .voices-panel.open { left: 0; }
 .voices-panel-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; gap: var(--gap-lg); }
 .voices-panel-title { font-size: 16px; font-weight: 600; }
@@ -635,25 +647,18 @@ body { padding: 0; position: fixed; top: 0; right: 0; bottom: 0; left: 0; width:
 .mobile-only { display: flex !important; }
 .sidebar-backdrop { display: block; }
 /* Drawer is positioned inside .app-shell (not the full viewport) so its bottom ends at the top of the full-width OSK panel. */
-.sidebar { position: absolute; top: 0; left: 0; bottom: 0; right: 0; width: 100%; max-width: none; height: auto; border-right: none; transform: translateX(-105%); box-shadow: none; z-index: var(--z-mobile-drawer); padding-top: env(safe-area-inset-top, 0px); padding-bottom: 0; padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
-body:not(.osk-visible) .sidebar { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.sidebar { position: absolute; top: 0; left: 0; bottom: 0; right: 0; width: 100%; max-width: none; height: auto; border-right: none; transform: translateX(-105%); box-shadow: none; z-index: var(--z-mobile-drawer); padding-top: env(safe-area-inset-top, 0px); }
 .sidebar.collapsed { width: 100%; width: 100vw; max-width: none; }
 /* Always full drawer content on mobile (not icon rail) */
 .sidebar.collapsed .sidebar-header { display: flex; justify-content: flex-start; padding: 8px 10px; }
 .sidebar.collapsed .logo-text { opacity: 1; width: auto; pointer-events: auto; }
 .sidebar.collapsed .sidebar-content { display: flex; }
 .sidebar.collapsed .sidebar-nav { flex: 0 0 auto; flex-direction: row; border-top: 1px solid var(--border); padding: 6px 4px; gap: var(--gap-xs); overflow: visible; }
-/* Only clear the home indicator when OSK is hidden (shell fills viewport). */
-body:not(.osk-visible) .sidebar.collapsed .sidebar-nav { padding-bottom: max(6px, env(safe-area-inset-bottom, 0px)); }
 .sidebar.collapsed .sidebar-nav-btn { flex: 1 1 0; width: auto; min-height: 52px; padding: 8px 2px; border-radius: var(--radius-lg); border-bottom: none; border-left: none; gap: var(--gap-xs); flex-direction: column; }
 .sidebar.collapsed .sidebar-nav-btn.active { border-left: none; background-color: var(--bg-surface-active); }
 .sidebar.collapsed .sidebar-nav-label { display: block; font-size: 10px; }
 .sidebar.mobile-open { transform: translateX(0); box-shadow: 12px 0 40px var(--shadow); }
-.app-main { width: 100%; padding: var(--pad-sm); padding-top: max(6px, env(safe-area-inset-top, 0px)); padding-bottom: 0; padding-left: max(6px, env(safe-area-inset-left, 0px)); padding-right: max(6px, env(safe-area-inset-right, 0px)); gap: var(--gap-md); }
-/* Bottom safe-area: - No OSK / no system KB: dock-wrap clears the home indicator. - Custom OSK: dock + OSK padding have no home-indicator inset (flush edge). - System keyboard (html.keyboard-open): zero inset; KB covers it. */
-.bottom-dock-wrap { padding-bottom: env(safe-area-inset-bottom, 0px); }
-body.osk-visible .bottom-dock-wrap,
-  html.keyboard-open .bottom-dock-wrap { padding-bottom: 0; }
+.app-main { width: 100%; padding: var(--pad-sm); padding-top: max(6px, env(safe-area-inset-top, 0px)); padding-bottom: 0; padding-left: var(--pad-sm); padding-right: var(--pad-sm); gap: var(--gap-md); }
 .workspace-header .mobile-menu-btn .logo-mark { font-size: var(--wh-icon-lg, 24px); color: var(--accent); }
 /* Full-screen drawer is never the desktop "collapsed rail" — always show close */
 .sidebar.collapsed .sidebar-collapse-btn,
@@ -664,7 +669,6 @@ body.osk-visible .bottom-dock-wrap,
   .sidebar .logo-text { opacity: 1; width: auto; pointer-events: auto; }
 .sidebar.collapsed .logo-btn { justify-content: flex-start; padding: 6px 8px; gap: var(--gap-xl); }
 .sidebar .sidebar-nav { padding-bottom: 6px; }
-body:not(.osk-visible) .sidebar .sidebar-nav { padding-bottom: max(6px, env(safe-area-inset-bottom, 0px)); }
 .sound-canvas { gap: var(--gap-sm); padding: 4px; border-radius: var(--radius-md); }
 :root { --sound-row-height: 48px; }
 .sound-button { font-size: 14px; border-radius: var(--radius-md); }
@@ -687,16 +691,16 @@ body:not(.osk-visible) .sidebar .sidebar-nav { padding-bottom: max(6px, env(safe
 .modal.open { transform: translateY(0); }
 .modal::before { content: ""; display: block; width: 36px; height: 4px; border-radius: 99px; background: var(--border); margin: -4px auto 8px; flex-shrink: 0; }
 .modal-scroll { padding-bottom: 4px; }
-.modal-buttons { margin: 0 -16px 0; padding: 10px 16px max(16px, env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--border); flex-wrap: nowrap; }
+.modal-buttons { margin: 0 -16px 0; padding: 10px 16px 16px; border-top: 1px solid var(--border); flex-wrap: nowrap; }
 .modal-btn { min-width: 0; flex: 1 1 0; padding: 12px 8px; font-size: 13px; }
 /* Full-window modals on mobile (text-entry + settings). Class: .modal-full-mobile — edge-to-edge, no bottom-sheet chrome. */
-.modal.modal-full-mobile { top: 0; bottom: 0; left: 0; right: 0; width: 100%; max-width: 100%; min-width: 0; height: 100%; height: 100dvh; max-height: 100%; max-height: 100dvh; border-radius: 0; border: none; transform: translateY(100%); padding: max(12px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); box-shadow: none; }
+.modal.modal-full-mobile { top: 0; bottom: 0; left: 0; right: 0; width: 100%; max-width: 100%; min-width: 0; height: 100%; height: 100dvh; max-height: 100%; max-height: 100dvh; border-radius: 0; border: none; transform: translateY(100%); padding: max(12px, env(safe-area-inset-top, 0px)) 16px 0; box-shadow: none; }
 .modal.modal-full-mobile.open { transform: translateY(0); }
 .modal.modal-full-mobile::before { display: none; }
 .modal.modal-full-mobile .modal-title { font-size: 18px; padding-right: 4px; }
 .modal.modal-full-mobile .modal-description { font-size: 14px; line-height: 1.45; }
 .modal.modal-full-mobile .modal-scroll { flex: 1 1 auto; min-height: 0; }
-.modal.modal-full-mobile .modal-buttons { margin-left: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); margin-right: calc(-1 * max(16px, env(safe-area-inset-right, 0px))); padding: 12px max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.modal.modal-full-mobile .modal-buttons { margin-left: -16px; margin-right: -16px; padding: 12px 16px; }
 /* API key sheet: stacked full-width actions */
 #api-key-modal .api-key-link { min-height: 52px; font-size: 15px; border-radius: 12px; }
 #api-key-modal .api-key-field { padding: 14px; gap: var(--gap-xl); }

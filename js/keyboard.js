@@ -142,11 +142,6 @@
 
       if (root) {
         root.classList.toggle("keyboard-open", !!pinShell);
-        // Do not zero --safe-bottom here. Custom OSK CSS uses env() directly;
-        // system keyboard hides the OSK and zeros dock padding via .keyboard-open.
-        // Zeroing the var while OSK was still visible collapsed key clearance
-        // inconsistently and contributed to double bands after interactions.
-        root.style.removeProperty("--safe-bottom");
         if (vv) {
           root.style.setProperty("--vv-height", `${Math.max(1, Math.round(vv.height))}px`);
           root.style.setProperty("--vv-offset-top", `${Math.round(vv.offsetTop || 0)}px`);

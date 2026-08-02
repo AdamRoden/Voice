@@ -18,16 +18,19 @@
 (function (global) {
   "use strict";
 
-  /* ---- key descriptors: { ch } | { action, label|icon } + optional width ---- */
-  function ch(c, width) {
-    return width ? { ch: c, width: width } : { ch: c };
+  /* ---- key descriptors: { ch, u? } | { action, label|icon, width? } ---- */
+  /** @param {number} [u] face-row width in letter units (default 1) */
+  function ch(c, u) {
+    const k = { ch: c };
+    if (u != null && u !== 1) k.u = u;
+    return k;
   }
   function act(action, label, width) {
     const k = { action: action, label: label };
     if (width) k.width = width;
     return k;
   }
-  /** Action key with a Material Symbol ligature (no text label). */
+  /** Action key with a Material Symbol ligature (no text label). width = bottom-row class only. */
   function actIcon(action, icon, width) {
     const k = { action: action, icon: icon };
     if (width) k.width = width;
@@ -36,60 +39,79 @@
   function chars(s) {
     return String(s).split("").map((c) => ch(c));
   }
-
-  /** Shift-dependent punctuation (always on chrome slots; never on face rows). */
-  function punct(shift) {
-    return {
-      apos: shift ? "\"" : "'",
-      comma: shift ? "?" : ",",
-      period: shift ? "!" : "."
-    };
+  /** Face row: { indent, keys }. indent is letter-key units (spacer before keys). */
+  function face(keys, indent) {
+    return { indent: indent || 0, keys: keys || [] };
   }
 
   /** symbolsLabel is honest per layer: "123?" on alpha, "ABC" on symbols. */
-  function bottomRow(p, symbolsLabel) {
+  function bottomRow(symbolsLabel) {
     return [
       act("symbols", symbolsLabel, "wide"),
       actIcon("ctrl", "keyboard_command_key", "wide"),
       actIcon("space", "space_bar", "space"),
-      ch(p.comma, "slim"),
-      ch(p.period, "slim"),
       actIcon("enter", "keyboard_return", "wide")
     ];
   }
 
   /**
-   * Four modes via layoutAlpha / layoutSym × shift.
-   * Insertable uniqueness = inventory of `ch` values in the active layer
-   * (actions excluded). Symbols shift face rows omit " ? ! — those are punct only.
+   * Alpha QWERTY: bksp after P; home ; ' @ 0.85; , . / after M.
+   * Shift uses US maps for those punct slots.
    */
   function layoutAlpha(shift) {
     const letter = (s) => chars(shift ? s.toUpperCase() : s);
-    const p = punct(shift);
     return [
-      letter("qwertyuiop"),
-      letter("asdfghjkl"),
-      [actIcon("shift", "shift"), ...letter("zxcvbnm"), ch(p.apos), actIcon("backspace", "backspace")],
-      bottomRow(p, "123?")
+      face([...letter("qwertyuiop"), actIcon("backspace", "backspace")]),
+      face(
+        [
+          ...letter("asdfghjkl"),
+          ch(shift ? ":" : ";", 0.85),
+          ch(shift ? "\"" : "'", 0.85)
+        ],
+        0.3
+      ),
+      face([
+        actIcon("shift", "shift"),
+        ...letter("zxcvbnm"),
+        ch(shift ? "<" : ","),
+        ch(shift ? ">" : "."),
+        ch(shift ? "?" : "/")
+      ]),
+      bottomRow("123?")
     ];
   }
 
   function layoutSym(shift) {
-    /* r1 digits stable; r2/r3 complementary; punct never duplicates face rows */
-    const p = punct(shift);
-    const r2 = chars(shift ? "'`~^|\\/{}±" : "@#$%&*()-+");
-    const r3 = chars(shift ? ":·°§¶…—" : "_=[]<>;");
+    /* Digits + bksp; r2/r3 omit alpha-owned punct (; ' , . /) */
+    const r2 = chars(shift ? "`~^|\\{}±§" : "@#$%&*()-+");
+    const r3 = chars(shift ? "·°¶…—" : "_=[]<>");
     return [
-      chars("1234567890"),
-      r2,
-      [actIcon("shift", "shift"), ...r3, ch(p.apos), actIcon("backspace", "backspace")],
-      bottomRow(p, "ABC")
+      face([...chars("1234567890"), actIcon("backspace", "backspace")]),
+      face(r2, 0.3),
+      face([actIcon("shift", "shift"), ...r3]),
+      bottomRow("ABC")
     ];
   }
 
   function currentLayout() {
     if (isSymbol) return layoutSym(isShift);
     return layoutAlpha(isShift);
+  }
+
+  /**
+   * Phones only (portrait-ish widths). Desktop + iPad keep custom OSK.
+   * Keep in sync with css/app.css @media (max-width: 600px) OSK hide.
+   */
+  const PHONE_OSK_MQ = "(max-width: 600px)";
+  const LS_OSK = "aac_osk_visible";
+  const LS_OSK_V2 = "aac_osk_default_v2";
+
+  function oskAllowed() {
+    try {
+      return !(window.matchMedia && window.matchMedia(PHONE_OSK_MQ).matches);
+    } catch (_) {
+      return true;
+    }
   }
 
   /** Single source for pred chip gap; applied as --osk-pred-gap on the row. */
@@ -100,6 +122,8 @@
   let predRow = null;
   let keysEl = null;
   let visible = false;
+  /** User preference only — never overwritten by phone policy. */
+  let userPrefersOsk = true;
   let isShift = false;
   let isCtrl = false;
   let isSymbol = false;
@@ -127,6 +151,33 @@
     return parts.join(" ");
   }
 
+  /** Face row geometry: --row-units / --gaps / --u consumed by CSS. */
+  function appendFaceRow(parent, rowSpec) {
+    const indent = Number(rowSpec && rowSpec.indent) || 0;
+    const keys = (rowSpec && rowSpec.keys) || [];
+    const row = el("div", "osk-row");
+    const units = keys.map((k) => (typeof k.u === "number" ? k.u : 1));
+    const sumKeys = units.reduce((a, b) => a + b, 0);
+    const totalU = sumKeys + (indent > 0 ? indent : 0) || 1;
+    const itemCount = keys.length + (indent > 0 ? 1 : 0);
+    const gaps = Math.max(0, itemCount - 1);
+    row.style.setProperty("--row-units", String(totalU));
+    row.style.setProperty("--gaps", String(gaps));
+
+    if (indent > 0) {
+      const sp = el("div", "osk-indent");
+      sp.setAttribute("aria-hidden", "true");
+      sp.style.setProperty("--u", String(indent));
+      row.appendChild(sp);
+    }
+    keys.forEach((k, i) => {
+      const btn = renderKey(k);
+      btn.style.setProperty("--u", String(units[i]));
+      row.appendChild(btn);
+    });
+    parent.appendChild(row);
+  }
+
   const ACTION_ARIA = {
     shift: "Shift",
     ctrl: "Command",
@@ -145,12 +196,14 @@
     if (!keysEl) return;
     keysEl.innerHTML = "";
     const rows = currentLayout();
-    rows.forEach((rowKeys, i) => {
+    rows.forEach((rowSpec, i) => {
       const isBottom = i === rows.length - 1;
-      const row = el("div", isBottom ? "osk-row osk-row-bottom" : "osk-row");
-      // Face rows: equal key width from count (9-key home row is naturally wider).
-      if (!isBottom) row.style.setProperty("--cols", String(rowKeys.length));
-      rowKeys.forEach((k) => row.appendChild(renderKey(k)));
+      if (!isBottom) {
+        appendFaceRow(keysEl, rowSpec);
+        return;
+      }
+      const row = el("div", "osk-row osk-row-bottom");
+      (Array.isArray(rowSpec) ? rowSpec : []).forEach((k) => row.appendChild(renderKey(k)));
       keysEl.appendChild(row);
     });
   }
@@ -445,7 +498,8 @@
         console.warn("[VoiceOsk] VoicePredict init failed", e);
       }
     }
-    setVisible(opts.startVisible === true);
+    // Preference already set by bindCompose; apply without persisting.
+    applyOskMode();
   }
 
   /**
@@ -496,16 +550,53 @@
       : "Show on-screen keyboard (hide system keyboard)");
   }
 
-  function setVisible(on) {
-    visible = !!on;
+  /**
+   * Apply allowed ∧ preference → DOM, soft-KB policy, chrome.
+   * Never writes localStorage (preference is only persisted on explicit toggle).
+   */
+  function applyOskMode() {
+    const allowed = oskAllowed();
+    const on = allowed && !!userPrefersOsk;
+    visible = on;
+
     if (root) {
-      root.hidden = !visible;
-      root.classList.toggle("osk-open", visible);
-      document.body.classList.toggle("osk-visible", visible);
+      root.hidden = !on;
+      root.classList.toggle("osk-open", on);
     }
-    // Width may still be 0 on first show; ResizeObserver re-caps after layout.
-    if (visible) refresh();
-    if (opts && typeof opts.onVisibility === "function") opts.onVisibility(visible);
+    if (document.body) {
+      document.body.classList.toggle("osk-visible", on);
+      document.body.classList.toggle("osk-unavailable", !allowed);
+    }
+
+    const toggleBtn = opts && opts.toggleBtn;
+    if (toggleBtn) {
+      toggleBtn.hidden = !allowed;
+      toggleBtn.setAttribute("aria-hidden", allowed ? "false" : "true");
+      syncToggleUi(toggleBtn, on);
+    }
+
+    const displayInput = opts && opts.displayInput;
+    applySoftKeyboardPolicy(on, displayInput);
+
+    if (on) {
+      try {
+        if (navigator.virtualKeyboard && typeof navigator.virtualKeyboard.hide === "function") {
+          navigator.virtualKeyboard.hide();
+        }
+      } catch (_) {}
+      refresh();
+    }
+
+    if (opts && typeof opts.onLayout === "function") {
+      opts.onLayout({ oskVisible: on });
+    }
+  }
+
+  /** Public: set user preference and apply (persists when bindCompose supplied lsSet). */
+  function setVisible(on) {
+    userPrefersOsk = !!on;
+    if (opts && typeof opts.persistPref === "function") opts.persistPref(userPrefersOsk);
+    applyOskMode();
   }
 
   function isVisible() {
@@ -542,24 +633,22 @@
     } = optsIn;
     if (!panel) return;
 
-    const LS_OSK = "aac_osk_visible";
-    const LS_OSK_V2 = "aac_osk_default_v2";
-    // Default ON. Older builds wrote "0" on first load even when the user never
-    // chose; migrate once to the new default, then honor the toggle thereafter.
-    let startVisible = true;
+    // Default ON. Migrate once; then honor stored preference (phones never override storage).
+    userPrefersOsk = true;
     if (lsGet && lsSet) {
       if (lsGet(LS_OSK_V2, null) !== "1") {
         lsSet(LS_OSK_V2, "1");
         lsSet(LS_OSK, "1");
-        startVisible = true;
+        userPrefersOsk = true;
       } else {
-        startVisible = lsGet(LS_OSK, "1") === "1";
+        userPrefersOsk = lsGet(LS_OSK, "1") === "1";
       }
     }
 
     mountInternal({
       root: panel,
-      startVisible,
+      toggleBtn,
+      displayInput,
       getText,
       setText,
       getCaret,
@@ -570,23 +659,11 @@
           const c = getCaret ? getCaret() : { start: text.length, end: text.length };
           setText(text.slice(0, c.start) + str + text.slice(c.end), c.start + String(str).length);
         }
-        // composeInsert already focuses when provided by app
       },
       onChange,
-      onVisibility: (on) => {
-        if (lsSet) lsSet(LS_OSK, on ? "1" : "0");
-        syncToggleUi(toggleBtn, on);
-        applySoftKeyboardPolicy(on, displayInput);
-        if (on) {
-          try {
-            if (navigator.virtualKeyboard && typeof navigator.virtualKeyboard.hide === "function") {
-              navigator.virtualKeyboard.hide();
-            }
-          } catch (_) {}
-        }
-        if (typeof optsIn.onLayout === "function") {
-          optsIn.onLayout({ oskVisible: on });
-        }
+      onLayout: optsIn.onLayout,
+      persistPref: (pref) => {
+        if (lsSet) lsSet(LS_OSK, pref ? "1" : "0");
       },
       selectAll,
       clipboard,
@@ -594,26 +671,26 @@
       redo
     });
 
-    // Apply policy for initial visibility (onVisibility also runs from setVisible).
-    applySoftKeyboardPolicy(startVisible, displayInput);
-    syncToggleUi(toggleBtn, startVisible);
-
     if (toggleBtn) {
       toggleBtn.addEventListener("click", () => {
-        const next = !isVisible();
+        if (!oskAllowed()) return;
+        const next = !userPrefersOsk;
         // Before hide: pin shell so the dock cannot drop under the rising iOS keyboard
         // during the button blur → field focus handoff.
         if (!next && typeof optsIn.onSystemKeyboard === "function") {
           optsIn.onSystemKeyboard();
         }
         setVisible(next);
-        // Focus so system soft KB opens when OSK hides, and caret stays ready when OSK shows.
         if (typeof focus === "function") focus();
-        if (typeof optsIn.onLayout === "function") {
-          optsIn.onLayout({ oskVisible: next });
-        }
       });
     }
+
+    try {
+      const mq = window.matchMedia(PHONE_OSK_MQ);
+      const onPhoneMq = () => applyOskMode();
+      if (typeof mq.addEventListener === "function") mq.addEventListener("change", onPhoneMq);
+      else if (typeof mq.addListener === "function") mq.addListener(onPhoneMq);
+    } catch (_) {}
 
     if (displayInput) {
       // Re-assert soft-KB suppression if iOS tries to surface it while OSK is up.
@@ -633,10 +710,8 @@
           if (e.inputType !== "insertText" || e.data == null || e.data === "") return;
           e.preventDefault();
           composeInsert(e.data);
-          // setText → schedulePredict; no second schedule here
         });
       }
-      // Caret-only moves (no text mutation) — single path for non-setText refresh
       const onCaret = () => schedulePredict();
       displayInput.addEventListener("keyup", onCaret);
       displayInput.addEventListener("click", onCaret);
