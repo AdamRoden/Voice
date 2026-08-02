@@ -39,16 +39,36 @@
   }
 
   /**
-   * Layout height when the soft keyboard is closed. Prefer the larger of
-   * visualViewport vs innerHeight so iOS home-screen PWAs never leave a gap
-   * under a short visualViewport reading.
+   * Tallest reliable layout height for a closed shell.
+   * iPad landscape / home-screen PWAs often report a short 100dvh or
+   * visualViewport while the physical display is taller — that leaves a
+   * pure-black band under the app. Prefer the max of every useful signal.
    */
   function closedShellHeight() {
-    const layoutH = window.innerHeight || document.documentElement.clientHeight || 0;
+    const layoutH = window.innerHeight || 0;
+    const clientH = document.documentElement ? document.documentElement.clientHeight || 0 : 0;
     const vv = window.visualViewport;
-    const vvH = vv ? Math.round(vv.height) : 0;
+    // Extent of the visual viewport within the layout viewport (not just vv.height).
+    const vvExtent = vv ? Math.ceil((vv.offsetTop || 0) + vv.height) : 0;
+    /*
+     * iOS screen.width/height usually stay in portrait coordinates. Match the
+     * current orientation so landscape can use the short side as a floor
+     * (covers home-indicator bands when 100dvh is short) without crushing
+     * portrait to the short side.
+     */
+    let screenH = 0;
+    try {
+      if (window.screen) {
+        const sw = window.screen.width || 0;
+        const sh = window.screen.height || 0;
+        if (sw && sh) {
+          const landscape = (window.innerWidth || 0) > (window.innerHeight || 0);
+          screenH = landscape ? Math.min(sw, sh) : Math.max(sw, sh);
+        }
+      }
+    } catch (_) {}
     // Prefer the larger reading; never use a short vv alone (black band).
-    return Math.max(1, layoutH, vvH);
+    return Math.max(1, layoutH, clientH, vvExtent, screenH);
   }
 
   function resetDocumentScroll() {
@@ -67,8 +87,13 @@
     document.body.style.bottom = "";
     document.body.style.width = "";
     document.body.style.height = "";
+    document.body.style.minHeight = "";
     document.body.style.maxHeight = "";
     document.body.style.transform = "";
+    if (document.documentElement) {
+      document.documentElement.style.height = "";
+      document.documentElement.style.minHeight = "";
+    }
   }
 
   /**
@@ -93,18 +118,26 @@
     }
 
     /**
-     * Fill the layout viewport edge-to-edge on L/R/B (all layouts). Avoids
-     * black bands under the OSK when 100dvh / residual pin leaves a short body.
-     * Prefer top/right/bottom/left inset over a pixel height.
+     * Fill the display edge-to-edge on L/R/B (all layouts). Uses an explicit
+     * pixel height (max of inner/client/vv/screen) because iPad landscape
+     * often leaves a black strip when body is only top/bottom:0 against a
+     * short layout viewport.
      */
     function fillClosedShell() {
+      const h = closedShellHeight();
+      const root = document.documentElement;
+      if (root) {
+        root.style.height = `${h}px`;
+        root.style.minHeight = `${h}px`;
+      }
       document.body.style.position = "fixed";
       document.body.style.top = "0";
       document.body.style.left = "0";
       document.body.style.right = "0";
-      document.body.style.bottom = "0";
+      document.body.style.bottom = "auto";
       document.body.style.width = "100%";
-      document.body.style.height = "auto";
+      document.body.style.height = `${h}px`;
+      document.body.style.minHeight = `${h}px`;
       document.body.style.maxHeight = "none";
       document.body.style.transform = "";
       resetDocumentScroll();
