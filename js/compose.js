@@ -395,11 +395,13 @@
       const FloatMenu = global.AacFloatMenu;
       if (!FloatMenu) return;
       // Short fixed action list: shift into view, no scrollbar (must fit viewport).
+      // Above OSK (--z-osk: 110); keep in sync with css --z-compose-menu.
       FloatMenu.place(composeActionsMenu, composeActionsBtn, {
         prefer: "above",
         overflow: "shift",
         gap: 8,
-        pad: 8
+        pad: 8,
+        zIndex: 120
       });
     }
 

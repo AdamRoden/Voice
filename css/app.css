@@ -8,7 +8,7 @@
  */
 /* ==================== 1. TOKENS & THEMES ==================== */
 /* Shared design tokens (themes override colors below) */
-:root { --sound-row-height: 44px; --sidebar-width: 300px; --sidebar-rail-width: 52px; --touch-min: 44px; --gap-xs: 2px; --gap-sm: 4px; --gap-md: 6px; --gap-lg: 8px; --gap-xl: 10px; --gap-2xl: 12px; --pad-sm: 6px; --pad-md: 8px; --pad-lg: 10px; --pad-xl: 12px; --radius-xs: 4px; --radius-sm: 6px; --radius-md: 8px; --radius-lg: 10px; --radius-xl: 14px; --radius-pill: 999px; --z-header: 30; --z-float: 40; --z-float-shift: 50; --z-compose-raised: 60; --z-sidebar-backdrop: 99; --z-sidebar: 100; --z-osk: 110; --z-mobile-drawer: 120; --z-header-elevated: 400; --z-header-menu: 450; --z-voices-panel: 1500; --z-modal-overlay: 2000; --z-modal: 2001; --ease-standard: cubic-bezier(0.4, 0, 0.2, 1); --duration-fast: 0.15s; --duration-normal: 0.2s; --icon-fill: 0; --icon-wght: 400; --icon-grad: 0; --icon-opsz: 24; --safe-top: env(safe-area-inset-top, 0px); }
+:root { --sound-row-height: 44px; --sidebar-width: 300px; --sidebar-rail-width: 52px; --touch-min: 44px; --gap-xs: 2px; --gap-sm: 4px; --gap-md: 6px; --gap-lg: 8px; --gap-xl: 10px; --gap-2xl: 12px; --pad-sm: 6px; --pad-md: 8px; --pad-lg: 10px; --pad-xl: 12px; --radius-xs: 4px; --radius-sm: 6px; --radius-md: 8px; --radius-lg: 10px; --radius-xl: 14px; --radius-pill: 999px; --z-header: 30; --z-float: 40; --z-float-shift: 50; --z-compose-raised: 60; --z-sidebar-backdrop: 99; --z-sidebar: 100; --z-osk: 110; --z-compose-menu: 120; --z-mobile-drawer: 120; --z-header-elevated: 400; --z-header-menu: 450; --z-voices-panel: 1500; --z-modal-overlay: 2000; --z-modal: 2001; --ease-standard: cubic-bezier(0.4, 0, 0.2, 1); --duration-fast: 0.15s; --duration-normal: 0.2s; --icon-fill: 0; --icon-wght: 400; --icon-grad: 0; --icon-opsz: 24; --safe-top: env(safe-area-inset-top, 0px); }
 /* Dark theme (default) */
 :root,
 :root[data-theme="dark"] { --bg-main: #131314; --bg-surface: #1e1f20; --bg-surface-hover: #282a2c; --bg-surface-active: #333537; --border: #333537; --accent: #8ab4f8; --accent-hover: #aecbfa; --text: #e3e3e3; --text-secondary: #8e918f; --key-bg: #282a2c; --key-hover: #333537; --key-active: #444746; --danger: #f2b8b5; --danger-bg: #601410; --shadow: rgba(0, 0, 0, 0.4); color-scheme: dark; }
@@ -418,7 +418,7 @@ body:not([data-feat-compose-history="1"]) #compose-history-btn { display: none !
 .compose-icon-btn:active { background: var(--key-active); transform: scale(0.96); }
 .compose-icon-btn .material-symbols-outlined { font-size: 22px; }
 .compose-actions-wrap { position: relative; flex: 0 0 auto; align-self: flex-end; margin-bottom: 2px; z-index: 1; }
-.compose-actions-wrap:has(.float-menu--shift:not([hidden])) { z-index: var(--z-compose-raised); }
+.compose-actions-wrap:has(.float-menu--shift:not([hidden])) { z-index: var(--z-compose-menu); }
 .compose-actions-item { display: flex; align-items: center; gap: var(--gap-xl); width: 100%; padding: 10px 12px; border: none; border-radius: var(--radius-lg); background: transparent; color: var(--text); font-size: 14px; font-weight: 500; text-align: left; cursor: pointer; min-height: var(--touch-min); }
 .compose-actions-item:hover { background: var(--bg-surface-hover); }
 .compose-actions-item .material-symbols-outlined { font-size: 20px; flex-shrink: 0; color: var(--accent); }
@@ -437,7 +437,9 @@ body:not([data-feat-compose-history="1"]) #compose-history-btn { display: none !
 .float-menu { position: absolute; left: 0; bottom: calc(100% + 8px); min-width: min(260px, 80vw); max-width: min(320px, 90vw); background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-xl); box-shadow: 0 10px 32px var(--shadow); padding: var(--pad-sm); z-index: var(--z-float); }
 .float-menu[hidden] { display: none !important; }
 .float-menu--scroll { max-height: min(40vh, 280px); overflow-y: auto; }
-.float-menu--shift { min-width: min(240px, 80vw); max-height: none; overflow: visible; top: auto; z-index: var(--z-float-shift); }
+/* Fixed-placed compose actions list must sit above the OSK (AacFloatMenu sets position:fixed). */
+.float-menu--shift { min-width: min(240px, 80vw); max-height: none; overflow: visible; top: auto; z-index: var(--z-compose-menu); }
+#compose-actions-menu { z-index: var(--z-compose-menu); }
 .mode-topic-sep { height: 1px; margin: 6px 8px; background: var(--border); flex-shrink: 0; }
 .mode-topic-create { color: var(--accent); font-weight: 600; }
 .mode-topic-create .material-symbols-outlined { color: var(--accent); }
