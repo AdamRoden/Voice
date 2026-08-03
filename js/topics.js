@@ -1,6 +1,6 @@
 /**
  * Topics: model + sound board + sidebar list + edit (AacTopicsEdit).
- * Chats + header topic menu live in AacWorkspace.
+ * Topic chats (slots / mobile header chips) live in AacWorkspace.
  */
 (function (global) {
   "use strict";
@@ -14,7 +14,8 @@
     "isMobileLayout", "isFeatButtonInsert",
     "syncChatUi", "closeMobileSidebar", "openTopic", "onTopicDeleted",
     "insertTextAtDisplayCaret",
-    "setColorField", "getColorField"
+    "setColorField", "getColorField",
+    "isLeftSidebarOpen", "setLeftSidebarOpen"
   ];
 
   function requireDeps(d) {
@@ -506,6 +507,69 @@
       return row;
     }
 
+    /**
+     * Desktop: active + left collapsed → expand left; active + open → accordion;
+     * inactive → switch topic only. Mobile: accordion + switch (legacy).
+     */
+    function onTopicRowClick(topicId) {
+      if (ctx.isMobileLayout()) {
+        toggleTopicExpanded(topicId);
+        return;
+      }
+      if (topicId === ctx.activeTopicId) {
+        if (!ctx.isLeftSidebarOpen()) {
+          ctx.setLeftSidebarOpen(true, { restoreFocus: false });
+          return;
+        }
+        toggleTopicExpanded(topicId);
+        return;
+      }
+      ctx.openTopic(topicId);
+      ctx.focusDisplayInput();
+    }
+
+    function renderTopicsRail() {
+      const rail = document.getElementById("topics-rail");
+      if (!rail) return;
+      // Desktop-only chrome (CSS hides on mobile). Do not clear — content must
+      // survive mobile→desktop so a collapsed left rail is not empty.
+      if (ctx.isMobileLayout()) return;
+      rail.innerHTML = "";
+
+      ctx.topicsList.forEach((topic) => {
+        const isActive = topic.id === ctx.activeTopicId;
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = `topic-rail-btn${isActive ? " active" : ""}`;
+        btn.dataset.topicId = topic.id;
+        btn.title = topic.name || "Topic";
+        btn.setAttribute("aria-label", topic.name || "Topic");
+        btn.setAttribute("aria-pressed", isActive ? "true" : "false");
+        const icon = document.createElement("span");
+        icon.className = "material-symbols-outlined";
+        icon.textContent = topic.icon || "folder";
+        if (topic.color) icon.style.color = topic.color;
+        btn.appendChild(icon);
+        btn.addEventListener("click", () => onTopicRowClick(topic.id));
+        rail.appendChild(btn);
+      });
+
+      const addBtn = document.createElement("button");
+      addBtn.type = "button";
+      addBtn.className = "topic-rail-btn topic-rail-add";
+      addBtn.title = "New topic";
+      addBtn.setAttribute("aria-label", "New topic");
+      const addIcon = document.createElement("span");
+      addIcon.className = "material-symbols-outlined";
+      addIcon.textContent = "add";
+      addBtn.appendChild(addIcon);
+      addBtn.addEventListener("click", () => {
+        ctx.setLeftSidebarOpen(true, { restoreFocus: false });
+        ctx.openNewTopicFlow?.();
+      });
+      rail.appendChild(addBtn);
+    }
+
     function renderTopics() {
       const listEl = document.getElementById("topics-list");
       if (!listEl) return;
@@ -546,7 +610,7 @@
             ctx.openTopicEditModal(topic.id);
             return;
           }
-          toggleTopicExpanded(topic.id);
+          onTopicRowClick(topic.id);
         });
         item.appendChild(header);
 
@@ -566,6 +630,8 @@
 
         listEl.appendChild(item);
       });
+
+      renderTopicsRail();
     }
 
     function toggleTopicExpanded(id) {

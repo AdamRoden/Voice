@@ -5,7 +5,7 @@
  */
 
 /**
- * Fixed placement for floating menus (topic picker, compose actions).
+ * Fixed placement for floating menus (compose actions, etc.).
  * Escapes parent overflow:hidden; clamps to visualViewport when available.
  *
  * overflow "shift" — full natural height, no scrollbar; clamp top/left
@@ -173,7 +173,15 @@
   "use strict";
 
   const VALID_SIDEBAR_TABS = new Set(["voice", "history", "topics", "settings"]);
+  /** Right-rail utility tabs. Topics is left-only (desktop) / drawer panel (mobile). */
+  const RIGHT_SIDEBAR_TABS = new Set(["voice", "history", "settings"]);
   const DEFAULT_SIDEBAR_TAB = "topics";
+  const DEFAULT_RIGHT_TAB = "voice";
+  /**
+   * Desktop but narrow: both rails collapse to icons so main is not ~300px.
+   * Keep in sync with css/app.css comments (mobile remains max-width: 900px).
+   */
+  const NARROW_DESKTOP_MQ = "(min-width: 901px) and (max-width: 1100px)";
   /** Persisted dismiss for first-run help (legacy key name kept for continuity). */
   const HELP_DISMISS_KEY = "aac_coach_dismissed";
   const HELP_MODAL_ID = "modal-help";
@@ -201,10 +209,9 @@
    *   onHistoryTab?: () => void,
    *   onVoiceTab?: () => void,
    *   onSettingsTab?: () => void,
-   *   isHeaderMenuOpen?: () => boolean,
-   *   closeHeaderMenu?: () => void,
    *   isComposeMenuOpen?: () => boolean,
-   *   closeComposeMenu?: () => void
+   *   closeComposeMenu?: () => void,
+   *   onLayoutMqChange?: (isMobile: boolean) => void
    * }} deps
    */
   function create(deps) {
@@ -218,45 +225,154 @@
       }
     }
 
+    /** #sidebar drawer wrapper (mobile). Desktop: display:contents. */
     const sidebar = d.sidebar;
+    const sidebarLeft = document.getElementById("sidebar-left");
+    const sidebarRight = document.getElementById("sidebar-right");
     const sidebarBackdrop = document.getElementById("sidebar-backdrop");
     const mobileMenuBtn = document.getElementById("mobile-menu-btn");
     const modalOverlay = document.getElementById("modal-overlay");
+
+    /** Last painted utility tab (right content), independent of hash when on topics. */
+    let utilityTab = DEFAULT_RIGHT_TAB;
 
     function isMobileLayout() {
       return window.matchMedia(d.mobileLayoutMq).matches;
     }
 
-    function isSidebarOpen() {
-      if (isMobileLayout()) return sidebar.classList.contains("mobile-open");
-      return !sidebar.classList.contains("collapsed");
+    function isDrawerOpen() {
+      return sidebar.classList.contains("mobile-open");
     }
 
-    function setSidebarOpen(open, { restoreFocus = true } = {}) {
-      if (isMobileLayout()) {
-        sidebar.classList.toggle("mobile-open", open);
-        sidebar.classList.remove("collapsed");
-        if (sidebarBackdrop) {
-          sidebarBackdrop.classList.toggle("open", open);
-          sidebarBackdrop.setAttribute("aria-hidden", open ? "false" : "true");
+    /** Desktop left rail expanded (not meaningful as "topics panel" on mobile). */
+    function isLeftSidebarOpen() {
+      return !!(sidebarLeft && !sidebarLeft.classList.contains("collapsed"));
+    }
+
+    /** Desktop right rail expanded. */
+    function isRightSidebarOpen() {
+      return !!(sidebarRight && !sidebarRight.classList.contains("collapsed"));
+    }
+
+    /** Mobile drawer, or either desktop rail expanded. */
+    function isSidebarOpen() {
+      if (isMobileLayout()) return isDrawerOpen();
+      return isLeftSidebarOpen() || isRightSidebarOpen();
+    }
+
+    function setBackdropOpen(open) {
+      if (!sidebarBackdrop) return;
+      sidebarBackdrop.classList.toggle("open", open);
+      sidebarBackdrop.setAttribute("aria-hidden", open ? "false" : "true");
+    }
+
+    function setMenuBtnOpen(open) {
+      if (!mobileMenuBtn) return;
+      mobileMenuBtn.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+      mobileMenuBtn.setAttribute("title", open ? "Close menu" : "Open menu");
+    }
+
+    function clearMobileChrome() {
+      sidebar.classList.remove("mobile-open");
+      setBackdropOpen(false);
+      setMenuBtnOpen(false);
+    }
+
+    /**
+     * Single layout writer.
+     * @param {{
+     *   drawerOpen?: boolean,
+     *   leftOpen?: boolean,
+     *   rightOpen?: boolean,
+     *   panel?: "topics"|"utility",
+     *   utilityTab?: string
+     * }} patch
+     * @param {{ restoreFocus?: boolean }} [opts]
+     */
+    function setLayout(patch, opts) {
+      const o = opts || {};
+      const restoreFocus = o.restoreFocus !== false;
+      const mobile = isMobileLayout();
+      const p = patch || {};
+
+      if (mobile) {
+        // Mobile never uses desktop icon-rail collapse.
+        sidebarLeft?.classList.remove("collapsed");
+        sidebarRight?.classList.remove("collapsed");
+        if (p.drawerOpen != null) {
+          sidebar.classList.toggle("mobile-open", !!p.drawerOpen);
+          setBackdropOpen(!!p.drawerOpen);
+          setMenuBtnOpen(!!p.drawerOpen);
         }
-        if (mobileMenuBtn) {
-          mobileMenuBtn.setAttribute("aria-label", open ? "Close menu" : "Open menu");
-          mobileMenuBtn.setAttribute("title", open ? "Close menu" : "Open menu");
+        if (p.panel === "topics" || p.panel === "utility") {
+          sidebar.setAttribute("data-panel", p.panel);
         }
       } else {
-        sidebar.classList.toggle("collapsed", !open);
-        sidebar.classList.remove("mobile-open");
-        if (sidebarBackdrop) {
-          sidebarBackdrop.classList.remove("open");
-          sidebarBackdrop.setAttribute("aria-hidden", "true");
+        clearMobileChrome();
+        if (p.leftOpen != null) sidebarLeft?.classList.toggle("collapsed", !p.leftOpen);
+        if (p.rightOpen != null) sidebarRight?.classList.toggle("collapsed", !p.rightOpen);
+        if (p.panel === "topics" || p.panel === "utility") {
+          sidebar.setAttribute("data-panel", p.panel);
         }
       }
+
+      if (p.utilityTab && RIGHT_SIDEBAR_TABS.has(p.utilityTab)) {
+        paintUtilityTab(p.utilityTab);
+      }
+
       if (restoreFocus) d.focusDisplayInput();
     }
 
+    function setLeftSidebarOpen(open, opts) {
+      if (isMobileLayout()) {
+        setLayout({
+          drawerOpen: !!open,
+          ...(open ? { panel: "topics" } : {})
+        }, opts);
+      } else {
+        setLayout({ leftOpen: !!open }, opts);
+      }
+    }
+
+    function setRightSidebarOpen(open, opts) {
+      if (isMobileLayout()) {
+        setLayout({
+          drawerOpen: !!open,
+          ...(open ? { panel: "utility" } : {})
+        }, opts);
+      } else {
+        setLayout({ rightOpen: !!open }, opts);
+      }
+    }
+
+    /** Mobile drawer; desktop toggles both rails (rare / layout reset). */
+    function setSidebarOpen(open, opts) {
+      if (isMobileLayout()) {
+        setLayout({ drawerOpen: !!open }, opts);
+      } else {
+        setLayout({ leftOpen: !!open, rightOpen: !!open }, opts);
+      }
+    }
+
     function closeMobileSidebar() {
-      if (isMobileLayout()) setSidebarOpen(false);
+      if (isMobileLayout()) setLayout({ drawerOpen: false }, { restoreFocus: false });
+    }
+
+    /** Collapse rails on narrow desktop; on wide desktop leave user/default state alone unless forced. */
+    function isNarrowDesktop() {
+      return !isMobileLayout() && window.matchMedia(NARROW_DESKTOP_MQ).matches;
+    }
+
+    function applyDesktopRailPolicy({ forceWideDefaults = false } = {}) {
+      if (isMobileLayout()) return;
+      if (isNarrowDesktop()) {
+        setLayout({ leftOpen: false, rightOpen: false }, { restoreFocus: false });
+        return;
+      }
+      if (forceWideDefaults) {
+        // Wide desktop default: topics expanded, tools as icon rail.
+        setLayout({ leftOpen: true, rightOpen: false }, { restoreFocus: false });
+      }
     }
 
     function getDefaultAccentForResolvedTheme() {
@@ -330,7 +446,7 @@
     function updateSectionTitle(tab) {
       const titleEl = document.getElementById("sidebar-section-title");
       if (!titleEl) return;
-      titleEl.textContent = SECTION_TITLES[tab] || SECTION_TITLES[DEFAULT_SIDEBAR_TAB];
+      titleEl.textContent = SECTION_TITLES[tab] || SECTION_TITLES[DEFAULT_RIGHT_TAB];
     }
 
     function syncNavActive(tab) {
@@ -344,22 +460,51 @@
       });
     }
 
-    function applySidebarTab(tab, expandIfCollapsed = false) {
-      const t = normalizeTab(tab);
-      if (expandIfCollapsed && !isSidebarOpen()) {
-        setSidebarOpen(true, { restoreFocus: false });
-      }
+    /** Paint right-rail content + nav highlight (does not open chrome). */
+    function paintUtilityTab(tab) {
+      const t = RIGHT_SIDEBAR_TABS.has(tab) ? tab : DEFAULT_RIGHT_TAB;
+      utilityTab = t;
       syncNavActive(t);
       updateSectionTitle(t);
-      document.querySelectorAll(".tab-content").forEach((c) => c.classList.remove("active"));
-      const content = document.getElementById(`tab-content-${t}`);
-      if (content) content.classList.add("active");
-
+      document.querySelectorAll("#sidebar-right-content .tab-content").forEach((c) => {
+        c.classList.remove("active");
+      });
+      document.getElementById(`tab-content-${t}`)?.classList.add("active");
       if (t === "history" && typeof d.onHistoryTab === "function") d.onHistoryTab();
       if (t === "voice" && typeof d.onVoiceTab === "function") d.onVoiceTab();
       if (t === "settings" && typeof d.onSettingsTab === "function") d.onSettingsTab();
-      // Settings is interactive in the sidebar — don't steal focus to the compose field.
-      if (t !== "settings") d.focusDisplayInput();
+    }
+
+    /**
+     * Select a shell tab. Expand only when expandIfCollapsed is true —
+     * routing/hash must never force the mobile drawer open.
+     */
+    function applySidebarTab(tab, expandIfCollapsed = false) {
+      const t = normalizeTab(tab);
+      const mobile = isMobileLayout();
+      const patch = {};
+
+      if (t === "topics") {
+        patch.panel = "topics";
+        if (expandIfCollapsed) {
+          if (mobile) patch.drawerOpen = true;
+          else patch.leftOpen = true;
+        }
+        setLayout(patch, { restoreFocus: false });
+        // Mobile nav includes Topics; desktop right nav keeps utility highlight.
+        if (mobile) syncNavActive("topics");
+        d.focusDisplayInput();
+        return t;
+      }
+
+      patch.panel = "utility";
+      patch.utilityTab = t;
+      if (expandIfCollapsed) {
+        if (mobile) patch.drawerOpen = true;
+        else patch.rightOpen = true;
+      }
+      // Settings is interactive — don't steal focus to compose.
+      setLayout(patch, { restoreFocus: t !== "settings" });
       return t;
     }
 
@@ -371,15 +516,15 @@
     function openShellModal(id, opts) {
       const o = opts || {};
       if (o.closeDrawer !== false && isMobileLayout()) {
-        setSidebarOpen(false, { restoreFocus: false });
+        setLayout({ drawerOpen: false }, { restoreFocus: false });
       }
       openModal(id);
     }
 
-    /** Open Settings as a sidebar tab (expands drawer / desktop rail if needed). */
+    /** Open Settings as a sidebar tab (expands drawer / right rail if needed). */
     function openSettings() {
-      const wasClosed = !isSidebarOpen();
-      switchSidebarTab("settings", wasClosed);
+      const expand = isMobileLayout() ? !isDrawerOpen() : !isRightSidebarOpen();
+      switchSidebarTab("settings", expand);
     }
 
     function isSettingsOpen() {
@@ -396,10 +541,11 @@
         openHelpModal();
         return;
       }
-      if (VALID_SIDEBAR_TABS.has(a)) {
-        const wasClosed = !isSidebarOpen();
-        switchSidebarTab(a, wasClosed);
-      }
+      if (!VALID_SIDEBAR_TABS.has(a)) return;
+      const expand = isMobileLayout()
+        ? !isDrawerOpen()
+        : (a === "topics" ? !isLeftSidebarOpen() : !isRightSidebarOpen());
+      switchSidebarTab(a, expand);
     }
 
     function switchSidebarTab(tab, expandIfCollapsed = false, opts = {}) {
@@ -495,14 +641,31 @@
         });
       });
 
-      document.getElementById("toggle-sidebar-btn")?.addEventListener("click", () => {
-        setSidebarOpen(!isSidebarOpen());
-      });
-      document.getElementById("sidebar-collapse-btn")?.addEventListener("click", () => {
-        setSidebarOpen(false, { restoreFocus: false });
-      });
+      const bindRailToggle = (toggleId, collapseId, which) => {
+        document.getElementById(toggleId)?.addEventListener("click", () => {
+          if (isMobileLayout()) {
+            setLayout({ drawerOpen: !isDrawerOpen() });
+            return;
+          }
+          if (which === "left") setLayout({ leftOpen: !isLeftSidebarOpen() });
+          else setLayout({ rightOpen: !isRightSidebarOpen() });
+        });
+        document.getElementById(collapseId)?.addEventListener("click", () => {
+          if (isMobileLayout()) {
+            setLayout({ drawerOpen: false }, { restoreFocus: false });
+            return;
+          }
+          if (which === "left") setLayout({ leftOpen: false }, { restoreFocus: false });
+          else setLayout({ rightOpen: false }, { restoreFocus: false });
+        });
+      };
+      bindRailToggle("toggle-sidebar-left-btn", "sidebar-left-collapse-btn", "left");
+      bindRailToggle("toggle-sidebar-right-btn", "sidebar-right-collapse-btn", "right");
+
       if (mobileMenuBtn) {
-        mobileMenuBtn.addEventListener("click", () => setSidebarOpen(!isSidebarOpen()));
+        mobileMenuBtn.addEventListener("click", () => {
+          setLayout({ drawerOpen: !isDrawerOpen() });
+        });
       }
       if (sidebarBackdrop) {
         sidebarBackdrop.addEventListener("click", () => closeMobileSidebar());
@@ -510,10 +673,6 @@
 
       document.addEventListener("keydown", (e) => {
         if (e.key !== "Escape") return;
-        if (typeof d.isHeaderMenuOpen === "function" && d.isHeaderMenuOpen()) {
-          if (typeof d.closeHeaderMenu === "function") d.closeHeaderMenu();
-          return;
-        }
         if (typeof d.isComposeMenuOpen === "function" && d.isComposeMenuOpen()) {
           if (typeof d.closeComposeMenu === "function") d.closeComposeMenu();
           return;
@@ -523,17 +682,27 @@
           voicesPanel.classList.remove("open");
           return;
         }
-        if (isMobileLayout() && isSidebarOpen()) closeMobileSidebar();
+        if (isMobileLayout() && isDrawerOpen()) closeMobileSidebar();
       });
 
       window.matchMedia(d.mobileLayoutMq).addEventListener("change", (e) => {
-        if (e.matches) {
-          setSidebarOpen(false);
-        } else {
-          sidebar.classList.remove("mobile-open");
-          if (sidebarBackdrop) sidebarBackdrop.classList.remove("open");
-          sidebar.classList.remove("collapsed");
+        // Reset drawer chrome + rail collapse when crossing the mobile cutover.
+        clearMobileChrome();
+        sidebarLeft?.classList.remove("collapsed");
+        sidebarRight?.classList.remove("collapsed");
+        if (!e.matches) {
+          // Entering desktop: apply narrow-rail policy, rebuild topics rail if needed.
+          applyDesktopRailPolicy();
         }
+        if (typeof d.onLayoutMqChange === "function") {
+          try { d.onLayoutMqChange(!!e.matches); } catch (_) {}
+        }
+      });
+
+      // Mid-desktop: keep both rails collapsed so main stays usable.
+      const narrowDesktopMq = window.matchMedia(NARROW_DESKTOP_MQ);
+      narrowDesktopMq.addEventListener("change", () => {
+        if (!isMobileLayout()) applyDesktopRailPolicy();
       });
 
       document.getElementById("coach-dismiss-btn")?.addEventListener("click", dismissHelp);
@@ -564,13 +733,22 @@
         url.hash = `/${initialTab}`;
         history.replaceState(null, "", url.pathname + url.search + url.hash);
       }
-      switchSidebarTab(initialTab, false, { fromRoute: true });
+      // Right content is independent of hash when route is topics — seed it once.
+      const seedUtility = RIGHT_SIDEBAR_TABS.has(initialTab) ? initialTab : DEFAULT_RIGHT_TAB;
+      paintUtilityTab(seedUtility);
+      applySidebarTab(initialTab, false);
+      // Desktop: avoid two full 260px rails crushing main near the cutover.
+      applyDesktopRailPolicy({ forceWideDefaults: true });
     }
 
     return {
       isMobileLayout,
       isSidebarOpen,
+      isLeftSidebarOpen,
+      isRightSidebarOpen,
       setSidebarOpen,
+      setLeftSidebarOpen,
+      setRightSidebarOpen,
       closeMobileSidebar,
       applyTheme,
       applyAccentColor,
@@ -600,7 +778,9 @@
   global.AacShellUi = {
     create,
     VALID_SIDEBAR_TABS,
+    RIGHT_SIDEBAR_TABS,
     DEFAULT_SIDEBAR_TAB,
+    DEFAULT_RIGHT_TAB,
     SECTION_TITLES,
     HELP_MODAL_ID
   };
@@ -646,12 +826,6 @@
       dataset: "featComposeReplay",
       optId: "opt-compose-replay",
       settingsKey: "featComposeReplay"
-    },
-    composeHistory: {
-      key: "aac_feat_compose_history",
-      dataset: "featComposeHistory",
-      optId: "opt-compose-history",
-      settingsKey: "featComposeHistory"
     }
   };
 

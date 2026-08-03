@@ -194,7 +194,6 @@
       const size = historySizeLabel();
       const count = Array.isArray(audioHistory) ? audioHistory.length : 0;
       const sidebar = d.$("clear-history-btn");
-      const modal = d.$("modal-clear-history-btn");
       if (sidebar) {
         sidebar.textContent = count
           ? `Clear All History (${size})`
@@ -203,13 +202,6 @@
           ? `Clear ${count} item${count === 1 ? "" : "s"} · about ${size} of saved history`
           : "No history to clear";
         sidebar.disabled = count === 0;
-      }
-      if (modal) {
-        modal.textContent = count ? `Clear all (${size})` : "Clear all";
-        modal.title = count
-          ? `Clear ${count} item${count === 1 ? "" : "s"} · about ${size} of saved history`
-          : "No history to clear";
-        modal.disabled = count === 0;
       }
     }
 
@@ -353,7 +345,6 @@
 
     function renderHistory() {
       renderHistoryInto(d.$("audio-history"), d.$("history-search-input"));
-      renderHistoryInto(d.$("modal-audio-history"), d.$("modal-history-search-input"));
       syncClearHistoryButtons();
     }
 
@@ -365,12 +356,7 @@
 
     function bind() {
       document.getElementById("history-search-input")?.addEventListener("input", renderHistory);
-      document.getElementById("modal-history-search-input")?.addEventListener("input", renderHistory);
       document.getElementById("clear-history-btn")?.addEventListener("click", () => {
-        if (!confirmClearAll()) return;
-        clearAll();
-      });
-      document.getElementById("modal-clear-history-btn")?.addEventListener("click", () => {
         if (!confirmClearAll()) return;
         clearAll();
       });

@@ -404,6 +404,8 @@
       onWorkspaceDisplayInput() { Workspace?.onDisplayInput(); },
       isMobileLayout() { return Shell ? Shell.isMobileLayout() : window.matchMedia(MOBILE_LAYOUT_MQ).matches; },
       closeMobileSidebar() { Shell?.closeMobileSidebar(); },
+      isLeftSidebarOpen() { return Shell ? Shell.isLeftSidebarOpen() : true; },
+      setLeftSidebarOpen(...a) { Shell?.setLeftSidebarOpen(...a); },
       openModal(id) { Shell?.openModal(id); },
       closeModals() { Shell?.closeModals(); },
       applyTheme(theme) { Shell?.applyTheme(theme); },
@@ -638,18 +640,21 @@
         if (Voices) Voices.syncSelectedVoiceSummary();
       },
       onSettingsTab: () => ports.refreshOutputDevices(),
-      isHeaderMenuOpen: () => !!(Workspace && Workspace.isHeaderTopicMenuOpen()),
-      closeHeaderMenu: () => Workspace?.setHeaderTopicMenuOpen(false),
       isComposeMenuOpen: () => !!(Compose && Compose.isOpen()),
       closeComposeMenu: () => Compose?.setOpen(false),
       onCloseModal: () => {
         if (Topics) Topics.resetEditState();
-        document.getElementById("workspace-header-shell")?.classList.remove("menu-open");
         // Overlay / Escape: finish API-key cancel (revert model / browser fallback).
         if (Voices && typeof Voices.onApiKeyModalDismissed === "function") {
           try { Voices.onApiKeyModalDismissed(); } catch (_) {}
         } else if (ElevenKey && typeof ElevenKey.onShellModalsClosed === "function") {
           try { ElevenKey.onShellModalsClosed(); } catch (_) {}
+        }
+      },
+      // Leaving mobile: rebuild desktop topics rail (must not stay empty after mobile clear-path).
+      onLayoutMqChange: (isMobile) => {
+        if (!isMobile && Topics) {
+          try { Topics.renderTopics(); } catch (_) {}
         }
       }
     });
@@ -745,6 +750,8 @@
       isMobileLayout: () => ports.isMobileLayout(),
       isFeatButtonInsert: () => Features.get("buttonInsert"),
       closeMobileSidebar: () => ports.closeMobileSidebar(),
+      isLeftSidebarOpen: () => ports.isLeftSidebarOpen(),
+      setLeftSidebarOpen: (...a) => ports.setLeftSidebarOpen(...a),
       insertTextAtDisplayCaret,
       setColorField: (...a) => ColorPickerApi.setFieldColor(...a),
       getColorField: (...a) => ColorPickerApi.getFieldColor(...a),
@@ -764,7 +771,6 @@
       syncComposeStrip,
       syncGeneratedAudioActions,
       autosizeDisplayInput,
-      escapeHtml,
       topicsDeps
     });
     Topics = Workspace.topics;
@@ -779,9 +785,6 @@
       startAssignFromDisplay: () => Topics.startAssignFromDisplay(),
       playSpeechSource: (...a) => ports.playSpeechSource(...a),
       openTagInsertModal,
-      openModal: (id) => ports.openModal(id),
-      renderHistory: () => ports.renderHistory(),
-      setHeaderTopicMenuOpen: (open) => Workspace.setHeaderTopicMenuOpen(open),
       actionHotkeyChord: (id) => (Hotkeys ? Hotkeys.chordForComposeAction(id) : null)
     });
     Compose.bind();
@@ -973,7 +976,7 @@
           clearMessage: () => ports.clearDisplayText(),
           voiceSettings: () => ports.switchSidebarTab("voice", true),
           voiceSelector: () => Voices?.openVoicesPanel?.(),
-          history: () => Compose?.run?.("history"),
+          history: () => ports.switchSidebarTab("history", true),
           insertTag: () => openTagInsertModal(),
           pin: () => Compose?.run?.("pin"),
           replay: () => Compose?.run?.("replay"),

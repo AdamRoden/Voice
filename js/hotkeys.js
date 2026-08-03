@@ -55,8 +55,7 @@
       label: "Open history",
       group: "app",
       action: "history",
-      composeAction: "history",
-      buttons: [{ id: "compose-history-btn", base: "View history" }]
+      buttons: [{ id: "nav-history", base: "History" }]
     },
     i: {
       label: "Insert tag",

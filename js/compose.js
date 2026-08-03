@@ -531,15 +531,14 @@
   }
 
   /**
-   * Compose overflow menu (clear / pin / replay / tag / history).
+   * Compose overflow menu (clear / pin / replay / tag).
    */
   function createActions(deps) {
     const d = deps || {};
     const required = [
       "canAssignFromDisplay", "getText", "canReplay", "canUseGeneratedActions",
       "getLastGeneratedAudio", "clearDisplayText", "startAssignFromDisplay",
-      "playSpeechSource", "openTagInsertModal", "openModal", "renderHistory",
-      "setHeaderTopicMenuOpen"
+      "playSpeechSource", "openTagInsertModal"
     ];
     for (const key of required) {
       if (typeof d[key] !== "function") {
@@ -563,8 +562,7 @@
         { id: "new", icon: "close", label: "Clear message", disabled: false },
         { id: "pin", icon: "push_pin", label: "Pin to button", disabled: !hasText },
         { id: "replay", icon: "replay", label: "Replay message", disabled: !replayOk },
-        { id: "tag", icon: "add", label: "Insert tag", disabled: false },
-        { id: "history", icon: "history", label: "View history", disabled: false }
+        { id: "tag", icon: "add", label: "Insert tag", disabled: false }
       ];
       composeActionsMenu.innerHTML = "";
       items.forEach((item) => {
@@ -624,7 +622,6 @@
       composeActionsMenu.hidden = !open;
       composeActionsBtn.setAttribute("aria-expanded", open ? "true" : "false");
       if (open) {
-        d.setHeaderTopicMenuOpen(false);
         render();
         requestAnimationFrame(() => fitMenuToViewport());
       } else if (global.AacFloatMenu) {
@@ -637,22 +634,11 @@
       if (d.canUseGeneratedActions(last)) d.playSpeechSource(last);
     }
 
-    function openHistoryModal() {
-      d.openModal("modal-history");
-      d.renderHistory();
-      requestAnimationFrame(() => {
-        try {
-          document.getElementById("modal-history-search-input")?.focus({ preventScroll: true });
-        } catch (_) {}
-      });
-    }
-
     function run(id) {
       if (id === "new") d.clearDisplayText();
       else if (id === "pin") d.startAssignFromDisplay();
       else if (id === "replay") replayLastGenerated();
       else if (id === "tag") d.openTagInsertModal();
-      else if (id === "history") openHistoryModal();
     }
 
     function bind() {
@@ -675,7 +661,6 @@
         window.visualViewport.addEventListener("scroll", onViewportChange);
       }
       document.getElementById("compose-replay-btn")?.addEventListener("click", () => replayLastGenerated());
-      document.getElementById("compose-history-btn")?.addEventListener("click", () => openHistoryModal());
     }
 
     return {
@@ -684,8 +669,7 @@
       setOpen,
       render,
       run,
-      replayLastGenerated,
-      openHistoryModal
+      replayLastGenerated
     };
   }
 
