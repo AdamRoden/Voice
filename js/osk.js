@@ -12,92 +12,105 @@
  *   (c) host undo/redo that does not go through setText.
  * Keystrokes do not schedule here — they go through setText via composeInsert.
  *
- * Layout: one declarative layer per mode (alpha / alpha⇧ / sym / sym⇧).
- * Each layer is 4 rows of key descriptors; insertable glyphs are unique within a layer.
+ * Layout: 3 chrome rows shared by alpha / sym; faces plug mid-key strings.
+ * Design budget ~12u per row (W.* + letter faces). Per-row --row-units from JS.
+ * Dual-home (intentional): `!` on shift+. and on symbols digit-shift / r2.
  */
 (function (global) {
   "use strict";
 
-  /* ---- key descriptors: { ch, u? } | { action, label|icon, width? } ---- */
-  /** @param {number} [u] face-row width in letter units (default 1) */
+  /* ---- key descriptors: { ch, u? } | { action, label|icon, u? } ---- */
+  /** Shared chrome widths (letter unit = 1). Rows target sum ≈ 12. */
+  const W = {
+    tab: 0.85,
+    bksp: 1.15,
+    shift: 1.3,
+    cmd: 0.85,
+    sym: 0.85,
+    space: 1.15,
+    punct: 0.85, // , '
+    period: 1,
+    enter: 1.15
+  };
+
+  /** @param {number} [u] width in letter units (default 1) */
   function ch(c, u) {
     const k = { ch: c };
     if (u != null && u !== 1) k.u = u;
     return k;
   }
-  function act(action, label, width) {
+  function act(action, label, u) {
     const k = { action: action, label: label };
-    if (width) k.width = width;
+    if (u != null && u !== 1) k.u = u;
     return k;
   }
-  /** Action key with a Material Symbol ligature (no text label). width = bottom-row class only. */
-  function actIcon(action, icon, width) {
+  function actIcon(action, icon, u) {
     const k = { action: action, icon: icon };
-    if (width) k.width = width;
+    if (u != null && u !== 1) k.u = u;
     return k;
   }
   function chars(s) {
     return String(s).split("").map((c) => ch(c));
   }
-  /** Face row: { indent, keys }. indent is letter-key units (spacer before keys). */
-  function face(keys, indent) {
-    return { indent: indent || 0, keys: keys || [] };
+  function face(keys) {
+    return { keys: keys || [] };
   }
-
-  /** symbolsLabel is honest per layer: "123?" on alpha, "ABC" on symbols. */
-  function bottomRow(symbolsLabel) {
-    return [
-      act("symbols", symbolsLabel, "wide"),
-      actIcon("ctrl", "keyboard_command_key", "wide"),
-      actIcon("space", "space_bar", "space"),
-      actIcon("arrowLeft", "keyboard_arrow_left"),
-      actIcon("arrowRight", "keyboard_arrow_right"),
-      actIcon("enter", "keyboard_return", "wide")
-    ];
+  function keyU(k) {
+    return typeof k.u === "number" ? k.u : 1;
   }
 
   /**
-   * Alpha QWERTY: bksp after P; home ; ' @ 0.85; , . / after M.
-   * Shift uses US maps for those punct slots.
+   * Shared 3-row frame. faces: { mid1, mid2, left3, right3, symLabel }.
+   * Punct shift maps (both layers): ,→?  '→"  .→!
    */
+  function chromeRows(shift, faces) {
+    return [
+      face([
+        actIcon("tab", "keyboard_tab", W.tab),
+        ...faces.mid1,
+        actIcon("backspace", "backspace", W.bksp)
+      ]),
+      face([
+        actIcon("shift", "shift", W.shift),
+        ...faces.mid2,
+        ch(shift ? "?" : ",", W.punct),
+        ch(shift ? "\"" : "'", W.punct)
+      ]),
+      face([
+        actIcon("ctrl", "keyboard_command_key", W.cmd),
+        act("symbols", faces.symLabel, W.sym),
+        ...faces.left3,
+        actIcon("space", "space_bar", W.space),
+        ...faces.right3,
+        ch(shift ? "!" : ".", W.period),
+        actIcon("enter", "keyboard_return", W.enter)
+      ])
+    ];
+  }
+
   function layoutAlpha(shift) {
     const letter = (s) => chars(shift ? s.toUpperCase() : s);
-    return [
-      face([...letter("qwertyuiop"), actIcon("backspace", "backspace")]),
-      face(
-        [
-          ...letter("asdfghjkl"),
-          ch(shift ? ":" : ";", 0.85),
-          ch(shift ? "\"" : "'", 0.85)
-        ],
-        0.3
-      ),
-      face([
-        actIcon("shift", "shift"),
-        ...letter("zxcvbnm"),
-        ch(shift ? "<" : ","),
-        ch(shift ? ">" : "."),
-        ch(shift ? "?" : "/")
-      ]),
-      bottomRow("123?")
-    ];
+    return chromeRows(shift, {
+      mid1: letter("qwertyuiop"),
+      mid2: letter("asdfghjkl"),
+      left3: letter("zxcv"),
+      right3: letter("bnm"),
+      symLabel: "123?"
+    });
   }
 
   function layoutSym(shift) {
     /*
-     * Digits shift to US top-row punct (!@#$…).
-     * `!` is dual-homed: shift+1 and unshifted r2[0] for one-tap access.
-     * r2/r3 omit alpha-owned punct (; ' , . /).
+     * Digits → US top-row punct. r2: ( ) → < > ; & * → ± §.
+     * r3: [ ] → { }. Shared punct slots from chromeRows.
      */
-    const r1 = chars(shift ? "!@#$%^&*()" : "1234567890");
-    const r2 = chars(shift ? "`~^|\\{}±§" : "!@#$%&*()-+");
-    const r3 = chars(shift ? "·°¶…—" : "_=[]<>");
-    return [
-      face([...r1, actIcon("backspace", "backspace")]),
-      face(r2, 0.3),
-      face([actIcon("shift", "shift"), ...r3]),
-      bottomRow("ABC")
-    ];
+    return chromeRows(shift, {
+      mid1: chars(shift ? "!@#$%^&*()" : "1234567890"),
+      mid2: chars(shift ? "`~^|\\±§<>" : "!@#$%&*()"),
+      left3: chars(shift ? "·°{}" : "_=[]"),
+      right3: chars(shift ? "—¿¡" : "-+/"),
+      symLabel: "ABC"
+    });
   }
 
   function currentLayout() {
@@ -154,29 +167,18 @@
     } else {
       parts.push("char");
     }
-    if (k.width) parts.push(k.width);
     return parts.join(" ");
   }
 
-  /** Face row geometry: --row-units / --gaps / --u consumed by CSS. */
+  /** Face row: --row-units / --gaps / --u for CSS unit grid. */
   function appendFaceRow(parent, rowSpec) {
-    const indent = Number(rowSpec && rowSpec.indent) || 0;
     const keys = (rowSpec && rowSpec.keys) || [];
     const row = el("div", "osk-row");
-    const units = keys.map((k) => (typeof k.u === "number" ? k.u : 1));
-    const sumKeys = units.reduce((a, b) => a + b, 0);
-    const totalU = sumKeys + (indent > 0 ? indent : 0) || 1;
-    const itemCount = keys.length + (indent > 0 ? 1 : 0);
-    const gaps = Math.max(0, itemCount - 1);
+    const units = keys.map(keyU);
+    const totalU = units.reduce((a, b) => a + b, 0) || 1;
+    const gaps = Math.max(0, keys.length - 1);
     row.style.setProperty("--row-units", String(totalU));
     row.style.setProperty("--gaps", String(gaps));
-
-    if (indent > 0) {
-      const sp = el("div", "osk-indent");
-      sp.setAttribute("aria-hidden", "true");
-      sp.style.setProperty("--u", String(indent));
-      row.appendChild(sp);
-    }
     keys.forEach((k, i) => {
       const btn = renderKey(k);
       btn.style.setProperty("--u", String(units[i]));
@@ -192,8 +194,7 @@
     backspace: "Backspace",
     enter: "Enter",
     symbols: "Symbols",
-    arrowLeft: "Move caret left",
-    arrowRight: "Move caret right"
+    tab: "Tab"
   };
 
   function renderKey(k) {
@@ -204,17 +205,7 @@
   function renderKeys() {
     if (!keysEl) return;
     keysEl.innerHTML = "";
-    const rows = currentLayout();
-    rows.forEach((rowSpec, i) => {
-      const isBottom = i === rows.length - 1;
-      if (!isBottom) {
-        appendFaceRow(keysEl, rowSpec);
-        return;
-      }
-      const row = el("div", "osk-row osk-row-bottom");
-      (Array.isArray(rowSpec) ? rowSpec : []).forEach((k) => row.appendChild(renderKey(k)));
-      keysEl.appendChild(row);
-    });
+    currentLayout().forEach((rowSpec) => appendFaceRow(keysEl, rowSpec));
   }
 
   function keyBtn(label, cls, action, char, icon) {
@@ -271,11 +262,9 @@
       insert(" ");
       consumeModifiers();
     },
-    arrowLeft() {
-      moveCaret(-1);
-    },
-    arrowRight() {
-      moveCaret(1);
+    tab() {
+      insert("\t");
+      consumeModifiers();
     },
     enter() {
       insert("\n");
@@ -347,29 +336,6 @@
     while (i > 0 && /\s/.test(text[i - 1])) i--;
     while (i > 0 && !/\s/.test(text[i - 1])) i--;
     return i;
-  }
-
-  /** Move caret by delta (collapses a selection to the near edge first). */
-  function moveCaret(delta) {
-    if (!opts || typeof opts.getText !== "function") return;
-    const text = opts.getText();
-    const caret = opts.getCaret ? opts.getCaret() : { start: text.length, end: text.length };
-    let start = caret.start != null ? caret.start : text.length;
-    let end = caret.end != null ? caret.end : start;
-    let pos;
-    if (start !== end) {
-      pos = delta < 0 ? start : end;
-    } else {
-      pos = Math.max(0, Math.min(text.length, start + delta));
-    }
-    if (typeof opts.setCaret === "function") {
-      opts.setCaret(pos);
-    } else if (typeof opts.setText === "function") {
-      opts.setText(text, pos);
-    } else {
-      return;
-    }
-    if (opts.onChange) opts.onChange();
   }
 
   function doBackspace(ctrl) {

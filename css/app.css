@@ -11,9 +11,66 @@
 :root { --sound-row-height: 44px; --sidebar-width: 300px; --sidebar-rail-width: 52px; --touch-min: 44px; --gap-xs: 2px; --gap-sm: 4px; --gap-md: 6px; --gap-lg: 8px; --gap-xl: 10px; --gap-2xl: 12px; --pad-sm: 6px; --pad-md: 8px; --pad-lg: 10px; --pad-xl: 12px; --radius-xs: 4px; --radius-sm: 6px; --radius-md: 8px; --radius-lg: 10px; --radius-xl: 14px; --radius-pill: 999px; --z-header: 30; --z-float: 40; --z-float-shift: 50; --z-compose-raised: 60; --z-sidebar-backdrop: 99; --z-sidebar: 100; --z-osk: 110; --z-compose-menu: 120; --z-mobile-drawer: 120; --z-header-elevated: 400; --z-header-menu: 450; --z-voices-panel: 1500; --z-modal-overlay: 2000; --z-modal: 2001; --ease-standard: cubic-bezier(0.4, 0, 0.2, 1); --duration-fast: 0.15s; --duration-normal: 0.2s; --icon-fill: 0; --icon-wght: 400; --icon-grad: 0; --icon-opsz: 24; --safe-top: env(safe-area-inset-top, 0px); }
 /* Dark theme (default) */
 :root,
-:root[data-theme="dark"] { --bg-main: #131314; --bg-surface: #1e1f20; --bg-surface-hover: #282a2c; --bg-surface-active: #333537; --border: #333537; --accent: #8ab4f8; --accent-hover: #aecbfa; --text: #e3e3e3; --text-secondary: #8e918f; --key-bg: #282a2c; --key-hover: #333537; --key-active: #444746; --danger: #f2b8b5; --danger-bg: #601410; --shadow: rgba(0, 0, 0, 0.4); color-scheme: dark; }
+:root[data-theme="dark"] {
+  /* Darker base shell — near-black main, stepped surfaces, muted keys */
+  --bg-main: #0a0a0b;
+  --bg-surface: #121314;
+  --bg-surface-hover: #1a1b1c;
+  --bg-surface-active: #222426;
+  --border: #2a2c2e;
+  --accent: #8ab4f8;
+  --accent-hover: #aecbfa;
+  --text: #e3e3e3;
+  --text-secondary: #7e8285;
+  --key-bg: #1a1b1c;
+  --key-hover: #222426;
+  --key-active: #2c2e30;
+  /*
+   * OSK platform ladder (dark): deeper well → action mid → char raised.
+   * Labels light on dark.
+   */
+  --osk-panel-bg: #0e0f10;
+  --osk-action-bg: #1c1e20;
+  --osk-action-bg-hover: #252729;
+  --osk-action-bg-active: #2e3033;
+  --osk-action-fg: #b0b4b6;
+  --osk-char-bg: #2a2c2e;
+  --osk-char-bg-hover: #333537;
+  --osk-char-bg-active: #3c4043;
+  --osk-char-fg: #e8eaed;
+  --osk-key-border: color-mix(in srgb, #fff 6%, transparent);
+  --osk-chip-bg: var(--osk-action-bg);
+  --osk-chip-bg-hover: var(--osk-action-bg-hover);
+  --osk-chip-bg-active: var(--osk-action-bg-active);
+  --danger: #f2b8b5;
+  --danger-bg: #4a1010;
+  --shadow: rgba(0, 0, 0, 0.55);
+  color-scheme: dark;
+}
 /* Light theme */
-:root[data-theme="light"] { --bg-main: #f0f4f9; --bg-surface: #ffffff; --bg-surface-hover: #e9eef6; --bg-surface-active: #dde3ea; --border: #c4c7c5; --accent: #0b57d0; --accent-hover: #0842a0; --text: #1f1f1f; --text-secondary: #444746; --key-bg: #e9eef6; --key-hover: #dde3ea; --key-active: #c4c7c5; --danger: #b3261e; --danger-bg: #f9dedc; --shadow: rgba(0, 0, 0, 0.15); color-scheme: light; }
+:root[data-theme="light"] {
+  --bg-main: #f0f4f9; --bg-surface: #ffffff; --bg-surface-hover: #e9eef6; --bg-surface-active: #dde3ea;
+  --border: #c4c7c5; --accent: #0b57d0; --accent-hover: #0842a0; --text: #1f1f1f; --text-secondary: #444746;
+  --key-bg: #e9eef6; --key-hover: #dde3ea; --key-active: #c4c7c5;
+  /*
+   * OSK platform ladder (light): light gray well → medium action → white char.
+   * Labels dark on light.
+   */
+  --osk-panel-bg: #dfe3e8;
+  --osk-action-bg: #c8cdd3;
+  --osk-action-bg-hover: #bdc3ca;
+  --osk-action-bg-active: #b0b7bf;
+  --osk-action-fg: #3c4043;
+  --osk-char-bg: #ffffff;
+  --osk-char-bg-hover: #f8f9fa;
+  --osk-char-bg-active: #e8eaed;
+  --osk-char-fg: #202124;
+  --osk-key-border: color-mix(in srgb, #000 8%, transparent);
+  --osk-chip-bg: var(--osk-char-bg);
+  --osk-chip-bg-hover: var(--osk-char-bg-hover);
+  --osk-chip-bg-active: var(--osk-char-bg-active);
+  --danger: #b3261e; --danger-bg: #f9dedc; --shadow: rgba(0, 0, 0, 0.15); color-scheme: light;
+}
 /* ==================== 2. BASE / RESET / SHELL ==================== */
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
 /*
@@ -25,7 +82,7 @@
  */
 html { width: 100%; height: 100%; min-height: 100%; min-height: -webkit-fill-available; min-height: 100dvh; margin: 0; overflow: hidden; background-color: var(--bg-main); }
 /* Residual gap under a short shell matches OSK surface, not pure black. */
-html:has(body.osk-visible) { background-color: var(--bg-surface); }
+html:has(body.osk-visible) { background-color: var(--osk-panel-bg); }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
@@ -36,7 +93,7 @@ body.modal-open { overflow: hidden; }
 @media (display-mode: standalone), (display-mode: fullscreen) {
   html { min-height: 100lvh; height: 100lvh; }
   body { min-height: 100lvh; }
-  html:has(body.osk-visible) { background-color: var(--bg-surface); }
+  html:has(body.osk-visible) { background-color: var(--osk-panel-bg); }
 }
 /* Only in-flow column under body (shell + OSK). Backdrop / modals are position:fixed outside this tree. */
 .app-layout { flex: 1 1 auto; min-height: 0; min-width: 0; width: 100%; max-width: 100%; display: flex; flex-direction: column; overflow: hidden; }
@@ -475,8 +532,8 @@ body:not([data-feat-compose-history="1"]) #compose-history-btn { display: none !
 .audio-action-btn.play { color: var(--accent); border-color: var(--accent); }
 /* ==================== 7. ON-SCREEN KEYBOARD ==================== */
 /* Full-width bottom panel: flush L/R/B screen edges (no safe-area). Inner 4px is key gutter only. */
-/* Face-row units: --u / --row-units / --gaps from js/osk.js. */
-.osk-panel { display: none; flex-direction: column; gap: var(--gap-md); width: 100%; max-width: 100%; flex: 0 0 auto; flex-shrink: 0; margin: 0; padding: 4px; background: var(--bg-surface); border-top: 1px solid var(--border); border-radius: 0; max-height: min(56vh, 520px); overflow: hidden; user-select: none; z-index: var(--z-osk); box-sizing: border-box; }
+/* Geometry: --row-units / --gaps / --u from js/osk.js. Colors: --osk-* theme tokens. */
+.osk-panel { display: none; flex-direction: column; gap: var(--gap-md); width: 100%; max-width: 100%; flex: 0 0 auto; flex-shrink: 0; margin: 0; padding: 4px; background: var(--osk-panel-bg); border-top: 1px solid var(--border); border-radius: 0; max-height: min(56vh, 520px); overflow: hidden; user-select: none; z-index: var(--z-osk); box-sizing: border-box; }
 .osk-panel.osk-open { display: flex; }
 .osk-panel[hidden] { display: none !important; }
 /* System soft keyboard: hide custom OSK panel entirely from layout. */
@@ -484,43 +541,79 @@ html.keyboard-open .osk-panel { display: none !important; }
 /* Predictions — gap from --osk-pred-gap (set in js/osk.js PRED_GAP_PX); chips centered in the strip */
 .osk-top-strip { display: flex; align-items: center; justify-content: center; min-height: 52px; min-width: 0; width: 100%; }
 .osk-pred-row { display: flex; flex: 1; align-items: center; justify-content: center; gap: var(--osk-pred-gap, 6px); min-width: 0; min-height: 48px; overflow: hidden; padding: 4px 0; }
-.osk-pred-chip { flex: 0 0 auto; min-height: 48px; padding: 10px 18px; border: 1px solid var(--border); border-radius: var(--radius-pill); background: var(--key-bg); color: var(--text); font-size: 16px; font-weight: 600; white-space: nowrap; cursor: pointer; }
-.osk-pred-chip:hover { background: var(--key-hover); border-color: var(--accent); color: var(--accent); }
-.osk-pred-chip:active { background: var(--key-active); }
+.osk-pred-chip { flex: 0 0 auto; min-height: 48px; padding: 10px 18px; border: 1px solid var(--osk-key-border); border-radius: var(--radius-pill); background: var(--osk-chip-bg); color: var(--osk-char-fg); font-size: 16px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.osk-pred-chip:hover { background: var(--osk-chip-bg-hover); border-color: var(--accent); color: var(--accent); }
+.osk-pred-chip:active { background: var(--osk-chip-bg-active); }
 /* Did-you-mean (replacePrev) — distinct from ordinary append chips */
 .osk-pred-chip--correct {
   border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 16%, var(--key-bg));
+  background: color-mix(in srgb, var(--accent) 16%, var(--osk-chip-bg));
   color: var(--accent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 .osk-pred-chip--correct:hover {
-  background: color-mix(in srgb, var(--accent) 26%, var(--key-bg));
+  background: color-mix(in srgb, var(--accent) 26%, var(--osk-chip-bg));
   border-color: var(--accent);
   color: var(--accent);
 }
 .osk-pred-empty { padding: 0 10px; font-size: 14px; color: var(--text-secondary); text-align: center; }
-/* Key grid — one font size/weight for every key (letters, chrome, icons) */
-.osk-keys { --gap: var(--gap-sm); --fs-key: 18px; display: flex; flex-direction: column; gap: var(--gap-md); }
-.osk-row { display: flex; justify-content: center; gap: var(--gap); }
-/* Face rows: letter unit = 1; ;/' = 0.85; indent spacer uses --u */
-.osk-row:not(.osk-row-bottom) .osk-key,
-.osk-row:not(.osk-row-bottom) .osk-indent {
-  flex: 0 0 calc((100% - var(--gaps, 0) * var(--gap)) * var(--u, 1) / var(--row-units, 1));
-  min-width: 0;
+/* Key grid — --row-units/--gaps/--u from JS; height = 1 letter unit via aspect-ratio */
+.osk-keys {
+  --gap: var(--gap-sm);
+  --fs-key: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-md);
 }
-.osk-indent { pointer-events: none; visibility: hidden; }
-/* Bottom row: proportional widths */
-.osk-row-bottom .osk-key { flex: 1 1 0; min-width: 0; }
-.osk-row-bottom .osk-key.wide { flex: 1.45 1 0; }
-.osk-row-bottom .osk-key.slim { flex: 0.78 1 0; }
-.osk-row-bottom .osk-key.space { flex: 3.6 1 0; color: var(--text-secondary); }
-.osk-key { display: flex; align-items: center; justify-content: center; min-height: 52px; border: 1px solid transparent; border-radius: var(--radius-md); background: var(--key-bg); color: var(--text); font-size: var(--fs-key); font-weight: 500; cursor: pointer; touch-action: manipulation; }
+.osk-row { display: flex; align-items: stretch; gap: var(--gap); width: 100%; }
+.osk-row .osk-key {
+  flex: 0 0 calc((100% - var(--gaps, 0) * var(--gap)) * var(--u, 1) / var(--row-units, 1));
+  width: calc((100% - var(--gaps, 0) * var(--gap)) * var(--u, 1) / var(--row-units, 1));
+  aspect-ratio: var(--u, 1) / 1;
+  height: auto;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.osk-key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  border: 1px solid var(--osk-key-border);
+  border-radius: var(--radius-md);
+  background: var(--osk-action-bg);
+  color: var(--osk-action-fg);
+  font-size: var(--fs-key);
+  font-weight: 500;
+  cursor: pointer;
+  touch-action: manipulation;
+  box-shadow: 0 1px 0 color-mix(in srgb, #000 18%, transparent);
+}
+.osk-key.char {
+  background: var(--osk-char-bg);
+  color: var(--osk-char-fg);
+  box-shadow: 0 1px 0 color-mix(in srgb, #000 22%, transparent);
+}
 .osk-key .material-symbols-outlined { font-size: 1.3em; font-weight: 600; line-height: 1; font-variation-settings: 'FILL' var(--icon-fill, 0), 'wght' 600, 'GRAD' var(--icon-grad, 0), 'opsz' var(--icon-opsz, 24); }
-.osk-key:hover { background: var(--key-hover); }
-.osk-key:active { background: var(--key-active); }
-.osk-key.action { color: var(--text-secondary); }
-.osk-key.latched { background: color-mix(in srgb, var(--accent) 55%, var(--key-bg)); color: #fff; }
+.osk-key:hover { background: var(--osk-action-bg-hover); }
+.osk-key.char:hover { background: var(--osk-char-bg-hover); color: var(--osk-char-fg); }
+.osk-key:active {
+  background: var(--osk-action-bg-active);
+  box-shadow: inset 0 1px 2px color-mix(in srgb, #000 22%, transparent);
+}
+.osk-key.char:active {
+  background: var(--osk-char-bg-active);
+  color: var(--osk-char-fg);
+  box-shadow: inset 0 1px 2px color-mix(in srgb, #000 18%, transparent);
+}
+.osk-key.action { color: var(--osk-action-fg); }
+.osk-key[data-action="space"] { color: var(--osk-action-fg); }
+.osk-key.latched {
+  background: color-mix(in srgb, var(--accent) 55%, var(--osk-action-bg));
+  color: #fff;
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--osk-key-border));
+  box-shadow: none;
+}
 .compose-icon-btn.osk-toggle-active { color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
 
 /*
@@ -539,8 +632,7 @@ body.osk-unavailable #compose-osk-btn { display: none !important; }
 
 @media (min-width: 901px) {
   .osk-panel { max-height: min(50vh, 560px); }
-.osk-keys { --gap: var(--gap-md); --fs-key: 18px; gap: var(--gap-lg); }
-.osk-key { min-height: 58px; }
+  .osk-keys { --gap: var(--gap-md); --fs-key: 18px; gap: var(--gap-lg); }
 }
 /* ==================== 8. MODALS & OVERLAYS ==================== */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; height: 100dvh; background: rgba(0, 0, 0, 0.65); opacity: 0; pointer-events: none; transition: opacity 0.2s ease; z-index: var(--z-modal-overlay); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }

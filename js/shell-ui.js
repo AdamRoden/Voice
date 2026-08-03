@@ -295,7 +295,7 @@
 
     function syncThemeColorMeta() {
       const resolved = document.documentElement.getAttribute("data-theme") || "dark";
-      const color = resolved === "light" ? "#f0f4f9" : "#131314";
+      const color = resolved === "light" ? "#f0f4f9" : "#0a0a0b";
       document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", color));
     }
 
