@@ -1,11 +1,14 @@
 /**
- * VoicePredictType — orthography policy + typing fixes.
+ * VoicePredictType — orthography policy + typing / boundary token surgery.
  * Depends on VoicePredictData (hard fail if missing).
  *
  * Public:
  *   formatSuggestion(word, isSentenceStart)
  *   orthographyFor(prefix, ctx) → { pinChips, candidates, boosts }
- *   applyInsert(text, start, end, chunk) → { text, caret, changed }
+ *   isBoundaryChunk(chunk)
+ *   tokenBeforeBoundary(text, caret) → span | null
+ *   applyInsert(text, start, end, chunk, opts?) → { text, caret, changed, softCorrected }
+ *     opts.afterToken(span) → corrected display form | null  (runs only if orthography did not rewrite)
  *   stripApostrophes(s)
  */
 (function (global) {
@@ -64,7 +67,6 @@
       return D.CONTRACTION_SHORTCUTS[bare];
     }
 
-    // Preserve explicit ID chip casing; leave bare "ill"/"id" as words
     if (out === "ID") return "ID";
     return out;
   }
@@ -80,6 +82,81 @@
 
   function formatSuggestion(word, isSentenceStart) {
     return displayCase(canonicalizeToken(word), isSentenceStart);
+  }
+
+  /** True when inserting this chunk completes a word (space / sentence punct). */
+  function isBoundaryChunk(chunk) {
+    const insert = chunk == null ? "" : String(chunk);
+    if (!insert) return false;
+    if (insert.length === 1) {
+      return (
+        /\s/.test(insert) ||
+        D.SPACE_EATING_PUNCT.has(insert) ||
+        D.SENTENCE_END_PUNCT.has(insert)
+      );
+    }
+    return /[\s.,!?;:]$/.test(insert);
+  }
+
+  /**
+   * Last completed token before caret trailing boundary chars.
+   * @returns {{
+   *   token: string,
+   *   wordStart: number,
+   *   wordEnd: number,
+   *   boundary: string,
+   *   prev1: string,
+   *   hist: string[],
+   *   isSentenceStart: boolean,
+   *   text: string,
+   *   caret: number
+   * } | null}
+   */
+  function tokenBeforeBoundary(text, caret) {
+    const raw = String(text || "");
+    let pos = Math.max(0, Math.min(caret == null ? raw.length : caret, raw.length));
+    const boundaryEnd = pos;
+    while (pos > 0 && /[\s.,!?;:]/.test(raw[pos - 1])) pos--;
+    const boundary = raw.slice(pos, boundaryEnd);
+    if (!boundary) return null;
+
+    let wordStart = pos;
+    while (wordStart > 0 && /[A-Za-z']/.test(raw[wordStart - 1])) wordStart--;
+    if (wordStart === pos) return null;
+    const token = raw.slice(wordStart, pos);
+    if (!token) return null;
+
+    const beforeWord = raw.slice(0, wordStart);
+    const isSentenceStart =
+      !beforeWord.trim() || /[.!?]["')\]]*\s*$/.test(beforeWord);
+    // Match parseContext: only tokens in the current sentence fragment (after last .!?).
+    // Empty hist at sentence start so LM soft-correct uses <s> / starter paths.
+    let hist = [];
+    if (!isSentenceStart) {
+      const sentenceFrag = (beforeWord.split(/[.!?]/).pop() || beforeWord);
+      hist = (sentenceFrag.toLowerCase().match(/[a-z']+/g) || []).slice(-3);
+    }
+    const prev1 = hist[hist.length - 1] || "";
+
+    return {
+      token,
+      wordStart,
+      wordEnd: pos,
+      boundary,
+      prev1,
+      hist,
+      isSentenceStart,
+      text: raw,
+      caret: boundaryEnd
+    };
+  }
+
+  function replaceTokenSpan(span, newToken) {
+    const form = String(newToken);
+    return {
+      text: span.text.slice(0, span.wordStart) + form + span.text.slice(span.wordEnd),
+      caret: span.wordStart + form.length + span.boundary.length
+    };
   }
 
   /** Forms only — ranking/pin owned by orthographyFor. */
@@ -180,7 +257,6 @@
       addBoost(exact, W + 0.08);
     }
 
-    // One table drives both ill and id pin order
     const ambig = D.AMBIGUOUS_READINGS[pfxBare];
     if (ambig) {
       const preferred = preferAmbig(pfxBare, prev1);
@@ -213,7 +289,6 @@
     const ambig = D.AMBIGUOUS_READINGS[bare];
     if (ambig) {
       const pref = preferAmbig(bare, prev1);
-      // Auto only when preferred is the contraction (or explicit ID for badge context)
       if (pref === ambig.contraction) return ambig.contraction;
       if (pref === ambig.alt && bare === "id") return "ID";
       return null;
@@ -225,56 +300,22 @@
     return null;
   }
 
-  function correctTokenBeforeCaret(text, caret) {
-    const raw = String(text || "");
-    let pos = Math.max(0, Math.min(caret, raw.length));
-    const boundaryEnd = pos;
-    while (pos > 0 && /[\s.,!?;:]/.test(raw[pos - 1])) pos--;
-    const boundary = raw.slice(pos, boundaryEnd);
-    if (!boundary) return null;
-
-    let wordStart = pos;
-    while (wordStart > 0 && /[A-Za-z']/.test(raw[wordStart - 1])) wordStart--;
-    if (wordStart === pos) return null;
-    const token = raw.slice(wordStart, pos);
-    if (!token) return null;
-
-    let p = wordStart;
-    while (p > 0 && /\s/.test(raw[p - 1])) p--;
-    const prevEnd = p;
-    while (p > 0 && /[A-Za-z']/.test(raw[p - 1])) p--;
-    const prev1 = raw.slice(p, prevEnd).toLowerCase();
-
-    const beforeWord = raw.slice(0, wordStart);
-    const isSentenceStart =
-      !beforeWord.trim() || /[.!?]["')\]]*\s*$/.test(beforeWord);
-
-    const corrected = autoCorrectToken(token, prev1, isSentenceStart);
-    if (!corrected || corrected === token) return null;
-
-    // autoCorrectToken already returns display form; only sentence-cap non-I leftovers
-    const finalForm = formatSuggestion(corrected, isSentenceStart);
-    if (finalForm === token) return null;
-
-    return {
-      text: raw.slice(0, wordStart) + finalForm + raw.slice(pos),
-      caret: wordStart + finalForm.length + boundary.length
-    };
-  }
-
   /**
-   * Typing-time fixes for inserting `chunk` at [start, end).
-   * @returns {{ text: string, caret: number, changed: boolean }}
+   * Typing-time insert at [start, end).
+   * @param {object} [opts]
+   * @param {(span: object) => string|null} [opts.afterToken] LM soft-correct when orthography abstains
+   * @returns {{ text: string, caret: number, changed: boolean, softCorrected: string|null }}
    */
-  function applyInsert(text, start, end, chunk) {
+  function applyInsert(text, start, end, chunk, opts) {
     const src = String(text || "");
     let s = Math.max(0, Math.min(start == null ? src.length : start, src.length));
     let e = Math.max(s, Math.min(end == null ? s : end, src.length));
     let insert = chunk == null ? "" : String(chunk);
     if (!insert && s === e) {
-      return { text: src, caret: s, changed: false };
+      return { text: src, caret: s, changed: false, softCorrected: null };
     }
 
+    // Replace trailing space with space-eating punct (caret after "word " + ".")
     if (
       insert.length === 1 &&
       D.SPACE_EATING_PUNCT.has(insert) &&
@@ -283,8 +324,11 @@
     ) {
       const beforeSpace = s >= 2 ? src[s - 2] : "";
       if (/[A-Za-z0-9'"”)\]\}]/.test(beforeSpace)) {
+        const oldS = s;
         s -= 1;
-        if (e >= s + 1) e -= 1;
+        // Delete the space: keep e past it (collapsed caret was at oldS).
+        if (e <= s) e = oldS;
+        else if (e === oldS) e = oldS;
       }
     }
 
@@ -294,10 +338,6 @@
         !before.trim() || /[.!?]["')\]]*\s*$/.test(before);
       if (atSentenceStart) insert = insert.toUpperCase();
       else if (insert === "i" || insert === "I") {
-        // Only force pronoun "I" when the letter is already a complete token
-        // (word boundary after). Empty next means the user may still be typing
-        // "if" / "in" / "interesting" — bare "i" is fixed on space/punct via
-        // correctTokenBeforeCaret instead.
         const prevCh = s > 0 ? src[s - 1] : " ";
         const nextCh = e < src.length ? src[e] : "";
         if (
@@ -313,24 +353,30 @@
     let next = src.slice(0, s) + insert + src.slice(e);
     let caret = s + insert.length;
     let changed = next !== src;
+    let softCorrected = null;
 
-    const isBoundary =
-      (insert.length === 1 &&
-        (/\s/.test(insert) ||
-          D.SPACE_EATING_PUNCT.has(insert) ||
-          D.SENTENCE_END_PUNCT.has(insert))) ||
-      (insert.length > 1 && /[\s.,!?;:]$/.test(insert));
-
-    if (isBoundary) {
-      const fixed = correctTokenBeforeCaret(next, caret);
-      if (fixed) {
-        next = fixed.text;
-        caret = fixed.caret;
-        changed = true;
+    if (isBoundaryChunk(insert)) {
+      const span = tokenBeforeBoundary(next, caret);
+      if (span) {
+        let form = autoCorrectToken(span.token, span.prev1, span.isSentenceStart);
+        if (form) {
+          form = formatSuggestion(form, span.isSentenceStart);
+        } else if (opts && typeof opts.afterToken === "function") {
+          form = opts.afterToken(span);
+        } else {
+          form = null;
+        }
+        if (form && form !== span.token) {
+          const rewritten = replaceTokenSpan(span, form);
+          next = rewritten.text;
+          caret = rewritten.caret;
+          changed = true;
+          softCorrected = form;
+        }
       }
     }
 
-    return { text: next, caret, changed };
+    return { text: next, caret, changed, softCorrected };
   }
 
   global.VoicePredictType = {
@@ -339,6 +385,9 @@
     displayCase,
     formatSuggestion,
     orthographyFor,
+    isBoundaryChunk,
+    tokenBeforeBoundary,
+    autoCorrectToken,
     applyInsert
   };
 })(typeof window !== "undefined" ? window : globalThis);

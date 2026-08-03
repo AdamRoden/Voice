@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>VoicePredict golden tests</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 16px; background: #111; color: #eee; }
+    .pass { color: #6d6; }
+    .fail { color: #f66; }
+    pre { background: #1a1a1a; padding: 12px; border-radius: 8px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <h1>predict golden tests</h1>
+  <pre id="out">Running…</pre>
+  <script src="../js/predict-data.js"></script>
+  <script src="../js/predict-type.js"></script>
+  <script src="../js/predict-mobile-lm.js"></script>
+  <script src="../js/predict.js"></script>
+  <script>
+    (function () {
+      const out = document.getElementById("out");
+      const lines = [];
+      let failed = 0;
+      let passed = 0;
+
+      function assert(name, cond, detail) {
+        if (cond) {
+          passed++;
+          lines.push("PASS  " + name);
+        } else {
+          failed++;
+          lines.push("FAIL  " + name + (detail ? " — " + detail : ""));
+        }
+      }
+
+      function chipText(c) {
+        if (c == null) return "";
+        return typeof c === "string" ? c : String(c.text || "");
+      }
+
+      function topHas(chips, word) {
+        const w = String(word).toLowerCase();
+        return (chips || []).some((c) => chipText(c).toLowerCase() === w);
+      }
+
+      function topIs(chips, word) {
+        return chips && chips[0] && chipText(chips[0]).toLowerCase() === String(word).toLowerCase();
+      }
+
+      function chipAction(c) {
+        return c && typeof c === "object" && c.action ? c.action : "append";
+      }
+
+      // Tiny fixture: enough to exercise 4→3→2→1 and ranking without the full 4MB model.
+      const FIXTURE = {
+        meta: { name: "fixture", order: 4 },
+        words: [
+          "the", "i", "to", "a", "you", "want", "like", "are", "how", "think",
+          "that", "this", "have", "would", "can", "do", "is", "it", "we", "go",
+          "went", "through", "door", "thanks"
+        ],
+        uni: FIXTURE_UNI(),
+        bi: {
+          "<s>": "i:-800,the:-1400,how:-1600,you:-1700,it:-1800",
+          "i": "want:-900,would:-1100,think:-1200,have:-1300,can:-1400,went:-1000",
+          "want": "to:-500,a:-1400,the:-1500",
+          "how": "are:-600,do:-1200",
+          "are": "you:-400,we:-1500",
+          "would": "like:-700,you:-1200",
+          "like": "to:-800,you:-1400",
+          "you": "want:-1000,are:-1400,think:-1500",
+          "went": "through:-200,to:-1400,the:-1500",
+          "through": "the:-400,a:-1500"
+        },
+        tri: {
+          "i want": "to:-200,a:-1200,the:-1300",
+          "how are": "you:-100,we:-1400",
+          "would like": "to:-150,a:-1300",
+          "i would": "like:-300,not:-1500",
+          "i went": "through:-100,to:-1300"
+        },
+        four: {
+          "i would like": "to:-50,a:-1400",
+          "how are you": "doing:-900,today:-1000",
+          "i went through": "the:-80,a:-1400"
+        }
+      };
+
+      function FIXTURE_UNI() {
+        // logp*1000 descending with words order (24 words)
+        const base = [
+          -1000, -1100, -1200, -1300, -1400, -1500, -1600, -1700, -1800, -1900,
+          -2000, -2100, -2200, -2300, -2400, -2500, -2600, -2700, -2800, -2900,
+          -3000, -3100, -3200, -3300
+        ];
+        return base.map((lp) => [lp, -200]);
+      }
+
+      const P = window.VoicePredict;
+      const M = window.VoiceMobileLm;
+      assert("VoicePredict loaded", !!P);
+      assert("VoiceMobileLm loaded", !!M);
+
+      if (!P || !M) {
+        finish();
+        return;
+      }
+
+      // Isolate from personal localStorage noise for ranking asserts.
+      try {
+        localStorage.removeItem(window.VoicePredictData.LS_PERSONAL_KEY);
+        localStorage.removeItem(window.VoicePredictData.LS_PERSONAL_TEXT_KEY);
+      } catch (_) {}
+
+      P.init();
+      const n = P._loadMobileFromObject(FIXTURE);
+      assert("fixture LM loaded", n === 24, "n=" + n);
+      assert("mobileReady", P.mobileReady === true);
+
+      // logScore unit checks
+      const lsWant = M.logScore("", "", "i", "want");
+      const lsThink = M.logScore("", "", "i", "think");
+      assert("i → want beats think", lsWant != null && lsThink != null && lsWant > lsThink,
+        "want=" + lsWant + " think=" + lsThink);
+
+      const lsTo = M.logScore("", "i", "want", "to");
+      const lsA = M.logScore("", "i", "want", "a");
+      assert("i want → to beats a", lsTo != null && lsA != null && lsTo > lsA,
+        "to=" + lsTo + " a=" + lsA);
+
+      // Chip golden tests
+      const empty = P.suggest("", 0);
+      assert("empty field yields chips", empty.chips && empty.chips.length >= 3,
+        JSON.stringify(empty.chips));
+      assert("empty prefers I", topHas(empty.chips, "I") || topHas(empty.chips, "i"),
+        JSON.stringify(empty.chips));
+
+      const iWant = P.suggest("I want ", "I want ".length);
+      assert(
+        "I want → to near top",
+        topIs(iWant.chips, "to") ||
+          (iWant.chips[1] && chipText(iWant.chips[1]).toLowerCase() === "to"),
+        JSON.stringify(iWant.chips)
+      );
+
+      const howAre = P.suggest("How are ", "How are ".length);
+      assert("How are → you", topIs(howAre.chips, "you") || topHas(howAre.chips, "you"),
+        JSON.stringify(howAre.chips));
+
+      const mid = P.suggest("I wan", "I wan".length);
+      assert("mid-word wan → want", topHas(mid.chips, "want"),
+        JSON.stringify(mid.chips));
+
+      const like = P.suggest("I would like ", "I would like ".length);
+      assert("I would like → to", topIs(like.chips, "to") || topHas(like.chips, "to"),
+        JSON.stringify(like.chips));
+
+      // Apostrophe-insensitive mid-word (im → i'm style)
+      assert(
+        "matchesPrefix im/i'm",
+        M.matchesPrefix("i'm", "im") === true,
+        "matchesPrefix"
+      );
+
+      // logScoreFlex: bare history expands to contracted LM keys
+      // Fixture has bi "i" → want; after typing bare "i" (same). Add dont-style via loadFromObject re-check:
+      const flexBare = M.logScoreFlex("", "", "i", "want");
+      const flexPlain = M.logScore("", "", "i", "want");
+      assert(
+        "logScoreFlex matches logScore for plain tokens",
+        flexBare != null && flexPlain != null && Math.abs(flexBare - flexPlain) < 1e-9,
+        "flex=" + flexBare + " plain=" + flexPlain
+      );
+
+      // Fuzzy: single substitution via unified fuzzyNeighbors
+      const fuzzy = M.fuzzyNeighbors("thnk", { mode: "prefix", limit: 8 });
+      assert(
+        "fuzzy thnk → think",
+        fuzzy.some((x) => x.word === "think"),
+        JSON.stringify(fuzzy)
+      );
+
+      assert(
+        "keyboard t↔y adjacent",
+        M.isKeyAdjacent("t", "y") === true,
+        "t/y"
+      );
+      const costKb = M.editCost("thimk", "think");
+      const costFar = M.editCost("thizk", "think");
+      assert(
+        "keyboard edit cheaper than far sub",
+        costKb < costFar && costKb < Infinity && costFar < Infinity,
+        "kb=" + costKb + " far=" + costFar
+      );
+
+      const fuzzyKb = M.fuzzyNeighbors("thimk", { mode: "prefix", limit: 8, maxCost: 0.4 });
+      assert(
+        "fuzzy keyboard thimk → think",
+        fuzzyKb.some((x) => x.word === "think") ||
+          M.fuzzyNeighbors("thimk", { mode: "prefix", limit: 8 }).some((x) => x.word === "think"),
+        JSON.stringify(fuzzyKb)
+      );
+
+      const fw = M.fuzzyNeighbors("thrugh", { mode: "word", limit: 8 });
+      assert(
+        "fuzzyWord thrugh → through",
+        fw.some((x) => x.word === "through"),
+        JSON.stringify(fw)
+      );
+
+      // Soft boundary via unified applyInsert → type afterToken
+      {
+        const src = "I went thrugh";
+        const r = P.applyInsert(src, src.length, src.length, " ");
+        assert(
+          "soft correct thrugh → through",
+          r.text.toLowerCase().indexOf("through") >= 0 &&
+            r.text.toLowerCase().indexOf("thrugh") < 0,
+          JSON.stringify(r)
+        );
+        assert("softCorrected set", !!r.softCorrected, JSON.stringify(r));
+      }
+
+      // teh → the (transpose soft or replacePrev chip)
+      {
+        const r2 = P.applyInsert("teh", 3, 3, " ");
+        const softOk =
+          r2.text.toLowerCase().replace(/\s+/g, " ").trim() === "the" ||
+          (r2.softCorrected && String(r2.softCorrected).toLowerCase() === "the");
+        if (!softOk) {
+          const sug = P.suggest(r2.text, r2.caret);
+          const hasReplace = (sug.chips || []).some(
+            (c) => chipText(c).toLowerCase() === "the" && chipAction(c) === "replacePrev"
+          );
+          assert(
+            "did-you-mean chips for teh",
+            hasReplace || topHas(sug.chips, "the"),
+            JSON.stringify(sug)
+          );
+        } else {
+          assert("soft or chip path for teh", true);
+        }
+      }
+
+      {
+        const midFuzzy = P.suggest("I thnk", "I thnk".length);
+        assert(
+          "mid-word thnk → think chip",
+          topHas(midFuzzy.chips, "think"),
+          JSON.stringify(midFuzzy.chips)
+        );
+        assert(
+          "chips are structured",
+          midFuzzy.chips[0] && typeof midFuzzy.chips[0] === "object" && midFuzzy.chips[0].text,
+          JSON.stringify(midFuzzy.chips[0])
+        );
+      }
+
+      // Frequency-list mid-word fallback when mobile is reset
+      M.reset();
+      assert("mobile cleared", M.ready === false);
+      // inject frequencyWords via private path: loadModels not available; use seed + WORD_CLASS
+      // Re-apply fixture then clear mobile to simulate fail, keep freq list from applyFreqList
+      P._loadMobileFromObject(FIXTURE);
+      const wordsSnap = M.words.slice();
+      M.reset();
+      // frequencyWords still set from last _loadMobileFromObject
+      const midNoMobile = P.suggest("I th", "I th".length);
+      assert(
+        "mid-word without mobile still has chips",
+        midNoMobile.chips && midNoMobile.chips.length >= 1,
+        JSON.stringify(midNoMobile.chips)
+      );
+      // restore mobile for any later asserts
+      P._loadMobileFromObject(FIXTURE);
+      void wordsSnap;
+
+      assert("fixture still 24 words", M.words.length === 24, "n=" + M.words.length);
+
+      finish();
+
+      function finish() {
+        lines.push("");
+        lines.push(failed ? failed + " failed, " + passed + " passed" : "All " + passed + " passed");
+        out.textContent = lines.join("\n");
+        out.className = failed ? "fail" : "pass";
+        document.title = (failed ? "FAIL" : "PASS") + " — predict tests";
+      }
+    })();
+  </script>
+</body>
+</html>

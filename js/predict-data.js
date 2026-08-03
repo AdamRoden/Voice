@@ -6,60 +6,51 @@
   "use strict";
 
   const DEFAULT_STARTERS = [
-    "I", "You", "We", "What", "Where", "When", "How", "Why", "Who",
-    "Can", "Could", "Would", "Please", "Hello", "Hi", "Thank", "Sorry", "Yes", "No"
+    "I", "I'm", "You", "We", "What", "How", "Why", "When", "Where", "Who",
+    "Can", "Could", "Would", "Do", "Did", "Is", "Are", "That", "This",
+    "Yes", "No", "Okay", "Sure", "Maybe", "Please", "Thanks", "Sorry",
+    "Hello", "Hi", "Hey", "So", "Well", "Actually", "Just", "Also"
   ];
 
+  /**
+   * Light conversational prior (not a full LM). Mobile forum 4-gram is primary;
+   * this nudges everyday chat phrases the n-gram may under-represent.
+   */
   const CONVERSATION_SEED = `
 Hello how are you today I am fine thank you how about you
-Hi there it is good to see you good morning good afternoon good night
-I would like some help please can you help me with this
-I would like to go home now I would like a drink please
-I would like to talk I would like to rest I would like more time
-I want to go to the store later can we leave soon
-I want to stay here I want some food please I want a snack
-I want to watch a movie I want to listen to music I want to sleep
-I need water please I am thirsty and a little hungry
-I need help please I need a break I need more time I need support
-I need the bathroom where is the restroom please
-I need my phone I need my glasses I need my charger
-That sounds good to me yes please that would be great
-No thank you I am okay for now maybe later not right now
-Yes please no thank you okay sure maybe I think so I do not think so
-What time is it where are we going next what should we do
-What do you think about this what do you want to do
-I am feeling tired I need a break please wait a moment
-I am feeling better I am feeling worse I am feeling okay
-Can you please repeat that I did not understand please speak slowly
-Can you help me with this can you open the door can you close the window
-Can you turn on the light can you turn off the tv can you pass that
-How was your day mine was pretty good overall how was work
-How are you doing today how about you how was school
-I miss you I love you see you soon goodbye for now take care
-Please call me when you get home I will be waiting
-Please call the nurse please call mom please call for help
-Could you open the window it is getting warm in here
-Could you help me sit up could you hand me that please
-I agree with you that makes a lot of sense to me
-I disagree I think we should try a different plan
-Please slow down I need more time to answer give me a second
-I am happy today I am sad today I am excited about this
-I am scared I am frustrated I am bored I am lonely I am proud
-Tell me more about that would you like some help
-Sorry I made a mistake let me try that again I am sorry
-Excuse me could you pass me the remote control
-Do you want to go outside do you want some water do you want help
-Thanks for your help I really appreciate it thank you so much
-You are very kind that means a lot to me you are a good friend
-Have a great day you too take care goodbye see you tomorrow
-Let me know if you need anything I am here for you
-I am not sure about that let me think about it
-I want to go home I want to stay I want to leave now
-It is too loud in here it is too cold it is too hot
-Please be quiet please be gentle that hurts please stop
-I can do it myself I need help doing that
-I like music I like movies I like being outside I like talking
-I do not like that I prefer this instead that is better
+Hi there it is good to see you good morning good afternoon good night hey what is up
+How are you doing today how have you been what is new with you
+I think so I do not think so I am not sure about that let me think about it
+I guess so that makes sense I agree with you I see what you mean
+That sounds good to me that would be great that is fine with me
+Yes please no thank you okay sure maybe later not right now of course
+What do you think about this what do you want to do what should we do
+What time is it where are we going next when do you want to leave
+I would like to go I would like to talk I would like that
+I want to go I want to stay I want to know I want to see
+I need to go I need to leave I need a minute I need to think
+Can you help me with this can you tell me more can you wait a second
+Could you please do that would you like to come along
+Do you want to go do you want to talk do you know what I mean
+I am going to I am trying to I am looking for I am waiting for
+I have to I have been I have not I have a question
+It is okay it is fine it is hard to say it is up to you
+There is a there are some this is why that is why
+I really like I really think I really need I really appreciate
+Thanks for your help thank you so much I appreciate it
+Sorry about that I am sorry let me try that again
+See you soon see you later take care talk to you later goodbye
+Let me know if you need anything keep me posted sounds like a plan
+I will be there I will call you I will text you I will let you know
+We should go we should talk we can figure it out
+Just so you know by the way for example in other words
+I miss you I love you hope you are well have a great day
+Please wait a moment give me a second hang on a minute
+I did not understand can you say that again please speak slowly
+I am busy right now I am free later I am on my way
+I like that I do not like that I prefer this instead
+Tell me more about that that is interesting that is funny
+Maybe we can try something else what if we did this instead
 `;
 
   const WORD_CLASS = {
@@ -96,16 +87,18 @@ I do not like that I prefer this instead that is better
   };
 
   const SEED_TRIGRAMS = [
-    ["i", "would", "like"], ["i", "want", "to"], ["i", "want", "a"], ["i", "want", "some"],
-    ["i", "need", "help"], ["i", "need", "water"], ["i", "need", "a"], ["i", "need", "more"],
-    ["i", "need", "the"], ["i", "need", "to"], ["i", "am", "tired"], ["i", "am", "hungry"],
-    ["i", "am", "thirsty"], ["i", "am", "not"], ["i", "am", "fine"], ["i", "am", "happy"],
-    ["can", "you", "help"], ["can", "you", "please"], ["can", "you", "open"], ["can", "you", "repeat"],
-    ["do", "you", "want"], ["do", "you", "like"], ["do", "you", "have"], ["would", "you", "like"],
-    ["want", "to", "go"], ["want", "to", "talk"], ["need", "to", "go"], ["need", "a", "break"],
-    ["how", "are", "you"], ["thank", "you", "so"], ["let", "me", "know"], ["please", "help", "me"],
-    ["what", "do", "you"], ["where", "is", "the"], ["open", "the", "door"], ["turn", "on", "the"],
-    ["i", "love", "you"], ["i", "miss", "you"], ["see", "you", "soon"], ["i", "do", "not"]
+    ["i", "would", "like"], ["i", "want", "to"], ["i", "want", "a"], ["i", "need", "to"],
+    ["i", "am", "not"], ["i", "am", "going"], ["i", "have", "to"], ["i", "have", "been"],
+    ["i", "do", "not"], ["i", "did", "not"], ["i", "think", "so"], ["i", "think", "that"],
+    ["i", "guess", "so"], ["i", "love", "you"], ["i", "miss", "you"], ["i", "will", "be"],
+    ["can", "you", "help"], ["can", "you", "tell"], ["can", "you", "please"],
+    ["do", "you", "want"], ["do", "you", "think"], ["do", "you", "know"], ["do", "you", "have"],
+    ["would", "you", "like"], ["could", "you", "please"], ["what", "do", "you"],
+    ["how", "are", "you"], ["how", "do", "you"], ["let", "me", "know"], ["let", "me", "see"],
+    ["thank", "you", "so"], ["thanks", "for", "the"], ["see", "you", "soon"], ["see", "you", "later"],
+    ["want", "to", "go"], ["need", "to", "go"], ["going", "to", "be"], ["have", "to", "go"],
+    ["that", "sounds", "good"], ["that", "makes", "sense"], ["sounds", "like", "a"],
+    ["what", "if", "we"], ["by", "the", "way"], ["as", "soon", "as"], ["at", "the", "moment"]
   ];
 
   const SLOT_RULES = [
@@ -204,24 +197,57 @@ I do not like that I prefer this instead that is better
   const SPACE_EATING_PUNCT = new Set([".", ",", "!", "?", ";", ":", ")", "]", "}", "…", "—", "-"]);
   const SENTENCE_END_PUNCT = new Set([".", "!", "?"]);
 
+  /** Log-space chip adjustments (base rank is mobile/seed log10). */
   const SCORE_WEIGHTS = {
-    nextWord: { freq: 0.22, context: 0.42, personal: 0.22, slot: 0.14 },
-    p1: { freq: 0.50, context: 0.25, personal: 0.10, slot: 0.15 },
-    p2: { freq: 0.40, context: 0.30, personal: 0.12, slot: 0.18 },
-    p3: { freq: 0.30, context: 0.32, personal: 0.15, slot: 0.23 },
-    p4: { freq: 0.18, context: 0.32, personal: 0.22, slot: 0.28 },
-    exactMatch: 0.35,
-    prefixGrow: 0.08,
-    orthography: 0.55
+    exactMatchLog: 0.35,
+    prefixGrowLog: 0.08,
+    repeatPrevLog: 0.25,
+    orthography: 0.55,
+    /** Mid-word discount when candidate is keyboard-adjacent fuzzy (not true prefix). */
+    fuzzyKeyboardLog: 0.22,
+    /** Mid-word discount for non-keyboard single-edit fuzzy. */
+    fuzzyOtherLog: 0.45
+  };
+
+  /**
+   * Boundary did-you-mean / soft autocorrect + mid-word fuzzy policy.
+   * Costs: keyboard sub ~0.32, transpose ~0.55, ins/del ~0.72, other sub ~0.85.
+   */
+  const DID_YOU_MEAN = {
+    /** log10 floor for OOV typed token when computing margin. */
+    oovFloor: -8,
+    /** Min (best − typed) log10 margin to soft-rewrite on boundary. */
+    softMargin: 1.1,
+    softMaxCost: 0.9,
+    /** Require this extra margin over 2nd place to soft-apply. */
+    softWinnerGap: 0.25,
+    /** Min margin to pin a did-you-mean chip (no silent rewrite). */
+    chipMargin: 0.5,
+    chipMaxCost: 0.95,
+    chipLimit: 2,
+    /** Mid-word: always take fuzzy neighbors at or below this cost. */
+    fuzzyKeyboardMax: 0.4,
+    /** Mid-word: if pool still thin, accept up to this cost. */
+    fuzzyMaxCost: 0.95,
+    fuzzyLimit: 12
   };
 
   const STUPID_BACKOFF_ALPHA = 0.4;
 
   const FREQ_LIST_URL =
     "https://cdn.jsdelivr.net/gh/first20hours/google-10000-english@master/google-10000-english-usa-no-swears.txt";
+  /** Compact mobile 4-gram LM derived from Vertanen & Kristensson forum model (CC BY 4.0). */
+  const MOBILE_LM_URL = "data/mobile-lm.json.gz";
   const LS_FREQ_KEY = "voice_predict_freq_v1";
   const LS_PERSONAL_KEY = "voice_predict_personal_v1";
   const LS_PERSONAL_TEXT_KEY = "voice_predict_personal_text_v1";
+
+  /** Weak log10 agreement boost when seed and mobile both like a word. */
+  const SEED_LOG_BOOST = 0.08;
+  /** log10 backoff step when higher-order mobile context misses. */
+  const MOBILE_BACKOFF_LOG10 = 0.45;
+  const CANDIDATE_LIMIT = 64;
+  const CHIP_LIMIT = 9;
 
   global.VoicePredictData = {
     DEFAULT_STARTERS,
@@ -238,8 +264,14 @@ I do not like that I prefer this instead that is better
     SPACE_EATING_PUNCT,
     SENTENCE_END_PUNCT,
     SCORE_WEIGHTS,
+    DID_YOU_MEAN,
     STUPID_BACKOFF_ALPHA,
     FREQ_LIST_URL,
+    MOBILE_LM_URL,
+    SEED_LOG_BOOST,
+    MOBILE_BACKOFF_LOG10,
+    CANDIDATE_LIMIT,
+    CHIP_LIMIT,
     LS_FREQ_KEY,
     LS_PERSONAL_KEY,
     LS_PERSONAL_TEXT_KEY

@@ -145,10 +145,14 @@
         assert("ill+space → I'll ", eq(r.text, "I'll "), "got " + JSON.stringify(r.text));
       }
 
-      // dont + space
+      // dont + space (sentence start capitalises)
       {
         const r = T.applyInsert("dont", 4, 4, " ");
-        assert("dont+space → don't ", eq(r.text, "don't "), "got " + JSON.stringify(r.text));
+        assert("dont+space → Don't ", eq(r.text, "Don't "), "got " + JSON.stringify(r.text));
+      }
+      {
+        const r = T.applyInsert("I dont", 6, 6, " ");
+        assert("mid dont+space → don't ", eq(r.text, "I don't "), "got " + JSON.stringify(r.text));
       }
 
       lines.push("");

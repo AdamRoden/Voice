@@ -487,6 +487,18 @@ html.keyboard-open .osk-panel { display: none !important; }
 .osk-pred-chip { flex: 0 0 auto; min-height: 48px; padding: 10px 18px; border: 1px solid var(--border); border-radius: var(--radius-pill); background: var(--key-bg); color: var(--text); font-size: 16px; font-weight: 600; white-space: nowrap; cursor: pointer; }
 .osk-pred-chip:hover { background: var(--key-hover); border-color: var(--accent); color: var(--accent); }
 .osk-pred-chip:active { background: var(--key-active); }
+/* Did-you-mean (replacePrev) — distinct from ordinary append chips */
+.osk-pred-chip--correct {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, var(--key-bg));
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.osk-pred-chip--correct:hover {
+  background: color-mix(in srgb, var(--accent) 26%, var(--key-bg));
+  border-color: var(--accent);
+  color: var(--accent);
+}
 .osk-pred-empty { padding: 0 10px; font-size: 14px; color: var(--text-secondary); text-align: center; }
 /* Key grid — one font size/weight for every key (letters, chrome, icons) */
 .osk-keys { --gap: var(--gap-sm); --fs-key: 18px; display: flex; flex-direction: column; gap: var(--gap-md); }

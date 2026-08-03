@@ -387,30 +387,65 @@
     if (opts.onChange) opts.onChange();
   }
 
+  function chipLabel(chip) {
+    if (chip == null) return "";
+    if (typeof chip === "string") return chip;
+    return chip.text != null ? String(chip.text) : "";
+  }
+
+  function chipAction(chip) {
+    if (chip && typeof chip === "object" && chip.action) return chip.action;
+    return "append";
+  }
+
   function applyPrediction(chip) {
     if (!opts || !chip) return;
+    const label = chipLabel(chip);
+    if (!label) return;
+    const action = chipAction(chip);
     const text = opts.getText ? opts.getText() : "";
     const caret = opts.getCaret ? opts.getCaret() : { start: text.length, end: text.length };
     const upTo = text.slice(0, caret.start);
-    const match = upTo.match(/([a-zA-Z']+)$/i);
-    let start = caret.start;
     const end = caret.end;
-    if (match) start = caret.start - match[1].length;
-    const piece = chip + " ";
+    const replacePrev = action === "replacePrev";
+
+    let start = caret.start;
+    let piece = label + " ";
+
+    if (replacePrev) {
+      // Fail closed: only rewrite when a completed prior word is at the caret.
+      const m = upTo.match(/([a-zA-Z']+)(\s*)$/i);
+      if (!m) return;
+      start = caret.start - m[0].length;
+      const trail = m[2] && m[2].length ? m[2] : " ";
+      piece = label + trail;
+    } else {
+      const match = upTo.match(/([a-zA-Z']+)$/i);
+      if (match) start = caret.start - match[1].length;
+    }
+
     if (typeof opts.setText === "function") {
       opts.setText(text.slice(0, start) + piece + text.slice(end), start + piece.length);
     }
     if (global.VoicePredict && typeof VoicePredict.recordAccept === "function") {
-      VoicePredict.recordAccept(lastSnap.ctxWords || [], chip);
+      const ctx = replacePrev
+        ? (lastSnap.ctxWords || []).slice(0, -1)
+        : lastSnap.ctxWords || [];
+      VoicePredict.recordAccept(ctx, label);
     }
     if (opts.onChange) opts.onChange();
   }
 
-  function makePredChip(label) {
+  function makePredChip(chip) {
+    const label = chipLabel(chip);
     const b = el("button", "osk-pred-chip", label);
     b.type = "button";
+    if (chipAction(chip) === "replacePrev") {
+      b.classList.add("osk-pred-chip--correct");
+      b.title = "Did you mean " + label + "?";
+    }
     b.addEventListener("pointerdown", (e) => e.preventDefault());
-    b.addEventListener("click", () => applyPrediction(label));
+    b.addEventListener("click", () => applyPrediction(chip));
     return b;
   }
 
@@ -434,7 +469,7 @@
     const frag = document.createDocumentFragment();
     const buttons = [];
     for (let i = 0; i < list.length; i++) {
-      const b = makePredChip(list[i]);
+      const b = makePredChip(list[i]); // {text, action} or string
       frag.appendChild(b);
       buttons.push(b);
     }
@@ -492,7 +527,9 @@
       }
     }
     if (!chips.length && !String(text).trim()) {
-      chips = ["I", "You", "Can", "Please", "Hello", "What", "Yes", "No", "Thank"];
+      chips = ["I", "I'm", "You", "What", "How", "Can", "Yes", "No", "Thanks"].map(
+        (t) => ({ text: t, action: "append" })
+      );
     }
     lastSnap = { chips, prefix, ctxWords };
     renderPredictions(chips);
@@ -528,8 +565,14 @@
     if (global.VoicePredict && typeof VoicePredict.init === "function") {
       try {
         VoicePredict.init();
-        if (typeof VoicePredict.loadFrequencyList === "function") {
-          VoicePredict.loadFrequencyList().then(() => {
+        const warm =
+          typeof VoicePredict.loadModels === "function"
+            ? VoicePredict.loadModels()
+            : typeof VoicePredict.loadFrequencyList === "function"
+              ? VoicePredict.loadFrequencyList()
+              : null;
+        if (warm && typeof warm.then === "function") {
+          warm.then(() => {
             if (visible) refresh();
           }).catch(() => {});
         }
