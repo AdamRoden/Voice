@@ -1364,6 +1364,8 @@ function defaultLoadKeys(storageKey) {
       applyModelUi,
       isElevenModelSelected,
       isVoicesPanelOpen,
+      openVoicesPanel,
+      closeVoicesPanel,
       hasElevenApiKey,
       getBrowserVoiceIndex: () => browserVoiceIndex,
       getPiperVoiceId: () => piperVoiceId,

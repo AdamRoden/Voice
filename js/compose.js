@@ -12,7 +12,8 @@
   const SAVED_TAGS_STORAGE_KEY = "aac_saved_tags";
 
   /**
-   * Display field helpers: caret, word chips, tag insert, insert/delete navigation.
+   * Display field helpers: caret, chips, tags, insert/delete, undo/redo history.
+   * d.setText is the raw paint path (no history). Use commitText for tracked edits.
    * @param {{
    *   displayInput: HTMLTextAreaElement,
    *   getText: () => string,
@@ -26,7 +27,8 @@
    *   setSavedSelection: (sel: { start: number|null, end: number|null }) => void,
    *   scheduleKeyboardAlign?: () => void,
    *   getCurrentFontSize?: () => number,
-   *   onAfterAutosize?: () => void
+   *   onAfterAutosize?: () => void,
+   *   insertChunk?: (chunk: string) => void
    * }} deps
    */
   function createDisplay(deps) {
@@ -44,6 +46,181 @@
     const displayInput = d.displayInput;
     let savedTagsList = loadSavedTags();
     let savedTagsInputTimer = null;
+
+    // ---- Undo / redo (owns history; raw paint stays d.setText) ----
+    const HISTORY_LIMIT = 80;
+    /** @type {{ text: string, caret: number }[]} */
+    let undoStack = [];
+    /** @type {{ text: string, caret: number }[]} */
+    let redoStack = [];
+    let knownText = displayInput ? String(displayInput.value || "") : "";
+    let caretBeforeNative = 0;
+    let applyQuiet = false;
+    /** Coalesce rapid native typing into one undo step. */
+    let lastNativeKind = "";
+    let lastNativeAt = 0;
+    const NATIVE_COALESCE_MS = 800;
+
+    function readCaret() {
+      try {
+        if (typeof displayInput.selectionStart === "number") return displayInput.selectionStart;
+      } catch (_) {}
+      const saved = d.getSavedSelection() || {};
+      if (saved.start != null && Number.isFinite(saved.start)) return saved.start;
+      return d.getText().length;
+    }
+
+    function pushUndo(prev) {
+      if (!prev) return;
+      const last = undoStack[undoStack.length - 1];
+      if (last && last.text === prev.text) return;
+      undoStack.push(prev);
+      if (undoStack.length > HISTORY_LIMIT) undoStack.shift();
+      redoStack = [];
+    }
+
+    function saveNativeSelection() {
+      try {
+        d.setSavedSelection({
+          start: displayInput.selectionStart,
+          end: displayInput.selectionEnd
+        });
+      } catch (_) {}
+    }
+
+    /**
+     * Tracked text mutation. Prefer this over d.setText for user edits.
+     * @param {string} val
+     * @param {number} [caret]
+     * @param {{ skipHistory?: boolean }} [opts]
+     */
+    function commitText(val, caret, opts) {
+      const next = val == null ? "" : String(val);
+      const skip = !!(opts && opts.skipHistory);
+      if (!skip && knownText !== next) {
+        pushUndo({ text: knownText, caret: readCaret() });
+        lastNativeKind = "";
+      }
+      applyQuiet = true;
+      try {
+        const pos = caret == null ? next.length : caret;
+        d.setText(next, pos);
+        knownText = next;
+      } finally {
+        applyQuiet = false;
+      }
+    }
+
+    function resetHistory() {
+      undoStack = [];
+      redoStack = [];
+      knownText = d.getText();
+      lastNativeKind = "";
+    }
+
+    function noteNativeBeforeEdit() {
+      caretBeforeNative = readCaret();
+    }
+
+    /**
+     * @param {InputEvent|Event} [e]
+     */
+    function onNativeInput(e) {
+      if (applyQuiet) return;
+      // Mid-IME: wait for compositionend / final input.
+      if (e && e.isComposing) return;
+      try {
+        if (displayInput && displayInput.composing) return;
+      } catch (_) {}
+
+      const next = d.getText();
+      if (next === knownText) return;
+
+      const now = Date.now();
+      const grew =
+        next.length > knownText.length
+        && next.slice(0, knownText.length) === knownText;
+      const shrunk =
+        next.length < knownText.length
+        && knownText.slice(0, next.length) === next;
+
+      // Coalesce rapid insert bursts (one undo for a word typed quickly).
+      if (
+        grew
+        && lastNativeKind === "insert"
+        && now - lastNativeAt < NATIVE_COALESCE_MS
+      ) {
+        knownText = next;
+        lastNativeAt = now;
+        saveNativeSelection();
+        return;
+      }
+
+      pushUndo({ text: knownText, caret: caretBeforeNative });
+      if (grew) lastNativeKind = "insert";
+      else if (shrunk) lastNativeKind = "delete";
+      else lastNativeKind = "other";
+      lastNativeAt = now;
+      knownText = next;
+      saveNativeSelection();
+    }
+
+    function undo() {
+      if (!undoStack.length) return false;
+      const cur = { text: d.getText(), caret: readCaret() };
+      const prev = undoStack.pop();
+      redoStack.push(cur);
+      commitText(prev.text, prev.caret, { skipHistory: true });
+      d.focusDisplayInput();
+      return true;
+    }
+
+    function redo() {
+      if (!redoStack.length) return false;
+      const cur = { text: d.getText(), caret: readCaret() };
+      const next = redoStack.pop();
+      undoStack.push(cur);
+      if (undoStack.length > HISTORY_LIMIT) undoStack.shift();
+      commitText(next.text, next.caret, { skipHistory: true });
+      d.focusDisplayInput();
+      return true;
+    }
+
+    function selectAll() {
+      try {
+        displayInput.focus({ preventScroll: true });
+        const len = d.getText().length;
+        displayInput.setSelectionRange(0, len);
+        d.setSavedSelection({ start: 0, end: len });
+      } catch (_) {
+        try {
+          displayInput.focus();
+          displayInput.select();
+        } catch (__) {}
+      }
+    }
+
+    async function clipboard(op) {
+      const text = d.getText();
+      const { start, end } = getDisplayCaretRange();
+      const a = Math.min(start, end);
+      const b = Math.max(start, end);
+      if (op === "copy" || op === "cut") {
+        const slice = a !== b ? text.slice(a, b) : text;
+        if (slice && navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(slice).catch(() => {});
+        }
+        if (op === "cut" && a !== b) commitText(text.slice(0, a) + text.slice(b), a);
+      } else if (op === "paste" && navigator.clipboard?.readText) {
+        const clip = await navigator.clipboard.readText().catch(() => "");
+        if (!clip) return;
+        if (typeof d.insertChunk === "function") d.insertChunk(clip);
+        else {
+          const next = text.slice(0, a) + clip + text.slice(b);
+          commitText(next, a + clip.length);
+        }
+      }
+    }
 
     function tokenizeDisplayWords(text) {
       const tokens = [];
@@ -65,7 +242,7 @@
       if (end < text.length && /\s/.test(text[end])) end += 1;
       else if (start > 0 && /\s/.test(text[start - 1])) start -= 1;
       const next = text.slice(0, start) + text.slice(end);
-      d.setText(next, Math.min(start, next.length));
+      commitText(next, Math.min(start, next.length));
       d.announceLive(`Removed ${t.text}`);
       d.focusDisplayInput();
     }
@@ -146,7 +323,7 @@
       const padded = padInsertAgainstNeighbors(text, start, end, insert);
       const next = text.substring(0, start) + padded + text.substring(end);
       const newCaret = start + padded.length;
-      d.setText(next, newCaret);
+      commitText(next, newCaret);
       d.focusDisplayInput();
     }
 
@@ -154,7 +331,7 @@
       const text = d.getText();
       const { start, end } = getDisplayCaretRange();
       if (start !== end) {
-        d.setText(text.substring(0, start) + text.substring(end), start);
+        commitText(text.substring(0, start) + text.substring(end), start);
         d.focusDisplayInput();
         return;
       }
@@ -165,7 +342,7 @@
       let i = start;
       while (i > 0 && /\s/.test(text[i - 1])) i--;
       while (i > 0 && !/\s/.test(text[i - 1])) i--;
-      d.setText(text.substring(0, i) + text.substring(start), i);
+      commitText(text.substring(0, i) + text.substring(start), i);
       d.focusDisplayInput();
     }
 
@@ -296,6 +473,20 @@
     }
 
     function bind() {
+      // Native hardware typing / delete that bypasses commitText
+      displayInput.addEventListener("beforeinput", () => noteNativeBeforeEdit());
+      displayInput.addEventListener("input", (e) => onNativeInput(e));
+      displayInput.addEventListener("compositionend", () => {
+        // Final composed string may not re-fire a meaningful history step if we skipped mid-IME.
+        noteNativeBeforeEdit();
+        onNativeInput({ isComposing: false });
+      });
+      displayInput.addEventListener("keydown", (e) => {
+        if (!e.metaKey && !e.ctrlKey && (e.key === "Backspace" || e.key === "Delete")) {
+          noteNativeBeforeEdit();
+        }
+      });
+
       document.getElementById("saved-tags-input")?.addEventListener("input", onSavedTagsInputChange);
       document.getElementById("saved-tags-input")?.addEventListener("change", () => {
         const input = document.getElementById("saved-tags-input");
@@ -329,6 +520,12 @@
       insertBracketTag,
       syncSpeakClearToDisplayHeight,
       autosizeDisplayInput,
+      commitText,
+      resetHistory,
+      undo,
+      redo,
+      selectAll,
+      clipboard,
       bind
     };
   }
@@ -376,10 +573,27 @@
         btn.className = `compose-actions-item${item.disabled ? " is-disabled" : ""}`;
         btn.setAttribute("role", "menuitem");
         btn.disabled = !!item.disabled;
-        btn.innerHTML = `
-          <span class="material-symbols-outlined">${item.icon}</span>
-          <span>${item.label}</span>
-        `;
+        const chord = typeof d.actionHotkeyChord === "function"
+          ? (d.actionHotkeyChord(item.id) || "")
+          : "";
+        btn.innerHTML = "";
+        const icon = document.createElement("span");
+        icon.className = "material-symbols-outlined";
+        icon.textContent = item.icon;
+        const label = document.createElement("span");
+        label.className = "compose-actions-label";
+        label.textContent = item.label;
+        btn.appendChild(icon);
+        btn.appendChild(label);
+        if (chord) {
+          const kbd = document.createElement("kbd");
+          kbd.className = "compose-actions-shortcut";
+          kbd.textContent = chord;
+          btn.appendChild(kbd);
+          btn.title = `${item.label} (${chord})`;
+        } else {
+          btn.title = item.label;
+        }
         btn.addEventListener("click", (e) => {
           e.stopPropagation();
           if (item.disabled) return;

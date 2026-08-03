@@ -335,20 +335,52 @@
     }
 
     function getText() { return displayInput.value; }
-    function setText(val, caret = val.length) {
-      displayInput.value = val;
-      const len = val.length;
-      const pos = Math.max(0, Math.min(caret, len));
+
+    /**
+     * Raw paint path (no undo). ComposeDisplay.commitText wraps this for edits.
+     * Callers that need history go through setText → commitText once display exists.
+     */
+    function applyText(val, caret = (val == null ? "" : String(val)).length) {
+      const next = val == null ? "" : String(val);
+      const prev = displayInput.value;
+      displayInput.value = next;
+      const len = next.length;
+      const pos = Math.max(0, Math.min(caret == null ? len : caret, len));
       try { displayInput.setSelectionRange(pos, pos); } catch (_) {}
       savedDisplaySelection = { start: pos, end: pos };
       autosizeDisplayInput();
       syncGeneratedAudioActions();
       syncComposeStrip();
-      // Only refresh chips when OSK is open (not on history restore / bulk setText)
+      // Programmatic value changes do not fire `input`; keep workspace chat snapshot current
+      // (undo/redo, OSK cut, clear, history restore, etc.).
+      if (prev !== next) {
+        try { ports.onWorkspaceDisplayInput(); } catch (_) {}
+      }
       if (window.VoiceOsk && VoiceOsk.isVisible() && typeof VoiceOsk.schedulePredict === "function") {
         try { VoiceOsk.schedulePredict(); } catch (_) {}
       }
     }
+
+    /**
+     * Canonical compose text write. Tracks undo via ComposeDisplay when ready.
+     * @param {string} val
+     * @param {number} [caret]
+     * @param {{ skipHistory?: boolean }} [opts]
+     */
+    function setText(val, caret, opts) {
+      if (ComposeDisplay && typeof ComposeDisplay.commitText === "function") {
+        ComposeDisplay.commitText(val, caret, opts);
+        return;
+      }
+      applyText(val, caret == null ? undefined : caret);
+    }
+
+    function resetComposeHistory() {
+      if (ComposeDisplay && typeof ComposeDisplay.resetHistory === "function") {
+        ComposeDisplay.resetHistory();
+      }
+    }
+
     /** Caret-only move (no text mutation side effects beyond chip refresh). */
     function setCaret(pos) {
       const len = displayInput.value.length;
@@ -390,11 +422,11 @@
       requestAnimationFrame(() => { el.textContent = String(msg || ""); });
     }
 
-    // Compose display created early (ports resolve Shell later)
+    // Compose display: applyText = raw paint; setText → commitText (history).
     ComposeDisplay = ComposeApi.createDisplay({
       displayInput,
       getText,
-      setText,
+      setText: applyText,
       focusDisplayInput,
       announceLive,
       openModal: (id) => ports.openModal(id),
@@ -403,7 +435,8 @@
       getSavedSelection: () => savedDisplaySelection,
       setSavedSelection: (sel) => { savedDisplaySelection = sel; },
       scheduleKeyboardAlign,
-      getCurrentFontSize: () => currentFontSize
+      getCurrentFontSize: () => currentFontSize,
+      insertChunk: (chunk) => composeInsert(chunk)
     });
     const syncComposeStrip = () => ComposeDisplay.syncComposeStrip();
     const getDisplayCaretRange = () => ComposeDisplay.getDisplayCaretRange();
@@ -447,6 +480,9 @@
       focusDisplayInput();
     }
 
+    /** @type {ReturnType<typeof window.AacHotkeys.create>|null} */
+    let Hotkeys = null;
+
     function initVoiceOsk() {
       const panel = $("osk-panel");
       if (!panel || !window.VoiceOsk || typeof VoiceOsk.bindCompose !== "function") return;
@@ -465,28 +501,7 @@
         onChange: null,
         onSystemKeyboard: expectSystemKeyboard,
         onLayout: () => scheduleKeyboardAlign({ settle: true }),
-        selectAll: () => {
-          try {
-            displayInput.focus();
-            displayInput.select();
-          } catch (_) {}
-        },
-        clipboard: async (op) => {
-          const text = getText();
-          const { start, end } = getDisplayCaretRange();
-          const a = Math.min(start, end);
-          const b = Math.max(start, end);
-          if (op === "copy" || op === "cut") {
-            const slice = a !== b ? text.slice(a, b) : text;
-            if (slice && navigator.clipboard?.writeText) {
-              await navigator.clipboard.writeText(slice).catch(() => {});
-            }
-            if (op === "cut" && a !== b) setText(text.slice(0, a) + text.slice(b), a);
-          } else if (op === "paste" && navigator.clipboard?.readText) {
-            const clip = await navigator.clipboard.readText().catch(() => "");
-            if (clip) composeInsert(clip);
-          }
-        }
+        onCommand: (key) => !!(Hotkeys && Hotkeys.run(key))
       });
     }
 
@@ -507,13 +522,12 @@
       if (composePin) {
         composePin.disabled = !hasText;
         composePin.classList.toggle("is-disabled", !hasText);
-        composePin.title = hasText ? "Pin message to button" : "Type something to pin";
       }
       if (composeReplay) {
         composeReplay.disabled = !replayOk;
         composeReplay.classList.toggle("is-disabled", !replayOk);
-        composeReplay.title = replayOk ? "Replay message" : "Speak first to enable replay";
       }
+      Hotkeys?.refreshDynamicTitles?.();
       if (Compose && Compose.isOpen()) Compose.render();
       const showAudio = Features.get("messageWords") && replayOk;
       if (audioActionsBar) audioActionsBar.classList.toggle("active", showAudio);
@@ -527,11 +541,12 @@
       ports.onWorkspaceDisplayInput();
     });
     displayInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
+      if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
         if (Speech && !speakBtn?.disabled) Speech.speakText();
         return;
       }
+      // Shift+Backspace word-delete; Cmd/Ctrl+Backspace via hotkeys.
       if (e.key === "Backspace" && e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
         e.preventDefault();
         deleteWholeWordBeforeCaret();
@@ -744,6 +759,7 @@
       lsGetJson,
       getText,
       setText,
+      resetComposeHistory,
       focusDisplayInput,
       syncComposeStrip,
       syncGeneratedAudioActions,
@@ -765,7 +781,8 @@
       openTagInsertModal,
       openModal: (id) => ports.openModal(id),
       renderHistory: () => ports.renderHistory(),
-      setHeaderTopicMenuOpen: (open) => Workspace.setHeaderTopicMenuOpen(open)
+      setHeaderTopicMenuOpen: (open) => Workspace.setHeaderTopicMenuOpen(open),
+      actionHotkeyChord: (id) => (Hotkeys ? Hotkeys.chordForComposeAction(id) : null)
     });
     Compose.bind();
 
@@ -923,6 +940,49 @@
     });
     Voices.bind();
     Speech.bind();
+
+    // ==================== HOTKEYS (catalog in AacHotkeys) ====================
+    function stepActiveTopic(delta) {
+      if (!Topics || typeof Topics.getTopicsList !== "function") return;
+      const list = Topics.getTopicsList() || [];
+      if (!list.length) return;
+      const id = Topics.getActiveTopicId();
+      let i = list.findIndex((t) => t.id === id);
+      if (i < 0) i = 0;
+      const n = list.length;
+      const next = list[((i + delta) % n + n) % n];
+      if (!next || next.id === id) return;
+      Topics.switchTopic(next.id);
+    }
+
+    if (window.AacHotkeys && typeof window.AacHotkeys.create === "function") {
+      Hotkeys = window.AacHotkeys.create({
+        displayInput,
+        openNestedModal: (id) => (Shell ? Shell.openNestedModal(id) : null),
+        closeNestedModal: (id) => Shell?.closeNestedModal(id),
+        closeModals: () => ports.closeModals(),
+        openModal: (id) => ports.openModal(id),
+        actions: {
+          selectAll: () => ComposeDisplay?.selectAll?.(),
+          undo: () => ComposeDisplay?.undo?.(),
+          redo: () => ComposeDisplay?.redo?.(),
+          cut: () => ComposeDisplay?.clipboard?.("cut"),
+          copy: () => ComposeDisplay?.clipboard?.("copy"),
+          paste: () => ComposeDisplay?.clipboard?.("paste"),
+          backword: () => deleteWholeWordBeforeCaret(),
+          clearMessage: () => ports.clearDisplayText(),
+          voiceSettings: () => ports.switchSidebarTab("voice", true),
+          voiceSelector: () => Voices?.openVoicesPanel?.(),
+          history: () => Compose?.run?.("history"),
+          insertTag: () => openTagInsertModal(),
+          pin: () => Compose?.run?.("pin"),
+          replay: () => Compose?.run?.("replay"),
+          prevTopic: () => stepActiveTopic(-1),
+          nextTopic: () => stepActiveTopic(1)
+        }
+      });
+    }
+
     function syncOfflineBanner() {
       const banner = document.getElementById("offline-banner");
       if (!banner) return;
@@ -990,6 +1050,7 @@
 
       ensureKeyboard()?.bind();
       initVoiceOsk();
+      Hotkeys?.bind?.();
 
       Workspace.render();
       Features.apply();

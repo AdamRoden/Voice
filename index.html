@@ -375,10 +375,32 @@
         <li><strong>Topic chats</strong> — each open topic is its own chat (1–5, no duplicates). Tap an inactive chip to switch; tap the <strong>active</strong> chip for the topics menu.</li>
         <li><strong>Sounds</strong> — <span class="material-symbols-outlined coach-inline-icon">grid_view</span> <strong>buttons</strong> play their audio.</li>
         <li><strong>Text box</strong> — <span class="material-symbols-outlined coach-inline-icon">more_horiz</span> <strong>Actions</strong> for clear, pin, replay, tags, and history; <span class="material-symbols-outlined coach-inline-icon">volume_up</span> <strong>speaker</strong> speaks (or press Enter).</li>
+        <li><strong>Shortcuts</strong> — composer buttons show their keys in tooltips; open the full list with <strong>Keyboard shortcuts</strong> below.</li>
       </ol>
+      <button type="button" class="status-btn help-hotkeys-btn" id="help-hotkeys-btn">
+        <span class="material-symbols-outlined icon-medium icon-btn-margin">keyboard</span>
+        Keyboard shortcuts
+        <span class="material-symbols-outlined icon-small">chevron_right</span>
+      </button>
     </div>
     <div class="modal-buttons">
       <button type="button" class="modal-btn primary" id="coach-dismiss-btn">Got it</button>
+    </div>
+  </div>
+
+  <!-- Keyboard shortcuts (from Help) -->
+  <div class="modal modal-full-mobile" id="modal-hotkeys" role="dialog" aria-modal="true" aria-labelledby="modal-hotkeys-title">
+    <div class="modal-title" id="modal-hotkeys-title">
+      <span class="material-symbols-outlined icon-medium" style="vertical-align: -0.15em; margin-right: 6px; color: var(--accent);">keyboard</span>
+      Keyboard shortcuts
+    </div>
+    <div class="modal-scroll">
+      <div class="modal-description" id="hotkeys-blurb">Press Ctrl or ⌘ plus a key. On the on-screen keyboard, tap ⌘ then a key.</div>
+      <div id="hotkeys-list" class="hotkeys-list"></div>
+    </div>
+    <div class="modal-buttons">
+      <button type="button" class="modal-btn secondary" id="hotkeys-back-btn">Back</button>
+      <button type="button" class="modal-btn primary" id="hotkeys-close-btn">Close</button>
     </div>
   </div>
 
@@ -745,6 +767,7 @@
   <script src="js/topics.js" defer></script>
   <script src="js/workspace.js" defer></script>
   <script src="js/compose.js" defer></script>
+  <script src="js/hotkeys.js" defer></script>
   <script src="js/history-ui.js" defer></script>
   <script src="js/shell-ui.js" defer></script>
   <script src="js/icon-studio.js" defer></script>

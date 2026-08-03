@@ -19,6 +19,7 @@
       "focusDisplayInput", "syncComposeStrip", "syncGeneratedAudioActions",
       "autosizeDisplayInput", "escapeHtml", "topicsDeps"
     ];
+    // Optional: resetComposeHistory — clear undo/redo when swapping chats.
     for (const key of required) {
       if (d[key] === undefined || d[key] === null) {
         throw new Error(`AacWorkspace missing required dep: ${key}`);
@@ -287,7 +288,9 @@
 
     function applyChatToWorkspace(chat) {
       const c = normalizeChat(chat, Topics.getActiveTopicId());
-      d.setText(c.text || "", (c.text || "").length);
+      // Chat switch is not a compose edit — drop undo/redo for the previous field.
+      if (typeof d.resetComposeHistory === "function") d.resetComposeHistory();
+      d.setText(c.text || "", (c.text || "").length, { skipHistory: true });
 
       const list = Topics.getTopicsList();
       const tid = c.topicId && list.some((t) => t.id === c.topicId)

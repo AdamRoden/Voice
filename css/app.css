@@ -380,6 +380,64 @@ body.osk-visible .display-textarea { max-height: min(180px, calc(var(--vv-height
 .help-list { margin: 0; padding-left: 1.25em; font-size: 14px; line-height: 1.5; color: var(--text); display: flex; flex-direction: column; gap: var(--gap-xl); }
 .help-list li { margin: 0; }
 .coach-inline-icon { font-size: 16px !important; width: 1em; height: 1em; vertical-align: -0.2em; color: var(--accent); margin: 0 1px; }
+.help-hotkeys-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-md);
+  width: 100%;
+  margin-top: 4px;
+  text-align: left;
+}
+.help-hotkeys-btn .icon-small { margin-left: auto; color: var(--text-secondary); }
+/* Keyboard shortcuts modal */
+.hotkeys-list { display: flex; flex-direction: column; gap: var(--gap-2xl); }
+.hotkeys-group { display: flex; flex-direction: column; gap: var(--gap-md); }
+.hotkeys-group-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.hotkeys-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--bg-main);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.hotkeys-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-xl);
+  padding: 10px 12px;
+  min-height: var(--touch-min);
+  border-bottom: 1px solid var(--border);
+}
+.hotkeys-row:last-child { border-bottom: none; }
+.hotkeys-row-label { font-size: 14px; font-weight: 500; color: var(--text); }
+.hotkeys-chord,
+.compose-actions-shortcut {
+  flex-shrink: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 4px 7px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--key-bg);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 /* Topic chats (workspace header): each stores text + topic */
 .chat-slots { display: flex; align-items: center; justify-content: center; gap: var(--gap-md); flex-shrink: 0; }
 .chat-chip { width: 40px; min-width: 40px; height: calc(40px * var(--wh-h, 1)); min-height: calc(40px * var(--wh-h, 1)); border-radius: var(--wh-radius-btn, 10px); border: 1px solid var(--border); background: var(--key-bg); color: var(--text-secondary); font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; overflow: hidden; transition: background 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s, height 0.15s ease, border-radius 0.15s ease; flex-shrink: 0; }
@@ -479,6 +537,8 @@ body:not([data-feat-compose-history="1"]) #compose-history-btn { display: none !
 .compose-actions-item { display: flex; align-items: center; gap: var(--gap-xl); width: 100%; padding: 10px 12px; border: none; border-radius: var(--radius-lg); background: transparent; color: var(--text); font-size: 14px; font-weight: 500; text-align: left; cursor: pointer; min-height: var(--touch-min); }
 .compose-actions-item:hover { background: var(--bg-surface-hover); }
 .compose-actions-item .material-symbols-outlined { font-size: 20px; flex-shrink: 0; color: var(--accent); }
+.compose-actions-label { flex: 1 1 auto; min-width: 0; }
+.compose-actions-shortcut { margin-left: auto; }
 .compose-mode-wrap { position: relative; flex: 0 0 auto; align-self: flex-end; margin-bottom: 2px; }
 .compose-mode-btn { gap: var(--gap-sm); max-width: min(200px, 36vw); height: 40px; min-height: 40px; padding: 0 10px 0 8px; border-radius: var(--radius-pill); background: var(--key-bg); color: var(--text); border: 1px solid transparent; font-size: 13px; font-weight: 600; }
 .compose-mode-btn:hover { background: var(--key-hover); border-color: var(--border); }

@@ -3,8 +3,10 @@
  * Orthography lives in composeInsert (app); this module never calls applyInsert.
  *
  * Public API:
- *   VoiceOsk.bindCompose({ ... })
+ *   VoiceOsk.bindCompose({ ... onCommand? })
  *   VoiceOsk.setVisible(bool) / isVisible() / schedulePredict() / refresh()
+ *
+ * Command key (⌘): host onCommand(key) — same table as hardware Cmd/Ctrl (AacHotkeys).
  *
  * Chip refresh ownership: schedulePredict only when
  *   (a) host setText runs while OSK is visible, or
@@ -242,7 +244,12 @@
   /** Action key handlers — keep onKeyClick a thin dispatcher. */
   const ACTION_HANDLERS = {
     backspace() {
-      doBackspace(isCtrl);
+      if (isCtrl && typeof opts.onCommand === "function") {
+        opts.onCommand("backspace");
+        consumeModifiers();
+        return;
+      }
+      doBackspace(false);
       consumeModifiers();
     },
     shift() {
@@ -290,30 +297,13 @@
     consumeModifiers();
   }
 
+  /** Command-key chords (⌘ then letter) → host onCommand (AacHotkeys). */
   function handleCtrlChord(chVal) {
+    if (typeof opts.onCommand !== "function") return;
     const lower = String(chVal).toLowerCase();
-    if (lower === "a" && typeof opts.selectAll === "function") {
-      opts.selectAll();
-      return;
-    }
-    if ((lower === "c" || lower === "x") && typeof opts.clipboard === "function") {
-      // cut → setText → schedulePredict via host; copy needs no chip refresh
-      Promise.resolve(opts.clipboard(lower === "x" ? "cut" : "copy")).catch(() => {});
-      return;
-    }
-    if (lower === "v" && typeof opts.clipboard === "function") {
-      Promise.resolve(opts.clipboard("paste")).catch(() => {});
-      return;
-    }
-    if (lower === "z" && typeof opts.undo === "function") {
-      opts.undo();
-      schedulePredict(); // may not go through setText
-      return;
-    }
-    if (lower === "y" && typeof opts.redo === "function") {
-      opts.redo();
-      schedulePredict();
-    }
+    const handled = opts.onCommand(lower);
+    // Host setText already schedules chips; only force refresh when undo/redo ran.
+    if (handled !== false && (lower === "z" || lower === "y")) schedulePredict();
   }
 
   /** Host owns orthography via insertText (composeInsert → setText → schedule). */
@@ -674,10 +664,7 @@
       lsGet,
       lsSet,
       onChange,
-      selectAll,
-      clipboard,
-      undo,
-      redo
+      onCommand
     } = optsIn;
     if (!panel) return;
 
@@ -713,10 +700,7 @@
       persistPref: (pref) => {
         if (lsSet) lsSet(LS_OSK, pref ? "1" : "0");
       },
-      selectAll,
-      clipboard,
-      undo,
-      redo
+      onCommand
     });
 
     if (toggleBtn) {
