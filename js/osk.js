@@ -214,7 +214,7 @@
 
   /**
    * Publish keyboard row height as --osk-row-h so the prediction strip can
-   * size to 50% of a letter-key row (CSS: calc(var(--osk-row-h) * 0.5)).
+   * size to 70% of a letter-key row (CSS: calc(var(--osk-row-h) * 0.7)).
    */
   function syncKeyRowHeight() {
     if (!root || !keysEl) return;
