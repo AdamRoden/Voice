@@ -152,6 +152,7 @@
   let predTimer = 0;
   let lastSnap = { chips: [], prefix: "", ctxWords: [] };
   let predResizeObserver = null;
+  let keysResizeObserver = null;
 
   function el(tag, cls, text) {
     const n = document.createElement(tag);
@@ -208,6 +209,28 @@
     if (!keysEl) return;
     keysEl.innerHTML = "";
     currentLayout().forEach((rowSpec) => appendFaceRow(keysEl, rowSpec));
+    syncKeyRowHeight();
+  }
+
+  /**
+   * Publish keyboard row height as --osk-row-h so the prediction strip can
+   * size to 50% of a letter-key row (CSS: calc(var(--osk-row-h) * 0.5)).
+   */
+  function syncKeyRowHeight() {
+    if (!root || !keysEl) return;
+    const sample =
+      keysEl.querySelector(".osk-key.char") || keysEl.querySelector(".osk-key");
+    if (!sample) return;
+    const h = sample.getBoundingClientRect().height;
+    if (h > 0) root.style.setProperty("--osk-row-h", h.toFixed(2) + "px");
+  }
+
+  function ensureKeysResizeObserver() {
+    if (!keysEl || keysResizeObserver || typeof ResizeObserver === "undefined") return;
+    keysResizeObserver = new ResizeObserver(() => {
+      syncKeyRowHeight();
+    });
+    keysResizeObserver.observe(keysEl);
   }
 
   function keyBtn(label, cls, action, char, icon) {
@@ -496,6 +519,10 @@
       predResizeObserver.disconnect();
       predResizeObserver = null;
     }
+    if (keysResizeObserver) {
+      keysResizeObserver.disconnect();
+      keysResizeObserver = null;
+    }
     root.innerHTML = "";
     root.classList.add("osk-panel");
     const top = el("div", "osk-top-strip");
@@ -510,6 +537,7 @@
     renderKeys();
     renderPredictions([]);
     ensurePredResizeObserver();
+    ensureKeysResizeObserver();
   }
 
   /** Internal mount — not on public API; use bindCompose. */
@@ -622,6 +650,11 @@
           navigator.virtualKeyboard.hide();
         }
       } catch (_) {}
+      // Keys may not have a laid-out height until the panel is shown.
+      requestAnimationFrame(() => {
+        syncKeyRowHeight();
+        recapPredictions();
+      });
       refresh();
     }
 

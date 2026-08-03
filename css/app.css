@@ -598,10 +598,52 @@ body:not([data-feat-compose-history="1"]) #compose-history-btn { display: none !
 .osk-panel[hidden] { display: none !important; }
 /* System soft keyboard: hide custom OSK panel entirely from layout. */
 html.keyboard-open .osk-panel { display: none !important; }
-/* Predictions — gap from --osk-pred-gap (set in js/osk.js PRED_GAP_PX); chips centered in the strip */
-.osk-top-strip { display: flex; align-items: center; justify-content: center; min-height: 52px; min-width: 0; width: 100%; }
-.osk-pred-row { display: flex; flex: 1; align-items: center; justify-content: center; gap: var(--osk-pred-gap, 6px); min-width: 0; min-height: 48px; overflow: hidden; padding: 4px 0; }
-.osk-pred-chip { flex: 0 0 auto; min-height: 48px; padding: 10px 18px; border: 1px solid var(--osk-key-border); border-radius: var(--radius-pill); background: var(--osk-chip-bg); color: var(--osk-char-fg); font-size: 16px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+/* Predictions — height = 50% of a keyboard row (--osk-row-h from js/osk.js).
+ * Gap: --osk-pred-gap (PRED_GAP_PX). Short chips share min unit width (4ch). */
+.osk-top-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(var(--osk-row-h, 48px) * 0.5);
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  flex-shrink: 0;
+}
+.osk-pred-row {
+  display: flex;
+  flex: 1;
+  align-items: stretch;
+  justify-content: center;
+  gap: var(--osk-pred-gap, 6px);
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+}
+.osk-pred-chip {
+  --osk-pred-pad-x: 12px;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: auto;
+  min-height: 0;
+  padding: 0 var(--osk-pred-pad-x);
+  /* Short labels share one unit; longer words grow with content */
+  min-width: calc(4ch + 2 * var(--osk-pred-pad-x));
+  border: 1px solid var(--osk-key-border);
+  border-radius: var(--radius-pill);
+  background: var(--osk-chip-bg);
+  color: var(--osk-char-fg);
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
 .osk-pred-chip:hover { background: var(--osk-chip-bg-hover); border-color: var(--accent); color: var(--accent); }
 .osk-pred-chip:active { background: var(--osk-chip-bg-active); }
 /* Did-you-mean (replacePrev) — distinct from ordinary append chips */
@@ -616,11 +658,20 @@ html.keyboard-open .osk-panel { display: none !important; }
   border-color: var(--accent);
   color: var(--accent);
 }
-.osk-pred-empty { padding: 0 10px; font-size: 14px; color: var(--text-secondary); text-align: center; }
+.osk-pred-empty {
+  align-self: center;
+  padding: 0 10px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 /* Key grid — --row-units/--gaps/--u from JS; height = 1 letter unit via aspect-ratio */
 .osk-keys {
   --gap: var(--gap-sm);
-  --fs-key: 18px;
+  --fs-key: 30px;
   display: flex;
   flex-direction: column;
   gap: var(--gap-md);
@@ -644,7 +695,7 @@ html.keyboard-open .osk-panel { display: none !important; }
   background: var(--osk-action-bg);
   color: var(--osk-action-fg);
   font-size: var(--fs-key);
-  font-weight: 500;
+  font-weight: 400;
   cursor: pointer;
   touch-action: manipulation;
   box-shadow: 0 1px 0 color-mix(in srgb, #000 18%, transparent);
@@ -654,7 +705,7 @@ html.keyboard-open .osk-panel { display: none !important; }
   color: var(--osk-char-fg);
   box-shadow: 0 1px 0 color-mix(in srgb, #000 22%, transparent);
 }
-.osk-key .material-symbols-outlined { font-size: 1.3em; font-weight: 600; line-height: 1; font-variation-settings: 'FILL' var(--icon-fill, 0), 'wght' 600, 'GRAD' var(--icon-grad, 0), 'opsz' var(--icon-opsz, 24); }
+.osk-key .material-symbols-outlined { font-size: 1.3em; font-weight: 400; line-height: 1; font-variation-settings: 'FILL' var(--icon-fill, 0), 'wght' 400, 'GRAD' var(--icon-grad, 0), 'opsz' var(--icon-opsz, 24); }
 .osk-key:hover { background: var(--osk-action-bg-hover); }
 .osk-key.char:hover { background: var(--osk-char-bg-hover); color: var(--osk-char-fg); }
 .osk-key:active {
@@ -692,7 +743,7 @@ body.osk-unavailable #compose-osk-btn { display: none !important; }
 
 @media (min-width: 901px) {
   .osk-panel { max-height: min(50vh, 560px); }
-  .osk-keys { --gap: var(--gap-md); --fs-key: 18px; gap: var(--gap-lg); }
+  .osk-keys { --gap: var(--gap-md); --fs-key: 30px; gap: var(--gap-lg); }
 }
 /* ==================== 8. MODALS & OVERLAYS ==================== */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; height: 100dvh; background: rgba(0, 0, 0, 0.65); opacity: 0; pointer-events: none; transition: opacity 0.2s ease; z-index: var(--z-modal-overlay); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
