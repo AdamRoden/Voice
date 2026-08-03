@@ -53,36 +53,151 @@ Tell me more about that that is interesting that is funny
 Maybe we can try something else what if we did this instead
 `;
 
+  /** Closed-class + high-value open-class seeds for slot candidates / slotLogBoost. */
   const WORD_CLASS = {
-    det: ["a", "an", "the", "this", "that", "these", "those", "my", "your", "his", "her", "our", "their", "some", "any", "no", "every", "each", "more", "less", "much", "many"],
-    pron: ["i", "you", "he", "she", "we", "they", "it", "me", "him", "her", "us", "them", "someone", "something", "anything", "everything", "nothing"],
-    modal: ["can", "could", "will", "would", "should", "may", "might", "must", "shall"],
-    aux: ["is", "are", "was", "were", "be", "been", "being", "am", "do", "does", "did", "have", "has", "had"],
-    prep: ["to", "of", "in", "on", "at", "for", "with", "from", "about", "into", "over", "under", "after", "before", "by", "as", "like", "than", "without"],
-    conj: ["and", "or", "but", "so", "if", "because", "when", "while"],
-    wh: ["what", "where", "when", "why", "who", "which", "how"],
-    neg: ["not", "no", "never"],
-    adv: ["now", "later", "today", "tomorrow", "here", "there", "soon", "again", "still", "also", "just", "very", "really", "too", "please", "outside", "inside", "home", "well", "maybe"],
+    det: [
+      "a", "an", "the", "this", "that", "these", "those", "my", "your", "his", "her", "our", "their",
+      "some", "any", "no", "every", "each", "more", "less", "much", "many", "few", "all", "both",
+      "another", "other", "such", "enough", "several", "most", "own", "same", "half", "whole"
+    ],
+    pron: [
+      "i", "you", "he", "she", "we", "they", "it", "me", "him", "her", "us", "them",
+      "myself", "yourself", "himself", "herself", "itself", "ourselves", "themselves",
+      "someone", "somebody", "something", "anyone", "anybody", "anything",
+      "everyone", "everybody", "everything", "nothing", "nobody", "none",
+      "one", "ones", "this", "that", "these", "those", "who", "whom", "whose", "which", "what"
+    ],
+    modal: [
+      "can", "could", "will", "would", "should", "may", "might", "must", "shall", "ought", "need"
+    ],
+    aux: [
+      "is", "are", "was", "were", "be", "been", "being", "am",
+      "do", "does", "did", "have", "has", "had", "having"
+    ],
+    prep: [
+      "to", "of", "in", "on", "at", "for", "with", "from", "about", "into", "over", "under",
+      "after", "before", "by", "as", "like", "than", "without", "within", "through", "across",
+      "between", "among", "against", "during", "until", "since", "toward", "towards", "onto",
+      "upon", "near", "off", "out", "up", "down", "around", "behind", "beside", "beyond",
+      "along", "above", "below", "inside", "outside", "except", "plus", "via", "per"
+    ],
+    conj: [
+      "and", "or", "but", "so", "if", "because", "when", "while", "although", "though",
+      "unless", "until", "since", "whether", "nor", "yet", "once", "whereas", "plus"
+    ],
+    wh: [
+      "what", "where", "when", "why", "who", "whom", "whose", "which", "how",
+      "whatever", "wherever", "whenever", "whoever", "whichever"
+    ],
+    neg: ["not", "no", "never", "none", "neither", "nor", "nobody", "nothing", "nowhere"],
+    adv: [
+      "now", "later", "today", "tomorrow", "yesterday", "tonight", "here", "there", "everywhere",
+      "somewhere", "anywhere", "nowhere", "soon", "again", "still", "also", "just", "very",
+      "really", "quite", "pretty", "too", "enough", "almost", "already", "always", "often",
+      "sometimes", "usually", "rarely", "seldom", "ever", "never", "please", "maybe", "perhaps",
+      "probably", "definitely", "actually", "basically", "simply", "only", "even", "still",
+      "outside", "inside", "home", "away", "back", "forward", "together", "alone", "well",
+      "badly", "quickly", "slowly", "carefully", "easily", "hard", "late", "early", "long",
+      "far", "near", "up", "down", "out", "in", "off", "on", "over", "around", "else",
+      "instead", "anyway", "somehow", "somewhat", "rather", "especially", "exactly", "right",
+      "ago", "yet", "once", "twice", "first", "next", "then", "finally", "last", "online"
+    ],
     verb: [
-      "want", "need", "like", "love", "hate", "feel", "think", "know", "go", "come", "get", "make",
-      "help", "see", "look", "hear", "say", "tell", "ask", "call", "open", "close", "turn", "give",
-      "take", "put", "find", "use", "try", "stop", "start", "wait", "stay", "leave", "eat", "drink",
-      "sleep", "rest", "walk", "sit", "stand", "read", "write", "play", "watch", "listen", "talk",
-      "speak", "work", "pass", "hold", "bring", "show", "change", "move", "thank", "understand",
-      "remember", "forget", "agree", "disagree", "prefer", "hurt", "repeat", "finish"
+      // Core wants / needs / cognition
+      "want", "need", "like", "love", "hate", "feel", "think", "know", "guess", "hope", "wish",
+      "believe", "mean", "seem", "mind", "care", "prefer", "agree", "disagree", "decide",
+      "choose", "plan", "expect", "remember", "forget", "understand", "learn", "teach",
+      // Motion / presence
+      "go", "come", "get", "leave", "stay", "wait", "walk", "run", "sit", "stand", "lie",
+      "move", "return", "arrive", "visit", "travel", "drive", "ride", "fly", "fall", "rise",
+      // Handling / making
+      "make", "do", "take", "give", "put", "bring", "send", "hold", "keep", "drop", "pick",
+      "find", "lose", "use", "try", "fix", "break", "build", "open", "close", "turn",
+      "push", "pull", "press", "touch", "carry", "set", "place", "fill", "empty", "clean",
+      "wash", "cook", "buy", "pay", "sell", "order", "share", "save", "spend", "change",
+      // Communication
+      "say", "tell", "ask", "answer", "call", "text", "email", "write", "read", "talk",
+      "speak", "listen", "hear", "watch", "look", "see", "show", "explain", "describe",
+      "repeat", "mention", "promise", "thank", "invite", "meet", "welcome",
+      // Body / care
+      "eat", "drink", "sleep", "rest", "wake", "hurt", "ache", "breathe", "cough", "sneeze",
+      "swallow", "chew", "taste", "smell", "stretch", "exercise", "shower", "bath",
+      "dress", "wear", "brush", "shave", "heal", "help", "check", "test",
+      // Activity / work
+      "work", "play", "start", "stop", "finish", "begin", "continue", "pause", "resume",
+      "practice", "study", "draw", "paint", "sing", "dance",
+      "install", "download", "upload", "search", "type", "click", "scroll", "charge",
+      // Social / support
+      "support", "join", "follow", "lead", "allow", "let", "prevent",
+      "protect", "worry", "relax", "enjoy", "miss", "hug", "kiss", "smile", "laugh", "cry",
+      // Progressive / 3sg forms that often appear as full tokens
+      "going", "coming", "trying", "looking", "waiting", "getting", "making", "taking",
+      "having", "doing", "being", "seeing", "hearing", "feeling", "thinking", "talking",
+      "working", "playing", "reading", "writing", "eating", "drinking", "sleeping",
+      "needs", "likes", "loves", "feels", "thinks", "knows", "goes", "comes",
+      "gets", "makes", "helps", "sees", "says", "tells", "asks", "gives", "takes"
     ],
     adj: [
-      "good", "bad", "fine", "okay", "great", "better", "worse", "happy", "sad", "tired", "hungry",
-      "thirsty", "hot", "cold", "warm", "loud", "quiet", "sick", "scared", "angry", "bored",
-      "lonely", "excited", "proud", "frustrated", "ready", "busy", "full", "open", "closed",
-      "easy", "hard", "important", "funny", "safe", "sure", "right", "wrong", "next", "enough"
+      // Evaluation
+      "good", "bad", "fine", "okay", "ok", "great", "awesome", "wonderful", "excellent",
+      "nice", "better", "best", "worse", "worst", "alright", "perfect", "terrible",
+      "horrible", "amazing", "cool", "weird", "strange", "normal", "special", "important",
+      "useful", "useless", "interesting", "boring", "funny", "serious", "true", "false",
+      "right", "wrong", "correct", "possible", "impossible", "sure", "certain", "clear",
+      // Feeling / body
+      "happy", "sad", "tired", "exhausted", "hungry", "thirsty", "hot", "cold", "warm",
+      "sick", "ill", "well", "healthy", "sore", "painful", "dizzy", "nauseous",
+      "scared", "afraid", "nervous", "anxious", "angry", "mad", "upset", "frustrated",
+      "annoyed", "bored", "lonely", "excited", "proud", "embarrassed", "confused",
+      "calm", "relaxed", "stressed", "worried", "hopeful", "grateful", "thankful",
+      // State / property
+      "ready", "busy", "free", "available", "full", "empty", "open", "closed", "locked",
+      "broken", "fixed", "new", "old", "young", "big", "small", "large", "little", "long",
+      "short", "high", "low", "heavy", "light", "hard", "soft", "easy", "difficult",
+      "simple", "quick", "slow", "fast", "loud", "quiet", "noisy", "bright", "dark",
+      "clean", "dirty", "wet", "dry", "safe", "dangerous", "strong", "weak",
+      // Social / preference
+      "friendly", "kind", "mean", "rude", "polite", "private", "public", "personal",
+      "favorite", "popular", "same", "different", "other", "next", "last", "first",
+      "second", "final", "early", "late", "online", "offline", "local",
+      "enough", "extra", "only", "whole", "half", "real", "fake", "paid"
     ],
     noun: [
-      "water", "food", "drink", "snack", "coffee", "tea", "meal", "lunch", "dinner", "pizza",
-      "bathroom", "restroom", "home", "room", "bed", "chair", "door", "window", "light", "phone",
-      "tablet", "remote", "tv", "music", "movie", "game", "book", "medicine", "nurse", "doctor",
-      "hospital", "pain", "break", "time", "help", "friend", "family", "mom", "dad", "school",
-      "work", "bus", "car", "store", "blanket", "name", "day", "night", "morning"
+      // Food / drink
+      "water", "food", "drink", "snack", "coffee", "tea", "juice", "milk", "soda", "soup",
+      "meal", "breakfast", "lunch", "dinner", "pizza", "sandwich", "bread", "fruit", "apple",
+      "banana", "vegetable", "salad", "meat", "chicken", "fish", "egg", "cheese", "rice",
+      "pasta", "cookie", "cake", "ice", "cream", "sugar", "salt", "pepper", "sauce",
+      // Body / health
+      "bathroom", "restroom", "toilet", "shower", "bath", "medicine", "pill", "nurse",
+      "doctor", "hospital", "clinic", "pain", "headache", "stomach", "back", "leg", "arm",
+      "hand", "foot", "head", "neck", "throat", "chest", "eye", "ear", "mouth", "tooth",
+      "blood", "fever", "cold", "cough", "allergy", "appointment", "therapy", "wheelchair",
+      // Home / objects
+      "home", "house", "apartment", "room", "bedroom", "kitchen", "living", "office",
+      "bed", "chair", "table", "desk", "door", "window", "light", "lamp", "floor", "wall",
+      "blanket", "pillow", "towel", "clothes", "shirt", "pants", "shoes", "jacket", "hat",
+      "bag", "keys", "wallet", "money", "card", "paper", "pen", "pencil", "box", "bottle",
+      // Tech / media
+      "phone", "tablet", "computer", "laptop", "remote", "tv", "television", "screen",
+      "music", "song", "movie", "video", "show", "game", "app", "internet", "wifi",
+      "email", "message", "text", "call", "camera", "photo", "picture", "battery", "charger",
+      "keyboard", "mouse", "speaker", "headphones", "microphone", "book", "magazine", "news",
+      // People / relations
+      "friend", "family", "mom", "dad", "mother", "father", "parent", "brother", "sister",
+      "son", "daughter", "baby", "child", "kids", "wife", "husband", "partner", "neighbor",
+      "teacher", "student", "boss", "coworker", "doctor", "nurse", "person", "people",
+      "man", "woman", "boy", "girl", "someone", "everyone", "anyone", "name",
+      // Places / transport
+      "school", "work", "job", "store", "shop", "mall", "park", "street", "road", "city",
+      "town", "church", "library", "bank", "restaurant", "cafe", "hotel", "airport",
+      "station", "bus", "car", "taxi", "train", "plane", "bike", "subway", "parking",
+      // Time / abstract
+      "time", "minute", "hour", "day", "night", "morning", "afternoon", "evening", "week",
+      "month", "year", "today", "tomorrow", "yesterday", "weekend", "birthday", "holiday",
+      "help", "break", "rest", "problem", "question", "answer", "idea", "plan", "way",
+      "thing", "stuff", "part", "side", "end", "start", "number", "word", "story", "reason",
+      "weather", "rain", "sun", "snow", "wind", "temperature", "outside", "inside"
     ]
   };
 
@@ -101,23 +216,90 @@ Maybe we can try something else what if we did this instead
     ["what", "if", "we"], ["by", "the", "way"], ["as", "soon", "as"], ["at", "the", "moment"]
   ];
 
+  /**
+   * First matching rule wins (order = specificity).
+   * when: prev1Empty | prev1/2/3 | prev1In/prev2In | prev1Class/prev2Class
+   * prefer: WORD_CLASS keys and/or short literal words (≤6 chars for candidate expand)
+   */
   const SLOT_RULES = [
+    // --- Bigrams / multi-word (most specific) ---
+    { when: { prev2In: ["want", "need", "like", "love", "prefer", "have", "has", "had", "going", "trying", "looking", "waiting", "used", "ought", "supposed"], prev1: "to" }, prefer: ["verb"] },
+    { when: { prev2In: ["going", "looking", "waiting", "ready", "time"], prev1: "for" }, prefer: ["det", "noun", "pron", "verb"] },
+    { when: { prev2In: ["i", "you", "we", "they", "he", "she"], prev1In: ["am", "is", "are", "was", "were"] }, prefer: ["adj", "verb", "det", "adv", "not"] },
+    { when: { prev2In: ["i", "you", "we", "they", "he", "she"], prev1In: ["do", "does", "did"] }, prefer: ["verb", "not", "pron"] },
+    { when: { prev2In: ["i", "you", "we", "they", "he", "she"], prev1In: ["have", "has", "had"] }, prefer: ["verb", "det", "noun", "adv", "not"] },
+    { when: { prev2In: ["i", "you", "we", "they"], prev1In: ["will", "would", "can", "could", "should", "might", "must"] }, prefer: ["verb", "not", "adv", "pron"] },
+    { when: { prev2: "what", prev1In: ["do", "did", "does", "are", "is", "was", "were", "can", "could", "should", "would"] }, prefer: ["pron", "det", "verb"] },
+    { when: { prev2: "how", prev1In: ["are", "is", "do", "did", "can", "could", "about"] }, prefer: ["pron", "det", "adj", "adv"] },
+    { when: { prev2: "how", prev1: "are" }, prefer: ["pron", "you"] },
+    { when: { prev2In: ["thank", "thanks"], prev1: "you" }, prefer: ["so", "for", "very"] },
+    { when: { prev2: "thank", prev1: "you" }, prefer: ["so", "for"] },
+    { when: { prev2: "let", prev1: "me" }, prefer: ["verb", "know", "see", "try"] },
+    { when: { prev2: "see", prev1: "you" }, prefer: ["soon", "later", "tomorrow"] },
+    { when: { prev2: "sounds", prev1: "like" }, prefer: ["det", "noun", "pron", "adj"] },
+    { when: { prev2: "that", prev1In: ["sounds", "makes", "seems"] }, prefer: ["adj", "good", "sense"] },
+    { when: { prev2: "i", prev1In: ["really", "just", "also", "still"] }, prefer: ["verb", "aux", "modal", "adv"] },
+    { when: { prev2In: ["a", "an", "the", "this", "that", "my", "your"], prev1Class: "adj" }, prefer: ["noun"] },
+    { when: { prev2Class: "modal", prev1: "not" }, prefer: ["verb", "adv"] },
+    { when: { prev2In: ["do", "does", "did", "is", "are", "was", "were", "have", "has", "had"], prev1: "not" }, prefer: ["verb", "adj", "adv", "det"] },
+    { when: { prev2: "there", prev1In: ["is", "are", "was", "were"] }, prefer: ["det", "noun", "adj", "some"] },
+    { when: { prev2: "it", prev1In: ["is", "was", "'s"] }, prefer: ["adj", "det", "noun", "adv"] },
+    { when: { prev2: "this", prev1In: ["is", "was"] }, prefer: ["det", "noun", "adj", "pron"] },
+    { when: { prev2: "i", prev1In: ["would", "will", "'d", "'ll"] }, prefer: ["verb", "like", "love", "need"] },
+
+    // --- Contractions / fused prev1 (kept as one token) ---
+    { when: { prev1In: ["i'm", "im"] }, prefer: ["adj", "verb", "adv", "not", "going"] },
+    { when: { prev1In: ["i'll", "ill"] }, prefer: ["verb", "be", "see", "try"] },
+    { when: { prev1In: ["i'd", "id"] }, prefer: ["verb", "like", "love", "prefer"] },
+    { when: { prev1In: ["i've", "ive"] }, prefer: ["verb", "been", "got", "had"] },
+    { when: { prev1In: ["you're", "youre", "we're", "theyre", "they're"] }, prefer: ["adj", "verb", "adv", "det"] },
+    { when: { prev1In: ["don't", "dont", "doesn't", "doesnt", "didn't", "didnt"] }, prefer: ["verb", "pron", "adv"] },
+    { when: { prev1In: ["can't", "cant", "won't", "wont", "wouldn't", "wouldnt", "shouldn't", "shouldnt", "couldn't", "couldnt"] }, prefer: ["verb", "adv"] },
+    { when: { prev1In: ["isn't", "isnt", "aren't", "arent", "wasn't", "wasnt", "weren't", "werent"] }, prefer: ["adj", "verb", "det", "adv"] },
+    { when: { prev1In: ["that's", "thats", "what's", "whats", "there's", "theres", "where's", "wheres"] }, prefer: ["det", "noun", "adj", "pron", "verb"] },
+    { when: { prev1In: ["let's", "lets"] }, prefer: ["verb", "go", "see", "try"] },
+
+    // --- High-frequency single tokens ---
     { when: { prev1In: ["i", "you", "we", "they", "he", "she"] }, prefer: ["verb", "aux", "modal", "adv"] },
+    { when: { prev1In: ["me", "him", "us", "them"] }, prefer: ["prep", "conj", "adv", "verb"] },
     { when: { prev1Class: "det" }, prefer: ["noun", "adj"] },
-    { when: { prev1In: ["some", "any", "more", "much", "many"] }, prefer: ["noun", "adj"] },
+    { when: { prev1In: ["some", "any", "more", "much", "many", "few", "lot"] }, prefer: ["noun", "adj", "of"] },
     { when: { prev1: "to" }, prefer: ["verb"] },
     { when: { prev1: "please" }, prefer: ["verb", "pron", "adv"] },
-    { when: { prev1Class: "modal" }, prefer: ["verb", "pron", "adv"] },
-    { when: { prev1In: ["am", "is", "are", "was", "were", "be", "been"] }, prefer: ["adj", "verb", "det", "adv"] },
-    { when: { prev1In: ["do", "does", "did"] }, prefer: ["verb", "neg", "pron"] },
-    { when: { prev1In: ["have", "has", "had"] }, prefer: ["det", "noun", "verb", "adv"] },
-    { when: { prev1In: ["want", "need", "like", "love", "prefer", "get", "make", "take", "give", "find", "use"] }, prefer: ["to", "det", "noun", "pron", "adv"] },
+    { when: { prev1: "thank" }, prefer: ["you", "pron"] },
+    { when: { prev1: "thanks" }, prefer: ["for", "so", "you"] },
+    { when: { prev1: "sorry" }, prefer: ["about", "for", "i", "pron"] },
+    { when: { prev1: "let" }, prefer: ["me", "us", "pron"] },
+    { when: { prev1: "see" }, prefer: ["you", "det", "pron", "if"] },
+    { when: { prev1In: ["hello", "hi", "hey"] }, prefer: ["pron", "there", "how"] },
+    { when: { prev1In: ["yes", "yeah", "yep", "sure", "okay", "ok", "no", "nope"] }, prefer: ["pron", "please", "thank", "i", "det"] },
+    { when: { prev1In: ["good"] }, prefer: ["noun", "morning", "night", "day", "adj"] },
+    { when: { prev1In: ["very", "really", "so", "too", "quite", "pretty"] }, prefer: ["adj", "adv"] },
+    { when: { prev1In: ["maybe", "perhaps", "probably"] }, prefer: ["pron", "modal", "adv", "det"] },
+    { when: { prev1In: ["here", "there"] }, prefer: ["aux", "is", "are", "pron"] },
+    { when: { prev1In: ["now", "later", "today", "tomorrow", "soon", "again"] }, prefer: ["pron", "verb", "conj", "prep"] },
+    { when: { prev1In: ["and", "or", "but", "so", "because", "if", "while"] }, prefer: ["pron", "det", "verb", "modal", "adv"] },
+    { when: { prev1In: ["then", "also", "just", "still", "even"] }, prefer: ["pron", "verb", "det", "adv"] },
+    { when: { prev1In: ["about", "like"] }, prefer: ["det", "noun", "pron", "adj", "verb"] },
+    { when: { prev1In: ["of"] }, prefer: ["det", "noun", "pron", "the"] },
+    { when: { prev1Class: "modal" }, prefer: ["verb", "pron", "adv", "not"] },
+    { when: { prev1In: ["am", "is", "are", "was", "were", "be", "been", "being"] }, prefer: ["adj", "verb", "det", "adv", "not"] },
+    { when: { prev1In: ["do", "does", "did"] }, prefer: ["verb", "neg", "pron", "not"] },
+    { when: { prev1In: ["have", "has", "had"] }, prefer: ["det", "noun", "verb", "adv", "to"] },
+    { when: { prev1In: ["want", "need", "like", "love", "prefer", "get", "make", "take", "give", "find", "use", "try", "help", "start", "stop", "finish"] }, prefer: ["to", "det", "noun", "pron", "adv"] },
+    { when: { prev1In: ["go", "come", "leave", "stay", "walk", "sit", "stand"] }, prefer: ["to", "prep", "adv", "home", "there"] },
+    { when: { prev1In: ["tell", "ask", "show", "give", "bring", "send"] }, prefer: ["pron", "det", "me", "you"] },
+    { when: { prev1In: ["think", "know", "feel", "guess", "hope", "wish"] }, prefer: ["pron", "det", "that", "so", "about"] },
+    { when: { prev1In: ["look", "looking", "listen", "listening", "wait", "waiting"] }, prefer: ["prep", "for", "at", "to", "adv"] },
+    { when: { prev1In: ["going", "trying"] }, prefer: ["to", "home", "adv"] },
     { when: { prev1Class: "prep" }, prefer: ["det", "noun", "pron", "adj"] },
     { when: { prev1Class: "wh" }, prefer: ["aux", "modal", "pron", "det"] },
-    { when: { prev1In: ["not", "no"] }, prefer: ["verb", "adj", "adv", "det"] },
+    { when: { prev1In: ["not", "no", "never"] }, prefer: ["verb", "adj", "adv", "det"] },
+    { when: { prev1Class: "adj" }, prefer: ["noun", "conj", "prep", "adv"] },
     { when: { prev1Class: "verb" }, prefer: ["det", "pron", "prep", "adv", "noun"] },
     { when: { prev1Class: "noun" }, prefer: ["verb", "prep", "conj", "adv", "aux"] },
-    { when: { prev1Empty: true }, prefer: ["pron", "wh", "modal"] }
+    { when: { prev1Class: "adv" }, prefer: ["verb", "adj", "pron", "det", "prep"] },
+    { when: { prev1Empty: true }, prefer: ["pron", "wh", "modal", "det"] }
   ];
 
   /** Apostrophe-less typings → proper contraction (includes ambiguous ill/id). */
