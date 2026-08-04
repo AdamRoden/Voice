@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>VoicePredict eval (real mobile LM)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 16px; background: #111; color: #eee; max-width: 720px; }
+    pre { background: #1a1a1a; padding: 12px; border-radius: 8px; overflow: auto; white-space: pre-wrap; }
+    .ok { color: #6d6; }
+    .bad { color: #f66; }
+    button { margin: 8px 8px 8px 0; padding: 8px 14px; font-size: 14px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>predict eval</h1>
+  <p>Loads <code>../data/mobile-lm.json.gz</code> and scores next-word chips on a short conversational set. Serve over HTTP (not file://).</p>
+  <button type="button" id="run">Run eval</button>
+  <pre id="out">Idle.</pre>
+  <script src="../js/predict-data.js"></script>
+  <script src="../js/predict-type.js"></script>
+  <script src="../js/predict-mobile-lm.js"></script>
+  <script src="../js/predict.js"></script>
+  <script>
+    (function () {
+      const out = document.getElementById("out");
+      const log = (s) => { out.textContent += s + "\n"; };
+
+      /**
+       * Each item: full target phrase. We score predicting the last word
+       * given the prefix (with trailing space after previous words).
+       */
+      const PHRASES = [
+        "I want to",
+        "I would like to",
+        "How are you",
+        "Thank you so much",
+        "Can you help me",
+        "I need to go",
+        "What do you think",
+        "That sounds good",
+        "See you later",
+        "I am not sure",
+        "Please wait a moment",
+        "I love you",
+        "Where are we going",
+        "Do you want to",
+        "I have to leave",
+        "It is okay",
+        "Let me know",
+        "I think so",
+        "Good morning everyone",
+        "I am on my way",
+        "Could you please help",
+        "What time is it",
+        "I miss you",
+        "We should go",
+        "I am fine thank",
+        "Nice to meet you",
+        "I do not know",
+        "Are you okay",
+        "I will call you",
+        "Have a great day"
+      ];
+
+      function chipText(c) {
+        if (c == null) return "";
+        return typeof c === "string" ? c : String(c.text || "");
+      }
+
+      function rankOf(chips, word) {
+        const w = String(word).toLowerCase();
+        for (let i = 0; i < (chips || []).length; i++) {
+          if (chipText(chips[i]).toLowerCase() === w) return i;
+        }
+        return -1;
+      }
+
+      async function run() {
+        out.textContent = "";
+        const P = window.VoicePredict;
+        const M = window.VoiceMobileLm;
+        if (!P || !M) {
+          log("FAIL: predict modules missing");
+          return;
+        }
+        try {
+          localStorage.removeItem(window.VoicePredictData.LS_PERSONAL_KEY);
+          localStorage.removeItem(window.VoicePredictData.LS_PERSONAL_TEXT_KEY);
+        } catch (_) {}
+
+        log("Loading mobile LM…");
+        P.init();
+        const t0 = performance.now();
+        const n = await P.loadMobileLm();
+        const loadMs = Math.round(performance.now() - t0);
+        log("vocab=" + n + " ready=" + P.mobileReady + " loadMs=" + loadMs);
+        if (!P.mobileReady) {
+          log("FAIL: mobile LM not ready (need HTTP + data/mobile-lm.json.gz)");
+          return;
+        }
+
+        let top1 = 0, top3 = 0, top9 = 0, total = 0;
+        const misses = [];
+
+        for (const phrase of PHRASES) {
+          const words = phrase.trim().split(/\s+/);
+          if (words.length < 2) continue;
+          const target = words[words.length - 1];
+          const prefix = words.slice(0, -1).join(" ") + " ";
+          const { chips } = P.suggest(prefix, prefix.length);
+          const r = rankOf(chips, target);
+          total++;
+          if (r === 0) top1++;
+          if (r >= 0 && r < 3) top3++;
+          if (r >= 0 && r < 9) top9++;
+          if (r < 0 || r >= 3) {
+            misses.push({
+              prefix: prefix.trimEnd(),
+              target,
+              rank: r,
+              top: (chips || []).slice(0, 5).map(chipText)
+            });
+          }
+        }
+
+        const pct = (x) => total ? ((100 * x) / total).toFixed(1) + "%" : "n/a";
+        log("");
+        log("=== next-word (last token of phrase) ===");
+        log("n=" + total);
+        log("Top-1: " + top1 + " (" + pct(top1) + ")");
+        log("Top-3: " + top3 + " (" + pct(top3) + ")");
+        log("Top-9: " + top9 + " (" + pct(top9) + ")");
+        if (misses.length) {
+          log("");
+          log("Misses / outside top-3 (" + misses.length + "):");
+          misses.forEach((m) => {
+            log("  [" + m.prefix + "] → want " + m.target +
+              " rank=" + m.rank + " got=[" + m.top.join(", ") + "]");
+          });
+        }
+
+        // Mid-word completion spot checks
+        log("");
+        log("=== mid-word spot checks ===");
+        const midCases = [
+          ["I wan", "want"],
+          ["How ar", "are"],
+          ["Thank yo", "you"],
+          ["I thi", "think"],
+          ["pleas", "please"]
+        ];
+        for (const [typed, want] of midCases) {
+          const { chips } = P.suggest(typed, typed.length);
+          const r = rankOf(chips, want);
+          const ok = r >= 0 && r < 3;
+          log((ok ? "OK  " : "MISS") + "  \"" + typed + "\" → " + want +
+            " rank=" + r + " [" + (chips || []).slice(0, 4).map(chipText).join(", ") + "]");
+        }
+        log("");
+        log("Done.");
+      }
+
+      document.getElementById("run").addEventListener("click", () => {
+        run().catch((e) => {
+          log("ERROR: " + (e && e.message ? e.message : e));
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

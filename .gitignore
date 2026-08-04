@@ -366,3 +366,10 @@ data/lm_forum_20k_4gram_small.arpa.gz
 data/lm_forum_20k_4gram_small.arpa
 data/mobile-lm.json
 data/*.bin
+
+# Large Vertanen ARPA sources (convert offline; ship only mobile-lm.json.gz)
+data/lm_forum_64k_4gram_large.arpa.gz
+data/lm_forum_64k_4gram_large.arpa
+data/lm_forum_64k_4gram_small.arpa.gz
+data/lm_forum_20k_4gram_large.arpa.gz
+data/lm_forum_20k_4gram_large.arpa

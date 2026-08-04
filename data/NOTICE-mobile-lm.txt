@@ -3,7 +3,7 @@ Mobile language model data
 
 File: mobile-lm.json.gz
 
-Derived from "Forum, 20k, 4-gram, small" in:
+Derived from "Forum, 64k, 4-gram, large" in:
   Dataset 3: Forum only language models
   Keith Vertanen and Per Ola Kristensson (2019)
   https://digitalcommons.mtu.edu/mobiletext/3/
@@ -17,3 +17,8 @@ License: Creative Commons Attribution 4.0 International (CC BY 4.0)
 
 The compact JSON retains top-K next-word continuations (and unigram
 log-probabilities) for browser use; it is not a full ARPA model.
+
+Export settings (tools/convert-arpa-mobile-lm.ps1):
+  source: lm_forum_64k_4gram_large.arpa.gz
+  topK: bi=48, tri=32, four=20
+  max contexts: tri=220000, four=160000
