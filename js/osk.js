@@ -24,15 +24,27 @@
   /* ---- key descriptors: { ch, u? } | { action, label|icon, u? } ---- */
   /** Shared chrome widths (letter unit = 1). Rows target sum ≈ 12. */
   const W = {
-    tab: 0.85,
-    bksp: 1.15,
+    tab: 0.9,
+    bksp: 1.2,
     shift: 1.3,
-    cmd: 0.85,
-    sym: 0.85,
-    space: 1.15,
-    punct: 0.85, // , '
-    period: 1,
-    enter: 1.15
+    cmd: 0.9,
+    sym: 0.9,
+    space: 1.5,
+    punct: 0.9, // , '
+    period: 0.9,
+    enter: 1.2
+  };
+
+  /**
+   * Alpha letter widths (lowercased lookup). Default 1.0 when omitted.
+   * 0.9: q w y d f j z x v b
+   * 1.0: u i o p s g k c m
+   * 1.1: e r t a h l n
+   */
+  const LETTER_U = {
+    q: 0.9, w: 0.9, y: 0.9, d: 0.9, f: 0.9, j: 0.9, z: 0.9, x: 0.9, v: 0.9, b: 0.9,
+    u: 1.0, i: 1.0, o: 1.0, p: 1.0, s: 1.0, g: 1.0, k: 1.0, c: 1.0, m: 1.0,
+    e: 1.1, r: 1.1, t: 1.1, a: 1.1, h: 1.1, l: 1.1, n: 1.1
   };
 
   /** @param {number} [u] width in letter units (default 1) */
@@ -53,6 +65,13 @@
   }
   function chars(s) {
     return String(s).split("").map((c) => ch(c));
+  }
+  /** Alpha letters with per-glyph unit widths from LETTER_U. */
+  function letterKeys(s) {
+    return String(s).split("").map((c) => {
+      const u = LETTER_U[c.toLowerCase()];
+      return u != null ? ch(c, u) : ch(c);
+    });
   }
   function face(keys) {
     return { keys: keys || [] };
@@ -91,7 +110,7 @@
   }
 
   function layoutAlpha(shift) {
-    const letter = (s) => chars(shift ? s.toUpperCase() : s);
+    const letter = (s) => letterKeys(shift ? s.toUpperCase() : s);
     return chromeRows(shift, {
       mid1: letter("qwertyuiop"),
       mid2: letter("asdfghjkl"),
