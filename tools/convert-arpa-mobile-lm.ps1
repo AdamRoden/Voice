@@ -17,11 +17,12 @@ param(
   [string]$OutGz = (Join-Path $PSScriptRoot "..\data\mobile-lm.json.gz"),
   [string]$MetaName = "forum_64k_4gram_large",
   [string]$MetaUrl = "https://digitalcommons.mtu.edu/mobiletext/3/",
-  [int]$TopK2 = 48,
-  [int]$TopK3 = 32,
-  [int]$TopK4 = 20,
-  [int]$MaxCtx3 = 220000,
-  [int]$MaxCtx4 = 160000
+  # Prefer common contexts (unigram mass); peaky rare idioms are a quality bug.
+  [int]$TopK2 = 40,
+  [int]$TopK3 = 28,
+  [int]$TopK4 = 16,
+  [int]$MaxCtx3 = 180000,
+  [int]$MaxCtx4 = 120000
 )
 
 $ErrorActionPreference = "Stop"
@@ -110,18 +111,49 @@ public static class ArpaConvert {
     if (list.Count > k) list.RemoveAt(list.Count - 1);
   }
 
-  static void PruneCtxByBest<TKey>(Dictionary<TKey, List<Cont>> map, int maxCtx) {
-    if (map.Count <= maxCtx) return;
-    var ranked = new List<KeyValuePair<TKey, List<Cont>>>(map);
-    ranked.Sort((a, b) => {
-      float la = a.Value.Count > 0 ? a.Value[0].LogP : float.NegativeInfinity;
-      float lb = b.Value.Count > 0 ? b.Value[0].LogP : float.NegativeInfinity;
-      return lb.CompareTo(la);
-    });
-    map.Clear();
-    for (int i = 0; i < maxCtx && i < ranked.Count; i++) {
-      map[ranked[i].Key] = ranked[i].Value;
+  /**
+   * Context importance for MaxCtx: prefer COMMON left contexts (unigram mass),
+   * not peaky rare idioms. Sorting by top continuation LogP kept "i chickened→out"
+   * and dropped "i want→to" — that broke keyboard prediction.
+   * Higher score (less negative) = more important.
+   */
+  static float UniScore(List<float> uniLog, int id, int idS) {
+    if (id == idS) return 0f;
+    if (id < 0 || id >= uniLog.Count) return -20f;
+    return uniLog[id];
+  }
+
+  static float TriCtxScore(long key, List<float> uniLog, int idS) {
+    int w1 = (int)(key >> 16);
+    int w2 = (int)(key & 0xFFFF);
+    return UniScore(uniLog, w1, idS) + UniScore(uniLog, w2, idS);
+  }
+
+  static float FourCtxScore(string key, List<float> uniLog, int idS) {
+    var ids = key.Split(',');
+    float s = 0f;
+    for (int i = 0; i < ids.Length; i++) {
+      int id;
+      if (!int.TryParse(ids[i], out id)) return -60f;
+      s += UniScore(uniLog, id, idS);
     }
+    return s;
+  }
+
+  static void PruneTriByUni(Dictionary<long, List<Cont>> map, int maxCtx, List<float> uniLog, int idS) {
+    if (map.Count <= maxCtx) return;
+    var ranked = new List<KeyValuePair<long, List<Cont>>>(map);
+    ranked.Sort((a, b) => TriCtxScore(b.Key, uniLog, idS).CompareTo(TriCtxScore(a.Key, uniLog, idS)));
+    map.Clear();
+    for (int i = 0; i < maxCtx && i < ranked.Count; i++) map[ranked[i].Key] = ranked[i].Value;
+  }
+
+  static void PruneFourByUni(Dictionary<string, List<Cont>> map, int maxCtx, List<float> uniLog, int idS) {
+    if (map.Count <= maxCtx) return;
+    var ranked = new List<KeyValuePair<string, List<Cont>>>(map);
+    ranked.Sort((a, b) => FourCtxScore(b.Key, uniLog, idS).CompareTo(FourCtxScore(a.Key, uniLog, idS)));
+    map.Clear();
+    for (int i = 0; i < maxCtx && i < ranked.Count; i++) map[ranked[i].Key] = ranked[i].Value;
   }
 
   public static void Run(string arpaPath, string jsonPath, string gzPath) {
@@ -159,6 +191,9 @@ public static class ArpaConvert {
     var tri = new Dictionary<long, List<Cont>>();
     var four = new Dictionary<string, List<Cont>>();
     int biSeen = 0, triSeen = 0, fourSeen = 0;
+    // Allow temporary growth then prune by unigram context mass (common phrases first).
+    int triSoftCap = MaxCtx3 * 2;
+    int fourSoftCap = MaxCtx4 * 2;
 
     // Pass 2: higher-order n-grams with online top-K + periodic MaxCtx prune
     section = 0;
@@ -169,13 +204,12 @@ public static class ArpaConvert {
         if (line.StartsWith("\\2-grams:")) { section = 2; continue; }
         if (line.StartsWith("\\3-grams:")) {
           section = 3;
-          PruneCtxByBest(tri, MaxCtx3);
           Console.WriteLine("after2 biCtx=" + bi.Count + " biRows~=" + biSeen);
           continue;
         }
         if (line.StartsWith("\\4-grams:")) {
           section = 4;
-          PruneCtxByBest(tri, MaxCtx3);
+          PruneTriByUni(tri, MaxCtx3, uniLog, idS);
           Console.WriteLine("after3 triCtx=" + tri.Count + " triRows~=" + triSeen);
           continue;
         }
@@ -203,10 +237,15 @@ public static class ArpaConvert {
           long key = ((long)w1 << 16) | (ushort)w2;
           List<Cont> list;
           if (!tri.TryGetValue(key, out list)) {
-            if (tri.Count >= MaxCtx3 && logp < -2.5f) {
-              // skip weak new contexts once full (memory guard for large ARPA)
-              if (triSeen % 500000 == 0) PruneCtxByBest(tri, MaxCtx3);
-              if (tri.Count >= MaxCtx3) { triSeen++; continue; }
+            if (tri.Count >= triSoftCap) {
+              PruneTriByUni(tri, MaxCtx3, uniLog, idS);
+              Console.WriteLine("  tri soft-prune ctx=" + tri.Count + " rows=" + triSeen);
+            }
+            // After prune, only admit new contexts that beat the soft floor of commonness.
+            if (tri.Count >= MaxCtx3) {
+              float score = UniScore(uniLog, w1, idS) + UniScore(uniLog, w2, idS);
+              // Rough floor: two mid-frequency words (~-3 each) still ok; rare+rare skip.
+              if (score < -8.5f) { triSeen++; continue; }
             }
             list = new List<Cont>(Math.Min(4, TopK3));
             tri[key] = list;
@@ -214,7 +253,7 @@ public static class ArpaConvert {
           AddTopK(list, new Cont(w3, logp), TopK3);
           triSeen++;
           if (triSeen % 2000000 == 0) {
-            PruneCtxByBest(tri, MaxCtx3);
+            PruneTriByUni(tri, MaxCtx3, uniLog, idS);
             Console.WriteLine("  tri progress rows=" + triSeen + " ctx=" + tri.Count);
           }
         } else if (section == 4) {
@@ -225,9 +264,13 @@ public static class ArpaConvert {
           string key = w1 + "," + w2 + "," + w3;
           List<Cont> list;
           if (!four.TryGetValue(key, out list)) {
-            if (four.Count >= MaxCtx4 && logp < -2.0f) {
-              if (fourSeen % 500000 == 0) PruneCtxByBest(four, MaxCtx4);
-              if (four.Count >= MaxCtx4) { fourSeen++; continue; }
+            if (four.Count >= fourSoftCap) {
+              PruneFourByUni(four, MaxCtx4, uniLog, idS);
+              Console.WriteLine("  four soft-prune ctx=" + four.Count + " rows=" + fourSeen);
+            }
+            if (four.Count >= MaxCtx4) {
+              float score = UniScore(uniLog, w1, idS) + UniScore(uniLog, w2, idS) + UniScore(uniLog, w3, idS);
+              if (score < -12f) { fourSeen++; continue; }
             }
             list = new List<Cont>(Math.Min(4, TopK4));
             four[key] = list;
@@ -235,14 +278,14 @@ public static class ArpaConvert {
           AddTopK(list, new Cont(w4, logp), TopK4);
           fourSeen++;
           if (fourSeen % 2000000 == 0) {
-            PruneCtxByBest(four, MaxCtx4);
+            PruneFourByUni(four, MaxCtx4, uniLog, idS);
             Console.WriteLine("  four progress rows=" + fourSeen + " ctx=" + four.Count);
           }
         }
       }
     }
-    PruneCtxByBest(tri, MaxCtx3);
-    PruneCtxByBest(four, MaxCtx4);
+    PruneTriByUni(tri, MaxCtx3, uniLog, idS);
+    PruneFourByUni(four, MaxCtx4, uniLog, idS);
     Console.WriteLine("ctx2=" + bi.Count + " ctx3=" + tri.Count + " ctx4=" + four.Count);
 
     var usable = new List<int>();

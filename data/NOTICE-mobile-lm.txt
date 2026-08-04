@@ -20,5 +20,6 @@ log-probabilities) for browser use; it is not a full ARPA model.
 
 Export settings (tools/convert-arpa-mobile-lm.ps1):
   source: lm_forum_64k_4gram_large.arpa.gz
-  topK: bi=48, tri=32, four=20
-  max contexts: tri=220000, four=160000
+  topK: bi=40, tri=28, four=16
+  max contexts: tri=180000, four=120000
+  context prune: unigram mass of left context (common phrases first)
