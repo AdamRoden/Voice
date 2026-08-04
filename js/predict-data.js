@@ -13,8 +13,7 @@
   ];
 
   /**
-   * Light conversational prior (not a full LM). Mobile forum 4-gram is primary;
-   * this nudges everyday chat phrases the n-gram may under-represent.
+   * Conversational n-gram seed (primary offline prior for next-word chips).
    */
   const CONVERSATION_SEED = `
 Hello how are you today I am fine thank you how about you
@@ -53,155 +52,121 @@ Tell me more about that that is interesting that is funny
 Maybe we can try something else what if we did this instead
 `;
 
-  /** Closed-class + high-value open-class seeds for slot candidates / slotLogBoost. */
+  /**
+   * Offline seed classes (closed + compact AAC open). Full ~10k lexicon loads from
+   * data/word-class-10k.json.gz via VoicePredict.loadModels() and merges on top.
+   * Order within each list = offline rank (index 0 most preferred).
+   */
   const WORD_CLASS = {
     det: [
-      "a", "an", "the", "this", "that", "these", "those", "my", "your", "his", "her", "our", "their",
-      "some", "any", "no", "every", "each", "more", "less", "much", "many", "few", "all", "both",
-      "another", "other", "such", "enough", "several", "most", "own", "same", "half", "whole"
+      "the", "a", "an", "this", "that", "my", "your", "his", "her", "our", "their",
+      "some", "any", "all", "no", "every", "each", "more", "most", "other", "another",
+      "these", "those", "both", "few", "many", "much", "less", "several", "such",
+      "enough", "own", "same", "half", "whole"
     ],
     pron: [
-      "i", "you", "he", "she", "we", "they", "it", "me", "him", "her", "us", "them",
-      "myself", "yourself", "himself", "herself", "itself", "ourselves", "themselves",
-      "someone", "somebody", "something", "anyone", "anybody", "anything",
-      "everyone", "everybody", "everything", "nothing", "nobody", "none",
-      "one", "ones", "this", "that", "these", "those", "who", "whom", "whose", "which", "what"
+      "i", "you", "it", "we", "they", "he", "she", "me", "him", "her", "us", "them",
+      "this", "that", "what", "who", "which", "one", "someone", "something",
+      "anyone", "anything", "everyone", "everything", "nothing", "nobody", "none"
     ],
     modal: [
-      "can", "could", "will", "would", "should", "may", "might", "must", "shall", "ought", "need"
+      "can", "will", "would", "could", "should", "may", "might", "must", "shall", "need", "ought"
     ],
     aux: [
-      "is", "are", "was", "were", "be", "been", "being", "am",
-      "do", "does", "did", "have", "has", "had", "having"
+      "is", "are", "was", "were", "be", "been", "am", "do", "does", "did",
+      "have", "has", "had", "being", "having"
     ],
     prep: [
-      "to", "of", "in", "on", "at", "for", "with", "from", "about", "into", "over", "under",
-      "after", "before", "by", "as", "like", "than", "without", "within", "through", "across",
-      "between", "among", "against", "during", "until", "since", "toward", "towards", "onto",
-      "upon", "near", "off", "out", "up", "down", "around", "behind", "beside", "beyond",
-      "along", "above", "below", "inside", "outside", "except", "plus", "via", "per"
+      "to", "of", "in", "for", "on", "with", "at", "from", "by", "about", "as", "into",
+      "like", "through", "after", "over", "between", "out", "without", "before", "under",
+      "around", "up", "down", "off", "near", "since", "until", "inside", "outside"
     ],
     conj: [
       "and", "or", "but", "so", "if", "because", "when", "while", "although", "though",
-      "unless", "until", "since", "whether", "nor", "yet", "once", "whereas", "plus"
+      "unless", "until", "since", "whether", "nor", "yet", "once"
     ],
     wh: [
-      "what", "where", "when", "why", "who", "whom", "whose", "which", "how",
-      "whatever", "wherever", "whenever", "whoever", "whichever"
+      "what", "how", "who", "where", "when", "why", "which", "whose", "whom"
     ],
-    neg: ["not", "no", "never", "none", "neither", "nor", "nobody", "nothing", "nowhere"],
+    neg: ["not", "no", "never", "none", "nothing", "nobody", "neither", "nor", "nowhere"],
+    // Compact open-class seeds for offline chips; 10k file supplies the rest.
     adv: [
-      "now", "later", "today", "tomorrow", "yesterday", "tonight", "here", "there", "everywhere",
-      "somewhere", "anywhere", "nowhere", "soon", "again", "still", "also", "just", "very",
-      "really", "quite", "pretty", "too", "enough", "almost", "already", "always", "often",
-      "sometimes", "usually", "rarely", "seldom", "ever", "never", "please", "maybe", "perhaps",
-      "probably", "definitely", "actually", "basically", "simply", "only", "even", "still",
-      "outside", "inside", "home", "away", "back", "forward", "together", "alone", "well",
-      "badly", "quickly", "slowly", "carefully", "easily", "hard", "late", "early", "long",
-      "far", "near", "up", "down", "out", "in", "off", "on", "over", "around", "else",
-      "instead", "anyway", "somehow", "somewhat", "rather", "especially", "exactly", "right",
-      "ago", "yet", "once", "twice", "first", "next", "then", "finally", "last", "online"
+      "just", "also", "now", "then", "here", "there", "very", "really", "so", "too",
+      "only", "even", "still", "again", "back", "well", "please", "maybe", "probably",
+      "always", "never", "often", "sometimes", "already", "yet", "soon", "later",
+      "today", "tomorrow", "home", "away", "together", "instead", "quickly", "slowly"
     ],
     verb: [
-      // Core wants / needs / cognition
-      "want", "need", "like", "love", "hate", "feel", "think", "know", "guess", "hope", "wish",
-      "believe", "mean", "seem", "mind", "care", "prefer", "agree", "disagree", "decide",
-      "choose", "plan", "expect", "remember", "forget", "understand", "learn", "teach",
-      // Motion / presence
-      "go", "come", "get", "leave", "stay", "wait", "walk", "run", "sit", "stand", "lie",
-      "move", "return", "arrive", "visit", "travel", "drive", "ride", "fly", "fall", "rise",
-      // Handling / making
-      "make", "do", "take", "give", "put", "bring", "send", "hold", "keep", "drop", "pick",
-      "find", "lose", "use", "try", "fix", "break", "build", "open", "close", "turn",
-      "push", "pull", "press", "touch", "carry", "set", "place", "fill", "empty", "clean",
-      "wash", "cook", "buy", "pay", "sell", "order", "share", "save", "spend", "change",
-      // Communication
-      "say", "tell", "ask", "answer", "call", "text", "email", "write", "read", "talk",
-      "speak", "listen", "hear", "watch", "look", "see", "show", "explain", "describe",
-      "repeat", "mention", "promise", "thank", "invite", "meet", "welcome",
-      // Body / care
-      "eat", "drink", "sleep", "rest", "wake", "hurt", "ache", "breathe", "cough", "sneeze",
-      "swallow", "chew", "taste", "smell", "stretch", "exercise", "shower", "bath",
-      "dress", "wear", "brush", "shave", "heal", "help", "check", "test",
-      // Activity / work
-      "work", "play", "start", "stop", "finish", "begin", "continue", "pause", "resume",
-      "practice", "study", "draw", "paint", "sing", "dance",
-      "install", "download", "upload", "search", "type", "click", "scroll", "charge",
-      // Social / support
-      "support", "join", "follow", "lead", "allow", "let", "prevent",
-      "protect", "worry", "relax", "enjoy", "miss", "hug", "kiss", "smile", "laugh", "cry",
-      // Progressive / 3sg forms that often appear as full tokens
-      "going", "coming", "trying", "looking", "waiting", "getting", "making", "taking",
-      "having", "doing", "being", "seeing", "hearing", "feeling", "thinking", "talking",
-      "working", "playing", "reading", "writing", "eating", "drinking", "sleeping",
-      "needs", "likes", "loves", "feels", "thinks", "knows", "goes", "comes",
-      "gets", "makes", "helps", "sees", "says", "tells", "asks", "gives", "takes"
+      "want", "need", "like", "go", "get", "know", "think", "see", "come", "make",
+      "take", "do", "have", "say", "tell", "ask", "give", "help", "feel", "look",
+      "try", "use", "find", "work", "call", "love", "hope", "leave", "stay", "wait",
+      "open", "close", "start", "stop", "let", "show", "talk", "eat", "drink", "sleep",
+      "rest", "hurt", "going", "trying", "looking", "waiting", "getting", "doing"
     ],
     adj: [
-      // Evaluation
-      "good", "bad", "fine", "okay", "ok", "great", "awesome", "wonderful", "excellent",
-      "nice", "better", "best", "worse", "worst", "alright", "perfect", "terrible",
-      "horrible", "amazing", "cool", "weird", "strange", "normal", "special", "important",
-      "useful", "useless", "interesting", "boring", "funny", "serious", "true", "false",
-      "right", "wrong", "correct", "possible", "impossible", "sure", "certain", "clear",
-      // Feeling / body
-      "happy", "sad", "tired", "exhausted", "hungry", "thirsty", "hot", "cold", "warm",
-      "sick", "ill", "well", "healthy", "sore", "painful", "dizzy", "nauseous",
-      "scared", "afraid", "nervous", "anxious", "angry", "mad", "upset", "frustrated",
-      "annoyed", "bored", "lonely", "excited", "proud", "embarrassed", "confused",
-      "calm", "relaxed", "stressed", "worried", "hopeful", "grateful", "thankful",
-      // State / property
-      "ready", "busy", "free", "available", "full", "empty", "open", "closed", "locked",
-      "broken", "fixed", "new", "old", "young", "big", "small", "large", "little", "long",
-      "short", "high", "low", "heavy", "light", "hard", "soft", "easy", "difficult",
-      "simple", "quick", "slow", "fast", "loud", "quiet", "noisy", "bright", "dark",
-      "clean", "dirty", "wet", "dry", "safe", "dangerous", "strong", "weak",
-      // Social / preference
-      "friendly", "kind", "mean", "rude", "polite", "private", "public", "personal",
-      "favorite", "popular", "same", "different", "other", "next", "last", "first",
-      "second", "final", "early", "late", "online", "offline", "local",
-      "enough", "extra", "only", "whole", "half", "real", "fake", "paid"
+      "good", "great", "fine", "okay", "ok", "bad", "nice", "ready", "busy", "free",
+      "happy", "sad", "tired", "hungry", "thirsty", "hot", "cold", "sick", "well",
+      "better", "sure", "right", "wrong", "easy", "hard", "open", "closed", "full",
+      "empty", "broken", "safe", "sore", "painful", "scared", "nervous", "angry",
+      "upset", "confused", "calm", "worried", "nauseous", "dizzy"
     ],
     noun: [
-      // Food / drink
-      "water", "food", "drink", "snack", "coffee", "tea", "juice", "milk", "soda", "soup",
-      "meal", "breakfast", "lunch", "dinner", "pizza", "sandwich", "bread", "fruit", "apple",
-      "banana", "vegetable", "salad", "meat", "chicken", "fish", "egg", "cheese", "rice",
-      "pasta", "cookie", "cake", "ice", "cream", "sugar", "salt", "pepper", "sauce",
-      // Body / health
-      "bathroom", "restroom", "toilet", "shower", "bath", "medicine", "pill", "nurse",
-      "doctor", "hospital", "clinic", "pain", "headache", "stomach", "back", "leg", "arm",
-      "hand", "foot", "head", "neck", "throat", "chest", "eye", "ear", "mouth", "tooth",
-      "blood", "fever", "cold", "cough", "allergy", "appointment", "therapy", "wheelchair",
-      // Home / objects
-      "home", "house", "apartment", "room", "bedroom", "kitchen", "living", "office",
-      "bed", "chair", "table", "desk", "door", "window", "light", "lamp", "floor", "wall",
-      "blanket", "pillow", "towel", "clothes", "shirt", "pants", "shoes", "jacket", "hat",
-      "bag", "keys", "wallet", "money", "card", "paper", "pen", "pencil", "box", "bottle",
-      // Tech / media
-      "phone", "tablet", "computer", "laptop", "remote", "tv", "television", "screen",
-      "music", "song", "movie", "video", "show", "game", "app", "internet", "wifi",
-      "email", "message", "text", "call", "camera", "photo", "picture", "battery", "charger",
-      "keyboard", "mouse", "speaker", "headphones", "microphone", "book", "magazine", "news",
-      // People / relations
-      "friend", "family", "mom", "dad", "mother", "father", "parent", "brother", "sister",
-      "son", "daughter", "baby", "child", "kids", "wife", "husband", "partner", "neighbor",
-      "teacher", "student", "boss", "coworker", "doctor", "nurse", "person", "people",
-      "man", "woman", "boy", "girl", "someone", "everyone", "anyone", "name",
-      // Places / transport
-      "school", "work", "job", "store", "shop", "mall", "park", "street", "road", "city",
-      "town", "church", "library", "bank", "restaurant", "cafe", "hotel", "airport",
-      "station", "bus", "car", "taxi", "train", "plane", "bike", "subway", "parking",
-      // Time / abstract
-      "time", "minute", "hour", "day", "night", "morning", "afternoon", "evening", "week",
-      "month", "year", "today", "tomorrow", "yesterday", "weekend", "birthday", "holiday",
-      "help", "break", "rest", "problem", "question", "answer", "idea", "plan", "way",
-      "thing", "stuff", "part", "side", "end", "start", "number", "word", "story", "reason",
-      "weather", "rain", "sun", "snow", "wind", "temperature", "outside", "inside"
+      "time", "day", "home", "help", "people", "water", "food", "phone", "work",
+      "room", "door", "pain", "bathroom", "doctor", "nurse", "friend", "family",
+      "mom", "dad", "child", "medicine", "hospital", "wheelchair", "headache",
+      "appointment", "therapy", "message", "call", "question", "problem", "plan",
+      "morning", "night", "minute", "hour", "restroom", "pill", "blanket", "chair"
     ]
   };
 
-  const SEED_TRIGRAMS = [
+  /**
+   * Seed n-gram phrases (2–5 tokens). Each tuple trains all sub-n-grams up to 5-gram.
+   */
+  const SEED_PHRASES = [
+    // 5-grams (prev4…prev1 → next)
+    ["i", "would", "like", "to", "go"],
+    ["i", "would", "like", "to", "see"],
+    ["i", "would", "like", "to", "know"],
+    ["i", "want", "to", "go", "home"],
+    ["i", "need", "to", "go", "now"],
+    ["i", "am", "going", "to", "be"],
+    ["i", "am", "not", "sure", "about"],
+    ["do", "you", "want", "to", "go"],
+    ["do", "you", "want", "to", "talk"],
+    ["would", "you", "like", "to", "come"],
+    ["can", "you", "help", "me", "with"],
+    ["let", "me", "know", "if", "you"],
+    ["how", "are", "you", "doing", "today"],
+    ["what", "do", "you", "want", "to"],
+    ["what", "do", "you", "think", "about"],
+    ["thank", "you", "so", "much", "for"],
+    ["that", "sounds", "like", "a", "plan"],
+    ["i", "do", "not", "know", "if"],
+    ["i", "have", "to", "go", "now"],
+    ["see", "you", "later", "on", "today"],
+    // 4-grams
+    ["i", "would", "like", "to"],
+    ["i", "want", "to", "go"],
+    ["i", "need", "to", "go"],
+    ["i", "am", "going", "to"],
+    ["i", "have", "to", "go"],
+    ["i", "do", "not", "know"],
+    ["i", "do", "not", "think"],
+    ["do", "you", "want", "to"],
+    ["would", "you", "like", "to"],
+    ["could", "you", "please", "help"],
+    ["can", "you", "help", "me"],
+    ["let", "me", "know", "if"],
+    ["how", "are", "you", "doing"],
+    ["what", "do", "you", "think"],
+    ["what", "do", "you", "want"],
+    ["thank", "you", "so", "much"],
+    ["thanks", "for", "the", "help"],
+    ["that", "sounds", "good", "to"],
+    ["that", "makes", "sense", "to"],
+    ["by", "the", "way", "i"],
+    ["as", "soon", "as", "possible"],
+    // 3-grams
     ["i", "would", "like"], ["i", "want", "to"], ["i", "want", "a"], ["i", "need", "to"],
     ["i", "am", "not"], ["i", "am", "going"], ["i", "have", "to"], ["i", "have", "been"],
     ["i", "do", "not"], ["i", "did", "not"], ["i", "think", "so"], ["i", "think", "that"],
@@ -217,12 +182,63 @@ Maybe we can try something else what if we did this instead
   ];
 
   /**
-   * First matching rule wins (order = specificity).
-   * when: prev1Empty | prev1/2/3 | prev1In/prev2In | prev1Class/prev2Class
+   * First matching rule wins (order = specificity — put longer contexts first).
+   * when:
+   *   prev1Empty
+   *   prev1..prev4 (exact token)
+   *   prev1In..prev4In (membership lists)
+   *   prev1Class..prev4Class (WORD_CLASS key)
    * prefer: WORD_CLASS keys and/or short literal words (≤6 chars for candidate expand)
+   * Context window: last 4 completed words of the current sentence.
    */
   const SLOT_RULES = [
-    // --- Bigrams / multi-word (most specific) ---
+    // --- 4-word contexts (prev4 … prev1) ---
+    { when: { prev4: "i", prev3: "would", prev2: "like", prev1: "to" }, prefer: ["verb", "go", "have", "see", "know"] },
+    { when: { prev4: "i", prev3In: ["want", "need"], prev2: "to", prev1In: ["go", "get", "see", "know", "leave"] }, prefer: ["prep", "home", "there", "now", "adv"] },
+    { when: { prev4: "would", prev3: "you", prev2: "like", prev1: "to" }, prefer: ["verb", "go", "come", "help", "see"] },
+    { when: { prev4: "do", prev3: "you", prev2: "want", prev1: "to" }, prefer: ["verb", "go", "talk", "eat", "rest"] },
+    { when: { prev4: "can", prev3: "you", prev2: "help", prev1: "me" }, prefer: ["prep", "with", "please", "verb"] },
+    { when: { prev4: "let", prev3: "me", prev2: "know", prev1: "if" }, prefer: ["pron", "det", "you"] },
+    { when: { prev4: "i", prev3: "am", prev2: "going", prev1: "to" }, prefer: ["verb", "be", "need", "try"] },
+    { when: { prev4: "thank", prev3: "you", prev2: "so", prev1: "much" }, prefer: ["prep", "for", "pron"] },
+    { when: { prev4: "how", prev3: "are", prev2: "you", prev1: "doing" }, prefer: ["adv", "today", "now"] },
+    { when: { prev4In: ["i", "you", "we", "they"], prev3In: ["do", "does", "did"], prev2: "not", prev1Class: "verb" }, prefer: ["det", "pron", "prep", "adv", "to"] },
+
+    // --- 3-word contexts (prev3 … prev1) ---
+    { when: { prev3: "i", prev2: "would", prev1: "like" }, prefer: ["to", "det", "noun", "pron"] },
+    { when: { prev3: "i", prev2In: ["want", "need", "like", "have", "got"], prev1: "to" }, prefer: ["verb"] },
+    { when: { prev3: "i", prev2In: ["want", "need"], prev1In: ["a", "an", "the", "some"] }, prefer: ["noun", "adj"] },
+    { when: { prev3: "i", prev2: "am", prev1: "going" }, prefer: ["to", "home", "adv"] },
+    { when: { prev3: "i", prev2: "am", prev1: "not" }, prefer: ["adj", "verb", "adv", "sure"] },
+    { when: { prev3: "i", prev2In: ["do", "did"], prev1: "not" }, prefer: ["verb", "know", "want", "like"] },
+    { when: { prev3: "i", prev2In: ["have", "had"], prev1: "to" }, prefer: ["verb", "go", "leave"] },
+    { when: { prev3: "how", prev2: "are", prev1: "you" }, prefer: ["adj", "doing", "feeling", "today"] },
+    { when: { prev3: "how", prev2: "do", prev1: "you" }, prefer: ["verb", "feel", "know", "want"] },
+    { when: { prev3: "what", prev2: "do", prev1: "you" }, prefer: ["verb", "want", "think", "need", "mean"] },
+    { when: { prev3: "what", prev2: "are", prev1: "you" }, prefer: ["verb", "doing", "thinking"] },
+    { when: { prev3: "where", prev2In: ["are", "is", "do", "did"], prev1: "you" }, prefer: ["verb", "going", "from"] },
+    { when: { prev3: "when", prev2In: ["do", "did", "are", "is"], prev1: "you" }, prefer: ["verb", "want", "need"] },
+    { when: { prev3: "why", prev2In: ["do", "did", "are", "is"], prev1: "you" }, prefer: ["verb", "think", "want"] },
+    { when: { prev3: "who", prev2In: ["are", "is", "do", "did"], prev1: "you" }, prefer: ["verb", "with", "talking"] },
+    { when: { prev3: "do", prev2: "you", prev1In: ["want", "need", "like", "have", "know", "think"] }, prefer: ["to", "det", "pron", "noun", "verb"] },
+    { when: { prev3: "would", prev2: "you", prev1: "like" }, prefer: ["to", "det", "noun", "pron", "some"] },
+    { when: { prev3: "could", prev2: "you", prev1: "please" }, prefer: ["verb", "help", "tell", "open"] },
+    { when: { prev3: "can", prev2: "you", prev1In: ["help", "tell", "please", "see", "open"] }, prefer: ["pron", "me", "det", "verb"] },
+    { when: { prev3: "let", prev2: "me", prev1In: ["know", "see", "try", "think"] }, prefer: ["if", "pron", "det", "verb"] },
+    { when: { prev3: "see", prev2: "you", prev1In: ["soon", "later", "tomorrow"] }, prefer: ["pron", "conj", "adv"] },
+    { when: { prev3: "thank", prev2: "you", prev1: "so" }, prefer: ["much", "very"] },
+    { when: { prev3: "thanks", prev2: "for", prev1: "the" }, prefer: ["noun", "help"] },
+    { when: { prev3: "that", prev2: "sounds", prev1: "like" }, prefer: ["det", "noun", "pron", "adj"] },
+    { when: { prev3: "that", prev2In: ["sounds", "makes", "seems"], prev1In: ["good", "great", "fine", "sense"] }, prefer: ["prep", "to", "conj", "pron"] },
+    { when: { prev3: "i", prev2: "really", prev1In: ["want", "need", "like", "love", "think"] }, prefer: ["to", "det", "pron", "verb"] },
+    { when: { prev3In: ["a", "an", "the", "this", "that", "my", "your"], prev2Class: "adj", prev1Class: "noun" }, prefer: ["verb", "prep", "conj", "adv"] },
+    { when: { prev3In: ["i", "you", "we", "they", "he", "she"], prev2In: ["am", "is", "are", "was", "were"], prev1Class: "adj" }, prefer: ["prep", "conj", "adv", "to"] },
+    { when: { prev3In: ["i", "you", "we", "they"], prev2Class: "modal", prev1: "not" }, prefer: ["verb", "adv"] },
+    { when: { prev3: "there", prev2In: ["is", "are"], prev1In: ["a", "an", "some", "no"] }, prefer: ["noun", "adj"] },
+    { when: { prev3: "it", prev2In: ["is", "was"], prev1Class: "adj" }, prefer: ["prep", "to", "conj", "adv"] },
+    { when: { prev3Class: "pron", prev2Class: "modal", prev1: "to" }, prefer: ["verb"] },
+
+    // --- Bigrams / multi-word ---
     { when: { prev2In: ["want", "need", "like", "love", "prefer", "have", "has", "had", "going", "trying", "looking", "waiting", "used", "ought", "supposed"], prev1: "to" }, prefer: ["verb"] },
     { when: { prev2In: ["going", "looking", "waiting", "ready", "time"], prev1: "for" }, prefer: ["det", "noun", "pron", "verb"] },
     { when: { prev2In: ["i", "you", "we", "they", "he", "she"], prev1In: ["am", "is", "are", "was", "were"] }, prefer: ["adj", "verb", "det", "adv", "not"] },
@@ -230,6 +246,7 @@ Maybe we can try something else what if we did this instead
     { when: { prev2In: ["i", "you", "we", "they", "he", "she"], prev1In: ["have", "has", "had"] }, prefer: ["verb", "det", "noun", "adv", "not"] },
     { when: { prev2In: ["i", "you", "we", "they"], prev1In: ["will", "would", "can", "could", "should", "might", "must"] }, prefer: ["verb", "not", "adv", "pron"] },
     { when: { prev2: "what", prev1In: ["do", "did", "does", "are", "is", "was", "were", "can", "could", "should", "would"] }, prefer: ["pron", "det", "verb"] },
+    { when: { prev2In: ["where", "when", "why", "who"], prev1In: ["do", "did", "does", "are", "is", "was", "were", "can", "could", "should", "would"] }, prefer: ["pron", "det", "verb"] },
     { when: { prev2: "how", prev1In: ["are", "is", "do", "did", "can", "could", "about"] }, prefer: ["pron", "det", "adj", "adv"] },
     { when: { prev2: "how", prev1: "are" }, prefer: ["pron", "you"] },
     { when: { prev2In: ["thank", "thanks"], prev1: "you" }, prefer: ["so", "for", "very"] },
@@ -246,6 +263,8 @@ Maybe we can try something else what if we did this instead
     { when: { prev2: "it", prev1In: ["is", "was", "'s"] }, prefer: ["adj", "det", "noun", "adv"] },
     { when: { prev2: "this", prev1In: ["is", "was"] }, prefer: ["det", "noun", "adj", "pron"] },
     { when: { prev2: "i", prev1In: ["would", "will", "'d", "'ll"] }, prefer: ["verb", "like", "love", "need"] },
+    { when: { prev2: "would", prev1: "you" }, prefer: ["verb", "like", "please", "mind"] },
+    { when: { prev2: "could", prev1: "you" }, prefer: ["verb", "please", "help"] },
 
     // --- Contractions / fused prev1 (kept as one token) ---
     { when: { prev1In: ["i'm", "im"] }, prefer: ["adj", "verb", "adv", "not", "going"] },
@@ -379,55 +398,24 @@ Maybe we can try something else what if we did this instead
   const SPACE_EATING_PUNCT = new Set([".", ",", "!", "?", ";", ":", ")", "]", "}", "…", "—", "-"]);
   const SENTENCE_END_PUNCT = new Set([".", "!", "?"]);
 
-  /** Log-space chip adjustments (base rank is mobile/seed log10). */
+  /** Log-space chip adjustments (base rank is seed log10). */
   const SCORE_WEIGHTS = {
     exactMatchLog: 0.35,
     prefixGrowLog: 0.08,
     repeatPrevLog: 0.25,
-    orthography: 0.55,
-    /** Mid-word discount when candidate is keyboard-adjacent fuzzy (not true prefix). */
-    fuzzyKeyboardLog: 0.22,
-    /** Mid-word discount for non-keyboard single-edit fuzzy. */
-    fuzzyOtherLog: 0.45
-  };
-
-  /**
-   * Boundary did-you-mean / soft autocorrect + mid-word fuzzy policy.
-   * Costs: keyboard sub ~0.32, transpose ~0.55, ins/del ~0.72, other sub ~0.85.
-   */
-  const DID_YOU_MEAN = {
-    /** log10 floor for OOV typed token when computing margin. */
-    oovFloor: -8,
-    /** Min (best − typed) log10 margin to soft-rewrite on boundary. */
-    softMargin: 1.1,
-    softMaxCost: 0.9,
-    /** Require this extra margin over 2nd place to soft-apply. */
-    softWinnerGap: 0.25,
-    /** Min margin to pin a did-you-mean chip (no silent rewrite). */
-    chipMargin: 0.5,
-    chipMaxCost: 0.95,
-    chipLimit: 2,
-    /** Mid-word: always take fuzzy neighbors at or below this cost. */
-    fuzzyKeyboardMax: 0.4,
-    /** Mid-word: if pool still thin, accept up to this cost. */
-    fuzzyMaxCost: 0.95,
-    fuzzyLimit: 12
+    orthography: 0.55
   };
 
   const STUPID_BACKOFF_ALPHA = 0.4;
 
-  const FREQ_LIST_URL =
-    "https://cdn.jsdelivr.net/gh/first20hours/google-10000-english@master/google-10000-english-usa-no-swears.txt";
-  /** Compact mobile 4-gram LM derived from Vertanen & Kristensson forum model (CC BY 4.0). */
-  const MOBILE_LM_URL = "data/mobile-lm.json.gz";
-  const LS_FREQ_KEY = "voice_predict_freq_v1";
+  /** Single lexicon: flat words[] + classes{} (see data/NOTICE-word-class-10k.txt). */
+  const WORD_CLASS_URL = "data/word-class-10k.json.gz";
   const LS_PERSONAL_KEY = "voice_predict_personal_v1";
   const LS_PERSONAL_TEXT_KEY = "voice_predict_personal_text_v1";
 
-  /** Weak log10 agreement boost when seed and mobile both like a word. */
-  const SEED_LOG_BOOST = 0.08;
-  /** log10 backoff step when higher-order mobile context misses. */
-  const MOBILE_BACKOFF_LOG10 = 0.45;
+  /** Max log10 additive from within-class frequency rank (rank 0 gets full boost). */
+  const CLASS_FREQ_LOG_BOOST = 0.07;
+
   const CANDIDATE_LIMIT = 64;
   const CHIP_LIMIT = 9;
 
@@ -435,7 +423,7 @@ Maybe we can try something else what if we did this instead
     DEFAULT_STARTERS,
     CONVERSATION_SEED,
     WORD_CLASS,
-    SEED_TRIGRAMS,
+    SEED_PHRASES,
     SLOT_RULES,
     CONTRACTION_SHORTCUTS,
     AMBIGUOUS_READINGS,
@@ -446,15 +434,11 @@ Maybe we can try something else what if we did this instead
     SPACE_EATING_PUNCT,
     SENTENCE_END_PUNCT,
     SCORE_WEIGHTS,
-    DID_YOU_MEAN,
     STUPID_BACKOFF_ALPHA,
-    FREQ_LIST_URL,
-    MOBILE_LM_URL,
-    SEED_LOG_BOOST,
-    MOBILE_BACKOFF_LOG10,
+    WORD_CLASS_URL,
+    CLASS_FREQ_LOG_BOOST,
     CANDIDATE_LIMIT,
     CHIP_LIMIT,
-    LS_FREQ_KEY,
     LS_PERSONAL_KEY,
     LS_PERSONAL_TEXT_KEY
   };

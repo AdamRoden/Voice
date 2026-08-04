@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>VoicePredict eval (real mobile LM)</title>
+  <title>VoicePredict eval (seed + lexicon)</title>
   <style>
     body { font-family: system-ui, sans-serif; padding: 16px; background: #111; color: #eee; max-width: 720px; }
     pre { background: #1a1a1a; padding: 12px; border-radius: 8px; overflow: auto; white-space: pre-wrap; }
@@ -13,22 +13,17 @@
 </head>
 <body>
   <h1>predict eval</h1>
-  <p>Loads <code>../data/mobile-lm.json.gz</code> and scores next-word chips on a short conversational set. Serve over HTTP (not file://).</p>
+  <p>Scores next-word chips from seed n-grams + offline word-class lexicon. Serve over HTTP (not file://).</p>
   <button type="button" id="run">Run eval</button>
   <pre id="out">Idle.</pre>
   <script src="../js/predict-data.js"></script>
   <script src="../js/predict-type.js"></script>
-  <script src="../js/predict-mobile-lm.js"></script>
   <script src="../js/predict.js"></script>
   <script>
     (function () {
       const out = document.getElementById("out");
       const log = (s) => { out.textContent += s + "\n"; };
 
-      /**
-       * Each item: full target phrase. We score predicting the last word
-       * given the prefix (with trailing space after previous words).
-       */
       const PHRASES = [
         "I want to",
         "I would like to",
@@ -78,8 +73,7 @@
       async function run() {
         out.textContent = "";
         const P = window.VoicePredict;
-        const M = window.VoiceMobileLm;
-        if (!P || !M) {
+        if (!P) {
           log("FAIL: predict modules missing");
           return;
         }
@@ -88,16 +82,12 @@
           localStorage.removeItem(window.VoicePredictData.LS_PERSONAL_TEXT_KEY);
         } catch (_) {}
 
-        log("Loading mobile LM…");
+        log("Init seed + lexicon…");
         P.init();
         const t0 = performance.now();
-        const n = await P.loadMobileLm();
+        const n = await P.loadModels();
         const loadMs = Math.round(performance.now() - t0);
-        log("vocab=" + n + " ready=" + P.mobileReady + " loadMs=" + loadMs);
-        if (!P.mobileReady) {
-          log("FAIL: mobile LM not ready (need HTTP + data/mobile-lm.json.gz)");
-          return;
-        }
+        log("lexicon=" + n + " loadMs=" + loadMs);
 
         let top1 = 0, top3 = 0, top9 = 0, total = 0;
         const misses = [];
@@ -139,7 +129,6 @@
           });
         }
 
-        // Mid-word completion spot checks
         log("");
         log("=== mid-word spot checks ===");
         const midCases = [

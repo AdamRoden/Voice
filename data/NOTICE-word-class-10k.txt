@@ -1,0 +1,28 @@
+Word class lexicon (top ~10k)
+=============================
+
+File: word-class-10k.json.gz
+
+Payload:
+  words[]   — frequency-ordered vocab (mid-word prefix scan)
+  classes{} — POS lists (also frequency-ordered within each class)
+
+Frequency order from:
+  google-10000-english-usa-no-swears.txt
+  first20hours/google-10000-english
+  https://github.com/first20hours/google-10000-english
+
+Part-of-speech tags primarily from:
+  Moby Part-of-Speech II (Grady Ward / Moby Project)
+  Public domain
+  https://github.com/elitejake/Moby-Project
+
+Closed-class labels (determiners, pronouns, modals, auxiliaries,
+prepositions, conjunctions, wh-words, negation) are curated for AAC
+keyboard use and take precedence over Moby multi-tags.
+
+Words not found in Moby (~23%) are assigned via light morphology
+heuristics, defaulting to noun.
+
+Rebuild:
+  powershell -ExecutionPolicy Bypass -File tools/build-word-class-10k.ps1
