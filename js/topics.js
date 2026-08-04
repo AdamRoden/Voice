@@ -224,9 +224,9 @@
       });
       const rows = Math.max(1, activeTab.gridRows || 1, contentRows);
       const rowHCss = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sound-row-height"));
-      const rowH = Number.isFinite(rowHCss) && rowHCss > 0 ? rowHCss : (ctx.isMobileLayout() ? 48 : 44);
+      const rowH = Number.isFinite(rowHCss) && rowHCss > 0 ? rowHCss : 48;
       const styles = getComputedStyle(ctx.soundCanvas);
-      const gap = parseFloat(styles.rowGap || styles.gap) || (ctx.isMobileLayout() ? 4 : 4);
+      const gap = parseFloat(styles.rowGap || styles.gap) || 4;
       const padY = (parseFloat(styles.paddingTop) || 0) + (parseFloat(styles.paddingBottom) || 0);
       const borderY = (parseFloat(styles.borderTopWidth) || 0) + (parseFloat(styles.borderBottomWidth) || 0);
       const height = padY + borderY + rows * rowH + Math.max(0, rows - 1) * gap;

@@ -10,7 +10,7 @@
 /* Shared design tokens (themes override colors below) */
 /* Sidebar 260px (not 300): dual rails leave more room for main near 901px cutover.
    Narrow desktop (901–1100px): JS collapses both to icon rails (shell-ui NARROW_DESKTOP_MQ). */
-:root { --sound-row-height: 44px; --sidebar-width: 260px; --sidebar-rail-width: 52px; --touch-min: 44px; --gap-xs: 2px; --gap-sm: 4px; --gap-md: 6px; --gap-lg: 8px; --gap-xl: 10px; --gap-2xl: 12px; --pad-sm: 6px; --pad-md: 8px; --pad-lg: 10px; --pad-xl: 12px; --radius-xs: 4px; --radius-sm: 6px; --radius-md: 8px; --radius-lg: 10px; --radius-xl: 14px; --radius-pill: 999px; --z-header: 30; --z-float: 40; --z-float-shift: 50; --z-compose-raised: 60; --z-sidebar-backdrop: 99; --z-sidebar: 100; --z-osk: 110; --z-compose-menu: 120; --z-mobile-drawer: 120; --z-voices-panel: 1500; --z-modal-overlay: 2000; --z-modal: 2001; --ease-standard: cubic-bezier(0.4, 0, 0.2, 1); --duration-fast: 0.15s; --duration-normal: 0.2s; --icon-fill: 0; --icon-wght: 400; --icon-grad: 0; --icon-opsz: 24; }
+:root { --sound-row-height: 48px; --sidebar-width: 260px; --sidebar-rail-width: 52px; --touch-min: 44px; --gap-xs: 2px; --gap-sm: 4px; --gap-md: 6px; --gap-lg: 8px; --gap-xl: 10px; --gap-2xl: 12px; --pad-sm: 6px; --pad-md: 8px; --pad-lg: 10px; --pad-xl: 12px; --radius-xs: 4px; --radius-sm: 6px; --radius-md: 8px; --radius-lg: 10px; --radius-xl: 14px; --radius-pill: 999px; --z-header: 30; --z-float: 40; --z-float-shift: 50; --z-compose-raised: 60; --z-sidebar-backdrop: 99; --z-sidebar: 100; --z-osk: 110; --z-compose-menu: 120; --z-mobile-drawer: 120; --z-voices-panel: 1500; --z-modal-overlay: 2000; --z-modal: 2001; --ease-standard: cubic-bezier(0.4, 0, 0.2, 1); --duration-fast: 0.15s; --duration-normal: 0.2s; --icon-fill: 0; --icon-wght: 400; --icon-grad: 0; --icon-opsz: 24; }
 /* Dark theme (default) */
 :root,
 :root[data-theme="dark"] {
@@ -97,6 +97,7 @@ body.modal-open { overflow: hidden; }
   body { min-height: 100lvh; }
   html:has(body.osk-visible) { background-color: var(--osk-panel-bg); }
 }
+
 /* Only in-flow column under body (shell + OSK). Backdrop / modals are position:fixed outside this tree. */
 .app-layout { flex: 1 1 auto; min-height: 0; min-width: 0; width: 100%; max-width: 100%; display: flex; flex-direction: column; overflow: hidden; }
 /* Sidebar + main; bottom edge meets the full-width OSK.
@@ -115,7 +116,7 @@ input, select, textarea { font-size: 16px; } /* prevent iOS focus zoom */
 .icon-medium { font-size: 16px; }
 .icon-btn-margin { margin-right: 4px; }
 /* ==================== 4. SIDEBAR ==================== */
-.sidebar { width: var(--sidebar-width); background-color: var(--bg-surface); display: flex; flex-direction: column; transition: width 0.3s var(--ease-standard), transform 0.3s var(--ease-standard); z-index: var(--z-sidebar); flex-shrink: 0; user-select: none; position: relative; height: 100%; overflow: hidden; }
+.sidebar { width: var(--sidebar-width); background-color: var(--bg-surface); display: flex; flex-direction: column; transition: width 0.3s var(--ease-standard), transform 0.3s var(--ease-standard); z-index: var(--z-sidebar); flex-shrink: 0; user-select: none; position: relative; height: 100%; overflow: hidden; padding-top: 16px; }
 .sidebar-left { border-right: 1px solid var(--border); order: 0; }
 .sidebar-right { border-left: 1px solid var(--border); order: 2; }
 .app-main { order: 1; }
@@ -375,7 +376,7 @@ body.osk-visible .display-textarea { max-height: min(180px, calc(var(--vv-height
 .overwrite-cancel-btn { background: rgba(0,0,0,0.25); border: none; color: #fff; padding: 8px 12px; border-radius: var(--radius-md); cursor: pointer; font-size: 13px; font-weight: bold; transition: background 0.2s; min-height: 36px; }
 .overwrite-cancel-btn:hover { background: rgba(0,0,0,0.4); }
 /* Sound Button Grid Canvas — height fits grid content (JS sets height from rows × row-height). Never flex-grow into empty space under the buttons. Can shrink + scroll if content is taller than the remaining shell. */
-.sound-canvas { flex: 0 1 auto; width: 100%; height: auto; min-height: 0; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-md); display: grid; gap: var(--gap-sm); padding: 5px; overflow: auto; transition: border-color 0.2s; position: relative; align-content: start; }
+.sound-canvas { flex: 0 1 auto; width: 100%; height: auto; min-height: 0; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-md); display: grid; gap: var(--gap-sm); padding: 5px; padding-top: 10px; overflow: auto; transition: border-color 0.2s; position: relative; align-content: start; }
 .sound-canvas-empty { grid-column: 1 / -1; grid-row: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--gap-xl); padding: 16px 12px; text-align: center; color: var(--text-secondary); min-height: 110px; }
 .sound-canvas-empty-title { font-size: 15px; font-weight: 600; color: var(--text); }
 .sound-canvas-empty-text { font-size: 13px; line-height: 1.4; max-width: 28em; }
@@ -460,7 +461,7 @@ body.osk-visible .display-textarea { max-height: min(180px, calc(var(--vv-height
   50% { transform: rotate(1deg) scale(1); }
   100% { transform: rotate(-1deg) scale(1); }
 }
-.sound-button { position: relative; background-color: var(--key-bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0; cursor: default; user-select: none; -webkit-user-select: none; transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease, background-color 0.12s ease; display: flex; align-items: stretch; justify-content: flex-start; font-size: 14px; font-weight: 600; color: #fff; overflow: hidden; width: 100%; min-height: var(--sound-row-height, 44px); height: var(--sound-row-height, 44px); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); -webkit-touch-callout: none; box-sizing: border-box; }
+.sound-button { position: relative; background-color: var(--key-bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0; cursor: default; user-select: none; -webkit-user-select: none; transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease, background-color 0.12s ease; display: flex; align-items: stretch; justify-content: flex-start; font-size: 14px; font-weight: 600; color: #fff; overflow: hidden; width: 100%; min-height: var(--sound-row-height, 48px); height: var(--sound-row-height, 48px); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); -webkit-touch-callout: none; box-sizing: border-box; }
 .sound-button:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 4px 10px var(--shadow); }
 .sound-button.overwrite-target { animation: wiggle 0.4s infinite ease-in-out; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 50%, transparent); cursor: pointer; }
 /* Utterance (live TTS) buttons: regenerate on press — outline style */
@@ -471,10 +472,10 @@ body.osk-visible .display-textarea { max-height: min(180px, calc(var(--vv-height
 .sound-button.utterance-button .sound-button-play { background: color-mix(in srgb, currentColor 14%, transparent); border-right-color: color-mix(in srgb, currentColor 35%, transparent); color: inherit; text-shadow: none; }
 .sound-button.utterance-button .sound-button-play:hover { background: color-mix(in srgb, currentColor 24%, transparent); }
 /* Large play control (left) + label body (restore text like history) */
-.sound-button-play { flex: 0 0 auto; width: calc(var(--sound-row-height, 44px) * 1.6); min-width: calc(var(--sound-row-height, 44px) * 1.6); height: 100%; display: flex; align-items: center; justify-content: center; border: none; border-right: 1px solid rgba(255, 255, 255, 0.28); background: rgba(0, 0, 0, 0.22); color: inherit; cursor: pointer; padding: 0; margin: 0; text-shadow: 0 1px 2px rgba(0,0,0,0.5); transition: background-color 0.12s ease; -webkit-appearance: none; appearance: none; }
+.sound-button-play { flex: 0 0 auto; width: calc(var(--sound-row-height, 48px) * 1.6); min-width: calc(var(--sound-row-height, 48px) * 1.6); height: 100%; display: flex; align-items: center; justify-content: center; border: none; border-right: 1px solid rgba(255, 255, 255, 0.28); background: rgba(0, 0, 0, 0.22); color: inherit; cursor: pointer; padding: 0; margin: 0; text-shadow: 0 1px 2px rgba(0,0,0,0.5); transition: background-color 0.12s ease; -webkit-appearance: none; appearance: none; }
 .sound-button-play:hover { background: rgba(0, 0, 0, 0.36); }
 .sound-button-play:active { background: rgba(0, 0, 0, 0.48); transform: scale(0.96); }
-.sound-button-play .material-symbols-outlined { font-size: calc(var(--sound-row-height, 44px) * 0.55); line-height: 1; }
+.sound-button-play .material-symbols-outlined { font-size: calc(var(--sound-row-height, 48px) * 0.55); line-height: 1; }
 .sound-button-body { flex: 1 1 auto; min-width: 0; height: 100%; display: flex; align-items: center; justify-content: center; gap: var(--gap-sm); padding: 0 8px; cursor: pointer; overflow: hidden; border: none; background: transparent; color: inherit; font: inherit; font-weight: 600; text-shadow: inherit; -webkit-appearance: none; appearance: none; }
 .sound-button-body:hover { background: rgba(255, 255, 255, 0.08); }
 .sound-button-body:active { background: rgba(0, 0, 0, 0.12); }
@@ -488,10 +489,10 @@ body.osk-visible .display-textarea { max-height: min(180px, calc(var(--vv-height
 .sound-button-main:hover { background: rgba(255, 255, 255, 0.1); }
 .sound-button-main:active { background: rgba(0, 0, 0, 0.14); transform: scale(0.99); }
 .sound-button-main .sound-button-inner { pointer-events: none; }
-.sound-button-insert { flex: 0 0 auto; width: calc(var(--sound-row-height, 44px) * 0.72); min-width: 28px; max-width: 40px; height: 100%; display: flex; align-items: center; justify-content: center; border: none; border-left: 1px solid rgba(255, 255, 255, 0.28); background: rgba(0, 0, 0, 0.18); color: inherit; cursor: pointer; padding: 0; margin: 0; -webkit-appearance: none; appearance: none; }
+.sound-button-insert { flex: 0 0 auto; width: calc(var(--sound-row-height, 48px) * 0.72); min-width: 28px; max-width: 40px; height: 100%; display: flex; align-items: center; justify-content: center; border: none; border-left: 1px solid rgba(255, 255, 255, 0.28); background: rgba(0, 0, 0, 0.18); color: inherit; cursor: pointer; padding: 0; margin: 0; -webkit-appearance: none; appearance: none; }
 .sound-button-insert:hover { background: rgba(0, 0, 0, 0.32); }
 .sound-button-insert:active { background: rgba(0, 0, 0, 0.42); }
-.sound-button-insert .material-symbols-outlined { font-size: calc(var(--sound-row-height, 44px) * 0.42); line-height: 1; opacity: 0.95; }
+.sound-button-insert .material-symbols-outlined { font-size: calc(var(--sound-row-height, 48px) * 0.42); line-height: 1; opacity: 0.95; }
 .sound-button.utterance-button .sound-button-insert { background: color-mix(in srgb, currentColor 12%, transparent); border-left-color: color-mix(in srgb, currentColor 35%, transparent); }
 .sound-button.utterance-button .sound-button-insert:hover { background: color-mix(in srgb, currentColor 22%, transparent); }
 .sound-button.utterance-button .sound-button-main:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
@@ -577,7 +578,7 @@ body:not([data-feat-insert-tag="1"]) #insert-tag-btn { display: none !important;
 /* Autosizing message field — font size from Settings */
 .display-textarea { flex: 1 1 auto; min-width: 0; width: auto; height: auto; min-height: var(--display-ctrl-size, var(--display-font-size, 28px)); max-height: min(30vh, 180px); background-color: transparent; border: none; border-radius: 0; padding: 8px 6px; line-height: 1.35; color: var(--text); font-size: var(--display-font-size, 28px); resize: none; outline: none; white-space: pre-wrap; word-break: break-word; transition: min-height 0.05s; -webkit-overflow-scrolling: touch; overflow-y: auto; field-sizing: content; box-sizing: border-box; align-self: center; }
 /* Replay / Assign live in the tag row (hidden until audio is available) */
-.audio-actions-inline { display: none; align-items: stretch; gap: 3px; flex-shrink: 0; height: var(--sound-row-height, 44px); }
+.audio-actions-inline { display: none; align-items: stretch; gap: 3px; flex-shrink: 0; height: var(--sound-row-height, 48px); }
 .audio-actions-inline.active { display: flex; }
 .audio-action-btn { background-color: var(--key-bg); border: 1px solid var(--border); color: var(--text); padding: 0 10px; border-radius: var(--radius-md); cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: var(--gap-sm); height: 100%; min-height: 0; white-space: nowrap; flex: 0 1 auto; min-width: 0; }
 .audio-action-btn:hover { background-color: var(--key-hover); }
@@ -931,8 +932,7 @@ body { padding: 0; }
 .sidebar .sidebar-nav { padding-bottom: 6px; }
 /* Mobile: left collapse hides drawer via JS; keep header usable */
 .sidebar-left .sidebar-collapse-btn { display: flex; }
-.sound-canvas { gap: var(--gap-sm); padding: 4px; border-radius: var(--radius-md); }
-:root { --sound-row-height: 48px; }
+.sound-canvas { gap: var(--gap-sm); padding: 4px; padding-top: 10px; border-radius: var(--radius-md); }
 .sound-button { font-size: 14px; border-radius: var(--radius-md); }
 .bottom-dock { gap: var(--gap-sm); }
 /* Phones: text on top; left actions | trailing clear/pin/replay | Speak */
@@ -984,7 +984,6 @@ html.keyboard-open .modal.modal-full-mobile.open .modal-buttons { padding-bottom
 }
 
 @media (max-width: 480px) {
-  :root { --sound-row-height: 44px; }
 .sound-button { font-size: 13px; }
 .key { height: 34px; min-height: 34px; width: 34px; min-width: 34px; }
 .theme-btn { flex-direction: column; gap: var(--gap-xs); font-size: 11px; padding: 8px 2px; }
@@ -993,7 +992,6 @@ html.keyboard-open .modal.modal-full-mobile.open .modal-buttons { padding-bottom
 }
 /* Short landscape phones */
 @media (max-height: 500px) and (orientation: landscape) {
-  :root { --sound-row-height: 40px; }
 .app-main { gap: 3px; padding: 4px; }
 .bottom-dock { gap: var(--gap-xs); }
 .key { height: 30px; min-height: 30px; width: 30px; min-width: 30px; }
