@@ -28,7 +28,8 @@
    *   scheduleKeyboardAlign?: () => void,
    *   getCurrentFontSize?: () => number,
    *   onAfterAutosize?: () => void,
-   *   insertChunk?: (chunk: string) => void
+   *   insertChunk?: (chunk: string) => void,
+   *   canInsertTag?: () => boolean
    * }} deps
    */
   function createDisplay(deps) {
@@ -411,6 +412,7 @@
     }
 
     function openTagInsertModal() {
+      if (typeof d.canInsertTag === "function" && !d.canInsertTag()) return;
       savedTagsList = loadSavedTags();
       const savedInput = document.getElementById("saved-tags-input");
       if (savedInput) savedInput.value = tagsListToText(savedTagsList);
@@ -538,7 +540,7 @@
     const required = [
       "canAssignFromDisplay", "getText", "canReplay", "canUseGeneratedActions",
       "getLastGeneratedAudio", "clearDisplayText", "startAssignFromDisplay",
-      "playSpeechSource", "openTagInsertModal"
+      "playSpeechSource", "openTagInsertModal", "canInsertTag"
     ];
     for (const key of required) {
       if (typeof d[key] !== "function") {
@@ -561,9 +563,11 @@
       const items = [
         { id: "new", icon: "close", label: "Clear message", disabled: false },
         { id: "pin", icon: "push_pin", label: "Pin to button", disabled: !hasText },
-        { id: "replay", icon: "replay", label: "Replay message", disabled: !replayOk },
-        { id: "tag", icon: "add", label: "Insert tag", disabled: false }
+        { id: "replay", icon: "replay", label: "Replay message", disabled: !replayOk }
       ];
+      if (d.canInsertTag()) {
+        items.push({ id: "tag", icon: "add", label: "Insert tag", disabled: false });
+      }
       composeActionsMenu.innerHTML = "";
       items.forEach((item) => {
         const btn = document.createElement("button");

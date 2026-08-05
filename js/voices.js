@@ -558,7 +558,8 @@ function defaultLoadKeys(storageKey) {
    *   playPreviewBlob: (blob: Blob, fx: object|null) => Promise<void>,
    *   openModal: (id: string) => void,
    *   closeModals: () => void,
-   *   focusDisplayInput: () => void
+   *   focusDisplayInput: () => void,
+   *   onVoiceContextChanged?: () => void
    * }} deps
    */
   function create(deps) {
@@ -695,6 +696,7 @@ function defaultLoadKeys(storageKey) {
       if (isVoicesPanelOpen()) {
         applyVoiceModelList("browser", { resetSearch: false });
       }
+      notifyVoiceContextChanged();
       return mid;
     }
 
@@ -711,6 +713,7 @@ function defaultLoadKeys(storageKey) {
       if (isVoicesPanelOpen()) {
         applyVoiceModelList(SpeechEngines.voiceListModeForModel(id), { resetSearch: false });
       }
+      notifyVoiceContextChanged();
       return id;
     }
 
@@ -748,6 +751,10 @@ function defaultLoadKeys(storageKey) {
         if (size) label = `${label} · ${size}`;
       }
       return label;
+    }
+
+    function notifyVoiceContextChanged() {
+      if (typeof d.onVoiceContextChanged === "function") d.onVoiceContextChanged();
     }
 
     function syncSelectedVoiceSummary() {
@@ -1328,6 +1335,7 @@ function defaultLoadKeys(storageKey) {
 
       ElevenKey.paintApiKeyButton();
       syncSelectedVoiceSummary();
+      notifyVoiceContextChanged();
     }
 
     function setPiperVoiceId(id) {
@@ -1345,6 +1353,7 @@ function defaultLoadKeys(storageKey) {
         modelSelect.dispatchEvent(new Event("change"));
       } else {
         syncSelectedVoiceSummary();
+        notifyVoiceContextChanged();
       }
       return mid;
     }

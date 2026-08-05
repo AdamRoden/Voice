@@ -424,6 +424,14 @@
       requestAnimationFrame(() => { el.textContent = String(msg || ""); });
     }
 
+    /** Bracket tags only apply when an ElevenLabs model is selected. */
+    const canInsertTag = () => !!(Voices?.isElevenModelSelected?.());
+    const syncInsertTagChrome = () => {
+      const btn = document.getElementById("insert-tag-btn");
+      if (btn) btn.hidden = !canInsertTag();
+      if (Compose?.isOpen?.()) Compose.render();
+    };
+
     // Compose display: applyText = raw paint; setText → commitText (history).
     ComposeDisplay = ComposeApi.createDisplay({
       displayInput,
@@ -438,7 +446,8 @@
       setSavedSelection: (sel) => { savedDisplaySelection = sel; },
       scheduleKeyboardAlign,
       getCurrentFontSize: () => currentFontSize,
-      insertChunk: (chunk) => composeInsert(chunk)
+      insertChunk: (chunk) => composeInsert(chunk),
+      canInsertTag
     });
     const syncComposeStrip = () => ComposeDisplay.syncComposeStrip();
     const getDisplayCaretRange = () => ComposeDisplay.getDisplayCaretRange();
@@ -785,6 +794,7 @@
       startAssignFromDisplay: () => Topics.startAssignFromDisplay(),
       playSpeechSource: (...a) => ports.playSpeechSource(...a),
       openTagInsertModal,
+      canInsertTag,
       actionHotkeyChord: (id) => (Hotkeys ? Hotkeys.chordForComposeAction(id) : null)
     });
     Compose.bind();
@@ -939,7 +949,8 @@
       playPreviewBlob: (blob, fx) => Speech.playPreviewBlob(blob, fx),
       openModal: (id) => ports.openModal(id),
       closeModals: () => ports.closeModals(),
-      focusDisplayInput
+      focusDisplayInput,
+      onVoiceContextChanged: () => syncInsertTagChrome()
     });
     Voices.bind();
     Speech.bind();
