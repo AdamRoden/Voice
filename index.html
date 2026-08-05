@@ -158,7 +158,7 @@
             <label class="setting-toggle-row" for="opt-message-words">
               <span class="setting-toggle-text">
                 <span class="setting-toggle-title">Message word chips</span>
-                <span class="setting-toggle-desc">Words under the text box with remove and option to Replay</span>
+                <span class="setting-toggle-desc">Words under the text box with remove and option to regenerate</span>
               </span>
               <input type="checkbox" id="opt-message-words" class="setting-toggle-input">
             </label>
@@ -186,8 +186,8 @@
             </label>
             <label class="setting-toggle-row" for="opt-compose-replay">
               <span class="setting-toggle-text">
-                <span class="setting-toggle-title">Replay button</span>
-                <span class="setting-toggle-desc">Show replay to the right of the text box</span>
+                <span class="setting-toggle-title">Regenerate button</span>
+                <span class="setting-toggle-desc">Show regenerate to the right of the text box</span>
               </span>
               <input type="checkbox" id="opt-compose-replay" class="setting-toggle-input">
             </label>
@@ -298,11 +298,11 @@
               <button type="button" class="compose-icon-btn compose-standalone" id="compose-pin-btn" aria-label="Pin to button" title="Pin message to button">
                 <span class="material-symbols-outlined">push_pin</span>
               </button>
-              <button type="button" class="compose-icon-btn compose-standalone" id="compose-replay-btn" aria-label="Replay message" title="Replay message">
-                <span class="material-symbols-outlined">replay</span>
+              <button type="button" class="compose-icon-btn compose-standalone" id="compose-replay-btn" aria-label="Regenerate speech" title="Regenerate speech">
+                <span class="material-symbols-outlined">refresh</span>
               </button>
             </div>
-            <button type="button" class="compose-speak-btn display-ctrl key tts-btn" id="speak-btn" aria-label="Speak" title="Speak text (or selection). Click again to stop.">
+            <button type="button" class="compose-speak-btn display-ctrl key tts-btn" id="speak-btn" aria-label="Speak" title="Speak text (or selection). Enter or click again while speaking to stop.">
               <span class="material-symbols-outlined icon-medium">volume_up</span>
             </button>
           </div>
@@ -314,9 +314,9 @@
           <div class="compose-strip-body">
             <div class="compose-chips" id="compose-chips" role="list"></div>
             <div class="audio-actions-inline" id="generated-audio-actions">
-              <button class="audio-action-btn play" id="textarea-replay-btn" type="button" title="Replay Audio">
-                <span class="material-symbols-outlined icon-small">play_arrow</span>
-                <span class="audio-action-label">Replay Audio</span>
+              <button class="audio-action-btn play" id="textarea-replay-btn" type="button" title="Regenerate speech">
+                <span class="material-symbols-outlined icon-small">refresh</span>
+                <span class="audio-action-label">Regenerate</span>
               </button>
             </div>
           </div>
@@ -377,7 +377,7 @@
         <li><strong>Topics</strong> — tap a topic to activate it. Tap the <strong>active</strong> topic (or its icon on the rail) to open the left sidebar. Tap other icons only switches the active topic.</li>
         <li><strong>Top bar</strong> — phone only (menu button + chat chips). Tap empty space on the bar (or swipe up/down) to toggle normal vs slim (50% height).</li>
         <li><strong>Sounds</strong> — <span class="material-symbols-outlined coach-inline-icon">grid_view</span> <strong>buttons</strong> play their audio.</li>
-        <li><strong>Text box</strong> — <span class="material-symbols-outlined coach-inline-icon">more_horiz</span> <strong>Actions</strong> for clear, pin, replay, and tags; <span class="material-symbols-outlined coach-inline-icon">volume_up</span> <strong>speaker</strong> speaks (or press Enter). Speech history is in the sidebar.</li>
+        <li><strong>Text box</strong> — <span class="material-symbols-outlined coach-inline-icon">more_horiz</span> <strong>Actions</strong> for clear, pin, regenerate, and tags; <span class="material-symbols-outlined coach-inline-icon">volume_up</span> <strong>speaker</strong> speaks or replays (or press Enter). Speech history is in the sidebar.</li>
         <li><strong>Shortcuts</strong> — composer buttons show their keys in tooltips; open the full list with <strong>Keyboard shortcuts</strong> below.</li>
       </ol>
       <button type="button" class="status-btn help-hotkeys-btn" id="help-hotkeys-btn">

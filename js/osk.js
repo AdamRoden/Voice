@@ -3,10 +3,11 @@
  * Orthography lives in composeInsert (app); this module never calls applyInsert.
  *
  * Public API:
- *   VoiceOsk.bindCompose({ ... onCommand? })
+ *   VoiceOsk.bindCompose({ ... onCommand?, onEnter? })
  *   VoiceOsk.setVisible(bool) / isVisible() / schedulePredict() / refresh()
  *
  * Command key (⌘): host onCommand(key) — same table as hardware Cmd/Ctrl (AacHotkeys).
+ * Enter: host onEnter() when provided (speak/replay); otherwise inserts newline.
  *
  * Chip refresh ownership: schedulePredict only when
  *   (a) host setText runs while OSK is visible, or
@@ -214,7 +215,7 @@
     ctrl: "Command",
     space: "Space",
     backspace: "Backspace",
-    enter: "Enter",
+    enter: "Speak",
     symbols: "Symbols",
     tab: "Tab"
   };
@@ -316,6 +317,11 @@
       consumeModifiers();
     },
     enter() {
+      if (typeof opts.onEnter === "function") {
+        opts.onEnter();
+        consumeModifiers();
+        return;
+      }
       insert("\n");
       consumeModifiers();
     }
@@ -752,7 +758,8 @@
       persistPref: (pref) => {
         if (lsSet) lsSet(LS_OSK, pref ? "1" : "0");
       },
-      onCommand
+      onCommand,
+      onEnter: optsIn.onEnter
     });
 
     if (toggleBtn) {

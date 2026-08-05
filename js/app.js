@@ -324,6 +324,35 @@
     const canAssignFromDisplay = () => SpeechItems.canAssignFromDisplay(getText);
     const getAssignSource = () => SpeechItems.getAssignSource(getText, () => lastGeneratedAudio);
 
+    /** Matching generated audio for the full display text (regen / strip chrome). */
+    const canRegenerate = () => canReplay(lastGeneratedAudio, getText());
+    /** Primary speak may replay only when speaking the full message, not a selection. */
+    const canPrimaryReplay = () => {
+      if (trim(getSpeakText()) !== trim(getText())) return false;
+      return canRegenerate();
+    };
+
+    /** Speak btn / Enter / OSK: stop if busy, else replay if available, else generate. */
+    function primarySpeak() {
+      if (!Speech || speakBtn?.disabled) return;
+      if (Speech.isSpeakBusy()) {
+        Speech.stopAllSpeech();
+        return;
+      }
+      if (canPrimaryReplay() && canUseGeneratedActions(lastGeneratedAudio)) {
+        ports.playSpeechSource(lastGeneratedAudio);
+        return;
+      }
+      Speech.speakText();
+    }
+
+    /** Force a new generation for the current speak text. */
+    function regenerateSpeech() {
+      if (!Speech) return;
+      if (Speech.isSpeakBusy()) Speech.stopAllSpeech();
+      Speech.speakText();
+    }
+
     // Theme / sidebar / router / coach live in AacShellUi (created below with ports).
     // ==================== TEXT DISPLAY ====================
     /** Apply Settings font size to the message field; Speak follows one-line height. */
@@ -512,19 +541,20 @@
         onChange: null,
         onSystemKeyboard: expectSystemKeyboard,
         onLayout: () => scheduleKeyboardAlign({ settle: true }),
-        onCommand: (key) => !!(Hotkeys && Hotkeys.run(key))
+        onCommand: (key) => !!(Hotkeys && Hotkeys.run(key)),
+        onEnter: () => primarySpeak()
       });
     }
 
     function syncGeneratedAudioActions() {
       const hasText = canAssignFromDisplay();
-      const replayOk = canReplay(lastGeneratedAudio, getText());
+      const regenOk = canRegenerate();
 
-      const replayBtn = document.getElementById("textarea-replay-btn");
+      const regenBtn = document.getElementById("textarea-replay-btn");
       const assignBtn = document.getElementById("textarea-assign-btn");
       const composePin = document.getElementById("compose-pin-btn");
-      const composeReplay = document.getElementById("compose-replay-btn");
-      if (replayBtn) replayBtn.style.display = replayOk ? "" : "none";
+      const composeRegen = document.getElementById("compose-replay-btn");
+      if (regenBtn) regenBtn.style.display = regenOk ? "" : "none";
       if (assignBtn) {
         assignBtn.disabled = !hasText;
         assignBtn.classList.toggle("is-disabled", !hasText);
@@ -534,15 +564,16 @@
         composePin.disabled = !hasText;
         composePin.classList.toggle("is-disabled", !hasText);
       }
-      if (composeReplay) {
-        composeReplay.disabled = !replayOk;
-        composeReplay.classList.toggle("is-disabled", !replayOk);
+      if (composeRegen) {
+        composeRegen.disabled = !regenOk;
+        composeRegen.classList.toggle("is-disabled", !regenOk);
       }
       Hotkeys?.refreshDynamicTitles?.();
       if (Compose && Compose.isOpen()) Compose.render();
-      const showAudio = Features.get("messageWords") && replayOk;
+      const showAudio = Features.get("messageWords") && regenOk;
       if (audioActionsBar) audioActionsBar.classList.toggle("active", showAudio);
       document.getElementById("compose-strip")?.classList.toggle("has-audio", showAudio);
+      Speech?.syncSpeakBtnChrome?.();
     }
 
     displayInput.addEventListener("input", () => {
@@ -554,7 +585,7 @@
     displayInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
-        if (Speech && !speakBtn?.disabled) Speech.speakText();
+        primarySpeak();
         return;
       }
       // Shift+Backspace word-delete; Cmd/Ctrl+Backspace via hotkeys.
@@ -690,7 +721,7 @@
     });
     HistoryUi.bind();
     document.getElementById("textarea-replay-btn")?.addEventListener("click", () => {
-      if (canUseGeneratedActions(lastGeneratedAudio)) ports.playSpeechSource(lastGeneratedAudio);
+      if (Speech) regenerateSpeech();
       else focusDisplayInput();
     });
 
@@ -786,13 +817,10 @@
 
     Compose = ComposeApi.createActions({
       canAssignFromDisplay,
-      getText,
-      canReplay,
-      canUseGeneratedActions,
-      getLastGeneratedAudio: () => lastGeneratedAudio,
+      canRegenerate,
       clearDisplayText: () => ports.clearDisplayText(),
       startAssignFromDisplay: () => Topics.startAssignFromDisplay(),
-      playSpeechSource: (...a) => ports.playSpeechSource(...a),
+      regenerateSpeech,
       openTagInsertModal,
       canInsertTag,
       actionHotkeyChord: (id) => (Hotkeys ? Hotkeys.chordForComposeAction(id) : null)
@@ -902,6 +930,16 @@
       getUtteranceText,
       focusDisplayInput,
       announceLive,
+      onSpeakClick: () => primarySpeak(),
+      getSpeakIdleChrome: () => (canPrimaryReplay()
+        ? {
+          label: "Replay",
+          title: "Replay last speech for this text (Enter). Click while speaking to stop."
+        }
+        : {
+          label: "Speak",
+          title: "Speak text (or selection). Enter or click again while speaking to stop."
+        }),
       onAfterSpeakLearn: (text) => {
         if (window.VoicePredict && typeof VoicePredict.learnText === "function") {
           try { VoicePredict.learnText(text); } catch (_) {}
@@ -990,7 +1028,7 @@
           history: () => ports.switchSidebarTab("history", true),
           insertTag: () => openTagInsertModal(),
           pin: () => Compose?.run?.("pin"),
-          replay: () => Compose?.run?.("replay"),
+          regenerate: () => regenerateSpeech(),
           prevTopic: () => stepActiveTopic(-1),
           nextTopic: () => stepActiveTopic(1)
         }

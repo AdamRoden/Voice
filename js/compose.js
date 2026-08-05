@@ -533,14 +533,13 @@
   }
 
   /**
-   * Compose overflow menu (clear / pin / replay / tag).
+   * Compose overflow menu (clear / pin / regenerate / tag).
    */
   function createActions(deps) {
     const d = deps || {};
     const required = [
-      "canAssignFromDisplay", "getText", "canReplay", "canUseGeneratedActions",
-      "getLastGeneratedAudio", "clearDisplayText", "startAssignFromDisplay",
-      "playSpeechSource", "openTagInsertModal", "canInsertTag"
+      "canAssignFromDisplay", "canRegenerate", "clearDisplayText",
+      "startAssignFromDisplay", "regenerateSpeech", "openTagInsertModal", "canInsertTag"
     ];
     for (const key of required) {
       if (typeof d[key] !== "function") {
@@ -558,12 +557,11 @@
     function render() {
       if (!composeActionsMenu) return;
       const hasText = d.canAssignFromDisplay();
-      const last = d.getLastGeneratedAudio();
-      const replayOk = d.canReplay(last, d.getText());
+      const regenOk = d.canRegenerate();
       const items = [
         { id: "new", icon: "close", label: "Clear message", disabled: false },
         { id: "pin", icon: "push_pin", label: "Pin to button", disabled: !hasText },
-        { id: "replay", icon: "replay", label: "Replay message", disabled: !replayOk }
+        { id: "regenerate", icon: "refresh", label: "Regenerate speech", disabled: !regenOk }
       ];
       if (d.canInsertTag()) {
         items.push({ id: "tag", icon: "add", label: "Insert tag", disabled: false });
@@ -633,15 +631,10 @@
       }
     }
 
-    function replayLastGenerated() {
-      const last = d.getLastGeneratedAudio();
-      if (d.canUseGeneratedActions(last)) d.playSpeechSource(last);
-    }
-
     function run(id) {
       if (id === "new") d.clearDisplayText();
       else if (id === "pin") d.startAssignFromDisplay();
-      else if (id === "replay") replayLastGenerated();
+      else if (id === "regenerate") d.regenerateSpeech();
       else if (id === "tag") d.openTagInsertModal();
     }
 
@@ -664,7 +657,7 @@
         window.visualViewport.addEventListener("resize", onViewportChange);
         window.visualViewport.addEventListener("scroll", onViewportChange);
       }
-      document.getElementById("compose-replay-btn")?.addEventListener("click", () => replayLastGenerated());
+      document.getElementById("compose-replay-btn")?.addEventListener("click", () => d.regenerateSpeech());
     }
 
     return {
@@ -672,8 +665,7 @@
       isOpen,
       setOpen,
       render,
-      run,
-      replayLastGenerated
+      run
     };
   }
 
