@@ -11,8 +11,9 @@
   <meta name="format-detection" content="telephone=no">
   <meta name="description" content="AAC speech board with browser, Piper, and ElevenLabs voices">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" href="icon.png" type="image/png" sizes="512x512">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
   <title>AAC Speech & Audio Workspace</title>
   <!-- Google Material Symbols Outlined Font -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
@@ -55,7 +56,7 @@
     <aside class="sidebar sidebar-right" id="sidebar-right" aria-label="Workspace tools">
       <div class="sidebar-header">
         <button class="logo-btn" id="toggle-sidebar-right-btn" type="button" title="Toggle sidebar" aria-label="Toggle sidebar">
-          <span class="material-symbols-outlined logo-mark">record_voice_over</span>
+          <img class="app-logo" src="icon.png" width="24" height="24" alt="">
           <span class="logo-text" id="sidebar-section-title">Voice</span>
         </button>
         <button class="icon-btn sidebar-collapse-btn" id="sidebar-right-collapse-btn" type="button" title="Collapse sidebar" aria-label="Collapse sidebar">
@@ -250,7 +251,7 @@
     <div class="workspace-header-shell mobile-only" id="workspace-header-shell" data-size="normal">
       <div class="workspace-header" id="workspace-header" title="Tap empty space to slim the top bar">
         <button class="icon-btn mobile-menu-btn" id="mobile-menu-btn" type="button" title="Open menu" aria-label="Open menu">
-          <span class="material-symbols-outlined logo-mark">record_voice_over</span>
+          <img class="app-logo" src="icon.png" width="24" height="24" alt="">
         </button>
         <div class="chat-slots" id="chat-slots" role="group" aria-label="Topic chats"></div>
       </div>

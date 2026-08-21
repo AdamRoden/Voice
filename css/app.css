@@ -138,6 +138,7 @@ input, select, textarea { font-size: 16px; } /* prevent iOS focus zoom */
 .logo-btn:hover { background-color: var(--bg-surface-hover); }
 .logo-btn:active { background-color: var(--bg-surface-active); }
 .logo-mark { font-size: 24px; color: var(--accent); flex-shrink: 0; }
+.app-logo { width: 24px; height: 24px; border-radius: 6px; object-fit: cover; display: block; flex-shrink: 0; }
 .logo-text { font-size: 16px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 1; transition: opacity 0.2s; }
 .sidebar.collapsed .logo-text { opacity: 0; width: 0; margin: 0; pointer-events: none; }
 .sidebar.collapsed .logo-btn { justify-content: center; padding: var(--pad-sm); gap: 0; }
@@ -922,6 +923,7 @@ body { padding: 0; }
 .sidebar-right .sidebar-nav-label { display: block; font-size: 10px; }
 .app-main { width: 100%; order: unset; padding: var(--pad-sm); padding-top: var(--pad-sm); padding-bottom: 0; padding-left: var(--pad-sm); padding-right: var(--pad-sm); gap: var(--gap-md); }
 .workspace-header .mobile-menu-btn .logo-mark { font-size: var(--wh-icon-lg, 24px); color: var(--accent); }
+.workspace-header .mobile-menu-btn .app-logo { width: var(--wh-icon-lg, 24px); height: var(--wh-icon-lg, 24px); border-radius: calc(var(--wh-icon-lg, 24px) * 0.22); }
 /* Full-screen drawer is never the desktop "collapsed rail" — always show close */
 .sidebar.collapsed .sidebar-collapse-btn,
   .sidebar .sidebar-collapse-btn { display: flex; }

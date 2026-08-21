@@ -1,5 +1,5 @@
 /* AAC Workspace service worker — offline shell + app assets */
-const CACHE_NAME = "aac-workspace-v64";
+const CACHE_NAME = "aac-workspace-v65";
 const PRECACHE = [
   "./",
   "./index.html",
@@ -30,7 +30,10 @@ const PRECACHE = [
   "./js/osk.js",
   "./data/word-class-10k.json.gz",
   "./manifest.webmanifest",
-  "./icon.svg"
+  "./favicon.ico",
+  "./icon.png",
+  "./icon-192.png",
+  "./apple-touch-icon.png"
 ];
 
 self.addEventListener("install", (event) => {
