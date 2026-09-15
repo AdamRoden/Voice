@@ -76,17 +76,17 @@
       }]
     },
     r: {
-      label: "Regenerate speech",
+      label: "Replay last speech",
       group: "app",
-      action: "regenerate",
-      composeAction: "regenerate",
+      action: "replay",
+      composeAction: "replay",
       buttons: [
         {
           id: "compose-replay-btn",
-          base: "Regenerate speech",
-          disabledTitle: "Speak first to enable regenerate"
+          base: "Replay last speech",
+          disabledTitle: "No saved clip for this text"
         },
-        { id: "textarea-replay-btn", base: "Regenerate speech" }
+        { id: "textarea-replay-btn", base: "Replay last speech" }
       ]
     },
     q: { label: "Previous topic", group: "app", action: "prevTopic" },

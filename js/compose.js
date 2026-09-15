@@ -25,7 +25,6 @@
    *   isFeatMessageWords: () => boolean,
    *   getSavedSelection: () => { start: number|null, end: number|null },
    *   setSavedSelection: (sel: { start: number|null, end: number|null }) => void,
-   *   scheduleKeyboardAlign?: () => void,
    *   getCurrentFontSize?: () => number,
    *   onAfterAutosize?: () => void,
    *   insertChunk?: (chunk: string) => void,
@@ -347,18 +346,6 @@
       d.focusDisplayInput();
     }
 
-    function moveDisplayCaretLeft() {
-      const { start, end } = getDisplayCaretRange();
-      const pos = start !== end ? start : Math.max(0, start - 1);
-      try {
-        displayInput.focus({ preventScroll: true });
-        displayInput.setSelectionRange(pos, pos);
-      } catch (_) {
-        try { displayInput.focus(); } catch (__) {}
-      }
-      d.setSavedSelection({ start: pos, end: pos });
-    }
-
     function parseTagsList(str) {
       return String(str || "")
         .split(",")
@@ -468,9 +455,6 @@
       syncSpeakClearToDisplayHeight();
       displayInput.style.height = "auto";
       displayInput.style.height = `${displayInput.scrollHeight}px`;
-      if (document.activeElement === displayInput && typeof d.scheduleKeyboardAlign === "function") {
-        d.scheduleKeyboardAlign();
-      }
       if (typeof d.onAfterAutosize === "function") d.onAfterAutosize();
     }
 
@@ -517,7 +501,6 @@
       padInsertAgainstNeighbors,
       insertTextAtDisplayCaret,
       deleteWholeWordBeforeCaret,
-      moveDisplayCaretLeft,
       openTagInsertModal,
       insertBracketTag,
       syncSpeakClearToDisplayHeight,
@@ -533,13 +516,13 @@
   }
 
   /**
-   * Compose overflow menu (clear / pin / regenerate / tag).
+   * Compose overflow menu (clear / pin / replay / tag).
    */
   function createActions(deps) {
     const d = deps || {};
     const required = [
-      "canAssignFromDisplay", "canRegenerate", "clearDisplayText",
-      "startAssignFromDisplay", "regenerateSpeech", "openTagInsertModal", "canInsertTag"
+      "canAssignFromDisplay", "canReplayLast", "clearDisplayText",
+      "startAssignFromDisplay", "replayLastSpeech", "openTagInsertModal", "canInsertTag"
     ];
     for (const key of required) {
       if (typeof d[key] !== "function") {
@@ -557,11 +540,11 @@
     function render() {
       if (!composeActionsMenu) return;
       const hasText = d.canAssignFromDisplay();
-      const regenOk = d.canRegenerate();
+      const replayOk = d.canReplayLast();
       const items = [
         { id: "new", icon: "close", label: "Clear message", disabled: false },
         { id: "pin", icon: "push_pin", label: "Pin to button", disabled: !hasText },
-        { id: "regenerate", icon: "refresh", label: "Regenerate speech", disabled: !regenOk }
+        { id: "replay", icon: "replay", label: "Replay last speech", disabled: !replayOk }
       ];
       if (d.canInsertTag()) {
         items.push({ id: "tag", icon: "add", label: "Insert tag", disabled: false });
@@ -634,7 +617,7 @@
     function run(id) {
       if (id === "new") d.clearDisplayText();
       else if (id === "pin") d.startAssignFromDisplay();
-      else if (id === "regenerate") d.regenerateSpeech();
+      else if (id === "replay") d.replayLastSpeech();
       else if (id === "tag") d.openTagInsertModal();
     }
 
@@ -657,7 +640,9 @@
         window.visualViewport.addEventListener("resize", onViewportChange);
         window.visualViewport.addEventListener("scroll", onViewportChange);
       }
-      document.getElementById("compose-replay-btn")?.addEventListener("click", () => d.regenerateSpeech());
+      const replay = () => d.replayLastSpeech();
+      document.getElementById("compose-replay-btn")?.addEventListener("click", replay);
+      document.getElementById("textarea-replay-btn")?.addEventListener("click", replay);
     }
 
     return {

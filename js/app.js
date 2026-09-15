@@ -320,37 +320,23 @@
     const getUtteranceText = SpeechItems.getUtteranceText;
     const getButtonSourceText = SpeechItems.getButtonSourceText;
     const canUseGeneratedActions = SpeechItems.canUseGeneratedActions;
-    const canReplay = (item, text) => SpeechItems.canReplay(item, text);
     const canAssignFromDisplay = () => SpeechItems.canAssignFromDisplay(getText);
     const getAssignSource = () => SpeechItems.getAssignSource(getText, () => lastGeneratedAudio);
 
-    /** Matching generated audio for the full display text (regen / strip chrome). */
-    const canRegenerate = () => canReplay(lastGeneratedAudio, getText());
-    /** Primary speak may replay only when speaking the full message, not a selection. */
-    const canPrimaryReplay = () => {
-      if (trim(getSpeakText()) !== trim(getText())) return false;
-      return canRegenerate();
-    };
+    /** Stored clip exists for the full display text. */
+    const canReplayLast = () => SpeechItems.canReplay(lastGeneratedAudio, getText());
 
-    /** Speak btn / Enter / OSK: stop if busy, else replay if available, else generate. */
+    /** Speak btn / Enter / OSK: always generate. speakText() stops if already busy. */
     function primarySpeak() {
       if (!Speech || speakBtn?.disabled) return;
-      if (Speech.isSpeakBusy()) {
-        Speech.stopAllSpeech();
-        return;
-      }
-      if (canPrimaryReplay() && canUseGeneratedActions(lastGeneratedAudio)) {
-        ports.playSpeechSource(lastGeneratedAudio);
-        return;
-      }
       Speech.speakText();
     }
 
-    /** Force a new generation for the current speak text. */
-    function regenerateSpeech() {
-      if (!Speech) return;
-      if (Speech.isSpeakBusy()) Speech.stopAllSpeech();
-      Speech.speakText();
+    /** Play the stored clip for the current message text. */
+    function replayLastSpeech() {
+      if (!canReplayLast()) return;
+      if (Speech?.isSpeakBusy()) Speech.stopAllSpeech();
+      ports.playSpeechSource(lastGeneratedAudio);
     }
 
     // Theme / sidebar / router / coach live in AacShellUi (created below with ports).
@@ -473,7 +459,6 @@
       isFeatMessageWords: () => Features.get("messageWords"),
       getSavedSelection: () => savedDisplaySelection,
       setSavedSelection: (sel) => { savedDisplaySelection = sel; },
-      scheduleKeyboardAlign,
       getCurrentFontSize: () => currentFontSize,
       insertChunk: (chunk) => composeInsert(chunk),
       canInsertTag
@@ -482,7 +467,6 @@
     const getDisplayCaretRange = () => ComposeDisplay.getDisplayCaretRange();
     const insertTextAtDisplayCaret = (t) => ComposeDisplay.insertTextAtDisplayCaret(t);
     const deleteWholeWordBeforeCaret = () => ComposeDisplay.deleteWholeWordBeforeCaret();
-    const moveDisplayCaretLeft = () => ComposeDisplay.moveDisplayCaretLeft();
     const openTagInsertModal = () => ComposeDisplay.openTagInsertModal();
     const autosizeDisplayInput = () => ComposeDisplay.autosizeDisplayInput();
     ComposeDisplay.bind();
@@ -540,7 +524,10 @@
         lsSet,
         onChange: null,
         onSystemKeyboard: expectSystemKeyboard,
-        onLayout: () => scheduleKeyboardAlign({ settle: true }),
+        onLayout: () => {
+          relayoutComposer();
+          scheduleKeyboardAlign({ settle: true });
+        },
         onCommand: (key) => !!(Hotkeys && Hotkeys.run(key)),
         onEnter: () => primarySpeak()
       });
@@ -548,13 +535,13 @@
 
     function syncGeneratedAudioActions() {
       const hasText = canAssignFromDisplay();
-      const regenOk = canRegenerate();
+      const replayOk = canReplayLast();
 
-      const regenBtn = document.getElementById("textarea-replay-btn");
+      const replayBtn = document.getElementById("textarea-replay-btn");
       const assignBtn = document.getElementById("textarea-assign-btn");
       const composePin = document.getElementById("compose-pin-btn");
-      const composeRegen = document.getElementById("compose-replay-btn");
-      if (regenBtn) regenBtn.style.display = regenOk ? "" : "none";
+      const composeReplay = document.getElementById("compose-replay-btn");
+      if (replayBtn) replayBtn.style.display = replayOk ? "" : "none";
       if (assignBtn) {
         assignBtn.disabled = !hasText;
         assignBtn.classList.toggle("is-disabled", !hasText);
@@ -564,16 +551,15 @@
         composePin.disabled = !hasText;
         composePin.classList.toggle("is-disabled", !hasText);
       }
-      if (composeRegen) {
-        composeRegen.disabled = !regenOk;
-        composeRegen.classList.toggle("is-disabled", !regenOk);
+      if (composeReplay) {
+        composeReplay.disabled = !replayOk;
+        composeReplay.classList.toggle("is-disabled", !replayOk);
       }
       Hotkeys?.refreshDynamicTitles?.();
       if (Compose && Compose.isOpen()) Compose.render();
-      const showAudio = Features.get("messageWords") && regenOk;
+      const showAudio = Features.get("messageWords") && replayOk;
       if (audioActionsBar) audioActionsBar.classList.toggle("active", showAudio);
       document.getElementById("compose-strip")?.classList.toggle("has-audio", showAudio);
-      Speech?.syncSpeakBtnChrome?.();
     }
 
     displayInput.addEventListener("input", () => {
@@ -586,24 +572,17 @@
       if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
         primarySpeak();
-        return;
-      }
-      // Shift+Backspace word-delete; Cmd/Ctrl+Backspace via hotkeys.
-      if (e.key === "Backspace" && e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
-        e.preventDefault();
-        deleteWholeWordBeforeCaret();
-        return;
-      }
-      if (e.key === " " && e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
-        e.preventDefault();
-        moveDisplayCaretLeft();
       }
     });
-    window.addEventListener("resize", () => {
+    function relayoutComposer() {
       autosizeDisplayInput();
       const active = Topics && Topics.getActiveTopic();
       if (active) Topics.autosizeSoundCanvas(active);
-    });
+    }
+    window.addEventListener("resize", relayoutComposer);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", relayoutComposer);
+    }
 
     // Expose only handlers used by index.html onclick= attributes
     window.openModal = (id) => ports.openModal(id);
@@ -720,10 +699,6 @@
       }
     });
     HistoryUi.bind();
-    document.getElementById("textarea-replay-btn")?.addEventListener("click", () => {
-      if (Speech) regenerateSpeech();
-      else focusDisplayInput();
-    });
 
     Icons = IconStudioApi.create({
       fallbackCatalog: ICON_DATABASE_FALLBACK,
@@ -817,10 +792,10 @@
 
     Compose = ComposeApi.createActions({
       canAssignFromDisplay,
-      canRegenerate,
+      canReplayLast,
       clearDisplayText: () => ports.clearDisplayText(),
       startAssignFromDisplay: () => Topics.startAssignFromDisplay(),
-      regenerateSpeech,
+      replayLastSpeech,
       openTagInsertModal,
       canInsertTag,
       actionHotkeyChord: (id) => (Hotkeys ? Hotkeys.chordForComposeAction(id) : null)
@@ -931,15 +906,6 @@
       focusDisplayInput,
       announceLive,
       onSpeakClick: () => primarySpeak(),
-      getSpeakIdleChrome: () => (canPrimaryReplay()
-        ? {
-          label: "Replay",
-          title: "Replay last speech for this text (Enter). Click while speaking to stop."
-        }
-        : {
-          label: "Speak",
-          title: "Speak text (or selection). Enter or click again while speaking to stop."
-        }),
       onAfterSpeakLearn: (text) => {
         if (window.VoicePredict && typeof VoicePredict.learnText === "function") {
           try { VoicePredict.learnText(text); } catch (_) {}
@@ -1028,7 +994,7 @@
           history: () => ports.switchSidebarTab("history", true),
           insertTag: () => openTagInsertModal(),
           pin: () => Compose?.run?.("pin"),
-          regenerate: () => regenerateSpeech(),
+          replay: () => replayLastSpeech(),
           prevTopic: () => stepActiveTopic(-1),
           nextTopic: () => stepActiveTopic(1)
         }

@@ -7,7 +7,7 @@
  *   VoiceOsk.setVisible(bool) / isVisible() / schedulePredict() / refresh()
  *
  * Command key (⌘): host onCommand(key) — same table as hardware Cmd/Ctrl (AacHotkeys).
- * Enter: host onEnter() when provided (speak/replay); otherwise inserts newline.
+ * Enter: host onEnter() when provided (speak); otherwise inserts newline.
  *
  * Chip refresh ownership: schedulePredict only when
  *   (a) host setText runs while OSK is visible, or

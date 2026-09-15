@@ -42,8 +42,7 @@
    *     silent?: boolean,
    *     message?: string
    *   }) => void,
-   *   onSpeakClick?: () => void,
-   *   getSpeakIdleChrome?: () => { label: string, title: string }
+   *   onSpeakClick?: () => void
    * }} deps
    */
   function create(deps) {
@@ -443,32 +442,14 @@
       }
     }
 
-    function speakIdleChrome() {
-      if (typeof d.getSpeakIdleChrome === "function") {
-        const chrome = d.getSpeakIdleChrome();
-        if (chrome && chrome.label) return chrome;
-      }
-      return {
-        label: "Speak",
-        title: "Speak text (or selection). Enter or click again while speaking to stop."
-      };
-    }
-
     function setSpeakBtnIdle() {
       speakUiState = "idle";
       if (!speakBtn) return;
-      const chrome = speakIdleChrome();
       speakBtn.classList.remove("speaking");
       speakBtn.innerHTML = '<span class="material-symbols-outlined icon-medium">volume_up</span>';
       speakBtn.disabled = false;
-      speakBtn.setAttribute("aria-label", chrome.label);
-      speakBtn.title = chrome.title;
-    }
-
-    /** Re-paint idle speak labels when host replay availability changes. */
-    function syncSpeakBtnChrome() {
-      if (speakUiState !== "idle") return;
-      setSpeakBtnIdle();
+      speakBtn.setAttribute("aria-label", "Speak");
+      speakBtn.title = "Speak text (or selection). Enter or click again while speaking to stop.";
     }
 
     function setSpeakBtnLoading() {
@@ -810,10 +791,6 @@
       });
     }
 
-    function getSpeakUiState() {
-      return speakUiState;
-    }
-
     return {
       bind,
       speakPhrase,
@@ -828,8 +805,6 @@
       setActiveOutputDevice,
       getSharedAudioContext,
       canSelectOutputDevice,
-      getSpeakUiState,
-      syncSpeakBtnChrome,
       isSpeakBusy: () => speakUiState === "speaking" || speakUiState === "loading"
     };
   }

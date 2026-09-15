@@ -317,7 +317,9 @@ input, select, textarea { font-size: 16px; } /* prevent iOS focus zoom */
 .clear-history-btn:disabled { opacity: 0.45; cursor: default; }
 /* ==================== 5. MAIN WORKSPACE ==================== */
 .app-main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: var(--gap-sm); padding: var(--pad-sm); overflow: hidden; height: 100%; position: relative; }
-/* Soft keyboard / OSK layout: - Sound canvas sizes to its buttons (never stretches with empty space). - Composer stays directly under the canvas (document order; no margin-top:auto). - OSK is a full-width body-level panel under .app-shell. */
+/* Soft keyboard / OSK: canvas hugs its buttons; compose dock pins to the
+   bottom of app-main so it sits on the OSK / screen bottom. OSK is a
+   full-width body-level panel under .app-shell. */
 html.keyboard-open .app-main,
 body.osk-visible .app-main { min-height: 0; }
 html.keyboard-open .offline-banner,
@@ -370,8 +372,8 @@ body.osk-visible .display-textarea { max-height: min(180px, calc(var(--vv-height
 .num-control-btn:hover { background: var(--key-hover); }
 .num-control-btn:active { background: var(--key-active); }
 .num-control-val { font-weight: 600; color: var(--text); min-width: 20px; text-align: center; font-size: 14px; }
-/* Bottom dock + overwrite banner share the same top edge. Always follows the sound canvas in document order (top bound to canvas bottom). */
-.bottom-dock-wrap { position: relative; flex: 0 0 auto; width: 100%; }
+/* Bottom dock + overwrite banner. margin-top:auto keeps the composer on the keyboard / window bottom. */
+.bottom-dock-wrap { position: relative; flex: 0 0 auto; width: 100%; margin-top: auto; }
 .overwrite-banner { position: absolute; top: 0; left: 50%; transform: translateX(-50%); background-color: var(--accent); color: #fff; padding: 10px 16px; border-radius: var(--radius-lg); font-size: 14px; font-weight: 600; display: none; align-items: center; gap: var(--gap-xl); box-shadow: 0 6px 20px var(--shadow); z-index: var(--z-header); max-width: 100%; width: max-content; flex-wrap: wrap; justify-content: center; text-align: center; box-sizing: border-box; }
 .overwrite-banner.active { display: flex; }
 .overwrite-cancel-btn { background: rgba(0,0,0,0.25); border: none; color: #fff; padding: 8px 12px; border-radius: var(--radius-md); cursor: pointer; font-size: 13px; font-weight: bold; transition: background 0.2s; min-height: 36px; }
@@ -577,7 +579,7 @@ body:not([data-feat-insert-tag="1"]) #insert-tag-btn { display: none !important;
 /* Custom tag field inside Insert Tag modal */
 #insert-tag-input { width: 100%; min-height: var(--touch-min); }
 /* Autosizing message field — font size from Settings */
-.display-textarea { flex: 1 1 auto; min-width: 0; width: auto; height: auto; min-height: var(--display-ctrl-size, var(--display-font-size, 28px)); max-height: min(30vh, 180px); background-color: transparent; border: none; border-radius: 0; padding: 8px 6px; line-height: 1.35; color: var(--text); font-size: var(--display-font-size, 28px); resize: none; outline: none; white-space: pre-wrap; word-break: break-word; transition: min-height 0.05s; -webkit-overflow-scrolling: touch; overflow-y: auto; field-sizing: content; box-sizing: border-box; align-self: center; }
+.display-textarea { flex: 1 1 auto; min-width: 0; width: auto; height: auto; min-height: var(--display-ctrl-size, var(--display-font-size, 28px)); max-height: min(30vh, 180px); background-color: transparent; border: none; border-radius: 0; padding: 8px 6px; line-height: 1.35; color: var(--text); font-size: var(--display-font-size, 28px); resize: none; outline: none; white-space: pre-wrap; word-break: break-word; transition: min-height 0.05s; -webkit-overflow-scrolling: touch; overflow-y: auto; box-sizing: border-box; align-self: center; }
 /* Replay / Assign live in the tag row (hidden until audio is available) */
 .audio-actions-inline { display: none; align-items: stretch; gap: 3px; flex-shrink: 0; height: var(--sound-row-height, 48px); }
 .audio-actions-inline.active { display: flex; }

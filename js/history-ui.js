@@ -67,10 +67,10 @@
       return !!(item && (item.audioData || isUtteranceSource(item)));
     }
 
-    /** True when last-generated clip matches the current display text. */
+    /** True when a stored clip matches the current display text. */
     function canReplay(item, displayText) {
-      if (!canUseGeneratedActions(item)) return false;
-      return trim(displayText) === trim((item && item.text) || "");
+      if (!item || !item.audioData) return false;
+      return trim(displayText) === trim(item.text || "");
     }
 
     function canAssignFromDisplay(getText) {
