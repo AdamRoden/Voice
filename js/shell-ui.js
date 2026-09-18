@@ -240,6 +240,14 @@
       return window.matchMedia(d.portraitLayoutMq).matches;
     }
 
+    /** Keep chrome (top bar, Topics nav) in sync with the same portrait/landscape cut as the shell. */
+    function syncLayoutMode() {
+      const portrait = isPortraitLayout();
+      document.documentElement.dataset.layout = portrait ? "portrait" : "landscape";
+      const header = document.getElementById("workspace-header-shell");
+      if (header) header.hidden = !portrait;
+    }
+
     function isDrawerOpen() {
       return sidebar.classList.contains("mobile-open");
     }
@@ -633,6 +641,7 @@
     }
 
     function bind() {
+      syncLayoutMode();
       window.addEventListener("hashchange", onRouteChange);
 
       document.querySelectorAll(".sidebar-nav-btn").forEach((btn) => {
@@ -686,6 +695,7 @@
       });
 
       window.matchMedia(d.portraitLayoutMq).addEventListener("change", (e) => {
+        syncLayoutMode();
         // Reset drawer chrome + rail collapse when crossing portrait ↔ landscape.
         clearMobileChrome();
         sidebarLeft?.classList.remove("collapsed");
@@ -697,6 +707,9 @@
         if (typeof d.onLayoutMqChange === "function") {
           try { d.onLayoutMqChange(!!e.matches); } catch (_) {}
         }
+      });
+      window.addEventListener("orientationchange", () => {
+        syncLayoutMode();
       });
 
       // Narrow landscape: keep both rails collapsed so main stays usable.
@@ -737,6 +750,7 @@
       const seedUtility = RIGHT_SIDEBAR_TABS.has(initialTab) ? initialTab : DEFAULT_RIGHT_TAB;
       paintUtilityTab(seedUtility);
       applySidebarTab(initialTab, false);
+      syncLayoutMode();
       // Landscape: avoid two full 260px rails crushing main on narrower iPads.
       applyLandscapeRailPolicy({ forceWideDefaults: true });
     }

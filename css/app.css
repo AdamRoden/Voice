@@ -133,6 +133,8 @@ input, select, textarea { font-size: 16px; } /* prevent iOS focus zoom */
 .icon-btn:hover { background-color: var(--bg-surface-hover); }
 .icon-btn:active { background-color: var(--bg-surface-active); }
 .portrait-only { display: none !important; }
+html[data-layout="landscape"] .portrait-only { display: none !important; }
+html[data-layout="portrait"] .portrait-only { display: flex !important; }
 /* Logo toggles sidebar (landscape open by default) */
 .logo-btn { display: flex; align-items: center; gap: var(--gap-xl); min-width: 0; width: 100%; background: none; border: none; color: var(--text); cursor: pointer; padding: 6px 8px; border-radius: var(--radius-lg); text-align: left; transition: background-color 0.2s; }
 .logo-btn:hover { background-color: var(--bg-surface-hover); }
@@ -340,8 +342,18 @@ body.osk-visible .display-textarea { max-height: min(180px, calc(var(--vv-height
   }
   html.keyboard-open .bottom-dock-wrap { margin-top: auto; flex-shrink: 0; }
 }
-/* Workspace header — portrait-only (.portrait-only). data-size="normal" | "slim". Slim: height 50%; pad-y 0; pad-x same as normal. Empty bar chrome toggles size (JS hit-test); chips keep their own clicks. */
-.workspace-header-shell { --wh-h: 1; --wh-pad-y: 0px; --wh-pad-x: 8px; --wh-gap: var(--gap-lg); --wh-chip-gap: var(--gap-md); --wh-radius-btn: 10px; --wh-radius-chip-active: 12px; --wh-icon: 22px; --wh-icon-lg: 24px; flex-shrink: 0; display: flex; flex-direction: column; align-items: stretch; gap: 0; touch-action: pan-y; overflow: visible; position: relative; margin: 0; padding: 0; pointer-events: auto; z-index: var(--z-header); }
+/* Workspace header — portrait-only. Hidden by default and in landscape so it
+   cannot leak on iPad (do not rely only on .portrait-only). */
+.workspace-header-shell { --wh-h: 1; --wh-pad-y: 0px; --wh-pad-x: 8px; --wh-gap: var(--gap-lg); --wh-chip-gap: var(--gap-md); --wh-radius-btn: 10px; --wh-radius-chip-active: 12px; --wh-icon: 22px; --wh-icon-lg: 24px; flex-shrink: 0; display: none; flex-direction: column; align-items: stretch; gap: 0; touch-action: pan-y; overflow: visible; position: relative; margin: 0; padding: 0; pointer-events: auto; z-index: var(--z-header); }
+@media (orientation: portrait) {
+  .workspace-header-shell { display: flex; }
+}
+@media (orientation: landscape) {
+  .workspace-header-shell { display: none !important; }
+}
+html[data-layout="landscape"] .workspace-header-shell { display: none !important; }
+html[data-layout="portrait"] .workspace-header-shell { display: flex !important; }
+.workspace-header-shell[hidden] { display: none !important; }
 .workspace-header-shell[data-size="slim"] { --wh-h: 0.5; --wh-pad-y: 0px; --wh-pad-x: 8px; --wh-gap: 0px; --wh-chip-gap: var(--gap-md); --wh-radius-btn: 4px; --wh-radius-chip-active: 5px; --wh-icon: 11px; --wh-icon-lg: 12px; }
 .workspace-header { display: flex; align-items: center; justify-content: center; position: relative; background-color: var(--bg-surface); padding: var(--wh-pad-y) var(--wh-pad-x); border: 1px solid var(--border); border-radius: var(--radius-xl); min-height: calc(48px * var(--wh-h)); flex-shrink: 0; gap: var(--wh-gap); flex-wrap: nowrap; overflow: visible; z-index: 1; cursor: pointer; transition: min-height 0.15s ease, padding 0.15s ease; }
 .workspace-header .icon-btn { width: 40px; min-width: 40px; height: calc(40px * var(--wh-h)); min-height: calc(40px * var(--wh-h)); border-radius: var(--wh-radius-btn); cursor: pointer; }
