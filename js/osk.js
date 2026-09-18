@@ -141,7 +141,7 @@
   }
 
   /**
-   * Phones only (portrait-ish widths). Desktop + iPad keep custom OSK.
+   * Phones only (narrow widths). iPad / landscape keep custom OSK (Settings).
    * Keep in sync with css/app.css @media (max-width: 600px) OSK hide.
    */
   const PHONE_OSK_MQ = "(max-width: 600px)";
@@ -627,18 +627,15 @@
     }
   }
 
-  function syncToggleUi(toggleBtn, on) {
-    if (!toggleBtn) return;
-    toggleBtn.setAttribute("aria-pressed", on ? "true" : "false");
-    toggleBtn.classList.toggle("osk-toggle-active", !!on);
-    // Active = custom OSK; inactive = system / OS keyboard
-    const label = on
-      ? "Use system keyboard"
-      : "Use on-screen keyboard";
-    toggleBtn.setAttribute("aria-label", label);
-    toggleBtn.setAttribute("title", on
-      ? "Show system keyboard (hide on-screen keyboard)"
-      : "Show on-screen keyboard (hide system keyboard)");
+  function syncSettingsToggle(checkbox, on, allowed) {
+    if (!checkbox) return;
+    checkbox.checked = !!on;
+    checkbox.disabled = !allowed;
+    const row = checkbox.closest(".setting-toggle-row") || checkbox.parentElement;
+    if (row) {
+      row.hidden = !allowed;
+      row.setAttribute("aria-hidden", allowed ? "false" : "true");
+    }
   }
 
   /**
@@ -659,12 +656,7 @@
       document.body.classList.toggle("osk-unavailable", !allowed);
     }
 
-    const toggleBtn = opts && opts.toggleBtn;
-    if (toggleBtn) {
-      toggleBtn.hidden = !allowed;
-      toggleBtn.setAttribute("aria-hidden", allowed ? "false" : "true");
-      syncToggleUi(toggleBtn, on);
-    }
+    syncSettingsToggle(opts && opts.settingsToggle, on, allowed);
 
     const displayInput = opts && opts.displayInput;
     applySoftKeyboardPolicy(on, displayInput);
@@ -700,24 +692,23 @@
   }
 
   /**
-   * Wire compose dock: OSK + system keyboard beforeinput + toggle.
+   * Wire compose field: OSK + system keyboard beforeinput + Settings toggle.
    * App supplies composeInsert (canonical typing + orthography).
    *
-   * Keyboard button toggles:
-   *   pressed / OSK visible → custom board, system soft KB suppressed
-   *   released / OSK hidden → system soft KB allowed (focus field to open it)
+   * Settings checkbox:
+   *   checked / OSK visible → custom board, system soft KB suppressed
+   *   unchecked / OSK hidden → system soft KB allowed
    * Physical (hardware) keyboards always type into the field via beforeinput.
    */
   function bindCompose(cfg) {
     const optsIn = cfg || {};
     const {
       panel,
-      toggleBtn,
+      settingsToggle,
       displayInput,
       getText,
       setText,
       getCaret,
-      focus,
       composeInsert,
       lsGet,
       lsSet,
@@ -740,7 +731,7 @@
 
     mountInternal({
       root: panel,
-      toggleBtn,
+      settingsToggle,
       displayInput,
       getText,
       setText,
@@ -762,17 +753,22 @@
       onEnter: optsIn.onEnter
     });
 
-    if (toggleBtn) {
-      toggleBtn.addEventListener("click", () => {
-        if (!oskAllowed()) return;
-        const next = !userPrefersOsk;
-        // Before hide: pin shell so the dock cannot drop under the rising iOS keyboard
-        // during the button blur → field focus handoff.
+    if (settingsToggle) {
+      settingsToggle.addEventListener("change", () => {
+        if (!oskAllowed()) {
+          settingsToggle.checked = false;
+          return;
+        }
+        const next = !!settingsToggle.checked;
+        // Pin when turning OSK off while the compose field is already focused,
+        // so the dock tracks the rising iPad / system keyboard.
         if (!next && typeof optsIn.onSystemKeyboard === "function") {
-          optsIn.onSystemKeyboard();
+          const active = document.activeElement;
+          if (displayInput && (active === displayInput || (active && active.closest && active.closest(".bottom-dock")))) {
+            optsIn.onSystemKeyboard();
+          }
         }
         setVisible(next);
-        if (typeof focus === "function") focus();
       });
     }
 

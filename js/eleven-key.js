@@ -76,7 +76,7 @@
     function isCoarsePointerUi() {
       try {
         if (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) return true;
-        if (window.matchMedia && window.matchMedia("(max-width: 900px)").matches) return true;
+        if (window.matchMedia && window.matchMedia("(orientation: portrait)").matches) return true;
       } catch (_) {}
       return false;
     }

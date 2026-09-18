@@ -27,7 +27,7 @@
   <!-- In-flow layout only: shell (sidebar+main) over full-width OSK. Modals stay outside. -->
   <div class="app-layout">
   <div class="app-shell">
-  <!-- Dual sidebars (desktop: left topics | main | right utils). #sidebar wraps both for mobile drawer. -->
+  <!-- Dual sidebars (landscape: left topics | main | right utils). #sidebar wraps both for portrait drawer. -->
   <div class="sidebar-drawer" id="sidebar" data-panel="topics">
     <!-- ==================== LEFT: TOPICS ==================== -->
     <aside class="sidebar sidebar-left" id="sidebar-left" aria-label="Topics">
@@ -48,7 +48,7 @@
           <div id="topics-list"></div>
         </div>
       </div>
-      <!-- Desktop collapsed: topic icons only -->
+      <!-- Landscape collapsed: topic icons only -->
       <nav class="sidebar-topics-rail" id="topics-rail" aria-label="Topics"></nav>
     </aside>
 
@@ -170,6 +170,13 @@
               </span>
               <input type="checkbox" id="opt-button-insert" class="setting-toggle-input">
             </label>
+            <label class="setting-toggle-row" for="opt-osk" id="opt-osk-row">
+              <span class="setting-toggle-text">
+                <span class="setting-toggle-title">On-screen keyboard</span>
+                <span class="setting-toggle-desc">Use the custom keyboard instead of the system keyboard</span>
+              </span>
+              <input type="checkbox" id="opt-osk" class="setting-toggle-input" checked>
+            </label>
             <div class="modal-description settings-section-label">Compose quick actions</div>
             <label class="setting-toggle-row" for="opt-compose-new">
               <span class="setting-toggle-text">
@@ -230,7 +237,7 @@
           <span class="material-symbols-outlined">history</span>
           <span class="sidebar-nav-label">History</span>
         </button>
-        <button type="button" class="sidebar-nav-btn mobile-only active" data-nav="topics" id="nav-topics" title="Topics" aria-label="Topics" aria-current="page">
+        <button type="button" class="sidebar-nav-btn portrait-only active" data-nav="topics" id="nav-topics" title="Topics" aria-label="Topics" aria-current="page">
           <span class="material-symbols-outlined">folder</span>
           <span class="sidebar-nav-label">Topics</span>
         </button>
@@ -248,7 +255,7 @@
 
   <!-- ==================== MAIN WORKSPACE ==================== -->
   <main class="app-main">
-    <div class="workspace-header-shell mobile-only" id="workspace-header-shell" data-size="normal">
+    <div class="workspace-header-shell portrait-only" id="workspace-header-shell" data-size="normal">
       <div class="workspace-header" id="workspace-header" title="Tap empty space to slim the top bar">
         <button class="icon-btn mobile-menu-btn" id="mobile-menu-btn" type="button" title="Open menu" aria-label="Open menu">
           <img class="app-logo" src="icon.png" width="24" height="24" alt="">
@@ -290,9 +297,6 @@
             </div>
             <textarea class="display-textarea" id="display-input" spellcheck="true" autocomplete="off" autocapitalize="sentences" inputmode="none" virtualkeyboardpolicy="manual" placeholder="Type anything…" rows="1" aria-label="Message text"></textarea>
             <div class="compose-trailing" id="compose-trailing" aria-label="Message controls">
-              <button type="button" class="compose-icon-btn compose-standalone" id="compose-osk-btn" aria-label="Use system keyboard" title="Show system keyboard (hide on-screen keyboard)" aria-pressed="true">
-                <span class="material-symbols-outlined">keyboard</span>
-              </button>
               <button type="button" class="compose-icon-btn compose-standalone" id="compose-new-message-btn" aria-label="Clear message" title="Clear message">
                 <span class="material-symbols-outlined">close</span>
               </button>
@@ -374,11 +378,11 @@
     <div class="modal-scroll">
       <div class="modal-description">Quick start for Voice boards, chats, and speaking.</div>
       <ol class="help-list">
-        <li><strong>Sidebars</strong> — on desktop: <strong>left</strong> lists topics; <strong>right</strong> has Voice, History, Settings, and Help. Collapse either to an icon rail. On phone, the <span class="material-symbols-outlined coach-inline-icon">record_voice_over</span> button opens one drawer with all sections.</li>
+        <li><strong>Sidebars</strong> — in landscape: <strong>left</strong> lists topics; <strong>right</strong> has Voice, History, Settings, and Help. Collapse either to an icon rail. In portrait, the <span class="material-symbols-outlined coach-inline-icon">record_voice_over</span> button opens one drawer with all sections.</li>
         <li><strong>Topics</strong> — tap a topic to activate it. Tap the <strong>active</strong> topic (or its icon on the rail) to open the left sidebar. Tap other icons only switches the active topic.</li>
-        <li><strong>Top bar</strong> — phone only (menu button + chat chips). Tap empty space on the bar (or swipe up/down) to toggle normal vs slim (50% height).</li>
+        <li><strong>Top bar</strong> — portrait only (menu button + chat chips). Tap empty space on the bar (or swipe up/down) to toggle normal vs slim (50% height).</li>
         <li><strong>Sounds</strong> — <span class="material-symbols-outlined coach-inline-icon">grid_view</span> <strong>buttons</strong> play their audio.</li>
-        <li><strong>Text box</strong> — <span class="material-symbols-outlined coach-inline-icon">more_horiz</span> <strong>Actions</strong> for clear, pin, replay, and tags; <span class="material-symbols-outlined coach-inline-icon">volume_up</span> <strong>speaker</strong> always generates new speech (or press Enter). Replay plays the stored clip. Speech history is in the sidebar.</li>
+        <li><strong>Text box</strong> — <span class="material-symbols-outlined coach-inline-icon">more_horiz</span> <strong>Actions</strong> for clear, pin, replay, and tags; <span class="material-symbols-outlined coach-inline-icon">volume_up</span> <strong>speaker</strong> always generates new speech (or press Enter). Replay plays the stored clip. Speech history is in the sidebar. The on-screen keyboard lives in <strong>Settings</strong> (off uses the system keyboard; in landscape the composer stays above it).</li>
         <li><strong>Shortcuts</strong> — composer buttons show their keys in tooltips; open the full list with <strong>Keyboard shortcuts</strong> below.</li>
       </ol>
       <button type="button" class="status-btn help-hotkeys-btn" id="help-hotkeys-btn">

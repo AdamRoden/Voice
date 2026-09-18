@@ -6,7 +6,8 @@
  * Two frames only:
  *   closed — fixed inset 0 (layout viewport). Standalone min-height/paint is CSS.
  *   keyboard — pin body to visualViewport while the *system* soft keyboard is up.
- * Custom OSK never uses the keyboard frame (avoids short vv + black band).
+ * Custom OSK stays on the closed frame unless the system keyboard is also open
+ * (iPad landscape often raises the docked keyboard on top of the OSK).
  */
 (function (global) {
   "use strict";
@@ -22,20 +23,26 @@
     return !!el.isContentEditable;
   }
 
-  /** Compose dock chrome (OSK toggle, speak, etc.) — keep pin while focusing these. */
+  /** Compose dock chrome (speak, trailing actions, OSK panel) — keep pin while focusing these. */
   function isComposeDockChrome(el) {
     if (!el || !el.closest) return false;
     return !!el.closest(".bottom-dock-wrap, .bottom-dock, .osk-panel");
   }
 
   function isSoftKeyboardOpen() {
+    try {
+      const vk = navigator.virtualKeyboard;
+      const bb = vk && vk.boundingBox;
+      if (bb && bb.height > 80) return true;
+    } catch (_) {}
     const vv = window.visualViewport;
     if (!vv) return false;
     const layoutH = window.innerHeight || document.documentElement.clientHeight || 0;
     // iOS keyboard animation: also treat a large offsetTop pan as "open".
+    // iPad landscape keyboard is shorter than iPhone; 80px still beats chrome jitter.
     const inset = Math.max(0, layoutH - vv.height);
     const pan = Math.max(0, vv.offsetTop || 0);
-    return inset > 120 || pan > 80;
+    return inset > 80 || pan > 60;
   }
 
   function resetDocumentScroll() {
@@ -69,15 +76,10 @@
   }
 
   /**
-   * @param {object} opts
-   * @param {() => boolean} opts.isMobileLayout
+   * @param {object} [_opts]
    * @returns {{ sync: Function, schedule: Function, bind: Function, expectSystemKeyboard: Function, isTextEntryElement: Function }}
    */
-  function createController(opts) {
-    const isMobileLayout = typeof opts.isMobileLayout === "function"
-      ? opts.isMobileLayout
-      : () => false;
-
+  function createController(_opts) {
     let raf = 0;
     /** @type {number[]} */
     let settleTimers = [];
@@ -130,15 +132,18 @@
     }
 
     /**
-     * Prefer closed shell. Only pin for system soft keyboard (or OSK→system handoff).
-     * Custom OSK always stays on the closed frame.
+     * Prefer closed shell. Pin for the system soft keyboard (or OSK→system handoff).
+     * If the system keyboard is up, pin even while the custom OSK was showing —
+     * CSS hides the OSK under html.keyboard-open so the composer stays in the
+     * visual viewport (needed on iPad landscape).
      */
     function shouldPinToKeyboard(state) {
       if (state.forcePin) return true;
-      if (state.customOsk) return false;
       if (state.keyboardOpen) return true;
-      // Mobile: pin early while composing so the shell tracks the system KB open.
-      if (isMobileLayout() && state.composing) return true;
+      if (state.customOsk) return false;
+      // Early pin while composing so the dock tracks the keyboard animation
+      // (portrait phones and landscape iPad system keyboard).
+      if (state.composing) return true;
       return false;
     }
 
@@ -252,6 +257,12 @@
         window.visualViewport.addEventListener("resize", () => schedule({ settle: true }));
         window.visualViewport.addEventListener("scroll", schedule);
       }
+      try {
+        const vk = navigator.virtualKeyboard;
+        if (vk && typeof vk.addEventListener === "function") {
+          vk.addEventListener("geometrychange", () => schedule({ settle: true }));
+        }
+      } catch (_) {}
       window.addEventListener("scroll", () => {
         if (isTextEntryElement(document.activeElement) || Date.now() < forcePinUntil) {
           resetDocumentScroll();

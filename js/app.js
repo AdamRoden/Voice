@@ -7,20 +7,20 @@
       "#dddddd", "#bbbbbb", "#999999", "#777777", "#555555", "#333333", "#111111"
     ];
 
-    /** Desktop default columns; mobile uses fewer for readable button width. */
-    const DEFAULT_GRID_COLS_DESKTOP = 4;
-    const DEFAULT_GRID_COLS_MOBILE = 3;
+    /** Landscape default columns; portrait uses fewer for readable button width. */
+    const DEFAULT_GRID_COLS_LANDSCAPE = 4;
+    const DEFAULT_GRID_COLS_PORTRAIT = 3;
     const DEFAULT_GRID_ROWS = 2;
-    /** Shared with sidebar / keyboard mobile layout. */
-    const MOBILE_LAYOUT_MQ = "(max-width: 900px)";
+    /** Shared with sidebar / keyboard portrait layout. */
+    const PORTRAIT_LAYOUT_MQ = "(orientation: portrait)";
 
     function getDefaultGridCols() {
       try {
-        if (typeof window !== "undefined" && window.matchMedia(MOBILE_LAYOUT_MQ).matches) {
-          return DEFAULT_GRID_COLS_MOBILE;
+        if (typeof window !== "undefined" && window.matchMedia(PORTRAIT_LAYOUT_MQ).matches) {
+          return DEFAULT_GRID_COLS_PORTRAIT;
         }
       } catch (_) {}
-      return DEFAULT_GRID_COLS_DESKTOP;
+      return DEFAULT_GRID_COLS_LANDSCAPE;
     }
 
     // Unicode escapes keep this file encoding-safe (emoji -> Material icon migration).
@@ -271,9 +271,7 @@
     let keyboardCtl = null;
     function ensureKeyboard() {
       if (!keyboardCtl && KeyboardApi && typeof KeyboardApi.createController === "function") {
-        keyboardCtl = KeyboardApi.createController({
-          isMobileLayout: () => window.matchMedia(MOBILE_LAYOUT_MQ).matches
-        });
+        keyboardCtl = KeyboardApi.createController();
       }
       return keyboardCtl;
     }
@@ -417,8 +415,8 @@
       clearDisplayText() { if (Workspace) Workspace.clearDisplayText(); else { setText(""); focusDisplayInput(); } },
       syncChatUi() { Workspace?.syncChatUi(); },
       onWorkspaceDisplayInput() { Workspace?.onDisplayInput(); },
-      isMobileLayout() { return Shell ? Shell.isMobileLayout() : window.matchMedia(MOBILE_LAYOUT_MQ).matches; },
-      closeMobileSidebar() { Shell?.closeMobileSidebar(); },
+      isPortraitLayout() { return Shell ? Shell.isPortraitLayout() : window.matchMedia(PORTRAIT_LAYOUT_MQ).matches; },
+      closePortraitSidebar() { Shell?.closePortraitSidebar(); },
       isLeftSidebarOpen() { return Shell ? Shell.isLeftSidebarOpen() : true; },
       setLeftSidebarOpen(...a) { Shell?.setLeftSidebarOpen(...a); },
       openModal(id) { Shell?.openModal(id); },
@@ -512,7 +510,7 @@
       if (!panel || !window.VoiceOsk || typeof VoiceOsk.bindCompose !== "function") return;
       VoiceOsk.bindCompose({
         panel,
-        toggleBtn: $("compose-osk-btn"),
+        settingsToggle: $("opt-osk"),
         displayInput,
         getText,
         setText,
@@ -645,7 +643,7 @@
     // ==================== SHELL + TOPICS + WORKSPACE + SPEECH + VOICES ====================
     Shell = ShellUiApi.create({
       sidebar,
-      mobileLayoutMq: MOBILE_LAYOUT_MQ,
+      portraitLayoutMq: PORTRAIT_LAYOUT_MQ,
       focusDisplayInput,
       lsGet,
       lsSet,
@@ -670,9 +668,9 @@
           try { ElevenKey.onShellModalsClosed(); } catch (_) {}
         }
       },
-      // Leaving mobile: rebuild desktop topics rail (must not stay empty after mobile clear-path).
-      onLayoutMqChange: (isMobile) => {
-        if (!isMobile && Topics) {
+      // Leaving portrait: rebuild landscape topics rail (must not stay empty after portrait clear-path).
+      onLayoutMqChange: (isPortrait) => {
+        if (!isPortrait && Topics) {
           try { Topics.renderTopics(); } catch (_) {}
         }
       }
@@ -762,9 +760,9 @@
       isUtteranceSource,
       getUtteranceText,
       getButtonSourceText,
-      isMobileLayout: () => ports.isMobileLayout(),
+      isPortraitLayout: () => ports.isPortraitLayout(),
       isFeatButtonInsert: () => Features.get("buttonInsert"),
-      closeMobileSidebar: () => ports.closeMobileSidebar(),
+      closePortraitSidebar: () => ports.closePortraitSidebar(),
       isLeftSidebarOpen: () => ports.isLeftSidebarOpen(),
       setLeftSidebarOpen: (...a) => ports.setLeftSidebarOpen(...a),
       insertTextAtDisplayCaret,
@@ -1045,7 +1043,7 @@
         navigator.mediaDevices.addEventListener("devicechange", () => ports.refreshOutputDevices());
       }
 
-      if (ports.isMobileLayout()) ports.setSidebarOpen(false, { restoreFocus: false });
+      if (ports.isPortraitLayout()) ports.setSidebarOpen(false, { restoreFocus: false });
 
       // Accent field is bound via ColorPicker; sync initial swatch from stored accent
       ports.applyAccentColor(customAccentColor || "", { persist: false });
@@ -1076,7 +1074,7 @@
       autosizeDisplayInput();
       ports.syncChatUi();
       if (!ports.isCoachDismissed()) ports.showCoach();
-      if (!ports.isMobileLayout()) focusDisplayInput();
+      if (!ports.isPortraitLayout()) focusDisplayInput();
 
       AudioFx?.scheduleMigrateStoredWavAudio?.({
         getContext: () => Speech?.getSharedAudioContext?.() || null,

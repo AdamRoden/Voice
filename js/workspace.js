@@ -1,7 +1,7 @@
 /**
- * Workspace owner: topic chats (1–5) and mobile header chat chips.
+ * Workspace owner: topic chats (1–5) and portrait header chat chips.
  * Topics module owns board model/edit; Workspace owns chat chrome.
- * Header is mobile-only (see .mobile-only on #workspace-header-shell).
+ * Header is portrait-only (see .portrait-only on #workspace-header-shell).
  */
 (function (global) {
   "use strict";
@@ -119,7 +119,7 @@
       return chats.findIndex((c) => c && c.topicId === topicId);
     }
 
-    // ---- mobile header chrome (slim/normal) ----
+    // ---- portrait header chrome (slim/normal) ----
     function syncHeaderChrome() {
       if (!headerShell) return;
       headerShell.dataset.size = headerSlim ? "slim" : "normal";
@@ -346,7 +346,7 @@
     }
     applyChatToWorkspace(chats[activeChat]);
 
-    // Header normal / slim: empty-space click or swipe (mobile only; shell is hidden on desktop)
+    // Header normal / slim: empty-space click or swipe (portrait only; shell is hidden in landscape)
     headerShell?.addEventListener("click", (e) => {
       if (isHeaderInteractiveTarget(e.target)) return;
       setHeaderSlim(!headerSlim);

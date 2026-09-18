@@ -1,6 +1,6 @@
 /**
  * Topics: model + sound board + sidebar list + edit (AacTopicsEdit).
- * Topic chats (slots / mobile header chips) live in AacWorkspace.
+ * Topic chats (slots / portrait header chips) live in AacWorkspace.
  */
 (function (global) {
   "use strict";
@@ -11,8 +11,8 @@
     "soundCanvas", "openModal", "closeModals", "focusDisplayInput", "announceLive",
     "playSpeechSource", "getText", "getAssignSource", "canAssignFromDisplay",
     "isUtteranceSource", "getUtteranceText", "getButtonSourceText",
-    "isMobileLayout", "isFeatButtonInsert",
-    "syncChatUi", "closeMobileSidebar", "openTopic", "onTopicDeleted",
+    "isPortraitLayout", "isFeatButtonInsert",
+    "syncChatUi", "closePortraitSidebar", "openTopic", "onTopicDeleted",
     "insertTextAtDisplayCaret",
     "setColorField", "getColorField",
     "isLeftSidebarOpen", "setLeftSidebarOpen"
@@ -508,11 +508,11 @@
     }
 
     /**
-     * Desktop: active + left collapsed → expand left; active + open → accordion;
-     * inactive → switch topic only. Mobile: accordion + switch (legacy).
+     * Landscape: active + left collapsed → expand left; active + open → accordion;
+     * inactive → switch topic only. Portrait: accordion + switch (legacy).
      */
     function onTopicRowClick(topicId) {
-      if (ctx.isMobileLayout()) {
+      if (ctx.isPortraitLayout()) {
         toggleTopicExpanded(topicId);
         return;
       }
@@ -531,9 +531,9 @@
     function renderTopicsRail() {
       const rail = document.getElementById("topics-rail");
       if (!rail) return;
-      // Desktop-only chrome (CSS hides on mobile). Do not clear — content must
-      // survive mobile→desktop so a collapsed left rail is not empty.
-      if (ctx.isMobileLayout()) return;
+      // Landscape-only chrome (CSS hides in portrait). Do not clear — content must
+      // survive portrait→landscape so a collapsed left rail is not empty.
+      if (ctx.isPortraitLayout()) return;
       rail.innerHTML = "";
 
       ctx.topicsList.forEach((topic) => {
@@ -650,7 +650,7 @@
 
     function switchTopic(id) {
       ctx.openTopic(id);
-      ctx.closeMobileSidebar();
+      ctx.closePortraitSidebar();
       ctx.focusDisplayInput();
     }
 

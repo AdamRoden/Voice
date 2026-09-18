@@ -173,15 +173,15 @@
   "use strict";
 
   const VALID_SIDEBAR_TABS = new Set(["voice", "history", "topics", "settings"]);
-  /** Right-rail utility tabs. Topics is left-only (desktop) / drawer panel (mobile). */
+  /** Right-rail utility tabs. Topics is left-only (landscape) / drawer panel (portrait). */
   const RIGHT_SIDEBAR_TABS = new Set(["voice", "history", "settings"]);
   const DEFAULT_SIDEBAR_TAB = "topics";
   const DEFAULT_RIGHT_TAB = "voice";
   /**
-   * Desktop but narrow: both rails collapse to icons so main is not ~300px.
-   * Keep in sync with css/app.css comments (mobile remains max-width: 900px).
+   * Landscape but narrow: both rails collapse to icons so main is not ~300px.
+   * Keep in sync with css/app.css (portrait = orientation: portrait).
    */
-  const NARROW_DESKTOP_MQ = "(min-width: 901px) and (max-width: 1100px)";
+  const NARROW_LANDSCAPE_MQ = "(orientation: landscape) and (max-width: 1100px)";
   /** Persisted dismiss for first-run help (legacy key name kept for continuity). */
   const HELP_DISMISS_KEY = "aac_coach_dismissed";
   const HELP_MODAL_ID = "modal-help";
@@ -197,7 +197,7 @@
   /**
    * @param {{
    *   sidebar: HTMLElement,
-   *   mobileLayoutMq: string,
+   *   portraitLayoutMq: string,
    *   focusDisplayInput: () => void,
    *   lsGet: (k: string, fb?: any) => any,
    *   lsSet: (k: string, v: string) => void,
@@ -211,13 +211,13 @@
    *   onSettingsTab?: () => void,
    *   isComposeMenuOpen?: () => boolean,
    *   closeComposeMenu?: () => void,
-   *   onLayoutMqChange?: (isMobile: boolean) => void
+   *   onLayoutMqChange?: (isPortrait: boolean) => void
    * }} deps
    */
   function create(deps) {
     const d = deps || {};
     for (const key of [
-      "sidebar", "mobileLayoutMq", "focusDisplayInput",
+      "sidebar", "portraitLayoutMq", "focusDisplayInput",
       "lsGet", "lsSet", "lsDel", "getTheme", "setTheme", "getAccent", "setAccent"
     ]) {
       if (d[key] === undefined || d[key] === null) {
@@ -225,7 +225,7 @@
       }
     }
 
-    /** #sidebar drawer wrapper (mobile). Desktop: display:contents. */
+    /** #sidebar drawer wrapper (portrait). Landscape: display:contents. */
     const sidebar = d.sidebar;
     const sidebarLeft = document.getElementById("sidebar-left");
     const sidebarRight = document.getElementById("sidebar-right");
@@ -236,27 +236,27 @@
     /** Last painted utility tab (right content), independent of hash when on topics. */
     let utilityTab = DEFAULT_RIGHT_TAB;
 
-    function isMobileLayout() {
-      return window.matchMedia(d.mobileLayoutMq).matches;
+    function isPortraitLayout() {
+      return window.matchMedia(d.portraitLayoutMq).matches;
     }
 
     function isDrawerOpen() {
       return sidebar.classList.contains("mobile-open");
     }
 
-    /** Desktop left rail expanded (not meaningful as "topics panel" on mobile). */
+    /** Landscape left rail expanded (not meaningful as "topics panel" in portrait). */
     function isLeftSidebarOpen() {
       return !!(sidebarLeft && !sidebarLeft.classList.contains("collapsed"));
     }
 
-    /** Desktop right rail expanded. */
+    /** Landscape right rail expanded. */
     function isRightSidebarOpen() {
       return !!(sidebarRight && !sidebarRight.classList.contains("collapsed"));
     }
 
-    /** Mobile drawer, or either desktop rail expanded. */
+    /** Portrait drawer, or either landscape rail expanded. */
     function isSidebarOpen() {
-      if (isMobileLayout()) return isDrawerOpen();
+      if (isPortraitLayout()) return isDrawerOpen();
       return isLeftSidebarOpen() || isRightSidebarOpen();
     }
 
@@ -292,11 +292,11 @@
     function setLayout(patch, opts) {
       const o = opts || {};
       const restoreFocus = o.restoreFocus !== false;
-      const mobile = isMobileLayout();
+      const portrait = isPortraitLayout();
       const p = patch || {};
 
-      if (mobile) {
-        // Mobile never uses desktop icon-rail collapse.
+      if (portrait) {
+        // Portrait never uses landscape icon-rail collapse.
         sidebarLeft?.classList.remove("collapsed");
         sidebarRight?.classList.remove("collapsed");
         if (p.drawerOpen != null) {
@@ -324,7 +324,7 @@
     }
 
     function setLeftSidebarOpen(open, opts) {
-      if (isMobileLayout()) {
+      if (isPortraitLayout()) {
         setLayout({
           drawerOpen: !!open,
           ...(open ? { panel: "topics" } : {})
@@ -335,7 +335,7 @@
     }
 
     function setRightSidebarOpen(open, opts) {
-      if (isMobileLayout()) {
+      if (isPortraitLayout()) {
         setLayout({
           drawerOpen: !!open,
           ...(open ? { panel: "utility" } : {})
@@ -345,32 +345,32 @@
       }
     }
 
-    /** Mobile drawer; desktop toggles both rails (rare / layout reset). */
+    /** Portrait drawer; landscape toggles both rails (rare / layout reset). */
     function setSidebarOpen(open, opts) {
-      if (isMobileLayout()) {
+      if (isPortraitLayout()) {
         setLayout({ drawerOpen: !!open }, opts);
       } else {
         setLayout({ leftOpen: !!open, rightOpen: !!open }, opts);
       }
     }
 
-    function closeMobileSidebar() {
-      if (isMobileLayout()) setLayout({ drawerOpen: false }, { restoreFocus: false });
+    function closePortraitSidebar() {
+      if (isPortraitLayout()) setLayout({ drawerOpen: false }, { restoreFocus: false });
     }
 
-    /** Collapse rails on narrow desktop; on wide desktop leave user/default state alone unless forced. */
-    function isNarrowDesktop() {
-      return !isMobileLayout() && window.matchMedia(NARROW_DESKTOP_MQ).matches;
+    /** Collapse rails on narrow landscape; on wide landscape leave user/default state alone unless forced. */
+    function isNarrowLandscape() {
+      return !isPortraitLayout() && window.matchMedia(NARROW_LANDSCAPE_MQ).matches;
     }
 
-    function applyDesktopRailPolicy({ forceWideDefaults = false } = {}) {
-      if (isMobileLayout()) return;
-      if (isNarrowDesktop()) {
+    function applyLandscapeRailPolicy({ forceWideDefaults = false } = {}) {
+      if (isPortraitLayout()) return;
+      if (isNarrowLandscape()) {
         setLayout({ leftOpen: false, rightOpen: false }, { restoreFocus: false });
         return;
       }
       if (forceWideDefaults) {
-        // Wide desktop default: topics expanded, tools as icon rail.
+        // Wide landscape default: topics expanded, tools as icon rail.
         setLayout({ leftOpen: true, rightOpen: false }, { restoreFocus: false });
       }
     }
@@ -477,22 +477,22 @@
 
     /**
      * Select a shell tab. Expand only when expandIfCollapsed is true —
-     * routing/hash must never force the mobile drawer open.
+     * routing/hash must never force the portrait drawer open.
      */
     function applySidebarTab(tab, expandIfCollapsed = false) {
       const t = normalizeTab(tab);
-      const mobile = isMobileLayout();
+      const portrait = isPortraitLayout();
       const patch = {};
 
       if (t === "topics") {
         patch.panel = "topics";
         if (expandIfCollapsed) {
-          if (mobile) patch.drawerOpen = true;
+          if (portrait) patch.drawerOpen = true;
           else patch.leftOpen = true;
         }
         setLayout(patch, { restoreFocus: false });
-        // Mobile nav includes Topics; desktop right nav keeps utility highlight.
-        if (mobile) syncNavActive("topics");
+        // Portrait nav includes Topics; landscape right nav keeps utility highlight.
+        if (portrait) syncNavActive("topics");
         d.focusDisplayInput();
         return t;
       }
@@ -500,7 +500,7 @@
       patch.panel = "utility";
       patch.utilityTab = t;
       if (expandIfCollapsed) {
-        if (mobile) patch.drawerOpen = true;
+        if (portrait) patch.drawerOpen = true;
         else patch.rightOpen = true;
       }
       // Settings is interactive — don't steal focus to compose.
@@ -509,13 +509,13 @@
     }
 
     /**
-     * Open a shell modal; optionally close the mobile drawer first.
+     * Open a shell modal; optionally close the portrait drawer first.
      * @param {string} id
      * @param {{ closeDrawer?: boolean }} [opts]
      */
     function openShellModal(id, opts) {
       const o = opts || {};
-      if (o.closeDrawer !== false && isMobileLayout()) {
+      if (o.closeDrawer !== false && isPortraitLayout()) {
         setLayout({ drawerOpen: false }, { restoreFocus: false });
       }
       openModal(id);
@@ -523,7 +523,7 @@
 
     /** Open Settings as a sidebar tab (expands drawer / right rail if needed). */
     function openSettings() {
-      const expand = isMobileLayout() ? !isDrawerOpen() : !isRightSidebarOpen();
+      const expand = isPortraitLayout() ? !isDrawerOpen() : !isRightSidebarOpen();
       switchSidebarTab("settings", expand);
     }
 
@@ -542,7 +542,7 @@
         return;
       }
       if (!VALID_SIDEBAR_TABS.has(a)) return;
-      const expand = isMobileLayout()
+      const expand = isPortraitLayout()
         ? !isDrawerOpen()
         : (a === "topics" ? !isLeftSidebarOpen() : !isRightSidebarOpen());
       switchSidebarTab(a, expand);
@@ -643,7 +643,7 @@
 
       const bindRailToggle = (toggleId, collapseId, which) => {
         document.getElementById(toggleId)?.addEventListener("click", () => {
-          if (isMobileLayout()) {
+          if (isPortraitLayout()) {
             setLayout({ drawerOpen: !isDrawerOpen() });
             return;
           }
@@ -651,7 +651,7 @@
           else setLayout({ rightOpen: !isRightSidebarOpen() });
         });
         document.getElementById(collapseId)?.addEventListener("click", () => {
-          if (isMobileLayout()) {
+          if (isPortraitLayout()) {
             setLayout({ drawerOpen: false }, { restoreFocus: false });
             return;
           }
@@ -668,7 +668,7 @@
         });
       }
       if (sidebarBackdrop) {
-        sidebarBackdrop.addEventListener("click", () => closeMobileSidebar());
+        sidebarBackdrop.addEventListener("click", () => closePortraitSidebar());
       }
 
       document.addEventListener("keydown", (e) => {
@@ -682,27 +682,27 @@
           voicesPanel.classList.remove("open");
           return;
         }
-        if (isMobileLayout() && isDrawerOpen()) closeMobileSidebar();
+        if (isPortraitLayout() && isDrawerOpen()) closePortraitSidebar();
       });
 
-      window.matchMedia(d.mobileLayoutMq).addEventListener("change", (e) => {
-        // Reset drawer chrome + rail collapse when crossing the mobile cutover.
+      window.matchMedia(d.portraitLayoutMq).addEventListener("change", (e) => {
+        // Reset drawer chrome + rail collapse when crossing portrait ↔ landscape.
         clearMobileChrome();
         sidebarLeft?.classList.remove("collapsed");
         sidebarRight?.classList.remove("collapsed");
         if (!e.matches) {
-          // Entering desktop: apply narrow-rail policy, rebuild topics rail if needed.
-          applyDesktopRailPolicy();
+          // Entering landscape: apply narrow-rail policy, rebuild topics rail if needed.
+          applyLandscapeRailPolicy();
         }
         if (typeof d.onLayoutMqChange === "function") {
           try { d.onLayoutMqChange(!!e.matches); } catch (_) {}
         }
       });
 
-      // Mid-desktop: keep both rails collapsed so main stays usable.
-      const narrowDesktopMq = window.matchMedia(NARROW_DESKTOP_MQ);
-      narrowDesktopMq.addEventListener("change", () => {
-        if (!isMobileLayout()) applyDesktopRailPolicy();
+      // Narrow landscape: keep both rails collapsed so main stays usable.
+      const narrowLandscapeMq = window.matchMedia(NARROW_LANDSCAPE_MQ);
+      narrowLandscapeMq.addEventListener("change", () => {
+        if (!isPortraitLayout()) applyLandscapeRailPolicy();
       });
 
       document.getElementById("coach-dismiss-btn")?.addEventListener("click", dismissHelp);
@@ -737,19 +737,19 @@
       const seedUtility = RIGHT_SIDEBAR_TABS.has(initialTab) ? initialTab : DEFAULT_RIGHT_TAB;
       paintUtilityTab(seedUtility);
       applySidebarTab(initialTab, false);
-      // Desktop: avoid two full 260px rails crushing main near the cutover.
-      applyDesktopRailPolicy({ forceWideDefaults: true });
+      // Landscape: avoid two full 260px rails crushing main on narrower iPads.
+      applyLandscapeRailPolicy({ forceWideDefaults: true });
     }
 
     return {
-      isMobileLayout,
+      isPortraitLayout,
       isSidebarOpen,
       isLeftSidebarOpen,
       isRightSidebarOpen,
       setSidebarOpen,
       setLeftSidebarOpen,
       setRightSidebarOpen,
-      closeMobileSidebar,
+      closePortraitSidebar,
       applyTheme,
       applyAccentColor,
       getDefaultAccentForResolvedTheme,
