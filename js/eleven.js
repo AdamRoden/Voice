@@ -367,8 +367,72 @@
     return endedPromise;
   }
 
+  const VOICE_PAGE_SIZE = 100;
+  const VOICE_PAGE_CAP = 20;
+
+  function mergeVoices(primary, extra) {
+    const seen = new Set();
+    const out = [];
+    const add = (list) => {
+      for (let i = 0; i < list.length; i++) {
+        const voice = list[i];
+        const id = voice && voice.voice_id;
+        if (!id || seen.has(id)) continue;
+        seen.add(id);
+        out.push(voice);
+      }
+    };
+    add(primary || []);
+    add(extra || []);
+    return out;
+  }
+
   /**
-   * Probe whether an API key can list voices (auth check).
+   * One pass of GET /v2/voices. The legacy /v1/voices list omits the current
+   * default voices, which is the v4 catalog.
+   */
+  async function fetchVoicePages(apiKey, voiceType) {
+    const voices = [];
+    const seen = new Set();
+    const seenTokens = new Set();
+    let token = "";
+    for (let page = 0; page < VOICE_PAGE_CAP; page++) {
+      const params = new URLSearchParams();
+      params.set("page_size", String(VOICE_PAGE_SIZE));
+      params.set("include_total_count", "false");
+      if (voiceType) params.set("voice_type", voiceType);
+      if (token) params.set("next_page_token", token);
+      const res = await fetch("https://api.elevenlabs.io/v2/voices?" + params.toString(), {
+        headers: { Accept: "application/json", "xi-api-key": apiKey }
+      });
+      if (res.status === 401 || res.status === 403) {
+        if (voices.length) return { ok: true, voices };
+        return { ok: false, reason: "invalid", status: res.status };
+      }
+      if (!res.ok) {
+        if (voices.length) return { ok: true, voices };
+        return { ok: false, reason: "error", status: res.status };
+      }
+      const data = await res.json();
+      const batch = data && Array.isArray(data.voices) ? data.voices : [];
+      for (let i = 0; i < batch.length; i++) {
+        const voice = batch[i];
+        const id = voice && voice.voice_id;
+        if (!id || seen.has(id)) continue;
+        seen.add(id);
+        voices.push(voice);
+      }
+      const next = data && data.next_page_token;
+      if (!data || !data.has_more || !next || seenTokens.has(next)) break;
+      seenTokens.add(next);
+      token = next;
+    }
+    return { ok: true, voices };
+  }
+
+  /**
+   * Probe whether an API key can list voices, and return the account list
+   * plus the current default voices.
    * @param {string} apiKey
    * @returns {Promise<{ ok: true, voices: any[] } | { ok: false, reason: string, status?: number }>}
    */
@@ -376,17 +440,14 @@
     const key = String(apiKey || "").trim();
     if (!key) return { ok: false, reason: "empty" };
     try {
-      const res = await fetch("https://api.elevenlabs.io/v1/voices", {
-        headers: { Accept: "application/json", "xi-api-key": key }
-      });
-      if (res.status === 401 || res.status === 403) {
-        return { ok: false, reason: "invalid", status: res.status };
+      const account = await fetchVoicePages(key, "");
+      if (!account.ok) return account;
+      const defaults = await fetchVoicePages(key, "default");
+      if (!defaults.ok) {
+        if (defaults.reason === "invalid") return defaults;
+        return account;
       }
-      if (!res.ok) {
-        return { ok: false, reason: "error", status: res.status };
-      }
-      const data = await res.json();
-      return { ok: true, voices: data.voices || [] };
+      return { ok: true, voices: mergeVoices(defaults.voices, account.voices) };
     } catch (_) {
       return { ok: false, reason: "network" };
     }
