@@ -948,7 +948,7 @@
       getSpeechSpeed,
       getSpeechPitch,
       getVolumeGain,
-      playPreviewBlob: (blob, fx) => Speech.playPreviewBlob(blob, fx),
+      playElevenPreview: (req) => Speech.playElevenPreview(req),
       openModal: (id) => ports.openModal(id),
       closeModals: () => ports.closeModals(),
       focusDisplayInput,

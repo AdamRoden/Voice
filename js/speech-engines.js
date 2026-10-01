@@ -5,21 +5,27 @@
 (function (global) {
   "use strict";
 
+  /** Only ElevenLabs model this app calls. Older ids migrate here. */
+  const ELEVEN_MODEL_ID = "eleven_v4_turbo";
+
   const MODEL_ALIASES = {
     browser_tts: "browser_tts",
     piper_tts: "piper_tts",
-    eleven_v3: "eleven_v3",
-    eleven_flash_v2_5: "eleven_flash_v2_5",
-    eleven_flash_v2: "eleven_flash_v2_5",
-    eleven_multilingual_v2: "eleven_flash_v2_5"
+    eleven_v4_turbo: ELEVEN_MODEL_ID,
+    eleven_v4: ELEVEN_MODEL_ID,
+    eleven_v3: ELEVEN_MODEL_ID,
+    eleven_flash_v2_5: ELEVEN_MODEL_ID,
+    eleven_flash_v2: ELEVEN_MODEL_ID,
+    eleven_multilingual_v2: ELEVEN_MODEL_ID,
+    eleven_turbo_v2_5: ELEVEN_MODEL_ID,
+    eleven_turbo_v2: ELEVEN_MODEL_ID
   };
 
   /** listMode = active voice list in the panel; engine = produce path. */
   const MODEL_UI = {
     browser_tts: { listMode: "browser", engine: "browser" },
     piper_tts: { listMode: "piper", engine: "piper" },
-    eleven_v3: { listMode: "eleven", engine: "eleven" },
-    eleven_flash_v2_5: { listMode: "eleven", engine: "eleven" }
+    eleven_v4_turbo: { listMode: "eleven", engine: "eleven" }
   };
 
   function normalizeModelId(id) {
@@ -116,78 +122,45 @@
   }
 
   /**
-   * Produce audio for piper or eleven. Browser TTS stays in the app shell.
-   * Network for Eleven is owned by AacEleven.fetchSpeech.
+   * Produce Piper audio. ElevenLabs is streamed by AacEleven.playStream.
+   * Browser TTS stays in the app shell.
    */
   async function produce(engine, payload, deps) {
-    const d = deps || {};
-    const Piper = d.Piper || global.AacPiper;
-    const Eleven = d.Eleven || global.AacEleven;
+    const Piper = (deps && deps.Piper) || global.AacPiper;
 
-    if (!engine || engine.id === "browser") {
-      throw new Error("produce() is for piper/eleven only");
+    if (!engine || engine.id !== "piper") {
+      throw new Error("produce() is for Piper only");
     }
-
-    if (engine.id === "piper") {
-      if (engine.missingDownload) {
-        const err = new Error("Piper voice not downloaded");
-        err.code = "piper_not_downloaded";
-        throw err;
-      }
-      if (!Piper || typeof Piper.synthesize !== "function") throw new Error("AacPiper missing");
-      const text = String(
-        payload.text != null ? payload.text : payload.phrase || ""
-      ).trim();
-      if (!text) throw new Error("Empty text");
-      const voiceId = payload.voiceId || engine.voiceId;
-      // Synthesize uses cache only — never starts a model download.
-      const result = await Piper.synthesize({
-        text,
-        voiceId,
-        speed: payload.speed
-      });
-      const pitch = Number.isFinite(payload.pitch) ? payload.pitch : 1;
-      return {
-        id: "piper",
-        blob: result.blob,
-        modelId: "piper_tts",
-        voiceId: result.voiceId || voiceId,
-        fx: { speed: 1, pitch },
-        downloaded: false
-      };
+    if (engine.missingDownload) {
+      const err = new Error("Piper voice not downloaded");
+      err.code = "piper_not_downloaded";
+      throw err;
     }
-
-    if (engine.id === "eleven") {
-      if (engine.missingConfig) {
-        const err = new Error("ElevenLabs not configured");
-        err.code = "missing_config";
-        throw err;
-      }
-      if (!Eleven || typeof Eleven.fetchSpeech !== "function") throw new Error("AacEleven missing");
-      const voiceId = payload.voiceId || engine.voiceId;
-      const { blob, prepared } = await Eleven.fetchSpeech({
-        phrase: payload.phrase,
-        selectedModel: payload.selectedModel || engine.modelId,
-        voiceId,
-        apiKey: payload.apiKey,
-        speed: payload.speed,
-        pitch: payload.pitch,
-        timeoutMs: payload.timeoutMs
-      });
-      return {
-        id: "eleven",
-        blob,
-        modelId: prepared.modelId,
-        voiceId,
-        fx: prepared.fx,
-        downloaded: false
-      };
-    }
-
-    throw new Error("Unknown engine: " + (engine && engine.id));
+    if (!Piper || typeof Piper.synthesize !== "function") throw new Error("AacPiper missing");
+    const text = String(
+      payload.text != null ? payload.text : payload.phrase || ""
+    ).trim();
+    if (!text) throw new Error("Empty text");
+    const voiceId = payload.voiceId || engine.voiceId;
+    // Synthesize uses cache only — never starts a model download.
+    const result = await Piper.synthesize({
+      text,
+      voiceId,
+      speed: payload.speed
+    });
+    const pitch = Number.isFinite(payload.pitch) ? payload.pitch : 1;
+    return {
+      id: "piper",
+      blob: result.blob,
+      modelId: "piper_tts",
+      voiceId: result.voiceId || voiceId,
+      fx: { speed: 1, pitch },
+      downloaded: false
+    };
   }
 
   global.AacSpeechEngines = {
+    ELEVEN_MODEL_ID,
     MODEL_ALIASES,
     MODEL_UI,
     normalizeModelId,

@@ -206,6 +206,11 @@ html[data-layout="portrait"] .portrait-only { display: flex !important; }
 .topics-backup-row .tool-btn,
 .settings-backup-row .tool-btn { flex: 1; justify-content: center; padding: 8px 6px; font-size: 12px; min-height: 40px; min-width: 0; }
 .settings-backup-row { margin-top: 4px; padding: 0 4px 8px; }
+.import-file-row { display: flex; flex-direction: column; gap: var(--gap-lg); }
+.import-file-row .status-btn { justify-content: center; }
+#import-file-name { margin: 0; }
+#import-merge-btn:disabled,
+#import-replace-btn:disabled { opacity: 0.45; cursor: default; pointer-events: none; }
 #topics-list { flex: 1; overflow-y: auto; min-height: 0; }
 .key.tts-btn.speaking { background-color: color-mix(in srgb, var(--accent) 70%, #fff); animation: speak-pulse 1.2s ease-in-out infinite; }
 @keyframes speak-pulse {

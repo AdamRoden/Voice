@@ -222,7 +222,6 @@
               <button class="tool-btn" id="import-board-btn" type="button" title="Import boards from a JSON file">
                 <span class="material-symbols-outlined icon-small">upload</span> Import
               </button>
-              <input type="file" id="import-board-file" accept="application/json,.json" hidden>
             </div>
           </div>
         </div>
@@ -350,23 +349,34 @@
     <div class="modal-buttons"><button class="modal-btn secondary" onclick="closeModals()">Cancel</button></div>
   </div>
 
-  <!-- Import mode: replace or merge -->
+  <!-- Import: browse for JSON, then merge or replace -->
   <div class="modal" id="modal-import-choice">
     <div class="modal-title">Import boards</div>
     <div class="modal-scroll">
+      <div class="modal-description">Choose an AAC Workspace JSON export. Browse opens the file picker; Cancel only closes this dialog.</div>
+      <div class="import-file-row">
+        <label class="status-btn" id="import-browse-btn">
+          <input type="file" id="import-board-file" class="sr-only" accept=".json,application/json,text/json" tabindex="-1" aria-label="Workspace JSON file">
+          <span class="material-symbols-outlined icon-medium icon-btn-margin">folder_open</span>
+          Browse
+        </label>
+        <div class="modal-description" id="import-file-name">No file selected</div>
+      </div>
       <div class="modal-description">How should this file be applied?</div>
       <div class="modal-choice-group">
-        <button class="status-btn" id="import-merge-btn" type="button">
+        <button class="status-btn" id="import-merge-btn" type="button" disabled>
           <span class="material-symbols-outlined icon-medium icon-btn-margin">merge</span>
           Merge with existing topics
         </button>
-        <button class="status-btn" id="import-replace-btn" type="button">
+        <button class="status-btn" id="import-replace-btn" type="button" disabled>
           <span class="material-symbols-outlined icon-medium icon-btn-margin">swap_horiz</span>
           Replace all topics
         </button>
       </div>
     </div>
-    <div class="modal-buttons"><button class="modal-btn secondary" onclick="closeModals()" type="button">Cancel</button></div>
+    <div class="modal-buttons">
+      <button class="modal-btn secondary" id="import-cancel-btn" type="button" data-close-modal>Cancel</button>
+    </div>
   </div>
 
   <!-- Help / Quick start -->
@@ -715,8 +725,7 @@
       <select id="model-select" title="Voice model" aria-label="Voice model">
         <option value="browser_tts">Local Browser (Utterance)</option>
         <option value="piper_tts">Piper (Local Neural)</option>
-        <option value="eleven_flash_v2_5">ElevenLabs Flash v2.5</option>
-        <option value="eleven_v3">ElevenLabs v3</option>
+        <option value="eleven_v4_turbo">ElevenLabs v4 Turbo</option>
       </select>
     </div>
 

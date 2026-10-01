@@ -96,6 +96,30 @@
 
     let pendingImportData = null;
 
+    function importFileInput() {
+      return document.getElementById("import-board-file");
+    }
+
+    function importFileNameEl() {
+      return document.getElementById("import-file-name");
+    }
+
+    function setImportActionsEnabled(on) {
+      const mergeBtn = document.getElementById("import-merge-btn");
+      const replaceBtn = document.getElementById("import-replace-btn");
+      if (mergeBtn) mergeBtn.disabled = !on;
+      if (replaceBtn) replaceBtn.disabled = !on;
+    }
+
+    function resetImportUi(message) {
+      pendingImportData = null;
+      setImportActionsEnabled(false);
+      const nameEl = importFileNameEl();
+      if (nameEl) nameEl.textContent = message || "No file selected";
+      const input = importFileInput();
+      if (input) input.value = "";
+    }
+
     function buildBoardExport() {
       return {
         format: BOARD_EXPORT_FORMAT,
@@ -218,26 +242,49 @@
       document.getElementById("export-board-btn")?.addEventListener("click", () => {
         downloadBoardExport();
       });
-      document.getElementById("import-board-btn")?.addEventListener("click", () => {
-        document.getElementById("import-board-file")?.click();
+      document.getElementById("import-board-btn")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        resetImportUi();
+        d.openModal("modal-import-choice");
       });
-      document.getElementById("import-board-file")?.addEventListener("change", async (e) => {
-        const file = e.target.files && e.target.files[0];
-        e.target.value = "";
-        if (!file) return;
-        try {
-          pendingImportData = await parseImportFile(file);
-          d.openModal("modal-import-choice");
-        } catch (err) {
-          pendingImportData = null;
-          alert(err?.message || "Could not import boards.");
-        }
+      const fileInput = importFileInput();
+      if (fileInput) {
+        fileInput.addEventListener("click", (e) => {
+          e.stopPropagation();
+        });
+        fileInput.addEventListener("change", async (e) => {
+          const file = e.target.files && e.target.files[0];
+          if (!file) {
+            resetImportUi();
+            return;
+          }
+          const nameEl = importFileNameEl();
+          if (nameEl) nameEl.textContent = file.name || "Selected file";
+          try {
+            pendingImportData = await parseImportFile(file);
+            setImportActionsEnabled(true);
+          } catch (err) {
+            pendingImportData = null;
+            setImportActionsEnabled(false);
+            if (nameEl) nameEl.textContent = err?.message || "Could not read that file.";
+          }
+        });
+      }
+      document.getElementById("import-browse-btn")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+      });
+      document.getElementById("import-cancel-btn")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        resetImportUi();
+        d.closeModals();
       });
       document.getElementById("import-merge-btn")?.addEventListener("click", () => {
         if (!pendingImportData) return;
         try {
           importBoardFromObject(pendingImportData, "merge");
-          pendingImportData = null;
+          resetImportUi();
           d.closeModals();
         } catch (err) {
           alert(err?.message || "Could not merge boards.");
@@ -248,7 +295,7 @@
         if (!confirm("Replace will remove all current topics and buttons on this device. Continue?")) return;
         try {
           importBoardFromObject(pendingImportData, "replace");
-          pendingImportData = null;
+          resetImportUi();
           d.closeModals();
         } catch (err) {
           alert(err?.message || "Could not replace boards.");

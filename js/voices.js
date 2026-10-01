@@ -555,7 +555,7 @@ function defaultLoadKeys(storageKey) {
    *   getSpeechSpeed: () => number,
    *   getSpeechPitch: () => number,
    *   getVolumeGain: () => number,
-   *   playPreviewBlob: (blob: Blob, fx: object|null) => Promise<void>,
+   *   playElevenPreview: (req: object) => Promise<void>,
    *   openModal: (id: string) => void,
    *   closeModals: () => void,
    *   focusDisplayInput: () => void,
@@ -579,8 +579,8 @@ function defaultLoadKeys(storageKey) {
     if (!SpeechEngines || !VF || !Panel || !Piper || !Eleven || !ElevenKey) {
       throw new Error("AacVoicesController requires SpeechEngines, Piper, Eleven, ElevenKey, VoicesFilters, VoicesPanel");
     }
-    if (typeof d.playPreviewBlob !== "function") {
-      throw new Error("AacVoicesController requires playPreviewBlob");
+    if (typeof d.playElevenPreview !== "function") {
+      throw new Error("AacVoicesController requires playElevenPreview");
     }
 
     let browserVoiceIndex = (() => {
@@ -734,8 +734,7 @@ function defaultLoadKeys(storageKey) {
       const mid = modelId(model);
       if (mid === "browser_tts") return "Browser";
       if (mid === "piper_tts") return "Piper";
-      if (mid === "eleven_v3") return "Eleven v3";
-      if (mid === "eleven_flash_v2_5") return "Eleven Flash";
+      if (SpeechEngines.isElevenModel(mid)) return "v4 Turbo";
       return "Voice";
     }
 
@@ -1132,22 +1131,13 @@ function defaultLoadKeys(storageKey) {
           try {
             const apiKey = ElevenKey.getApiKey();
             if (!apiKey) throw new Error("No API key");
-            const selected = SpeechEngines.isElevenModel(modelSelect?.value)
-              ? modelSelect.value
-              : "eleven_v3";
-            const out = await SpeechEngines.produce({
-              id: "eleven",
-              voiceId: item.voice.voice_id,
-              modelId: selected
-            }, {
+            await d.playElevenPreview({
               phrase: PREVIEW_TEXT,
-              selectedModel: selected,
               voiceId: item.voice.voice_id,
               apiKey,
               speed: d.getSpeechSpeed(),
               pitch: d.getSpeechPitch()
-            }, { Eleven });
-            await d.playPreviewBlob(out.blob, out.fx);
+            });
             resetPreview();
           } catch (err) {
             resetPreview();

@@ -84,6 +84,8 @@
 
     let activeBufferSources = [];
     let activeHtmlAudio = null;
+    /** Aborts the in-flight ElevenLabs PCM stream. */
+    let activeStreamAbort = null;
     let speakUiState = "idle";
     let speakGeneration = 0;
     /** Invalidates in-flight enumerateDevices so a newer selection wins. */
@@ -308,6 +310,9 @@
     }
 
     function stopActiveBufferSources() {
+      const abort = activeStreamAbort;
+      activeStreamAbort = null;
+      try { if (abort) abort(); } catch (_) {}
       activeBufferSources.forEach((source) => {
         try { source.onended = null; } catch (_) {}
         try { source.stop(0); } catch (_) {}
@@ -403,43 +408,43 @@
       });
     }
 
-    async function playPreviewBlob(blob, fx) {
-      if (!blob || blob.size < 16) throw new Error("Empty audio");
-      let objectUrl = URL.createObjectURL(blob);
-      let playUrl = objectUrl;
-      let playFx = fx;
+    async function runEleven(req, hooks) {
+      const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+      const abort = () => { try { controller?.abort(); } catch (_) {} };
+      activeStreamAbort = abort;
+      const h = hooks || {};
       try {
-        try {
-          const baked = await bakeEffectsIntoAudioData(blob, fx);
-          if (baked.dataUrl) {
-            playUrl = baked.dataUrl;
-            if (baked.effectsBaked) playFx = null;
-          }
-        } catch (_) {}
-        const audio = new Audio(playUrl);
-        await new Promise((resolve, reject) => {
-          let settled = false;
-          const finish = (fn, value) => {
-            if (settled) return;
-            settled = true;
-            if (objectUrl) {
-              try { URL.revokeObjectURL(objectUrl); } catch (_) {}
-              objectUrl = null;
-            }
-            fn(value);
-          };
-          audio.onerror = () => finish(reject, new Error("preview play failed"));
-          playAudioWithGain(audio, d.getVolumeGain(), {
-            fx: playFx,
-            onEnded: () => finish(resolve)
-          }).catch((err) => finish(reject, err));
+        await ensureAudioCtx();
+        await Eleven.playStream({
+          phrase: req.phrase,
+          voiceId: req.voiceId,
+          apiKey: req.apiKey,
+          speed: req.speed,
+          pitch: req.pitch,
+          signal: controller ? controller.signal : undefined,
+          abort,
+          getContext: getSharedAudioContext,
+          gain: h.gain,
+          gainMax: VOLUME_GAIN_MAX,
+          trackSource: (src) => { activeBufferSources.push(src); },
+          untrackSource: (src) => {
+            activeBufferSources = activeBufferSources.filter((s) => s !== src);
+          },
+          onStarted: h.onStarted,
+          onEnded: h.onEnded,
+          onPcm: h.onPcm
         });
       } catch (err) {
-        if (objectUrl) {
-          try { URL.revokeObjectURL(objectUrl); } catch (_) {}
-        }
+        if (err && (err.code === "aborted" || err.name === "AbortError")) return;
         throw err;
+      } finally {
+        if (activeStreamAbort === abort) activeStreamAbort = null;
       }
+    }
+
+    function playElevenPreview(req) {
+      stopActiveBufferSources();
+      return runEleven(req, { gain: d.getVolumeGain() });
     }
 
     function setSpeakBtnIdle() {
@@ -457,9 +462,9 @@
       if (!speakBtn) return;
       speakBtn.classList.remove("speaking");
       speakBtn.innerHTML = '<span class="material-symbols-outlined icon-medium">hourglass_empty</span>';
-      speakBtn.disabled = true;
-      speakBtn.setAttribute("aria-label", "Generating speech");
-      speakBtn.title = "Generating speech…";
+      speakBtn.disabled = false;
+      speakBtn.setAttribute("aria-label", "Stop speaking");
+      speakBtn.title = "Generating speech… click to stop";
       d.announceLive("Generating speech");
     }
 
@@ -723,17 +728,48 @@
             return;
           }
           try {
-            const out = await SpeechEngines.produce(engine, {
-              phrase,
-              text: Eleven.stripInlineTags(phrase) || phrase,
-              voiceId: engine.voiceId || (engine.id === "piper" ? piperVoiceId : elevenVoiceId),
-              selectedModel: engine.modelId || selectedModel,
-              apiKey,
-              speed,
-              pitch
-            }, { Piper, Eleven });
-            if (!stillCurrent()) return;
-            await playGeneratedBlob(out.blob, out.modelId, out.voiceId, out.fx, playCtx);
+            if (engine.id === "eleven") {
+              await runEleven({
+                phrase,
+                voiceId: engine.voiceId || elevenVoiceId,
+                apiKey,
+                speed,
+                pitch
+              }, {
+                gain: gainSetting,
+                onStarted: () => {
+                  setPlaybackStarted();
+                  if (stillCurrent()) setSpeakBtnSpeaking();
+                  d.focusDisplayInput();
+                },
+                onEnded: () => {
+                  if (!stillCurrent()) return;
+                  finishUi();
+                  d.announceLive("Speech finished");
+                  d.focusDisplayInput();
+                },
+                onPcm: (pcm, sampleRate, prepared) => {
+                  if (!recordHistory || !stillCurrent() || !pcm || pcm.length < 2) return;
+                  const wav = Eleven.pcm16ToWavBlob(pcm, sampleRate);
+                  bakeEffectsIntoAudioData(wav, prepared.fx).then((baked) => {
+                    if (!baked || !baked.dataUrl) return;
+                    d.addToHistory(phrase, prepared.modelId, engine.voiceId || elevenVoiceId, baked.dataUrl, {
+                      effectsBaked: !!baked.effectsBaked
+                    });
+                  }).catch(() => {});
+                }
+              });
+            } else {
+              const out = await SpeechEngines.produce(engine, {
+                phrase,
+                text: Eleven.stripInlineTags(phrase) || phrase,
+                voiceId: engine.voiceId || piperVoiceId,
+                speed,
+                pitch
+              }, { Piper });
+              if (!stillCurrent()) return;
+              await playGeneratedBlob(out.blob, out.modelId, out.voiceId, out.fx, playCtx);
+            }
           } catch (err) {
             if (err && err.code === "piper_not_downloaded") {
               const msg = "Download this Piper voice in Settings before speaking.";
@@ -772,6 +808,8 @@
         stopAllSpeech();
         return;
       }
+      // Resume inside the tap so iOS will play the streamed chunks.
+      try { ensureAudioCtx(); } catch (_) {}
       const text = d.getSpeakText();
       if (!d.trim(text)) {
         d.announceLive("Nothing to speak");
@@ -800,7 +838,7 @@
       playAudioData,
       bakeEffectsIntoAudioData,
       playAudioWithGain,
-      playPreviewBlob,
+      playElevenPreview,
       refreshOutputDevices,
       setActiveOutputDevice,
       getSharedAudioContext,
