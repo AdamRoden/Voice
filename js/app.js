@@ -60,7 +60,9 @@
     const lsGet = (key, fallback = null) => {
       try { const v = localStorage.getItem(key); return v == null ? fallback : v; } catch (_) { return fallback; }
     };
-    const lsSet = (key, val) => { try { localStorage.setItem(key, val); } catch (_) {} };
+    const lsSet = (key, val) => {
+      try { localStorage.setItem(key, val); return true; } catch (_) { return false; }
+    };
     const lsDel = (key) => { try { localStorage.removeItem(key); } catch (_) {} };
     const lsGetJson = (key, fallback) => {
       try {
@@ -332,9 +334,10 @@
 
     /** Play the stored clip for the current message text. */
     function replayLastSpeech() {
-      if (!canReplayLast()) return;
+      if (!canReplayLast()) return false;
       if (Speech?.isSpeakBusy()) Speech.stopAllSpeech();
       ports.playSpeechSource(lastGeneratedAudio);
+      return true;
     }
 
     // Theme / sidebar / router / coach live in AacShellUi (created below with ports).
@@ -567,10 +570,10 @@
       ports.onWorkspaceDisplayInput();
     });
     displayInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        e.preventDefault();
-        primarySpeak();
-      }
+      if (e.key !== "Enter" || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.isComposing || e.keyCode === 229) return;
+      e.preventDefault();
+      primarySpeak();
     });
     function relayoutComposer() {
       autosizeDisplayInput();
@@ -857,7 +860,7 @@
       }),
       applyImportedSettings,
       onAfterImport: () => {
-        Workspace.reconcileChatsAfterTopicChange();
+        Workspace.reconcileChatsAfterTopicChange({ preferBoardTopic: true });
         if (Voices) Voices.syncSelectedVoiceSummary();
       },
       openModal: (id) => ports.openModal(id),
@@ -903,6 +906,7 @@
       getUtteranceText,
       focusDisplayInput,
       announceLive,
+      stopPiperPreview: () => Voices?.stopPiperSamplePreview?.(),
       onSpeakClick: () => primarySpeak(),
       onAfterSpeakLearn: (text) => {
         if (window.VoicePredict && typeof VoicePredict.learnText === "function") {
@@ -959,16 +963,17 @@
 
     // ==================== HOTKEYS (catalog in AacHotkeys) ====================
     function stepActiveTopic(delta) {
-      if (!Topics || typeof Topics.getTopicsList !== "function") return;
+      if (!Topics || typeof Topics.getTopicsList !== "function") return false;
       const list = Topics.getTopicsList() || [];
-      if (!list.length) return;
+      if (!list.length) return false;
       const id = Topics.getActiveTopicId();
       let i = list.findIndex((t) => t.id === id);
       if (i < 0) i = 0;
       const n = list.length;
       const next = list[((i + delta) % n + n) % n];
-      if (!next || next.id === id) return;
+      if (!next || next.id === id) return false;
       Topics.switchTopic(next.id);
+      return true;
     }
 
     if (window.AacHotkeys && typeof window.AacHotkeys.create === "function") {
@@ -1010,6 +1015,12 @@
       if (!("serviceWorker" in navigator)) return;
       // file:// cannot register SW
       if (location.protocol === "file:") return;
+      let reloadedForController = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (reloadedForController) return;
+        reloadedForController = true;
+        window.location.reload();
+      });
       window.addEventListener("load", () => {
         navigator.serviceWorker.register("./sw.js").catch(() => {});
       });

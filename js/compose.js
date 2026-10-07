@@ -267,14 +267,20 @@
         const chip = document.createElement("div");
         chip.className = "compose-chip";
         chip.setAttribute("role", "listitem");
-        chip.innerHTML = `
-          <span class="compose-chip-text"></span>
-          <button type="button" class="compose-chip-remove" title="Remove word" aria-label="Remove ${tok.text}">
-            <span class="material-symbols-outlined">close</span>
-          </button>
-        `;
-        chip.querySelector(".compose-chip-text").textContent = tok.text;
-        chip.querySelector(".compose-chip-remove")?.addEventListener("click", (e) => {
+        const textEl = document.createElement("span");
+        textEl.className = "compose-chip-text";
+        textEl.textContent = tok.text;
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.className = "compose-chip-remove";
+        removeBtn.title = "Remove word";
+        removeBtn.setAttribute("aria-label", "Remove " + tok.text);
+        const removeIcon = document.createElement("span");
+        removeIcon.className = "material-symbols-outlined";
+        removeIcon.textContent = "close";
+        removeBtn.appendChild(removeIcon);
+        chip.append(textEl, removeBtn);
+        removeBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           removeDisplayWordAt(i);
         });
@@ -453,8 +459,8 @@
     function autosizeDisplayInput() {
       if (!displayInput) return;
       syncSpeakClearToDisplayHeight();
-      displayInput.style.height = "auto";
-      displayInput.style.height = `${displayInput.scrollHeight}px`;
+      /* Height comes from the compose row, which fills the gap under the board. */
+      displayInput.style.height = "";
       if (typeof d.onAfterAutosize === "function") d.onAfterAutosize();
     }
 

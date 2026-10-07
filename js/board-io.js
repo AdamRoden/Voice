@@ -160,32 +160,55 @@
       }
     }
 
-    function mergeTopicsFromImport(incomingList) {
+    function mergeButtonFields(dest, raw, norm) {
+      if (!raw || typeof raw !== "object" || !dest || !norm) return;
+      if (raw.label != null) dest.label = norm.label;
+      if (raw.symbol != null || raw.icon != null) dest.symbol = norm.symbol;
+      if (raw.color != null) dest.color = norm.color;
+      if (raw.utteranceText != null) dest.utteranceText = norm.utteranceText;
+      if (raw.sourceText != null) dest.sourceText = norm.sourceText;
+      if (raw.text != null && raw.utteranceText == null && raw.sourceText == null) {
+        dest.sourceText = norm.sourceText;
+        if (!dest.audioData) dest.utteranceText = norm.utteranceText;
+      }
+      if (raw.audioData != null) dest.audioData = norm.audioData;
+      if (raw.effectsBaked != null) dest.effectsBaked = norm.effectsBaked;
+      if (raw.col != null || raw.x != null) dest.col = norm.col;
+      if (raw.row != null || raw.y != null) dest.row = norm.row;
+      if (raw.colSpan != null) dest.colSpan = norm.colSpan;
+      if (raw.rowSpan != null) dest.rowSpan = norm.rowSpan;
+    }
+
+    function mergeTopicsFromImport(rawList) {
       const topicsList = topics.getTopicsList();
-      const incoming = topics.normalizeTopicsList(incomingList);
-      incoming.forEach((inc) => {
-        const existing = topicsList.find((t) => t.id === inc.id)
-          || topicsList.find((t) => (t.name || "").toLowerCase() === (inc.name || "").toLowerCase());
+      (Array.isArray(rawList) ? rawList : []).forEach((raw) => {
+        if (!raw || typeof raw !== "object") return;
+        const incoming = topics.normalizeTopicsList([raw])[0];
+        if (!incoming) return;
+        const existing = raw.id ? topicsList.find((t) => t.id === raw.id) : null;
         if (!existing) {
-          if (topicsList.some((t) => t.id === inc.id)) {
-            inc.id = d.generateId();
-          }
-          topicsList.push(inc);
+          if (topicsList.some((t) => t.id === incoming.id)) incoming.id = d.generateId();
+          topicsList.push(incoming);
           return;
         }
+        if (raw.name != null && String(raw.name) !== "") existing.name = incoming.name;
+        if (raw.icon != null && raw.icon !== "") existing.icon = incoming.icon;
+        if (raw.color != null && raw.color !== "") existing.color = incoming.color;
+        if (raw.gridCols != null) existing.gridCols = Math.max(existing.gridCols || 1, incoming.gridCols || 1);
+        if (raw.gridRows != null) existing.gridRows = Math.max(existing.gridRows || 1, incoming.gridRows || 1);
+        const rawButtons = Array.isArray(raw.buttons) ? raw.buttons : [];
         const byId = new Map(existing.buttons.map((b) => [b.id, b]));
-        (inc.buttons || []).forEach((btn) => {
-          if (byId.has(btn.id)) {
-            Object.assign(byId.get(btn.id), btn);
-          } else {
-            const copy = { ...btn, id: d.generateId() };
-            existing.buttons.push(topics.normalizeButton(copy, existing.buttons.length));
+        rawButtons.forEach((rawBtn) => {
+          if (!rawBtn || typeof rawBtn !== "object") return;
+          const norm = topics.normalizeButton(rawBtn, existing.buttons.length);
+          if (rawBtn.id && byId.has(rawBtn.id)) {
+            mergeButtonFields(byId.get(rawBtn.id), rawBtn, norm);
+            return;
           }
+          if (!norm.id || byId.has(norm.id)) norm.id = d.generateId();
+          existing.buttons.push(norm);
+          byId.set(norm.id, norm);
         });
-        existing.gridCols = Math.max(existing.gridCols || 1, inc.gridCols || 1);
-        existing.gridRows = Math.max(existing.gridRows || 1, inc.gridRows || 1);
-        if (inc.icon) existing.icon = inc.icon;
-        if (inc.color) existing.color = inc.color;
         topics.repackSequentialGrid(existing);
       });
     }
@@ -206,8 +229,12 @@
       const next = topics.normalizeTopicsList(rawTopics);
       if (!next.length) throw new Error("No valid topics in file");
 
+      let backupList = null;
+      try { backupList = JSON.parse(JSON.stringify(topics.getTopicsList())); } catch (_) {}
+      const backupActive = topics.getActiveTopicId();
+
       if (importMode === "merge") {
-        mergeTopicsFromImport(next);
+        mergeTopicsFromImport(rawTopics);
       } else {
         topics.setTopicsList(next);
       }
@@ -218,7 +245,21 @@
       topics.setActiveTopicId(activeTopicId);
       topics.setExpandedTopicIds(new Set([activeTopicId]));
       d.lsSet("aac_active_tab", activeTopicId);
-      topics.saveTopicsList();
+      const saved = topics.saveTopicsList();
+
+      if (!saved) {
+        if (backupList) {
+          topics.setTopicsList(backupList);
+          topics.setActiveTopicId(backupActive);
+          topics.setExpandedTopicIds(new Set([backupActive]));
+          d.lsSet("aac_active_tab", backupActive);
+          topics.commitTopicsUi();
+        }
+        d.announceLive("Board was not saved. Device storage is full.");
+        alert("Could not store this board. Device storage is full. Free some space and try again.");
+        d.focusDisplayInput();
+        return;
+      }
 
       if (data.settings && importMode === "replace") d.applyImportedSettings(data.settings);
 

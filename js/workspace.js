@@ -268,6 +268,23 @@
         return;
       }
 
+      const emptyIdx = chats.findIndex((c, i) => i !== activeChat && c && !d.trim(c.text));
+      if (emptyIdx >= 0) {
+        const prev = {
+          text: chats[activeChat]?.text || "",
+          topicId: chats[activeChat]?.topicId
+        };
+        chats[emptyIdx] = normalizeChat(prev);
+        chats[activeChat] = emptyChat(topicId);
+        applyChatToWorkspace(chats[activeChat]);
+        persistChats();
+        syncChatUi();
+        d.focusDisplayInput();
+        return;
+      }
+
+      const replace = confirm("All five chats have text. Replace the current chat? Its message will be discarded.");
+      if (!replace) return;
       chats[activeChat] = emptyChat(topicId);
       applyChatToWorkspace(chats[activeChat]);
       persistChats();
@@ -275,11 +292,28 @@
       d.focusDisplayInput();
     }
 
-    function reconcileChatsAfterTopicChange() {
+    function reconcileChatsAfterTopicChange(opts) {
       if (!Array.isArray(chats)) return;
-      const prevActiveTopic = chats[activeChat]?.topicId || Topics.getActiveTopicId();
+      const preferBoard = !!(opts && opts.preferBoardTopic);
+      const prevActiveTopic = preferBoard
+        ? (Topics.getActiveTopicId() || chats[activeChat]?.topicId)
+        : (chats[activeChat]?.topicId || Topics.getActiveTopicId());
       chats = reconcileChatsList(chats);
       let idx = findChatIndexForTopic(prevActiveTopic);
+      if (idx < 0 && prevActiveTopic && Topics.getTopicsList().some((t) => t.id === prevActiveTopic)) {
+        const slot = emptyChat(prevActiveTopic);
+        const emptyIdx = chats.findIndex((c) => c && !d.trim(c.text));
+        if (chats.length < CHAT_MAX) {
+          chats.push(slot);
+          idx = chats.length - 1;
+        } else if (emptyIdx >= 0) {
+          chats[emptyIdx] = slot;
+          idx = emptyIdx;
+        } else {
+          chats[activeChat] = slot;
+          idx = activeChat;
+        }
+      }
       if (idx < 0) idx = 0;
       activeChat = d.clamp(idx, 0, chats.length - 1);
       if (chats[activeChat]) applyChatToWorkspace(chats[activeChat]);

@@ -121,7 +121,7 @@
     if (!boundary) return null;
 
     let wordStart = pos;
-    while (wordStart > 0 && /[A-Za-z']/.test(raw[wordStart - 1])) wordStart--;
+    while (wordStart > 0 && /[A-Za-z'’‘]/.test(raw[wordStart - 1])) wordStart--;
     if (wordStart === pos) return null;
     const token = raw.slice(wordStart, pos);
     if (!token) return null;
@@ -134,7 +134,7 @@
     let hist = [];
     if (!isSentenceStart) {
       const sentenceFrag = (beforeWord.split(/[.!?]/).pop() || beforeWord);
-      hist = (sentenceFrag.toLowerCase().match(/[a-z']+/g) || []).slice(-3);
+      hist = (sentenceFrag.replace(/[’‘]/g, "'").toLowerCase().match(/[a-z']+/g) || []).slice(-3);
     }
     const prev1 = hist[hist.length - 1] || "";
 
@@ -290,7 +290,7 @@
     if (ambig) {
       const pref = preferAmbig(bare, prev1);
       if (pref === ambig.contraction) return ambig.contraction;
-      if (pref === ambig.alt && bare === "id") return "ID";
+      if (pref === ambig.alt && (bare === "id" || bare === "iv" || bare === "don")) return ambig.alt;
       return null;
     }
 
@@ -324,11 +324,8 @@
     ) {
       const beforeSpace = s >= 2 ? src[s - 2] : "";
       if (/[A-Za-z0-9'"”)\]\}]/.test(beforeSpace)) {
-        const oldS = s;
         s -= 1;
-        // Delete the space: keep e past it (collapsed caret was at oldS).
-        if (e <= s) e = oldS;
-        else if (e === oldS) e = oldS;
+        // e stays where it was so the deleted space remains inside the range.
       }
     }
 

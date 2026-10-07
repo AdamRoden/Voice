@@ -171,7 +171,9 @@
         const result = fn();
         if (result && typeof result.then === "function") {
           Promise.resolve(result).catch(() => {});
+          return true;
         }
+        if (result === false) return false;
       } catch (_) {}
       return true;
     }

@@ -83,6 +83,7 @@
     let activeOutputDeviceLabel = lsGet(OUTPUT_DEVICE_LABEL_KEY, "") || "";
 
     let activeBufferSources = [];
+    let activeObjectUrls = [];
     let activeHtmlAudio = null;
     /** Aborts the in-flight ElevenLabs PCM stream. */
     let activeStreamAbort = null;
@@ -309,6 +310,18 @@
       activeHtmlAudio = null;
     }
 
+    function trackObjectUrl(url) {
+      if (url) activeObjectUrls.push(url);
+    }
+
+    function revokeActiveObjectUrls() {
+      const urls = activeObjectUrls;
+      activeObjectUrls = [];
+      urls.forEach((url) => {
+        try { URL.revokeObjectURL(url); } catch (_) {}
+      });
+    }
+
     function stopActiveBufferSources() {
       const abort = activeStreamAbort;
       activeStreamAbort = null;
@@ -322,8 +335,26 @@
       stopActiveHtmlAudio();
     }
 
+    /** Bump the speak generation and stop every in-flight voice. */
+    function claimSpeakTurn() {
+      speakGeneration += 1;
+      try { window.speechSynthesis.cancel(); } catch (_) {}
+      stopActiveBufferSources();
+      revokeActiveObjectUrls();
+      if (typeof d.stopPiperPreview === "function") {
+        try { d.stopPiperPreview(); } catch (_) {}
+      }
+      return speakGeneration;
+    }
+
+    function haltSpeechForNewSound() {
+      claimSpeakTurn();
+      setSpeakBtnIdle();
+    }
+
     function playAudioData(audioData, opts) {
       const o = opts || {};
+      haltSpeechForNewSound();
       if (audioData) {
         const fx = o.fx != null ? o.fx : null;
         playAudioWithGain(new Audio(audioData), d.getVolumeGain(), {
@@ -351,6 +382,11 @@
         });
         return;
       }
+      const phrase = d.trim(src.sourceText || src.text || src.label);
+      if (phrase) {
+        speakPhrase(phrase, { recordHistory: false, showLoading: false, alertOnError: false });
+        return;
+      }
       d.focusDisplayInput();
     }
 
@@ -372,8 +408,10 @@
         try {
           audioElement.volume = 1;
           await audioElement.play();
-        } catch (_) {}
-        return;
+          return true;
+        } catch (_) {
+          return false;
+        }
       }
       const onEndedEl = typeof audioElement.onended === "function"
         ? audioElement.onended.bind(audioElement)
@@ -382,7 +420,7 @@
       const onStarted = typeof o.onStarted === "function" ? o.onStarted : null;
       const fx = o.fx != null ? AudioFx.normalizeFx(o.fx) : { speed: 1, pitch: 1 };
 
-      await AudioFx.playUrl({
+      return AudioFx.playUrl({
         url: audioElement?.src || "",
         gain: gainValue,
         gainMax: VOLUME_GAIN_MAX,
@@ -443,7 +481,7 @@
     }
 
     function playElevenPreview(req) {
-      stopActiveBufferSources();
+      haltSpeechForNewSound();
       return runEleven(req, { gain: d.getVolumeGain() });
     }
 
@@ -480,11 +518,7 @@
     }
 
     function stopAllSpeech() {
-      speakGeneration += 1;
-      try { window.speechSynthesis.cancel(); } catch (_) {}
-      stopActiveBufferSources();
-      stopActiveHtmlAudio();
-      setSpeakBtnIdle();
+      haltSpeechForNewSound();
       d.announceLive("Speech stopped");
     }
 
@@ -502,6 +536,7 @@
       let saveDataUrl = null;
       let effectsBaked = false;
       const objectUrl = URL.createObjectURL(blob);
+      trackObjectUrl(objectUrl);
       let playFx = fx;
       try {
         const baked = await d.withTimeout(
@@ -543,7 +578,7 @@
       };
 
       audio.onended = cleanup;
-      await playAudioWithGain(audio, gainSetting, {
+      const started = await playAudioWithGain(audio, gainSetting, {
         fx: playFx,
         onStarted: () => {
           setPlaybackStarted();
@@ -552,6 +587,10 @@
       });
       if (!stillCurrent()) {
         try { audio.pause(); } catch (_) {}
+        cleanup();
+        return;
+      }
+      if (!started || cleaned) {
         cleanup();
         return;
       }
@@ -624,15 +663,32 @@
       const offline = typeof navigator !== "undefined" && navigator.onLine === false;
       const selectedModel = d.modelId(modelSelect?.value);
 
-      let engine = await SpeechEngines.resolveEngine({
-        selectedModel,
-        offline,
-        piperVoiceId,
-        elevenVoiceId,
-        hasElevenApiKey,
-        Piper,
-        Eleven
-      });
+      const myGen = claimSpeakTurn();
+      const stillCurrent = () => myGen === speakGeneration;
+      if (showLoading) setSpeakBtnLoading();
+      else setSpeakBtnIdle();
+      const finishUi = () => {
+        if (!stillCurrent()) return;
+        setSpeakBtnIdle();
+      };
+
+      let engine;
+      try {
+        engine = await SpeechEngines.resolveEngine({
+          selectedModel,
+          offline,
+          piperVoiceId,
+          elevenVoiceId,
+          hasElevenApiKey,
+          Piper,
+          Eleven
+        });
+      } catch (_) {
+        if (alertOnError && stillCurrent()) alert("Failed to generate speech.");
+        finishUi();
+        return;
+      }
+      if (!stillCurrent()) return;
 
       if (engine.reason === "offline_piper_uncached") {
         d.announceLive("Offline — Piper voice not cached; using browser voice");
@@ -644,6 +700,7 @@
         const msg = "Download this Piper voice in Settings before speaking.";
         d.announceLive(msg);
         if (alertOnError) alert(msg);
+        finishUi();
         return;
       }
 
@@ -661,11 +718,13 @@
         const msg = "Select an ElevenLabs voice in Settings before speaking.";
         d.announceLive(msg);
         if (alertOnError) alert(msg);
+        finishUi();
         return;
       } else if (engine.id === "eleven" && engine.missingConfig) {
         const msg = "Please configure your API key and select a voice in Settings.";
         d.announceLive(msg);
         if (alertOnError) alert(msg);
+        finishUi();
         return;
       }
 
@@ -675,22 +734,10 @@
             ? "Add some words to speak. Tags alone cannot be sent to this voice model."
             : "Type something to speak first.");
         }
+        finishUi();
         return;
       }
 
-      try { window.speechSynthesis.cancel(); } catch (_) {}
-      stopActiveBufferSources();
-
-      const myGen = ++speakGeneration;
-      const stillCurrent = () => myGen === speakGeneration;
-
-      if (showLoading) setSpeakBtnLoading();
-      else setSpeakBtnIdle();
-
-      const finishUi = () => {
-        if (!stillCurrent()) return;
-        setSpeakBtnIdle();
-      };
       let playbackStarted = false;
       const setPlaybackStarted = () => { playbackStarted = true; };
       const playCtx = {
@@ -752,7 +799,7 @@
                   if (!recordHistory || !stillCurrent() || !pcm || pcm.length < 2) return;
                   const wav = Eleven.pcm16ToWavBlob(pcm, sampleRate);
                   bakeEffectsIntoAudioData(wav, prepared.fx).then((baked) => {
-                    if (!baked || !baked.dataUrl) return;
+                    if (!stillCurrent() || !baked || !baked.dataUrl) return;
                     d.addToHistory(phrase, prepared.modelId, engine.voiceId || elevenVoiceId, baked.dataUrl, {
                       effectsBaked: !!baked.effectsBaked
                     });

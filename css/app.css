@@ -332,9 +332,6 @@ html.keyboard-open .app-main,
 body.osk-visible .app-main { min-height: 0; }
 html.keyboard-open .offline-banner,
 body.osk-visible .offline-banner { flex-shrink: 1; min-height: 0; overflow: hidden; }
-/* Cap growth against visible area so the field expands upward above the keyboard */
-html.keyboard-open .display-textarea,
-body.osk-visible .display-textarea { max-height: min(180px, calc(var(--vv-height, 100dvh) * 0.4)); }
 /* Landscape (iPad): when the system keyboard is up, keep the compose dock
    inside the visual viewport. keyboard.js pins body to visualViewport. */
 @media (orientation: landscape) {
@@ -345,7 +342,6 @@ body.osk-visible .display-textarea { max-height: min(180px, calc(var(--vv-height
     max-height: 100%;
     height: 100%;
   }
-  html.keyboard-open .bottom-dock-wrap { margin-top: auto; flex-shrink: 0; }
 }
 /* Workspace header — portrait-only. Hidden by default and in landscape so it
    cannot leak on iPad (do not rely only on .portrait-only). */
@@ -402,8 +398,11 @@ html[data-layout="portrait"] .workspace-header-shell { display: flex !important;
 .num-control-btn:hover { background: var(--key-hover); }
 .num-control-btn:active { background: var(--key-active); }
 .num-control-val { font-weight: 600; color: var(--text); min-width: 20px; text-align: center; font-size: 14px; }
-/* Bottom dock + overwrite banner. margin-top:auto keeps the composer on the keyboard / window bottom. */
-.bottom-dock-wrap { position: relative; flex: 0 0 auto; width: 100%; margin-top: auto; }
+/* Bottom dock grows into the gap under the sound board. The board keeps its
+   content height; this wrap takes whatever vertical space is left. */
+.bottom-dock-wrap { position: relative; flex: 1 1 0; min-height: 64px; width: 100%; display: flex; flex-direction: column; min-width: 0; }
+.bottom-dock-wrap:has(.compose-strip.has-items),
+.bottom-dock-wrap:has(.compose-strip.has-audio) { min-height: 132px; }
 .overwrite-banner { position: absolute; top: 0; left: 50%; transform: translateX(-50%); background-color: var(--accent); color: #fff; padding: 10px 16px; border-radius: var(--radius-lg); font-size: 14px; font-weight: 600; display: none; align-items: center; gap: var(--gap-xl); box-shadow: 0 6px 20px var(--shadow); z-index: var(--z-header); max-width: 100%; width: max-content; flex-wrap: wrap; justify-content: center; text-align: center; box-sizing: border-box; }
 .overwrite-banner.active { display: flex; }
 .overwrite-cancel-btn { background: rgba(0,0,0,0.25); border: none; color: #fff; padding: 8px 12px; border-radius: var(--radius-md); cursor: pointer; font-size: 13px; font-weight: bold; transition: background 0.2s; min-height: 36px; }
@@ -553,10 +552,10 @@ body:not([data-feat-insert-tag="1"]) #insert-tag-btn { display: none !important;
 .compose-chip-remove:hover { background: var(--danger-bg); color: var(--danger); }
 .compose-chip-remove .material-symbols-outlined { font-size: 16px; }
 /* Grok-style compose: + | mode | text | speak (landscape row; portrait stacks) */
-.bottom-dock { display: flex; flex-direction: column; gap: var(--gap-md); flex-shrink: 0; }
-.compose-box { position: relative; flex-shrink: 0; width: 100%; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 28px; box-shadow: 0 2px 12px var(--shadow); transition: border-color 0.2s, box-shadow 0.2s; overflow: visible; }
+.bottom-dock { display: flex; flex-direction: column; gap: var(--gap-md); flex: 1 1 auto; min-height: 0; min-width: 0; }
+.compose-box { position: relative; flex: 1 1 auto; min-height: 0; width: 100%; display: flex; flex-direction: column; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: 28px; box-shadow: 0 2px 12px var(--shadow); transition: border-color 0.2s, box-shadow 0.2s; overflow: visible; }
 .compose-box:focus-within { border-color: var(--accent); box-shadow: 0 2px 16px color-mix(in srgb, var(--accent) 22%, transparent); }
-.compose-row { display: flex; align-items: flex-end; gap: var(--gap-md); padding: 8px 10px; min-height: 52px; }
+.compose-row { display: flex; align-items: flex-end; gap: var(--gap-md); padding: 8px 10px; min-height: 52px; flex: 1 1 auto; min-width: 0; }
 .compose-leading { display: flex; align-items: flex-end; gap: var(--gap-sm); flex: 0 1 auto; min-width: 0; max-width: min(40vw, 200px); }
 .compose-quick-actions,
 .compose-trailing { display: flex; align-items: center; gap: var(--gap-xs); flex: 0 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
@@ -608,8 +607,8 @@ body:not([data-feat-insert-tag="1"]) #insert-tag-btn { display: none !important;
 .compose-speak-btn .material-symbols-outlined { font-size: calc(var(--display-ctrl-size, 40px) * 0.45); }
 /* Custom tag field inside Insert Tag modal */
 #insert-tag-input { width: 100%; min-height: var(--touch-min); }
-/* Autosizing message field — font size from Settings */
-.display-textarea { flex: 1 1 auto; min-width: 0; width: auto; height: auto; min-height: var(--display-ctrl-size, var(--display-font-size, 28px)); max-height: min(30vh, 180px); background-color: transparent; border: none; border-radius: 0; padding: 8px 6px; line-height: 1.35; color: var(--text); font-size: var(--display-font-size, 28px); resize: none; outline: none; white-space: pre-wrap; word-break: break-word; transition: min-height 0.05s; -webkit-overflow-scrolling: touch; overflow-y: auto; box-sizing: border-box; align-self: center; }
+/* Message field fills the compose row. Text scrolls inside once it is taller than the gap under the board. */
+.display-textarea { flex: 1 1 auto; min-width: 0; width: auto; height: 100%; min-height: 0; max-height: none; background-color: transparent; border: none; border-radius: 0; padding: 8px 6px; line-height: 1.35; color: var(--text); font-size: var(--display-font-size, 28px); resize: none; outline: none; white-space: pre-wrap; word-break: break-word; -webkit-overflow-scrolling: touch; overflow-y: auto; box-sizing: border-box; align-self: stretch; }
 /* Replay / Assign live in the tag row (hidden until audio is available) */
 .audio-actions-inline { display: none; align-items: stretch; gap: 3px; flex-shrink: 0; height: var(--sound-row-height, 48px); }
 .audio-actions-inline.active { display: flex; }
@@ -709,6 +708,7 @@ html.keyboard-open .osk-panel { display: none !important; }
   width: calc((100% - var(--gaps, 0) * var(--gap)) * var(--u, 1) / var(--row-units, 1));
   aspect-ratio: var(--u, 1) / 1;
   height: auto;
+  max-height: min(9vh, 64px);
   min-width: 0;
   box-sizing: border-box;
 }
@@ -969,8 +969,11 @@ body { padding: 0; }
 .bottom-dock { gap: var(--gap-sm); }
 /* Phones: text on top; left actions | trailing clear/pin/replay | Speak */
 .compose-box { border-radius: 22px; }
-.compose-row { display: grid; grid-template-columns: auto 1fr auto auto; grid-template-areas: "text text text text" "lead . trail speak"; align-items: center; padding: 10px 10px 8px; gap: var(--gap-lg); }
-.compose-row .display-textarea { grid-area: text; order: unset; flex: unset; width: 100%; min-width: 0; min-height: 48px; max-height: min(28vh, 160px); padding: 4px 6px 8px; align-self: stretch; }
+.bottom-dock-wrap { min-height: 112px; }
+.bottom-dock-wrap:has(.compose-strip.has-items),
+.bottom-dock-wrap:has(.compose-strip.has-audio) { min-height: 188px; }
+.compose-row { display: grid; grid-template-columns: auto 1fr auto auto; grid-template-rows: minmax(48px, 1fr) auto; grid-template-areas: "text text text text" "lead . trail speak"; align-items: center; padding: 10px 10px 8px; gap: var(--gap-lg); }
+.compose-row .display-textarea { grid-area: text; order: unset; flex: unset; width: 100%; min-width: 0; height: 100%; min-height: 0; max-height: none; padding: 4px 6px 8px; align-self: stretch; }
 .compose-leading { grid-area: lead; max-width: none; width: auto; min-width: 0; margin-bottom: 0; align-self: center; }
 .compose-trailing { grid-area: trail; margin-bottom: 0; align-self: center; justify-self: end; }
 .compose-icon-btn { margin-bottom: 0; align-self: center; }
@@ -1027,10 +1030,9 @@ html.keyboard-open .modal.modal-full-mobile.open .modal-buttons { padding-bottom
 .app-main { gap: 3px; padding: 4px; }
 .bottom-dock { gap: var(--gap-xs); }
 .key { height: 30px; min-height: 30px; width: 30px; min-width: 30px; }
-.display-textarea { max-height: min(22vh, 90px); padding: 4px 6px; }
+.display-textarea { max-height: none; padding: 4px 6px; }
 .compose-row { padding: 6px 8px; }
 .sound-button { font-size: 12px; }
-.sidebar { width: 100%; width: 100vw; max-width: none; }
 .audio-action-btn { font-size: 11px; padding: 0 6px; }
 .audio-action-btn .audio-action-label { display: none; }
 }

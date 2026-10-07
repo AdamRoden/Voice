@@ -1368,7 +1368,8 @@ function defaultLoadKeys(storageKey) {
       hasElevenApiKey,
       getBrowserVoiceIndex: () => browserVoiceIndex,
       getPiperVoiceId: () => piperVoiceId,
-      getElevenVoiceId: () => elevenVoiceId
+      getElevenVoiceId: () => elevenVoiceId,
+      stopPiperSamplePreview
     };
   }
 

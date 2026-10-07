@@ -501,7 +501,7 @@
         setLayout(patch, { restoreFocus: false });
         // Portrait nav includes Topics; landscape right nav keeps utility highlight.
         if (portrait) syncNavActive("topics");
-        d.focusDisplayInput();
+        else d.focusDisplayInput();
         return t;
       }
 
@@ -512,7 +512,13 @@
         else patch.rightOpen = true;
       }
       // Settings is interactive — don't steal focus to compose.
-      setLayout(patch, { restoreFocus: t !== "settings" });
+      // Portrait drawers cover the message, so leave focus on the control that opened them.
+      setLayout(patch, { restoreFocus: false });
+      if (t === "history") {
+        document.getElementById("history-search-input")?.focus();
+      } else if (t !== "settings" && !portrait) {
+        d.focusDisplayInput();
+      }
       return t;
     }
 

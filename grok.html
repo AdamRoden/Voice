@@ -293,14 +293,14 @@
               <button class="font-btn" id="font-up" type="button">A+</button>
             </div>
           </div>
-          <div class="sidebar-setting-group" id="group-browser-voice" style="display: none;">
+          <div class="sidebar-setting-group" id="group-browser-voice" style="display: flex;">
             <label>Browser Voice</label>
             <button class="status-btn" id="open-browser-voices" type="button">
               <span id="selected-browser-name" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Select Voice...</span>
               <span class="material-symbols-outlined" style="font-size:18px;">chevron_right</span>
             </button>
           </div>
-          <div id="group-eleven-settings" style="display: flex; flex-direction: column; gap: 6px;">
+          <div id="group-eleven-settings" hidden style="display: none; flex-direction: column; gap: 6px;">
             <div class="sidebar-setting-group">
               <label>ElevenLabs Voice</label>
               <button class="status-btn" id="open-eleven-voices" type="button">
@@ -475,19 +475,12 @@
 
   <!-- Voice Engine Modal -->
   <div class="modal" id="modal-engine">
-    <div class="modal-title">Voice Engine & API Key</div>
+    <div class="modal-title">Browser voice</div>
     <div class="sidebar-setting-group">
-      <label>Voice Engine Model</label>
+      <label>Voice</label>
       <select id="model-select">
-        <option value="eleven_v3">Eleven v3</option>
-        <option value="eleven_multilingual_v2">Eleven Multilingual v2</option>
-        <option value="eleven_flash_v2">Eleven Flash v2</option>
-        <option value="browser_tts">Local Browser (Utterance)</option>
+        <option value="browser_tts">Browser voice</option>
       </select>
-    </div>
-    <div class="sidebar-setting-group">
-      <label>ElevenLabs API Key</label>
-      <button id="api-key-btn" class="status-btn missing" type="button">Show/Edit API Key</button>
     </div>
     <div class="modal-buttons"><button class="modal-btn primary" onclick="closeModals()">Done</button></div>
   </div>
@@ -582,15 +575,15 @@
         <button class="size-btn" id="studio-fill-btn" type="button">Outlined (0)</button>
       </div>
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span>Weight (<span id="studio-val-wght">400</span>)[cite: 1]</span>
+        <span>Weight (<span id="studio-val-wght">400</span>)</span>
         <input type="range" id="studio-wght-slider" min="100" max="700" step="100" value="400" style="width: 80px;">
       </div>
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span>Grade (<span id="studio-val-grad">0</span>)[cite: 1]</span>
+        <span>Grade (<span id="studio-val-grad">0</span>)</span>
         <input type="range" id="studio-grad-slider" min="-50" max="200" step="50" value="0" style="width: 80px;">
       </div>
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span>Optical Size (<span id="studio-val-opsz">24</span>)[cite: 1]</span>
+        <span>Optical Size (<span id="studio-val-opsz">24</span>)</span>
         <input type="range" id="studio-opsz-slider" min="20" max="48" step="4" value="24" style="width: 80px;">
       </div>
     </div>
@@ -706,7 +699,7 @@
     let currentFontSize = parseInt(localStorage.getItem("aac_font_size"), 10) || 32;
     let currentTheme = localStorage.getItem("aac_theme") || "system";
 
-    // Google Fonts Customization State[cite: 1]
+    // Google Fonts customization state
     let iconFill = parseInt(localStorage.getItem("aac_icon_fill"), 10) || 0;
     let iconWght = parseInt(localStorage.getItem("aac_icon_wght"), 10) || 400;
     let iconGrad = parseInt(localStorage.getItem("aac_icon_grad"), 10) || 0;
@@ -788,7 +781,10 @@
       }
 
       if (listToRender.length === 0) {
-        grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 24px; color: var(--text-secondary); font-size: 15px;">No icons found for "${query}"</div>`;
+        const empty = document.createElement("div");
+        empty.style.cssText = "grid-column: 1 / -1; text-align: center; padding: 24px; color: var(--text-secondary); font-size: 15px;";
+        empty.textContent = 'No icons found for "' + query + '"';
+        grid.appendChild(empty);
         return;
       }
 
@@ -893,8 +889,10 @@
       });
     }
 
-    let tabs = normalizeTabs(JSON.parse(localStorage.getItem("aac_tabs") || "null"));
-    let activeTabId = localStorage.getItem("aac_active_tab_id") || tabs[0].id;
+    const GROK_TABS_KEY = "grok_tabs";
+    const GROK_ACTIVE_KEY = "grok_active_tab";
+    let tabs = normalizeTabs(JSON.parse(localStorage.getItem(GROK_TABS_KEY) || "null"));
+    let activeTabId = localStorage.getItem(GROK_ACTIVE_KEY) || tabs[0].id;
 
     function getActiveTab() {
       let t = tabs.find(x => x.id === activeTabId);
@@ -903,8 +901,8 @@
     }
 
     function saveTabs() {
-      localStorage.setItem("aac_tabs", JSON.stringify(tabs));
-      localStorage.setItem("aac_active_tab_id", activeTabId);
+      localStorage.setItem(GROK_TABS_KEY, JSON.stringify(tabs));
+      localStorage.setItem(GROK_ACTIVE_KEY, activeTabId);
     }
 
     function saveHistory(historyArray) { localStorage.setItem("aac_speech_history", JSON.stringify(historyArray)); }
@@ -970,19 +968,33 @@
       tabs.forEach(tab => {
         const item = document.createElement("div");
         item.className = `topic-item ${tab.id === activeTabId ? "active" : ""}`;
-        item.innerHTML = `
-          <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
-            <span class="topic-icon material-symbols-outlined" style="color: ${tab.color};">${tab.icon}</span>
-            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${tab.name}</span>
-          </div>
-          <div class="topic-actions">
-            <button class="nav-action-btn edit-topic-btn" title="Edit Topic Settings">
-              <span class="material-symbols-outlined" style="font-size: 18px;">settings</span>
-            </button>
-          </div>
-        `;
+        const main = document.createElement("div");
+        main.style.cssText = "display: flex; align-items: center; gap: 10px; overflow: hidden;";
+        const icon = document.createElement("span");
+        icon.className = "topic-icon material-symbols-outlined";
+        if (tab.color) icon.style.color = tab.color;
+        icon.textContent = tab.icon || "folder";
+        const name = document.createElement("span");
+        name.style.cssText = "overflow: hidden; text-overflow: ellipsis; white-space: nowrap;";
+        name.textContent = tab.name || "";
+        main.appendChild(icon);
+        main.appendChild(name);
+        const actions = document.createElement("div");
+        actions.className = "topic-actions";
+        const editBtn = document.createElement("button");
+        editBtn.className = "nav-action-btn edit-topic-btn";
+        editBtn.type = "button";
+        editBtn.title = "Edit Topic Settings";
+        const editIcon = document.createElement("span");
+        editIcon.className = "material-symbols-outlined";
+        editIcon.style.fontSize = "18px";
+        editIcon.textContent = "settings";
+        editBtn.appendChild(editIcon);
+        actions.appendChild(editBtn);
+        item.appendChild(main);
+        item.appendChild(actions);
         item.addEventListener("click", () => switchTopic(tab.id));
-        item.querySelector(".edit-topic-btn").addEventListener("click", (e) => {
+        editBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           openTopicEditModal(tab.id);
         });
@@ -1118,12 +1130,26 @@
           btnEl.style.backgroundColor = btnData.color;
           btnEl.setAttribute("data-id", btnData.id);
 
-          let iconHtml = btnData.icon ? `<span class="material-symbols-outlined sound-button-icon">${btnData.icon}</span>` : "";
-          btnEl.innerHTML = `
-            ${iconHtml}
-            <div class="sound-button-label">${btnData.label || "Button"}</div>
-            <button class="sound-button-edit-btn" title="Edit Button"><span class="material-symbols-outlined" style="font-size:16px;">edit</span></button>
-          `;
+          if (btnData.icon) {
+            const iconEl = document.createElement("span");
+            iconEl.className = "material-symbols-outlined sound-button-icon";
+            iconEl.textContent = btnData.icon;
+            btnEl.appendChild(iconEl);
+          }
+          const labelEl = document.createElement("div");
+          labelEl.className = "sound-button-label";
+          labelEl.textContent = btnData.label || "Button";
+          const editBtn = document.createElement("button");
+          editBtn.className = "sound-button-edit-btn";
+          editBtn.type = "button";
+          editBtn.title = "Edit Button";
+          const editIcon = document.createElement("span");
+          editIcon.className = "material-symbols-outlined";
+          editIcon.style.fontSize = "16px";
+          editIcon.textContent = "edit";
+          editBtn.appendChild(editIcon);
+          btnEl.appendChild(labelEl);
+          btnEl.appendChild(editBtn);
 
           if (editState.isEditing) {
             btnEl.draggable = true;
@@ -1306,24 +1332,15 @@
 
     // ==================== SPEECH SYNTHESIS & TTS ====================
     function speakText(text) {
-      if (!text) return;
-      const model = document.getElementById("model-select").value;
-
-      if (model === "browser_tts" || !window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-        const utt = new SpeechSynthesisUtterance(text);
-        utt.rate = parseFloat(document.getElementById("speed-slider").value) || 1.0;
-        const voices = window.speechSynthesis.getVoices();
-        if (activeBrowserVoiceIndex !== "" && voices[activeBrowserVoiceIndex]) {
-          utt.voice = voices[activeBrowserVoiceIndex];
-        }
-        window.speechSynthesis.speak(utt);
-      } else {
-        // Fallback to local browser TTS if ElevenLabs API key isn't provided
-        window.speechSynthesis.cancel();
-        const utt = new SpeechSynthesisUtterance(text);
-        window.speechSynthesis.speak(utt);
+      if (!text || !window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      const utt = new SpeechSynthesisUtterance(text);
+      utt.rate = parseFloat(document.getElementById("speed-slider").value) || 1.0;
+      const voices = window.speechSynthesis.getVoices();
+      if (activeBrowserVoiceIndex !== "" && voices[activeBrowserVoiceIndex]) {
+        utt.voice = voices[activeBrowserVoiceIndex];
       }
+      window.speechSynthesis.speak(utt);
     }
 
     speakBtn.addEventListener("click", () => {
@@ -1363,25 +1380,46 @@
       hist.forEach(item => {
         const el = document.createElement("div");
         el.className = "history-item";
-        el.innerHTML = `
-          <div class="history-item-header">
-            <span class="history-item-text">${item.text}</span>
-            <span class="history-item-meta">${item.time}</span>
-          </div>
-          <div class="history-actions">
-            <button class="history-btn restore" type="button"><span class="material-symbols-outlined" style="font-size: 14px;">input</span> Restore</button>
-            <button class="history-btn speak" type="button"><span class="material-symbols-outlined" style="font-size: 14px;">volume_up</span> Speak</button>
-            <button class="history-btn del" type="button"><span class="material-symbols-outlined" style="font-size: 14px;">close</span></button>
-          </div>
-        `;
-        el.querySelector(".history-item-text").addEventListener("click", () => speakText(item.text));
-        el.querySelector(".speak").addEventListener("click", () => speakText(item.text));
-        el.querySelector(".restore").addEventListener("click", () => {
+        const header = document.createElement("div");
+        header.className = "history-item-header";
+        const textEl = document.createElement("span");
+        textEl.className = "history-item-text";
+        textEl.textContent = item.text || "";
+        const metaEl = document.createElement("span");
+        metaEl.className = "history-item-meta";
+        metaEl.textContent = item.time || "";
+        header.appendChild(textEl);
+        header.appendChild(metaEl);
+        const actions = document.createElement("div");
+        actions.className = "history-actions";
+        function historyButton(cls, iconName, label) {
+          const button = document.createElement("button");
+          button.className = "history-btn " + cls;
+          button.type = "button";
+          const icon = document.createElement("span");
+          icon.className = "material-symbols-outlined";
+          icon.style.fontSize = "14px";
+          icon.textContent = iconName;
+          button.appendChild(icon);
+          if (label) button.appendChild(document.createTextNode(" " + label));
+          return button;
+        }
+        const restoreBtn = historyButton("restore", "input", "Restore");
+        const speakHistBtn = historyButton("speak", "volume_up", "Speak");
+        const delBtn = historyButton("del", "close", "");
+        actions.appendChild(restoreBtn);
+        actions.appendChild(speakHistBtn);
+        actions.appendChild(delBtn);
+        el.appendChild(header);
+        el.appendChild(actions);
+        textEl.addEventListener("click", () => speakText(item.text));
+        speakHistBtn.addEventListener("click", () => speakText(item.text));
+        restoreBtn.addEventListener("click", () => {
           displayInput.value = item.text;
           displayInput.focus();
           audioActionsBar.classList.add("active");
         });
-        el.querySelector(".del").addEventListener("click", () => {
+        delBtn.addEventListener("click", () => {
           let h = getHistory().filter(x => x.id !== item.id);
           saveHistory(h);
           renderHistory();
@@ -1411,10 +1449,6 @@
         preds = ["I", "want", "help", "more", "please", "thank you"];
       } else {
         preds = CORE_WORDS.filter(w => w.toLowerCase().startsWith(lastWord) && w.toLowerCase() !== lastWord);
-        if (preds.length < 6) {
-          const fillers = ["please", "now", "today", "thanks", "there", "here"];
-          preds = [...preds, ...fillers].slice(0, 6);
-        }
       }
 
       predBtns.forEach((btn, i) => {
@@ -1422,11 +1456,14 @@
           btn.textContent = preds[i];
           btn.style.visibility = "visible";
           btn.onclick = () => {
+            const chip = preds[i];
             if (val.endsWith(" ") || !val) {
-              displayInput.value = val + preds[i] + " ";
-            } else {
-              words[words.length - 1] = preds[i];
+              displayInput.value = val + chip + " ";
+            } else if (chip.toLowerCase().startsWith(lastWord)) {
+              words[words.length - 1] = chip;
               displayInput.value = words.join(" ") + " ";
+            } else {
+              displayInput.value = val + " " + chip + " ";
             }
             displayInput.focus();
             updatePredictions();
@@ -1489,10 +1526,14 @@
       voices.forEach((v, idx) => {
         const item = document.createElement("div");
         item.className = `voice-item ${activeBrowserVoiceIndex == idx ? "selected" : ""}`;
-        item.innerHTML = `
-          <span>${v.name} (${v.lang})</span>
-          <button class="voice-preview-btn" type="button">Preview</button>
-        `;
+        const nameEl = document.createElement("span");
+        nameEl.textContent = (v.name || "Voice") + " (" + (v.lang || "") + ")";
+        const previewBtn = document.createElement("button");
+        previewBtn.className = "voice-preview-btn";
+        previewBtn.type = "button";
+        previewBtn.textContent = "Preview";
+        item.appendChild(nameEl);
+        item.appendChild(previewBtn);
         item.addEventListener("click", () => {
           activeBrowserVoiceIndex = idx;
           localStorage.setItem("aac_browser_voice_index", idx);
@@ -1500,7 +1541,7 @@
           listEl.querySelectorAll(".voice-item").forEach(i => i.classList.remove("selected"));
           item.classList.add("selected");
         });
-        item.querySelector(".voice-preview-btn").addEventListener("click", (e) => {
+        previewBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           const utt = new SpeechSynthesisUtterance(previewText);
           utt.voice = v;
@@ -1519,10 +1560,11 @@
       loadBrowserVoices();
     }
 
-    document.getElementById("model-select").addEventListener("change", (e) => {
-      const isBrowser = e.target.value === "browser_tts";
-      document.getElementById("group-browser-voice").style.display = isBrowser ? "flex" : "none";
-      document.getElementById("group-eleven-settings").style.display = isBrowser ? "none" : "flex";
+    document.getElementById("model-select").addEventListener("change", () => {
+      document.getElementById("group-browser-voice").style.display = "flex";
+      const elevenGroup = document.getElementById("group-eleven-settings");
+      elevenGroup.hidden = true;
+      elevenGroup.style.display = "none";
     });
 
     document.getElementById("open-browser-voices").addEventListener("click", () => {

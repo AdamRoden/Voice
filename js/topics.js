@@ -36,14 +36,16 @@
       const defaultCols = ctx.getDefaultGridCols();
       const col = Number.isFinite(btn.col) ? btn.col : (Number.isFinite(btn.x) ? Math.max(0, Math.floor(btn.x / 100)) : (index % defaultCols));
       const row = Number.isFinite(btn.row) ? btn.row : (Number.isFinite(btn.y) ? Math.max(0, Math.floor(btn.y / 80)) : Math.floor(index / defaultCols));
-      const utteranceText = ctx.trim(btn.utteranceText) || null;
-      const sourceText = ctx.trim(btn.sourceText || utteranceText || btn.text || btn.label) || null;
+      const explicitUtt = ctx.trim(btn.utteranceText) || null;
+      const sourceText = ctx.trim(btn.sourceText || explicitUtt || btn.text || btn.label) || null;
+      const audioData = explicitUtt ? null : (btn.audioData || null);
+      const utteranceText = explicitUtt || (audioData ? null : sourceText);
       return {
         id: btn.id || ctx.generateId(),
         label: btn.label || "Button",
         symbol: ctx.mapSymbol(btn.symbol || btn.icon),
         color: btn.color || ctx.COLOR_PALETTE[index % ctx.COLOR_PALETTE.length],
-        audioData: utteranceText ? null : (btn.audioData || null),
+        audioData,
         utteranceText,
         sourceText,
         effectsBaked: !!btn.effectsBaked,
@@ -184,7 +186,7 @@
     }
 
     function saveTopicsList() {
-      ctx.lsSet("aac_tabs", JSON.stringify(ctx.topicsList));
+      return ctx.lsSet("aac_tabs", JSON.stringify(ctx.topicsList)) === true;
     }
 
     function repackSequentialGrid(tab) {
@@ -590,20 +592,31 @@
         header.className = "topic-item-header";
         header.setAttribute("role", "button");
         header.setAttribute("aria-expanded", isExpanded ? "true" : "false");
-        header.innerHTML = `
-          <div class="topic-item-content">
-            <span class="material-symbols-outlined topic-expand-icon icon-small">${isExpanded ? "expand_more" : "chevron_right"}</span>
-            <span class="material-symbols-outlined icon-medium" style="color: ${topic.color};">${topic.icon || "folder"}</span>
-            <span class="topic-item-name"></span>
-          </div>
-          <div class="topic-actions">
-            <button class="nav-action-btn edit-topic-btn" type="button" title="Edit Topic Settings">
-              <span class="material-symbols-outlined icon-small">edit</span>
-            </button>
-          </div>
-        `;
-        const nameNode = header.querySelector(".topic-item-name");
-        if (nameNode) nameNode.textContent = topic.name;
+        const content = document.createElement("div");
+        content.className = "topic-item-content";
+        const expandIcon = document.createElement("span");
+        expandIcon.className = "material-symbols-outlined topic-expand-icon icon-small";
+        expandIcon.textContent = isExpanded ? "expand_more" : "chevron_right";
+        const topicIcon = document.createElement("span");
+        topicIcon.className = "material-symbols-outlined icon-medium";
+        topicIcon.textContent = topic.icon || "folder";
+        if (topic.color) topicIcon.style.color = topic.color;
+        const nameNode = document.createElement("span");
+        nameNode.className = "topic-item-name";
+        nameNode.textContent = topic.name || "";
+        content.append(expandIcon, topicIcon, nameNode);
+        const actions = document.createElement("div");
+        actions.className = "topic-actions";
+        const editBtn = document.createElement("button");
+        editBtn.className = "nav-action-btn edit-topic-btn";
+        editBtn.type = "button";
+        editBtn.title = "Edit Topic Settings";
+        const editIcon = document.createElement("span");
+        editIcon.className = "material-symbols-outlined icon-small";
+        editIcon.textContent = "edit";
+        editBtn.appendChild(editIcon);
+        actions.appendChild(editBtn);
+        header.append(content, actions);
         header.addEventListener("click", (e) => {
           if (e.target.closest(".edit-topic-btn")) {
             e.stopPropagation();

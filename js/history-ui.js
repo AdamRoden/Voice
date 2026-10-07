@@ -152,7 +152,11 @@
     let audioHistory = d.asArray(d.lsGetJson(STORAGE_KEY, []));
 
     function saveHistory() {
-      d.lsSet(STORAGE_KEY, JSON.stringify(audioHistory));
+      try {
+        return d.lsSet(STORAGE_KEY, JSON.stringify(audioHistory)) === true;
+      } catch (_) {
+        return false;
+      }
     }
 
     function getHistory() {
@@ -279,9 +283,17 @@
       });
       try {
         if (!Array.isArray(audioHistory)) audioHistory = [];
-        audioHistory.unshift(item);
-        if (audioHistory.length > MAX_ITEMS) audioHistory.length = MAX_ITEMS;
-        saveHistory();
+        const previous = audioHistory.slice();
+        audioHistory = [item, ...previous].slice(0, MAX_ITEMS);
+        while (audioHistory.length && !saveHistory()) audioHistory.pop();
+        if (!audioHistory.length || audioHistory[0] !== item) {
+          audioHistory = previous;
+          saveHistory();
+          alert("Could not save this clip. Device storage is full.");
+          renderHistory();
+          setGeneratedAudioActions(item);
+          return null;
+        }
         renderHistory();
         setGeneratedAudioActions(item);
         return item;
@@ -335,8 +347,12 @@
           });
         }
         el.querySelector(".delete-btn")?.addEventListener("click", () => {
+          const previous = audioHistory.slice();
           audioHistory = audioHistory.filter((h) => h.id !== item.id);
-          saveHistory();
+          if (!saveHistory()) {
+            audioHistory = previous;
+            alert("Could not update history. Device storage is full.");
+          }
           renderHistory();
         });
         container.appendChild(el);
@@ -349,8 +365,12 @@
     }
 
     function clearAll() {
+      const previous = audioHistory.slice();
       audioHistory = [];
-      saveHistory();
+      if (!saveHistory()) {
+        audioHistory = previous;
+        alert("Could not update history. Device storage is full.");
+      }
       renderHistory();
     }
 

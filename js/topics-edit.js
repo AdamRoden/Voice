@@ -153,14 +153,23 @@
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "status-btn";
-        btn.innerHTML = `
-          <span class="status-btn-text">
-            <span class="material-symbols-outlined icon-medium icon-btn-margin" style="color:${topic.color || "inherit"}">${topic.icon || "folder"}</span>
-            ${ctx.escapeHtml(topic.name || "Topic")}
-            <span style="opacity:0.7;font-weight:400"> · ${(topic.buttons || []).length} buttons</span>
-          </span>
-          <span class="material-symbols-outlined icon-small">chevron_right</span>
-        `;
+        const textWrap = document.createElement("span");
+        textWrap.className = "status-btn-text";
+        const icon = document.createElement("span");
+        icon.className = "material-symbols-outlined icon-medium icon-btn-margin";
+        icon.textContent = topic.icon || "folder";
+        if (topic.color) icon.style.color = topic.color;
+        const name = document.createElement("span");
+        name.textContent = topic.name || "Topic";
+        const count = document.createElement("span");
+        count.style.opacity = "0.7";
+        count.style.fontWeight = "400";
+        count.textContent = ` · ${(topic.buttons || []).length} buttons`;
+        textWrap.append(icon, name, count);
+        const chevron = document.createElement("span");
+        chevron.className = "material-symbols-outlined icon-small";
+        chevron.textContent = "chevron_right";
+        btn.append(textWrap, chevron);
         btn.addEventListener("click", () => ctx.openCreateTopicModal(topic));
         list.appendChild(btn);
       });
@@ -297,16 +306,26 @@
         tile.title = "Drag to reorder · Tap to edit";
         const bg = btn.color || "#3f3f4e";
         tile.style.backgroundColor = bg;
-        const symbol = btn.symbol
-          ? `<span class="material-symbols-outlined topic-org-symbol">${btn.symbol}</span>`
-          : "";
-        tile.innerHTML = `
-          <button type="button" class="topic-org-remove" title="Remove" aria-label="Remove ${ctx.escapeHtml(btn.label || "button")}">
-            <span class="material-symbols-outlined">close</span>
-          </button>
-          ${symbol}
-          <span class="topic-org-label">${ctx.escapeHtml(btn.label || "Button")}</span>
-        `;
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "topic-org-remove";
+        remove.title = "Remove";
+        remove.setAttribute("aria-label", "Remove " + (btn.label || "button"));
+        const removeIcon = document.createElement("span");
+        removeIcon.className = "material-symbols-outlined";
+        removeIcon.textContent = "close";
+        remove.appendChild(removeIcon);
+        tile.appendChild(remove);
+        if (btn.symbol) {
+          const symbol = document.createElement("span");
+          symbol.className = "material-symbols-outlined topic-org-symbol";
+          symbol.textContent = btn.symbol;
+          tile.appendChild(symbol);
+        }
+        const label = document.createElement("span");
+        label.className = "topic-org-label";
+        label.textContent = btn.label || "Button";
+        tile.appendChild(label);
         tile.querySelector(".topic-org-remove")?.addEventListener("click", (e) => {
           e.stopPropagation();
           ctx.modalButtonsDraft = ctx.modalButtonsDraft.filter((_, i) => i !== index);

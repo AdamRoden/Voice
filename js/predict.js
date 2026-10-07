@@ -66,7 +66,7 @@
   let lexiconLoaded = false;
 
   function tokenizeWords(text) {
-    return (String(text).toLowerCase().match(/[a-z']+/g) || []).filter(Boolean);
+    return (String(text || "").replace(/[’‘]/g, "'").toLowerCase().match(/[a-z']+/g) || []).filter(Boolean);
   }
 
   function leftKey(words, start, order) {
@@ -271,7 +271,7 @@
     const seen = new Set();
     for (let ei = 0; ei < expected.length; ei++) {
       const key = expected[ei];
-      const list = wordClasses[key] || (key.length <= 6 ? [key] : []);
+      const list = Object.prototype.hasOwnProperty.call(wordClasses, key) ? wordClasses[key] : [key];
       const perClass = ei === 0 ? lim : Math.max(4, Math.floor(lim / 2));
       let taken = 0;
       const maxScan = Math.min(list.length, CLASS_EXPAND_CAP);
@@ -353,13 +353,8 @@
     const pos = Math.max(0, Math.min(caretPos == null ? raw.length : caretPos, raw.length));
     const upTo = raw.slice(0, pos);
     const sentenceFrag = (upTo.split(/[.!?]/).pop() || "");
-    const words = sentenceFrag
-      .trim()
-      .split(/\s+/)
-      .filter((w) => w.length > 0)
-      .map((w) => w.replace(/[^a-zA-Z']/g, ""))
-      .filter(Boolean);
-    const endsWithSpace = /\s$/.test(upTo);
+    const words = tokenizeWords(sentenceFrag);
+    const endsWithSpace = /\s$/.test(upTo) || /[,;:]$/.test(sentenceFrag);
     let activePrefix = "";
     let ctxWords = [];
     if (endsWithSpace || /[\s]$/.test(sentenceFrag)) {

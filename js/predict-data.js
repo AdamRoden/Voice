@@ -355,6 +355,28 @@ Maybe we can try something else what if we did this instead
         "my", "your", "his", "her", "our", "their", "an", "the", "student",
         "badge", "show", "see", "need", "got", "get", "bring", "check"
       ])
+    },
+    iv: {
+      contraction: "I've",
+      alt: "IV",
+      preferAltWhenPrev: new Set([
+        "an", "the", "my", "your", "his", "her", "our", "their", "need", "needs",
+        "needed", "got", "get", "have", "has", "had", "start", "put", "in", "on", "with"
+      ])
+    },
+    don: {
+      contraction: "don't",
+      alt: "Don",
+      preferAltWhenPrev: new Set([
+        "hi", "hey", "hello", "dear", "mr", "mrs", "ms", "miss", "dr", "doctor"
+      ])
+    },
+    lets: {
+      contraction: "let's",
+      alt: "lets",
+      preferAltWhenPrev: new Set([
+        "she", "he", "it", "who", "that", "which", "this", "and"
+      ])
     }
   };
 

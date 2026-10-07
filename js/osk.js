@@ -424,8 +424,9 @@
       const trail = m[2] && m[2].length ? m[2] : " ";
       piece = label + trail;
     } else {
-      const match = upTo.match(/([a-zA-Z']+)$/i);
+      const match = upTo.match(/([A-Za-z'’‘]+)$/);
       if (match) start = caret.start - match[1].length;
+      else if (upTo.length && !/\s$/.test(upTo)) piece = " " + label + " ";
     }
 
     if (typeof opts.setText === "function") {

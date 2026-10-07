@@ -1,5 +1,5 @@
 /* AAC Workspace service worker — offline shell + app assets */
-const CACHE_NAME = "aac-workspace-v69";
+const CACHE_NAME = "aac-workspace-v70";
 const PRECACHE = [
   "./",
   "./index.html",
@@ -41,14 +41,17 @@ self.addEventListener("install", (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => cache.addAll(PRECACHE))
       .then(() => self.skipWaiting())
-      .catch(() => self.skipWaiting())
   );
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.map((key) => (key === CACHE_NAME ? null : caches.delete(key))))
+      Promise.all(keys.map((key) => {
+        if (key === CACHE_NAME || key.indexOf("aac-piper-") === 0) return null;
+        if (key.indexOf("aac-workspace-") === 0) return caches.delete(key);
+        return null;
+      }))
     ).then(() => self.clients.claim())
   );
 });
@@ -82,25 +85,22 @@ self.addEventListener("fetch", (event) => {
   }
 
   event.respondWith(
-    caches.match(req).then((cached) => {
-      const network = fetch(req)
-        .then((res) => {
-          if (
-            res &&
-            res.ok &&
-            (url.pathname.endsWith(".html") ||
-              url.pathname.endsWith(".js") ||
-              url.pathname.endsWith(".css") ||
-              url.pathname.endsWith(".webmanifest") ||
-              url.pathname.endsWith(".svg"))
-          ) {
-            const copy = res.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => {});
-          }
-          return res;
-        })
-        .catch(() => cached || caches.match("./index.html"));
-      return cached || network;
-    })
+    fetch(req)
+      .then((res) => {
+        if (
+          res &&
+          res.ok &&
+          (url.pathname.endsWith(".html") ||
+            url.pathname.endsWith(".js") ||
+            url.pathname.endsWith(".css") ||
+            url.pathname.endsWith(".webmanifest") ||
+            url.pathname.endsWith(".svg"))
+        ) {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => {});
+        }
+        return res;
+      })
+      .catch(() => caches.match(req).then((cached) => cached || caches.match("./index.html")))
   );
 });

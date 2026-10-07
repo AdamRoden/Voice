@@ -373,6 +373,16 @@ function closeIconStudio(save) {
   }
 }
 
+if (modalOverlay) {
+  modalOverlay.addEventListener("click", (e) => {
+    const studio = document.getElementById("icon-studio-modal");
+    if (e.target !== modalOverlay || !studio || !studio.classList.contains("open")) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    closeIconStudio(false);
+  }, true);
+}
+
 document.getElementById("icon-search-input").addEventListener("input", (e) => {
   scheduleIconStudioSearch(e.target.value);
 });

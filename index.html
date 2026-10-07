@@ -85,25 +85,25 @@
           </div>
 
           <div class="sidebar-setting-group">
-            <label><span>Amplifier</span><span id="val-volume">100%</span></label>
+            <label for="volume-slider"><span>Amplifier</span><span id="val-volume">100%</span></label>
             <div class="range-field" style="--range-mark: 0;">
-              <input type="range" id="volume-slider" min="1" max="10" step="1" value="1" aria-valuemin="1" aria-valuemax="10" list="volume-default-mark">
+              <input type="range" id="volume-slider" min="1" max="10" step="1" value="1" aria-label="Amplifier" aria-valuemin="1" aria-valuemax="10" list="volume-default-mark">
               <span class="range-default-tick" title="Default (100%)" aria-hidden="true"></span>
             </div>
             <datalist id="volume-default-mark"><option value="1" label="Default"></option></datalist>
           </div>
           <div class="sidebar-setting-group">
-            <label><span>Speech Speed</span><span id="val-speed">1.00</span></label>
+            <label for="speed-slider"><span>Speech Speed</span><span id="val-speed">1.00</span></label>
             <div class="range-field" style="--range-mark: 0.333333;">
-              <input type="range" id="speed-slider" min="0.5" max="2.0" step="0.1" value="1.0" list="speed-default-mark">
+              <input type="range" id="speed-slider" min="0.5" max="2.0" step="0.1" value="1.0" aria-label="Speech Speed" list="speed-default-mark">
               <span class="range-default-tick" title="Default (1.00)" aria-hidden="true"></span>
             </div>
             <datalist id="speed-default-mark"><option value="1.0" label="Default"></option></datalist>
           </div>
           <div class="sidebar-setting-group">
-            <label><span>Pitch</span><span id="val-pitch">1.00</span></label>
+            <label for="pitch-slider"><span>Pitch</span><span id="val-pitch">1.00</span></label>
             <div class="range-field" style="--range-mark: 0.333333;">
-              <input type="range" id="pitch-slider" min="0.5" max="2.0" step="0.1" value="1.0" aria-valuemin="0.5" aria-valuemax="2" list="pitch-default-mark">
+              <input type="range" id="pitch-slider" min="0.5" max="2.0" step="0.1" value="1.0" aria-label="Pitch" aria-valuemin="0.5" aria-valuemax="2" list="pitch-default-mark">
               <span class="range-default-tick" title="Default (1.00)" aria-hidden="true"></span>
             </div>
             <datalist id="pitch-default-mark"><option value="1.0" label="Default"></option></datalist>
@@ -114,7 +114,7 @@
         <div id="tab-content-history" class="tab-content">
           <div class="history-search-box">
             <span class="material-symbols-outlined search-icon">search</span>
-            <input type="text" id="history-search-input" placeholder="Search speech history...">
+            <input type="text" id="history-search-input" placeholder="Search speech history..." aria-label="Search speech history">
           </div>
           <div class="history-list" id="audio-history"></div>
           <button class="clear-history-btn" id="clear-history-btn" type="button">Clear All History</button>

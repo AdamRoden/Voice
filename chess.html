@@ -606,9 +606,7 @@
         <label for="modelSelect">Voice Model</label>
         <select id="modelSelect">
           <option value="browser_tts">Local Browser (Utterance)</option>
-          <option value="eleven_v3">Eleven v3</option>
-          <option value="eleven_multilingual_v2">Eleven Multilingual v2</option>
-          <option value="eleven_flash_v2">Eleven Flash v2</option>
+          <option value="eleven_v4_turbo">Eleven v4 Turbo</option>
         </select>
       </div>
 
@@ -760,6 +758,7 @@
   let activeBufferSources = [];
   let voicesPanelMode = "browser"; // browser | eleven
   let elevenVoicesCache = [];
+  let elevenVoicesMessage = "Enter an API key to load voices...";
   let activeElevenVoiceId = localStorage.getItem("elevenlabs_voice") || "";
   let activeBrowserVoiceIndex = localStorage.getItem("aac_browser_voice_index") || "";
   let browserVoices = [];
@@ -1411,8 +1410,6 @@
         if (!window.speechSynthesis) return;
         const u = new SpeechSynthesisUtterance(phrase);
         u.volume = Math.min(1, gainSetting / 5);
-        // honor prior request for volume gain of 5 when maxed
-        if (gainSetting >= 5) u.volume = 5;
         u.rate = speed;
         u.pitch = pitch;
         const voices = window.speechSynthesis.getVoices();
@@ -1438,7 +1435,7 @@
           },
           body: JSON.stringify({
             text: phrase,
-            model_id: model,
+            model_id: "eleven_v4_turbo",
             voice_settings: {
               stability: parseFloat(stabilitySlider.value),
               similarity_boost: parseFloat(similaritySlider.value),
@@ -1486,36 +1483,112 @@
     const key = localStorage.getItem("elevenlabs_key") || "";
     const btn = $("elevenApiKeyBtn");
     const label = btn.querySelector(".status-btn-text");
+    label.textContent = "";
+    const icon = document.createElement("span");
+    icon.className = "material-symbols-outlined icon-sm";
+    icon.textContent = "key";
+    label.appendChild(icon);
     if (key) {
-      label.innerHTML = `<span class="material-symbols-outlined icon-sm">key</span>API Key Saved (••••${key.slice(-4)})`;
+      label.appendChild(document.createTextNode("API Key Saved (••••" + key.slice(-4) + ")"));
       btn.classList.remove("missing");
       btn.classList.add("saved");
       fetchElevenVoices(key);
     } else {
-      label.innerHTML = `<span class="material-symbols-outlined icon-sm">key</span>Missing API Key (Click to Add)`;
+      label.appendChild(document.createTextNode("Missing API Key (Click to Add)"));
       btn.classList.add("missing");
       btn.classList.remove("saved");
       elevenVoicesCache = [];
+      elevenVoicesMessage = "Enter an API key to load voices...";
     }
+  }
+
+  async function fetchElevenVoicePages(apiKey, voiceType) {
+    const voices = [];
+    const seen = new Set();
+    const seenTokens = new Set();
+    let token = "";
+    for (let page = 0; page < 20; page++) {
+      const params = new URLSearchParams();
+      params.set("page_size", "100");
+      params.set("include_total_count", "false");
+      if (voiceType) params.set("voice_type", voiceType);
+      if (token) params.set("next_page_token", token);
+      const res = await fetch("https://api.elevenlabs.io/v2/voices?" + params.toString(), {
+        headers: { Accept: "application/json", "xi-api-key": apiKey },
+      });
+      if (res.status === 401 || res.status === 403) {
+        if (voices.length) return { ok: true, voices };
+        return { ok: false, reason: "invalid", status: res.status };
+      }
+      if (!res.ok) {
+        if (voices.length) return { ok: true, voices };
+        return { ok: false, reason: "error", status: res.status };
+      }
+      const data = await res.json();
+      const batch = data && Array.isArray(data.voices) ? data.voices : [];
+      for (let i = 0; i < batch.length; i++) {
+        const voice = batch[i];
+        const id = voice && voice.voice_id;
+        if (!id || seen.has(id)) continue;
+        seen.add(id);
+        voices.push(voice);
+      }
+      const next = data && data.next_page_token;
+      if (!data || !data.has_more || !next || seenTokens.has(next)) break;
+      seenTokens.add(next);
+      token = next;
+    }
+    return { ok: true, voices };
+  }
+
+  function mergeElevenVoices(primary, extra) {
+    const seen = new Set();
+    const out = [];
+    [primary, extra].forEach((list) => {
+      (list || []).forEach((voice) => {
+        const id = voice && voice.voice_id;
+        if (!id || seen.has(id)) return;
+        seen.add(id);
+        out.push(voice);
+      });
+    });
+    return out;
   }
 
   async function fetchElevenVoices(apiKey) {
     if (!apiKey) {
       elevenVoicesCache = [];
+      elevenVoicesMessage = "Enter an API key to load voices...";
       return;
     }
     try {
-      const res = await fetch("https://api.elevenlabs.io/v1/voices", {
-        headers: { Accept: "application/json", "xi-api-key": apiKey },
-      });
-      if (!res.ok) throw new Error("voices");
-      const data = await res.json();
-      elevenVoicesCache = data.voices || [];
+      const account = await fetchElevenVoicePages(apiKey, "");
+      if (!account.ok) {
+        elevenVoicesCache = [];
+        elevenVoicesMessage = account.reason === "invalid"
+          ? "API key was rejected."
+          : "Could not load voices.";
+        if (voicesPanel.classList.contains("open") && voicesPanelMode === "eleven") renderVoiceList();
+        return;
+      }
+      let voices = account.voices;
+      const defaults = await fetchElevenVoicePages(apiKey, "default");
+      if (defaults.ok) voices = mergeElevenVoices(voices, defaults.voices);
+      else if (defaults.reason === "invalid") {
+        elevenVoicesCache = [];
+        elevenVoicesMessage = "API key was rejected.";
+        if (voicesPanel.classList.contains("open") && voicesPanelMode === "eleven") renderVoiceList();
+        return;
+      }
+      elevenVoicesCache = voices;
+      elevenVoicesMessage = voices.length ? "" : "No voices found";
       const selected = elevenVoicesCache.find((v) => v.voice_id === activeElevenVoiceId);
       if (selected) $("selectedElevenName").textContent = selected.name;
       if (voicesPanel.classList.contains("open") && voicesPanelMode === "eleven") renderVoiceList();
     } catch (_) {
       elevenVoicesCache = [];
+      elevenVoicesMessage = "Could not load voices.";
+      if (voicesPanel.classList.contains("open") && voicesPanelMode === "eleven") renderVoiceList();
     }
   }
 
@@ -1549,6 +1622,40 @@
     voicesPanel.classList.remove("open");
   }
 
+  function appendVoiceNotice(text) {
+    const notice = document.createElement("div");
+    notice.className = "history-empty-notice";
+    notice.textContent = text;
+    voiceList.appendChild(notice);
+  }
+
+  function appendVoiceRow(nameText, selected, onSelect, onPreview) {
+    const item = document.createElement("div");
+    item.className = "voice-item" + (selected ? " selected" : "");
+    const name = document.createElement("span");
+    name.className = "voice-item-name";
+    name.textContent = nameText;
+    const preview = document.createElement("button");
+    preview.className = "voice-preview-btn";
+    preview.type = "button";
+    preview.title = "Preview";
+    const icon = document.createElement("span");
+    icon.className = "material-symbols-outlined icon-sm";
+    icon.textContent = "play_arrow";
+    preview.appendChild(icon);
+    item.appendChild(name);
+    item.appendChild(preview);
+    item.addEventListener("click", (e) => {
+      if (e.target.closest("button")) return;
+      onSelect();
+    });
+    preview.addEventListener("click", (e) => {
+      e.stopPropagation();
+      onPreview();
+    });
+    voiceList.appendChild(item);
+  }
+
   function renderVoiceList() {
     const q = (voiceSearch.value || "").toLowerCase().trim();
     voiceList.innerHTML = "";
@@ -1560,71 +1667,59 @@
           !q || voice.name.toLowerCase().includes(q) || voice.lang.toLowerCase().includes(q)
         );
       if (!filtered.length) {
-        voiceList.innerHTML = `<div class="history-empty-notice">No voices found</div>`;
+        appendVoiceNotice("No voices found");
         return;
       }
       filtered.forEach(({ voice, index }) => {
-        const item = document.createElement("div");
-        item.className = "voice-item" + (String(activeBrowserVoiceIndex) === String(index) ? " selected" : "");
-        item.innerHTML = `
-          <span class="voice-item-name">${voice.name} (${voice.lang})</span>
-          <button class="voice-preview-btn" type="button" title="Preview">
-            <span class="material-symbols-outlined icon-sm">play_arrow</span>
-          </button>`;
-        item.addEventListener("click", (e) => {
-          if (e.target.closest("button")) return;
-          activeBrowserVoiceIndex = String(index);
-          localStorage.setItem("aac_browser_voice_index", activeBrowserVoiceIndex);
-          $("selectedBrowserName").textContent = voice.name;
-          closeVoicesPanel();
-        });
-        item.querySelector(".voice-preview-btn").addEventListener("click", (e) => {
-          e.stopPropagation();
-          const prev = activeBrowserVoiceIndex;
-          activeBrowserVoiceIndex = String(index);
-          speakPhrase("This is a preview.");
-          activeBrowserVoiceIndex = prev;
-        });
-        voiceList.appendChild(item);
+        appendVoiceRow(
+          (voice.name || "Voice") + " (" + (voice.lang || "") + ")",
+          String(activeBrowserVoiceIndex) === String(index),
+          () => {
+            activeBrowserVoiceIndex = String(index);
+            localStorage.setItem("aac_browser_voice_index", activeBrowserVoiceIndex);
+            $("selectedBrowserName").textContent = voice.name;
+            closeVoicesPanel();
+          },
+          () => {
+            const prev = activeBrowserVoiceIndex;
+            activeBrowserVoiceIndex = String(index);
+            speakPhrase("This is a preview.");
+            activeBrowserVoiceIndex = prev;
+          }
+        );
       });
     } else {
       if (!elevenVoicesCache.length) {
-        voiceList.innerHTML = `<div class="history-empty-notice">Enter an API key to load voices...</div>`;
+        appendVoiceNotice(elevenVoicesMessage || "No voices found");
         return;
       }
       const filtered = elevenVoicesCache.filter((v) =>
         !q || (v.name || "").toLowerCase().includes(q) || (v.category || "").toLowerCase().includes(q)
       );
       if (!filtered.length) {
-        voiceList.innerHTML = `<div class="history-empty-notice">No voices found</div>`;
+        appendVoiceNotice("No voices found");
         return;
       }
       filtered.forEach((voice) => {
-        const item = document.createElement("div");
-        item.className = "voice-item" + (activeElevenVoiceId === voice.voice_id ? " selected" : "");
-        item.innerHTML = `
-          <span class="voice-item-name">${voice.name}</span>
-          <button class="voice-preview-btn" type="button" title="Preview">
-            <span class="material-symbols-outlined icon-sm">play_arrow</span>
-          </button>`;
-        item.addEventListener("click", (e) => {
-          if (e.target.closest("button")) return;
-          activeElevenVoiceId = voice.voice_id;
-          localStorage.setItem("elevenlabs_voice", activeElevenVoiceId);
-          $("selectedElevenName").textContent = voice.name;
-          closeVoicesPanel();
-        });
-        item.querySelector(".voice-preview-btn").addEventListener("click", async (e) => {
-          e.stopPropagation();
-          const prev = activeElevenVoiceId;
-          activeElevenVoiceId = voice.voice_id;
-          const prevModel = modelSelect.value;
-          if (modelSelect.value === "browser_tts") modelSelect.value = "eleven_v3";
-          await speakPhrase("This is a preview.");
-          activeElevenVoiceId = prev;
-          modelSelect.value = prevModel;
-        });
-        voiceList.appendChild(item);
+        appendVoiceRow(
+          voice.name || "Voice",
+          activeElevenVoiceId === voice.voice_id,
+          () => {
+            activeElevenVoiceId = voice.voice_id;
+            localStorage.setItem("elevenlabs_voice", activeElevenVoiceId);
+            $("selectedElevenName").textContent = voice.name || "Voice";
+            closeVoicesPanel();
+          },
+          async () => {
+            const prev = activeElevenVoiceId;
+            activeElevenVoiceId = voice.voice_id;
+            const prevModel = modelSelect.value;
+            if (modelSelect.value === "browser_tts") modelSelect.value = "eleven_v4_turbo";
+            await speakPhrase("This is a preview.");
+            activeElevenVoiceId = prev;
+            modelSelect.value = prevModel;
+          }
+        );
       });
     }
   }
@@ -1636,8 +1731,10 @@
     modalOverlay.classList.add("open");
   }
   function closeModals() {
+    const promoWasOpen = promoModal.classList.contains("open");
     document.querySelectorAll(".modal").forEach((m) => m.classList.remove("open"));
     modalOverlay.classList.remove("open");
+    if (promoWasOpen) pendingPromo = null;
   }
   modalOverlay.addEventListener("click", closeModals);
 
@@ -1681,7 +1778,22 @@
     localStorage.setItem("chess_announce", announceMode);
   });
 
-  modelSelect.value = localStorage.getItem("elevenlabs_model") || "browser_tts";
+  const ELEVEN_LEGACY_MODELS = {
+    eleven_v3: 1,
+    eleven_multilingual_v2: 1,
+    eleven_flash_v2: 1,
+    eleven_flash_v2_5: 1,
+    eleven_turbo_v2: 1,
+    eleven_turbo_v2_5: 1,
+    eleven_v4: 1
+  };
+  let storedModel = localStorage.getItem("elevenlabs_model") || "browser_tts";
+  if (ELEVEN_LEGACY_MODELS[storedModel]) {
+    storedModel = "eleven_v4_turbo";
+    localStorage.setItem("elevenlabs_model", storedModel);
+  }
+  if (storedModel !== "browser_tts" && storedModel !== "eleven_v4_turbo") storedModel = "browser_tts";
+  modelSelect.value = storedModel;
   modelSelect.addEventListener("change", () => {
     localStorage.setItem("elevenlabs_model", modelSelect.value);
     updateSettingsVisibility();

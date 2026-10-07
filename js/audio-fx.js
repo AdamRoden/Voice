@@ -45,18 +45,6 @@
     return out;
   }
 
-  function applySpeedToBuffer(ctx, audioBuffer, speed) {
-    if (!audioBuffer) return audioBuffer;
-    const rate = clamp(parseFloat(speed) || 1, 0.25, 4);
-    if (Math.abs(rate - 1) < 1e-6) return audioBuffer;
-    const targetLength = Math.max(1, Math.round(audioBuffer.length / rate));
-    const out = ctx.createBuffer(audioBuffer.numberOfChannels, targetLength, audioBuffer.sampleRate);
-    for (let ch = 0; ch < audioBuffer.numberOfChannels; ch++) {
-      out.copyToChannel(linearResampleChannel(audioBuffer.getChannelData(ch), targetLength), ch);
-    }
-    return out;
-  }
-
   function makeHannWindow(n) {
     const w = new Float32Array(n);
     if (n <= 1) {
@@ -167,9 +155,7 @@
   }
 
   /**
-   * Independent pitch + speed:
-   * 1) Resample by pitch
-   * 2) Time-stretch to final duration (WSOLA when pitch changed; linear for speed-only)
+   * Pitch is a resample. Speed is a pitch-preserving time-stretch.
    */
   function applyFxToBuffer(ctx, audioBuffer, fx) {
     if (!audioBuffer) return audioBuffer;
@@ -188,7 +174,6 @@
 
     const targetLen = Math.max(1, Math.round(audioBuffer.length / s));
     if (buf.length === targetLen) return buf;
-    if (Math.abs(p - 1) < 1e-6) return applySpeedToBuffer(ctx, buf, s);
     return applyWsolaToBuffer(ctx, buf, targetLen / buf.length);
   }
 
@@ -434,7 +419,11 @@
    * @param {number} [opts.gainMax]
    * @param {HTMLAudioElement} [opts.fallbackElement] optional element for HTML path
    */
+  let playSeq = 0;
+
   async function playUrl(opts) {
+    const myPlay = ++playSeq;
+    const superseded = () => myPlay !== playSeq;
     const url = opts.url || "";
     const gainMax = opts.gainMax != null ? opts.gainMax : 10;
     const safeGain = clamp(parseFloat(opts.gain) || 1, 0.05, gainMax);
@@ -453,13 +442,15 @@
     };
 
     const playHtmlFallback = async () => {
+      if (superseded()) return false;
       const audioElement = opts.fallbackElement || (url ? new Audio(url) : null);
       if (!audioElement) {
         fireEnded();
-        return;
+        return false;
       }
       try {
         if (typeof opts.stopPrevious === "function") opts.stopPrevious();
+        if (superseded()) return false;
         audioElement.volume = 1;
         try {
           const preserve = !needFx || Math.abs(fx.pitch - 1) < 1e-3;
@@ -477,26 +468,30 @@
         if (typeof opts.applySink === "function") await opts.applySink(audioElement);
         await audioElement.play();
         try { if (onStarted) onStarted(); } catch (_) {}
+        return true;
       } catch (_) {
         fireEnded();
+        return false;
       }
     };
 
     const ctx = typeof opts.getContext === "function" ? opts.getContext() : null;
     if (!ctx || !url) {
-      await playHtmlFallback();
-      return;
+      return playHtmlFallback();
     }
 
     try {
       if (ctx.state === "suspended") await ctx.resume();
+      if (superseded()) return false;
       if (typeof opts.stopPrevious === "function") opts.stopPrevious();
+      if (superseded()) return false;
 
       const response = await fetch(url);
       if (!response.ok) throw new Error("fetch failed");
       const arrayBuffer = await response.arrayBuffer();
       let audioBuffer = await ctx.decodeAudioData(arrayBuffer.slice(0));
       if (needFx) audioBuffer = applyFxToBuffer(ctx, audioBuffer, fx);
+      if (superseded()) return false;
 
       const source = ctx.createBufferSource();
       source.buffer = audioBuffer;
@@ -516,8 +511,10 @@
       if (typeof opts.trackSource === "function") opts.trackSource(source);
       source.start(0);
       try { if (onStarted) onStarted(); } catch (_) {}
+      return true;
     } catch (_) {
-      await playHtmlFallback();
+      if (superseded()) return false;
+      return playHtmlFallback();
     }
   }
 
