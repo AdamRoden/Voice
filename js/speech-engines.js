@@ -122,14 +122,45 @@
   }
 
   /**
-   * Produce Piper audio. ElevenLabs is streamed by AacEleven.playStream.
-   * Browser TTS stays in the app shell.
+   * Full ElevenLabs clip for a later bake. Live playback stays in AacEleven.playStream.
+   * collectPcm returns modelId and fx from the request. Callers bake that fx.
+   */
+  async function produceEleven(engine, payload, deps) {
+    const Eleven = (deps && deps.Eleven) || global.AacEleven;
+    if (!Eleven || typeof Eleven.collectPcm !== "function" || typeof Eleven.pcm16ToWavBlob !== "function") {
+      throw new Error("AacEleven missing");
+    }
+    const voiceId = payload.voiceId || engine.voiceId;
+    const collected = await Eleven.collectPcm({
+      phrase: payload.phrase,
+      voiceId,
+      apiKey: payload.apiKey,
+      speed: payload.speed,
+      pitch: payload.pitch,
+      signal: payload.signal,
+      abort: payload.abort
+    });
+    return {
+      id: "eleven",
+      blob: Eleven.pcm16ToWavBlob(collected.pcm, collected.sampleRate),
+      modelId: collected.modelId,
+      voiceId,
+      fx: collected.fx
+    };
+  }
+
+  /**
+   * Produce a WAV/blob clip.
+   * Piper always. ElevenLabs only when the caller will bake speed or pitch before play.
+   * Browser TTS stays in the app shell. Identity ElevenLabs playback stays in playStream.
    */
   async function produce(engine, payload, deps) {
+    if (engine && engine.id === "eleven") return produceEleven(engine, payload, deps);
+
     const Piper = (deps && deps.Piper) || global.AacPiper;
 
     if (!engine || engine.id !== "piper") {
-      throw new Error("produce() is for Piper only");
+      throw new Error("produce() is for Piper or buffered ElevenLabs");
     }
     if (engine.missingDownload) {
       const err = new Error("Piper voice not downloaded");

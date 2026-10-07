@@ -47,7 +47,7 @@
 
   /**
    * Always eleven_v4_turbo. Bracket tags stay in the text.
-   * fx is for the stored clip; the live stream is unprocessed PCM.
+   * Speed and pitch stay in fx. The API body is unprocessed text.
    */
   function prepareSpeakRequest(input) {
     const phrase = String(input.phrase || "");
@@ -197,45 +197,101 @@
     };
   }
 
-  /**
-   * Play the PCM stream on an AudioContext. Resolves when playback ends.
-   * Does not time-stretch chunks. Caller bakes fx into the stored clip via onPcm.
-   */
-  async function playStream(opts) {
+  /** Stall timer and abort/timeout mapping shared by collect and live play. */
+  function createPcmStall(opts) {
     const STALL_MS = 20000;
     let timedOut = false;
     let stallTimer = null;
-    const armStall = () => {
+    const arm = () => {
       if (stallTimer) clearTimeout(stallTimer);
       stallTimer = setTimeout(() => {
         timedOut = true;
         try { if (typeof opts.abort === "function") opts.abort(); } catch (_) {}
       }, STALL_MS);
     };
-    const timeoutError = () => {
-      const err = new Error("ElevenLabs timed out");
-      err.code = "timeout";
+    const stop = () => {
+      if (stallTimer) clearTimeout(stallTimer);
+      stallTimer = null;
+    };
+    const aborted = () => !!(opts.signal && opts.signal.aborted);
+    const mapError = (err) => {
+      if (timedOut) {
+        const timeoutErr = new Error("ElevenLabs timed out");
+        timeoutErr.code = "timeout";
+        return timeoutErr;
+      }
+      if (aborted() || (err && (err.name === "AbortError" || err.code === "aborted"))) {
+        const out = err instanceof Error ? err : new Error("aborted");
+        out.code = "aborted";
+        return out;
+      }
       return err;
     };
-    const abortError = (err) => {
-      const out = err instanceof Error ? err : new Error("aborted");
-      out.code = "aborted";
-      return out;
-    };
-    const mapError = (err) => (timedOut ? timeoutError() : (
-      (opts.signal && opts.signal.aborted) || (err && (err.name === "AbortError" || err.code === "aborted"))
-        ? abortError(err)
-        : err
-    ));
+    return { arm, stop, aborted, mapError };
+  }
 
-    armStall();
-    let opened;
+  async function openPcmWithStall(opts) {
+    const stall = createPcmStall(opts);
+    stall.arm();
     try {
-      opened = await openPcmStream(opts);
+      const opened = await openPcmStream(opts);
+      return { opened, stall };
     } catch (err) {
-      if (stallTimer) clearTimeout(stallTimer);
-      throw mapError(err);
+      stall.stop();
+      throw stall.mapError(err);
     }
+  }
+
+  /**
+   * Read the open PCM body to the end.
+   * onChunk(null) means the body ended and the caller should flush.
+   */
+  async function consumePcm(opened, stall, onChunk) {
+    try {
+      while (!stall.aborted()) {
+        const bytes = await opened.read();
+        if (stall.aborted()) break;
+        if (bytes === null) {
+          if (onChunk) onChunk(null);
+          break;
+        }
+        stall.arm();
+        if (bytes.byteLength && onChunk) onChunk(bytes);
+      }
+    } catch (err) {
+      stall.stop();
+      throw stall.mapError(err);
+    }
+    stall.stop();
+    if (stall.aborted()) throw stall.mapError(new Error("aborted"));
+  }
+
+  /**
+   * Read the PCM stream to the end. Does not play it.
+   * @returns {Promise<{ pcm: Uint8Array, sampleRate: number, modelId: string, fx: { speed: number, pitch: number } }>}
+   */
+  async function collectPcm(opts) {
+    const { opened, stall } = await openPcmWithStall(opts);
+    const parts = [];
+    await consumePcm(opened, stall, (bytes) => {
+      if (bytes && bytes.byteLength) parts.push(bytes);
+    });
+    const pcm = concatList(parts);
+    if (pcm.length < 2) throw new Error("Empty audio");
+    return {
+      pcm,
+      sampleRate: opened.sampleRate,
+      modelId: opened.prepared.modelId,
+      fx: opened.prepared.fx
+    };
+  }
+
+  /**
+   * Play the PCM stream on an AudioContext. Resolves when playback ends.
+   * Does not time-stretch chunks. Caller stores the clip via onPcm.
+   */
+  async function playStream(opts) {
+    const { opened, stall } = await openPcmWithStall(opts);
 
     let ctx;
     try {
@@ -243,8 +299,8 @@
       if (!ctx) throw new Error("no audio context");
       if (ctx.state === "suspended") await ctx.resume();
     } catch (err) {
-      if (stallTimer) clearTimeout(stallTimer);
-      const mapped = mapError(err);
+      stall.stop();
+      const mapped = stall.mapError(err);
       try { if (typeof opts.abort === "function") opts.abort(); } catch (_) {}
       throw mapped;
     }
@@ -270,14 +326,10 @@
       rejectEnd = reject;
     });
 
-    const stopStall = () => {
-      if (stallTimer) clearTimeout(stallTimer);
-      stallTimer = null;
-    };
     const fail = (err) => {
       if (settled) return;
       settled = true;
-      stopStall();
+      stall.stop();
       try { gainNode.disconnect(); } catch (_) {}
       if (opts.signal) opts.signal.removeEventListener("abort", onAbort);
       rejectEnd(err);
@@ -285,14 +337,14 @@
     const finish = () => {
       if (settled || !streamDone || playing > 0) return;
       settled = true;
-      stopStall();
+      stall.stop();
       try { gainNode.disconnect(); } catch (_) {}
       if (opts.signal) opts.signal.removeEventListener("abort", onAbort);
       try { if (typeof opts.onEnded === "function") opts.onEnded(); } catch (_) {}
       resolveEnd();
     };
     function onAbort() {
-      fail(mapError(new Error("aborted")));
+      fail(stall.mapError(new Error("aborted")));
     }
     if (opts.signal) opts.signal.addEventListener("abort", onAbort);
 
@@ -332,30 +384,20 @@
     };
 
     try {
-      while (!(opts.signal && opts.signal.aborted)) {
-        const bytes = await opened.read();
-        if (opts.signal && opts.signal.aborted) break;
+      await consumePcm(opened, stall, (bytes) => {
         if (bytes === null) {
           drain(null, true);
           streamDone = true;
-          stopStall();
-          break;
+          return;
         }
-        armStall();
-        if (bytes.byteLength) {
-          collected.push(bytes);
-          drain(bytes, false);
-        }
-      }
+        collected.push(bytes);
+        drain(bytes, false);
+      });
     } catch (err) {
-      fail(mapError(err));
+      fail(err);
       return endedPromise;
     }
 
-    if (opts.signal && opts.signal.aborted) {
-      fail(mapError(new Error("aborted")));
-      return endedPromise;
-    }
     if (!started) {
       fail(new Error("Empty audio"));
       return endedPromise;
@@ -465,6 +507,7 @@
     pcm16ToWavBlob,
     prepareSpeakRequest,
     openPcmStream,
+    collectPcm,
     playStream,
     validateApiKey
   };
