@@ -1,5 +1,5 @@
 /* AAC Workspace service worker — offline shell + app assets */
-const CACHE_NAME = "aac-workspace-v71";
+const CACHE_NAME = "aac-workspace-v72";
 const PRECACHE = [
   "./",
   "./index.html",
@@ -33,6 +33,7 @@ const PRECACHE = [
   "./favicon.ico",
   "./icon.png",
   "./icon-192.png",
+  "./icon-maskable.png",
   "./apple-touch-icon.png"
 ];
 
