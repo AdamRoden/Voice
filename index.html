@@ -207,10 +207,11 @@
               <input type="checkbox" id="opt-insert-tag" class="setting-toggle-input">
             </label>
             <div class="sidebar-setting-group" id="group-output-device">
-              <label>Speaker / Output Device</label>
+              <label for="output-device-select">Speaker</label>
               <select id="output-device-select" aria-describedby="output-device-hint">
                 <option value="">System default</option>
               </select>
+              <button type="button" class="tool-btn" id="output-device-unlock" hidden>List speakers</button>
               <div class="modal-description" id="output-device-hint">Loading speakers…</div>
             </div>
             <div class="modal-description settings-section-label">Backup</div>
@@ -762,6 +763,7 @@
   <script src="js/eleven.js" defer></script>
   <script src="js/eleven-key.js" defer></script>
   <script src="js/piper.js" defer></script>
+  <script src="js/output-device.js" defer></script>
   <script src="js/speech-playback.js" defer></script>
   <script src="js/voices.js" defer></script>
   <script src="js/topics-edit.js" defer></script>

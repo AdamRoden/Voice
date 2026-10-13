@@ -279,6 +279,8 @@ html[data-layout="portrait"] .portrait-only { display: flex !important; }
 .setting-toggle-desc { font-size: 12px; font-weight: 400; color: var(--text-secondary); line-height: 1.3; }
 .setting-toggle-input { width: 20px; height: 20px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
 #tab-content-settings .sidebar-setting-group { margin-top: 8px; padding: 4px 8px; }
+#output-device-unlock { justify-content: center; width: 100%; }
+#output-device-unlock[hidden] { display: none !important; }
 .settings-section-label,
 .advanced-settings-section-label { margin-top: 12px; font-weight: 600; color: var(--text); font-size: 13px; }
 .settings-section-hint,

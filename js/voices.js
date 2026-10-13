@@ -556,6 +556,7 @@ function defaultLoadKeys(storageKey) {
    *   getSpeechPitch: () => number,
    *   getVolumeGain: () => number,
    *   playElevenPreview: (req: object) => Promise<void>,
+   *   applyOutputSink?: (el: HTMLAudioElement) => Promise<void>,
    *   openModal: (id: string) => void,
    *   closeModals: () => void,
    *   focusDisplayInput: () => void,
@@ -1040,6 +1041,9 @@ function defaultLoadKeys(storageKey) {
               cleanup();
               alert("Sample preview unavailable for this voice (network or missing sample).");
             };
+            if (typeof d.applyOutputSink === "function") {
+              try { await d.applyOutputSink(audio); } catch (_) {}
+            }
             await audio.play();
             if (icon) icon.textContent = "stop_circle";
             previewBtn.disabled = false;

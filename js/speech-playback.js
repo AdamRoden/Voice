@@ -1,5 +1,6 @@
 /**
- * Speech playback: output device, bake/play, speakPhrase (browser | piper | eleven).
+ * Speech playback: bake/play and speakPhrase (browser | piper | eleven).
+ * Speaker choice lives in AacOutputDevice.
  */
 (function (global) {
   "use strict";
@@ -10,6 +11,7 @@
    *   Eleven: object,
    *   Piper: object,
    *   SpeechEngines: object,
+   *   Output: { apply: Function, openContext: Function, applyElement: Function, watch: Function },
    *   speakBtn?: HTMLElement|null,
    *   modelSelect?: HTMLSelectElement|null,
    *   volumeGainMax: number,
@@ -19,8 +21,6 @@
    *   getSpeechFx: () => { speed: number, pitch: number },
    *   modelId: (id: string) => string,
    *   lsGet: (k: string, fb?: any) => any,
-   *   lsSet?: (k: string, v: string) => void,
-   *   lsDel?: (k: string) => void,
    *   trim: (v: any) => string,
    *   withTimeout: (p: Promise<any>, ms: number, label?: string) => Promise<any>,
    *   blobToDataUrl: (blob: Blob) => Promise<string>,
@@ -51,16 +51,16 @@
     const Eleven = d.Eleven;
     const Piper = d.Piper;
     const SpeechEngines = d.SpeechEngines;
+    const Output = d.Output;
     const speakBtn = d.speakBtn;
     const modelSelect = d.modelSelect;
     const VOLUME_GAIN_MAX = d.volumeGainMax;
 
-    if (!AudioFx || !Eleven || !Piper || !SpeechEngines) {
-      throw new Error("AacSpeechPlayback requires AudioFx, Eleven, Piper, SpeechEngines");
+    if (!AudioFx || !Eleven || !Piper || !SpeechEngines || !Output
+      || typeof Output.apply !== "function"
+      || typeof Output.openContext !== "function") {
+      throw new Error("AacSpeechPlayback requires AudioFx, Eleven, Piper, SpeechEngines, and Output");
     }
-
-    const OUTPUT_DEVICE_KEY = "aac_output_device";
-    const OUTPUT_DEVICE_LABEL_KEY = "aac_output_device_label";
 
     const lsGet = typeof d.lsGet === "function"
       ? d.lsGet
@@ -72,15 +72,6 @@
           return fb;
         }
       };
-    const lsSet = typeof d.lsSet === "function"
-      ? d.lsSet
-      : (k, v) => { try { localStorage.setItem(k, v); } catch (_) {} };
-    const lsDel = typeof d.lsDel === "function"
-      ? d.lsDel
-      : (k) => { try { localStorage.removeItem(k); } catch (_) {} };
-
-    let activeOutputDeviceId = lsGet(OUTPUT_DEVICE_KEY, "") || "";
-    let activeOutputDeviceLabel = lsGet(OUTPUT_DEVICE_LABEL_KEY, "") || "";
 
     let activeBufferSources = [];
     let activeObjectUrls = [];
@@ -89,210 +80,15 @@
     let activeStreamAbort = null;
     let speakUiState = "idle";
     let speakGeneration = 0;
-    /** Invalidates in-flight enumerateDevices so a newer selection wins. */
-    let outputDeviceRefreshGen = 0;
-
-    function canSelectOutputDevice() {
-      const mediaOk = typeof HTMLMediaElement !== "undefined"
-        && typeof HTMLMediaElement.prototype.setSinkId === "function";
-      const Ctx = window.AudioContext || window.webkitAudioContext;
-      const ctxOk = !!(Ctx && typeof Ctx.prototype.setSinkId === "function");
-      return !!(navigator.mediaDevices && navigator.mediaDevices.enumerateDevices && (mediaOk || ctxOk));
-    }
-
-    function persistOutputDevice(deviceId, label) {
-      activeOutputDeviceId = deviceId || "";
-      activeOutputDeviceLabel = activeOutputDeviceId ? (label || activeOutputDeviceLabel || "") : "";
-      if (activeOutputDeviceId) {
-        lsSet(OUTPUT_DEVICE_KEY, activeOutputDeviceId);
-        if (activeOutputDeviceLabel) lsSet(OUTPUT_DEVICE_LABEL_KEY, activeOutputDeviceLabel);
-        else lsDel(OUTPUT_DEVICE_LABEL_KEY);
-      } else {
-        lsDel(OUTPUT_DEVICE_KEY);
-        lsDel(OUTPUT_DEVICE_LABEL_KEY);
-      }
-    }
-
-    function updateOutputDeviceHint(kind, outputCount) {
-      const hint = document.getElementById("output-device-hint");
-      if (!hint) return;
-      if (!canSelectOutputDevice()) {
-        hint.textContent = "Output device selection is not supported in this browser.";
-        return;
-      }
-      if (kind === "unavailable") {
-        hint.textContent = "Saved speaker is offline or not listed yet. Preference kept; using system default until it returns.";
-        return;
-      }
-      if (kind === "list-error") {
-        hint.textContent = activeOutputDeviceId
-          ? "Could not list speakers. Saved preference kept."
-          : "Could not list speakers. Check browser permissions.";
-        return;
-      }
-      if (!outputCount) {
-        hint.textContent = "No speakers found. Connect a device or use system default.";
-        return;
-      }
-      hint.textContent = "Applies to Piper, ElevenLabs, and sound-button playback. Browser TTS uses the system default speaker.";
-    }
-
-    /**
-     * Match preferred sink: deviceId first, then label (adopt new id when ids rotate).
-     * @returns {{ id: string, label: string, matched: boolean, persist: boolean }}
-     */
-    function resolvePreferredOutput(outputs) {
-      const preferredId = activeOutputDeviceId || "";
-      const preferredLabel = (activeOutputDeviceLabel || "").trim().toLowerCase();
-      if (!preferredId && !preferredLabel) {
-        return { id: "", label: "", matched: true, persist: false };
-      }
-      if (preferredId) {
-        const byId = outputs.find((dev) => dev.deviceId === preferredId);
-        if (byId) {
-          const label = byId.label || activeOutputDeviceLabel || "";
-          return {
-            id: byId.deviceId,
-            label,
-            matched: true,
-            persist: !!(label && label !== activeOutputDeviceLabel)
-          };
-        }
-      }
-      if (preferredLabel) {
-        const byLabel = outputs.find((dev) =>
-          (dev.label || "").trim().toLowerCase() === preferredLabel
-        );
-        if (byLabel && byLabel.deviceId) {
-          return {
-            id: byLabel.deviceId,
-            label: byLabel.label || activeOutputDeviceLabel || "",
-            matched: true,
-            persist: byLabel.deviceId !== preferredId
-              || (byLabel.label && byLabel.label !== activeOutputDeviceLabel)
-          };
-        }
-      }
-      return {
-        id: preferredId,
-        label: activeOutputDeviceLabel || "",
-        matched: false,
-        persist: false
-      };
-    }
-
-    function appendUnavailableOption(select) {
-      if (!select || !activeOutputDeviceId) return;
-      const opt = document.createElement("option");
-      opt.value = activeOutputDeviceId;
-      opt.textContent = `${activeOutputDeviceLabel || "Saved speaker"} (unavailable)`;
-      select.appendChild(opt);
-      select.value = activeOutputDeviceId;
-    }
-
-    function fillOutputSelect(select, outputs) {
-      select.innerHTML = "";
-      const defOpt = document.createElement("option");
-      defOpt.value = "";
-      defOpt.textContent = "System default";
-      select.appendChild(defOpt);
-      outputs.forEach((device, index) => {
-        const opt = document.createElement("option");
-        opt.value = device.deviceId;
-        opt.textContent = device.label || `Speaker ${index + 1}`;
-        select.appendChild(opt);
-      });
-    }
-
-    async function refreshOutputDevices() {
-      const select = document.getElementById("output-device-select");
-      if (!select) return;
-      const gen = ++outputDeviceRefreshGen;
-
-      if (!navigator.mediaDevices || typeof navigator.mediaDevices.enumerateDevices !== "function") {
-        select.innerHTML = `<option value="">Not supported</option>`;
-        select.disabled = true;
-        updateOutputDeviceHint("unsupported", 0);
-        return;
-      }
-
-      if (!canSelectOutputDevice()) {
-        select.disabled = true;
-        updateOutputDeviceHint("unsupported", 0);
-        return;
-      }
-
-      try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        if (gen !== outputDeviceRefreshGen) return;
-
-        const outputs = devices.filter((dev) => dev.kind === "audiooutput" && dev.deviceId);
-        const resolved = resolvePreferredOutput(outputs);
-        if (resolved.persist) persistOutputDevice(resolved.id, resolved.label);
-
-        fillOutputSelect(select, outputs);
-        if (!resolved.matched && activeOutputDeviceId) {
-          appendUnavailableOption(select);
-          updateOutputDeviceHint("unavailable", outputs.length);
-        } else {
-          select.value = resolved.matched ? (resolved.id || "") : "";
-          updateOutputDeviceHint("ok", outputs.length);
-        }
-        select.disabled = false;
-        if (resolved.matched && resolved.id) {
-          applyOutputDeviceToAudioGraph(resolved.id).catch(() => {});
-        }
-      } catch (_) {
-        if (gen !== outputDeviceRefreshGen) return;
-        select.innerHTML = `<option value="">System default</option>`;
-        appendUnavailableOption(select);
-        select.disabled = false;
-        updateOutputDeviceHint("list-error", 0);
-      }
-    }
-
-    async function applyOutputDeviceToAudioGraph(deviceId) {
-      const id = deviceId || "";
-      const ctx = window.sharedAudioContext;
-      if (ctx && typeof ctx.setSinkId === "function") {
-        try {
-          await ctx.setSinkId(id);
-        } catch (_) {}
-      }
-    }
-
-    async function applySinkToMediaElement(el) {
-      if (!el || typeof el.setSinkId !== "function") return;
-      try {
-        await el.setSinkId(activeOutputDeviceId || "");
-      } catch (_) {}
-    }
-
-    async function setActiveOutputDevice(deviceId) {
-      const id = deviceId || "";
-      let label = "";
-      if (id) {
-        const select = document.getElementById("output-device-select");
-        const opt = select && [...select.options].find((o) => o.value === id);
-        if (opt) {
-          label = (opt.textContent || "")
-            .replace(/\s*\(unavailable\)\s*$/i, "")
-            .trim();
-        }
-        if (!label) label = activeOutputDeviceLabel || "";
-      }
-      outputDeviceRefreshGen += 1;
-      persistOutputDevice(id, label);
-      await applyOutputDeviceToAudioGraph(activeOutputDeviceId);
-    }
 
     function getSharedAudioContext() {
       const Ctx = window.AudioContext || window.webkitAudioContext;
       if (!Ctx) return null;
-      if (!window.sharedAudioContext) {
-        window.sharedAudioContext = new Ctx();
-        if (typeof window.sharedAudioContext.setSinkId === "function" && activeOutputDeviceId) {
-          window.sharedAudioContext.setSinkId(activeOutputDeviceId).catch(() => {});
+      if (!window.sharedAudioContext || window.sharedAudioContext.state === "closed") {
+        try {
+          window.sharedAudioContext = Output.openContext(Ctx);
+        } catch (_) {
+          return null;
         }
       }
       return window.sharedAudioContext;
@@ -308,6 +104,7 @@
         activeHtmlAudio.load();
       } catch (_) {}
       activeHtmlAudio = null;
+      Output.watch(null);
     }
 
     function trackObjectUrl(url) {
@@ -435,6 +232,7 @@
       const ctx = getSharedAudioContext();
       if (!ctx) throw new Error("no audio context");
       if (ctx.state === "suspended") await ctx.resume();
+      await Output.apply();
       return ctx;
     }
 
@@ -445,9 +243,11 @@
 
     async function playAudioWithGain(audioElement, gainValue, opts) {
       const o = opts || {};
+      await Output.apply();
       if (!AudioFx) {
         try {
           audioElement.volume = 1;
+          await Output.applyElement(audioElement);
           await audioElement.play();
           return true;
         } catch (_) {
@@ -474,12 +274,16 @@
         },
         applySink: async (el) => {
           activeHtmlAudio = el;
-          await applySinkToMediaElement(el);
+          Output.watch(el);
+          await Output.applyElement(el);
         },
         fallbackElement: audioElement,
         onStarted,
         onEnded: () => {
-          if (activeHtmlAudio === audioElement) activeHtmlAudio = null;
+          if (activeHtmlAudio === audioElement) {
+            activeHtmlAudio = null;
+            Output.watch(null);
+          }
           if (onEnded) {
             try { onEnded(); } catch (_) {}
           }
@@ -964,10 +768,7 @@
       bakeEffectsIntoAudioData,
       playAudioWithGain,
       playElevenPreview,
-      refreshOutputDevices,
-      setActiveOutputDevice,
       getSharedAudioContext,
-      canSelectOutputDevice,
       isSpeakBusy: () => speakUiState === "speaking" || speakUiState === "loading"
     };
   }

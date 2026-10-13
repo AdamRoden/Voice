@@ -130,6 +130,7 @@
     const VoicesPanel = window.AacVoicesPanel;
     const VoicesControllerApi = window.AacVoicesController;
     const SpeechPlaybackApi = window.AacSpeechPlayback;
+    const OutputApi = window.AacOutputDevice;
     const KeyboardApi = window.AacKeyboard;
     const TopicsApi = window.AacTopics;
     const IconStudioApi = window.AacIconStudio;
@@ -154,6 +155,7 @@
     requireModule("AacVoicesPanel", VoicesPanel);
     requireModule("AacVoicesController", VoicesControllerApi);
     requireModule("AacSpeechPlayback", SpeechPlaybackApi);
+    requireModule("AacOutputDevice", OutputApi);
     requireModule("AacTopicsEdit", window.AacTopicsEdit);
     requireModule("AacTopics", TopicsApi);
     requireModule("AacWorkspace", WorkspaceApi);
@@ -209,6 +211,8 @@
     let Voices = null;
     /** @type {ReturnType<typeof ElevenKeyApi.create>|null} */
     let ElevenKey = null;
+    /** @type {ReturnType<typeof OutputApi.create>|null} */
+    let Output = null;
     /** @type {ReturnType<typeof SpeechPlaybackApi.create>|null} */
     let Speech = null;
     /** @type {ReturnType<typeof WorkspaceApi.create>|null} */
@@ -411,8 +415,7 @@
     // Ports: late modules close over these; methods call current instances (no rebind).
     const ports = {
       playSpeechSource(...a) { return Speech ? Speech.playSpeechSource(...a) : undefined; },
-      refreshOutputDevices(...a) { return Speech ? Speech.refreshOutputDevices(...a) : Promise.resolve(); },
-      setActiveOutputDevice(...a) { return Speech ? Speech.setActiveOutputDevice(...a) : Promise.resolve(); },
+      refreshOutputDevices() { return Output ? Output.refresh() : Promise.resolve(); },
       addToHistory(...a) { return HistoryUi ? HistoryUi.addToHistory(...a) : null; },
       renderHistory() { HistoryUi?.renderHistory(); },
       clearDisplayText() { if (Workspace) Workspace.clearDisplayText(); else { setText(""); focusDisplayInput(); } },
@@ -870,11 +873,14 @@
     });
     BoardIo.bind();
 
+    Output = OutputApi.create({ lsGet, lsSet, lsDel });
+
     Speech = SpeechPlaybackApi.create({
       AudioFx,
       Eleven,
       Piper,
       SpeechEngines,
+      Output,
       speakBtn,
       modelSelect,
       volumeGainMax: VOLUME_GAIN_MAX,
@@ -884,8 +890,6 @@
       getSpeechFx,
       modelId,
       lsGet,
-      lsSet,
-      lsDel,
       trim,
       withTimeout,
       blobToDataUrl,
@@ -953,12 +957,14 @@
       getSpeechPitch,
       getVolumeGain,
       playElevenPreview: (req) => Speech.playElevenPreview(req),
+      applyOutputSink: (el) => Output.applyElement(el),
       openModal: (id) => ports.openModal(id),
       closeModals: () => ports.closeModals(),
       focusDisplayInput,
       onVoiceContextChanged: () => syncInsertTagChrome()
     });
     Voices.bind();
+    Output.bind();
     Speech.bind();
 
     // ==================== HOTKEYS (catalog in AacHotkeys) ====================
@@ -1043,12 +1049,6 @@
       Voices.updateApiKeyStatus();
 
       Features.bind();
-      const outputSelect = document.getElementById("output-device-select");
-      if (outputSelect) {
-        outputSelect.addEventListener("change", (e) => {
-          ports.setActiveOutputDevice(e.target.value).catch(() => {});
-        });
-      }
       ports.refreshOutputDevices();
       if (navigator.mediaDevices && typeof navigator.mediaDevices.addEventListener === "function") {
         navigator.mediaDevices.addEventListener("devicechange", () => ports.refreshOutputDevices());
