@@ -1,6 +1,8 @@
 /**
  * Speaker list and sink. Chrome hides output names and rejects setSinkId
  * until microphone permission; tracks are stopped immediately.
+ * Web Audio uses AudioContext.setSinkId. A media-stream audio element
+ * keeps playing on the system device.
  */
 (function (global) {
   "use strict";
@@ -31,15 +33,9 @@
     let bound = false;
     /** HTML audio currently playing outside the Web Audio graph. */
     let liveElement = null;
-    /**
-     * Graph output. The context destination stays on the system device, so
-     * playback connects to this element and setSinkId picks the speaker.
-     */
-    let bridgeCtx = null;
-    let bridgeDest = null;
-    let bridgeEl = null;
-    /** Id whose element setSinkId promise resolved. Not read from the element. */
-    let bridgeSink = null;
+    /** Context whose setSinkId promise resolved for routedId. Not read from the context. */
+    let routedCtx = null;
+    let routedId = null;
     let routePromise = null;
     let routeId = null;
 
@@ -53,10 +49,7 @@
       const md = navigator.mediaDevices;
       if (!md || typeof md.enumerateDevices !== "function") return false;
       const Ctx = window.AudioContext || window.webkitAudioContext;
-      return typeof Audio === "function"
-        && typeof HTMLMediaElement !== "undefined"
-        && typeof HTMLMediaElement.prototype.setSinkId === "function"
-        && !!(Ctx && typeof Ctx.prototype.createMediaStreamDestination === "function");
+      return !!(Ctx && typeof Ctx.prototype.setSinkId === "function");
     }
 
     function canPick() {
@@ -291,7 +284,6 @@
     function context() {
       const existing = window.sharedAudioContext;
       if (existing && existing.state !== "closed") return existing;
-      if (bridgeEl) dropBridge();
       const Ctx = window.AudioContext || window.webkitAudioContext;
       if (!Ctx) return null;
       try {
@@ -301,42 +293,6 @@
       } catch (_) {
         return null;
       }
-    }
-
-    function dropBridge() {
-      if (bridgeEl) {
-        try { bridgeEl.pause(); } catch (_) {}
-        try { bridgeEl.srcObject = null; } catch (_) {}
-        try { if (typeof bridgeEl.remove === "function") bridgeEl.remove(); } catch (_) {}
-      }
-      bridgeCtx = null;
-      bridgeDest = null;
-      bridgeEl = null;
-      bridgeSink = null;
-    }
-
-    function mount(ctx) {
-      if (bridgeCtx === ctx && bridgeEl && bridgeDest) return;
-      dropBridge();
-      bridgeCtx = ctx;
-      bridgeDest = ctx.createMediaStreamDestination();
-      bridgeEl = new Audio();
-      bridgeEl.srcObject = bridgeDest.stream;
-      bridgeEl.volume = 1;
-      try { bridgeEl.setAttribute("playsinline", ""); } catch (_) {}
-      try { bridgeEl.setAttribute("aria-hidden", "true"); } catch (_) {}
-      if (bridgeEl.style) {
-        bridgeEl.style.position = "fixed";
-        bridgeEl.style.width = "0";
-        bridgeEl.style.height = "0";
-        bridgeEl.style.opacity = "0";
-        bridgeEl.style.pointerEvents = "none";
-      }
-      try {
-        if (document.body && typeof document.body.appendChild === "function") {
-          document.body.appendChild(bridgeEl);
-        }
-      } catch (_) {}
     }
 
     /** @returns {Promise<boolean>} false when a chosen speaker could not be applied. */
@@ -352,40 +308,50 @@
       }
     }
 
+    async function applySink(ctx, id) {
+      await ctx.setSinkId(id);
+      routedCtx = ctx;
+      routedId = id;
+    }
+
     async function route(id) {
-      const ctx = context();
+      let ctx = context();
       if (!ctx) {
         const error = new Error("no audio context");
         error.name = "NotSupportedError";
         return fail(error);
       }
-      if (!supported()) {
-        if (!id) return { ok: true, ctx, node: ctx.destination };
-        const error = new Error("setSinkId unavailable");
-        error.name = "NotSupportedError";
-        return fail(error);
+      if (routedCtx === ctx && routedId === id && ctx.state !== "closed") {
+        if (ctx.state === "suspended") {
+          try { await ctx.resume(); } catch (_) {}
+        }
+        await applyElement(liveElement);
+        return { ok: true, ctx, node: ctx.destination };
+      }
+      if (typeof ctx.setSinkId !== "function") {
+        return { ok: true, ctx, node: ctx.destination };
+      }
+      try {
+        await applySink(ctx, id);
+      } catch (error) {
+        if (!error || error.name !== "NotFoundError") return fail(error);
+        try { await ctx.close(); } catch (_) {}
+        if (window.sharedAudioContext === ctx) window.sharedAudioContext = null;
+        routedCtx = null;
+        routedId = null;
+        ctx = context();
+        if (!ctx || typeof ctx.setSinkId !== "function") return fail(error);
+        try {
+          await applySink(ctx, id);
+        } catch (error2) {
+          return fail(error2);
+        }
       }
       if (ctx.state === "suspended") {
         try { await ctx.resume(); } catch (_) {}
       }
-      try {
-        mount(ctx);
-      } catch (error) {
-        return fail(error);
-      }
-      try {
-        if (bridgeSink !== id) {
-          await bridgeEl.setSinkId(id);
-          bridgeSink = id;
-        }
-        if (bridgeEl.paused !== false) await bridgeEl.play();
-      } catch (error) {
-        bridgeSink = null;
-        try { bridgeEl.pause(); } catch (_) {}
-        return fail(error);
-      }
       await applyElement(liveElement);
-      return { ok: true, ctx, node: bridgeDest };
+      return { ok: true, ctx, node: ctx.destination };
     }
 
     function fail(error) {
