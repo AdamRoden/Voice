@@ -11,7 +11,7 @@
    *   Eleven: object,
    *   Piper: object,
    *   SpeechEngines: object,
-   *   Output: { apply: Function, openContext: Function, applyElement: Function, watch: Function },
+   *   Output: { context: Function, prepare: Function, applyElement: Function, watch: Function },
    *   speakBtn?: HTMLElement|null,
    *   modelSelect?: HTMLSelectElement|null,
    *   volumeGainMax: number,
@@ -57,8 +57,8 @@
     const VOLUME_GAIN_MAX = d.volumeGainMax;
 
     if (!AudioFx || !Eleven || !Piper || !SpeechEngines || !Output
-      || typeof Output.apply !== "function"
-      || typeof Output.openContext !== "function") {
+      || typeof Output.context !== "function"
+      || typeof Output.prepare !== "function") {
       throw new Error("AacSpeechPlayback requires AudioFx, Eleven, Piper, SpeechEngines, and Output");
     }
 
@@ -82,16 +82,7 @@
     let speakGeneration = 0;
 
     function getSharedAudioContext() {
-      const Ctx = window.AudioContext || window.webkitAudioContext;
-      if (!Ctx) return null;
-      if (!window.sharedAudioContext || window.sharedAudioContext.state === "closed") {
-        try {
-          window.sharedAudioContext = Output.openContext(Ctx);
-        } catch (_) {
-          return null;
-        }
-      }
-      return window.sharedAudioContext;
+      return Output.context();
     }
 
     function stopActiveHtmlAudio() {
@@ -229,11 +220,9 @@
     }
 
     async function ensureAudioCtx() {
-      const ctx = getSharedAudioContext();
-      if (!ctx) throw new Error("no audio context");
-      if (ctx.state === "suspended") await ctx.resume();
-      await Output.apply();
-      return ctx;
+      const route = await Output.prepare();
+      if (!route.ok || !route.ctx) throw new Error("no audio output");
+      return route.ctx;
     }
 
     async function bakeEffectsIntoAudioData(audioSource, fx) {
@@ -243,11 +232,12 @@
 
     async function playAudioWithGain(audioElement, gainValue, opts) {
       const o = opts || {};
-      await Output.apply();
+      const route = await Output.prepare();
+      if (!route.ok || !route.node) return false;
       if (!AudioFx) {
         try {
           audioElement.volume = 1;
-          await Output.applyElement(audioElement);
+          if (await Output.applyElement(audioElement) === false) return false;
           await audioElement.play();
           return true;
         } catch (_) {
@@ -266,7 +256,8 @@
         gain: gainValue,
         gainMax: VOLUME_GAIN_MAX,
         fx,
-        getContext: getSharedAudioContext,
+        getContext: () => route.ctx,
+        outputNode: route.node,
         stopPrevious: stopActiveBufferSources,
         trackSource: (source) => { activeBufferSources.push(source); },
         untrackSource: (source) => {
@@ -275,7 +266,7 @@
         applySink: async (el) => {
           activeHtmlAudio = el;
           Output.watch(el);
-          await Output.applyElement(el);
+          return Output.applyElement(el);
         },
         fallbackElement: audioElement,
         onStarted,
@@ -294,7 +285,8 @@
     async function runEleven(req, hooks) {
       const h = hooks || {};
       await withElevenAbort(async (signal, abort) => {
-        await ensureAudioCtx();
+        const route = await Output.prepare();
+        if (!route.ok || !route.node) throw new Error("no audio output");
         await Eleven.playStream({
           phrase: req.phrase,
           voiceId: req.voiceId,
@@ -303,7 +295,8 @@
           pitch: req.pitch,
           signal,
           abort,
-          getContext: getSharedAudioContext,
+          getContext: () => route.ctx,
+          outputNode: route.node,
           gain: h.gain,
           gainMax: VOLUME_GAIN_MAX,
           trackSource: (src) => { activeBufferSources.push(src); },

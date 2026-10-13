@@ -308,7 +308,7 @@
     const gainNode = ctx.createGain();
     const gainMax = opts.gainMax != null ? opts.gainMax : 10;
     gainNode.gain.value = clamp(parseFloat(opts.gain) || 1, 0.05, gainMax);
-    gainNode.connect(ctx.destination);
+    gainNode.connect(opts.outputNode);
 
     let rest = new Uint8Array(0);
     let nextTime = 0;

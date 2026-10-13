@@ -414,6 +414,7 @@
    * @param {(source: AudioBufferSourceNode) => void} [opts.trackSource]
    * @param {(source: AudioBufferSourceNode) => void} [opts.untrackSource]
    * @param {(el: HTMLAudioElement) => Promise<void>} [opts.applySink]
+   * @param {AudioNode} opts.outputNode
    * @param {() => void} [opts.onStarted]
    * @param {() => void} [opts.onEnded]
    * @param {number} [opts.gainMax]
@@ -465,7 +466,10 @@
         if (!audioElement.src && url) audioElement.src = url;
         audioElement.onended = fireEnded;
         audioElement.onerror = fireEnded;
-        if (typeof opts.applySink === "function") await opts.applySink(audioElement);
+        if (typeof opts.applySink === "function" && await opts.applySink(audioElement) === false) {
+          fireEnded();
+          return false;
+        }
         await audioElement.play();
         try { if (onStarted) onStarted(); } catch (_) {}
         return true;
@@ -500,7 +504,7 @@
       const gainNode = ctx.createGain();
       gainNode.gain.value = safeGain;
       source.connect(gainNode);
-      gainNode.connect(ctx.destination);
+      gainNode.connect(opts.outputNode);
 
       source.onended = () => {
         if (typeof opts.untrackSource === "function") opts.untrackSource(source);

@@ -31,6 +31,17 @@
     let bound = false;
     /** HTML audio currently playing outside the Web Audio graph. */
     let liveElement = null;
+    /**
+     * Graph output. The context destination stays on the system device, so
+     * playback connects to this element and setSinkId picks the speaker.
+     */
+    let bridgeCtx = null;
+    let bridgeDest = null;
+    let bridgeEl = null;
+    /** Id whose element setSinkId promise resolved. Not read from the element. */
+    let bridgeSink = null;
+    let routePromise = null;
+    let routeId = null;
 
     function normalizeSinkId(deviceId) {
       const id = deviceId || "";
@@ -41,10 +52,11 @@
     function supported() {
       const md = navigator.mediaDevices;
       if (!md || typeof md.enumerateDevices !== "function") return false;
-      const mediaOk = typeof HTMLMediaElement !== "undefined"
-        && typeof HTMLMediaElement.prototype.setSinkId === "function";
       const Ctx = window.AudioContext || window.webkitAudioContext;
-      return mediaOk || !!(Ctx && typeof Ctx.prototype.setSinkId === "function");
+      return typeof Audio === "function"
+        && typeof HTMLMediaElement !== "undefined"
+        && typeof HTMLMediaElement.prototype.setSinkId === "function"
+        && !!(Ctx && typeof Ctx.prototype.createMediaStreamDestination === "function");
     }
 
     function canPick() {
@@ -276,52 +288,125 @@
       setHint("ok");
     }
 
-    function currentContext() {
-      const ctx = window.sharedAudioContext;
-      if (!ctx || ctx.state === "closed") return null;
-      return ctx;
+    function context() {
+      const existing = window.sharedAudioContext;
+      if (existing && existing.state !== "closed") return existing;
+      if (bridgeEl) dropBridge();
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return null;
+      try {
+        const ctx = new Ctx();
+        window.sharedAudioContext = ctx;
+        return ctx;
+      } catch (_) {
+        return null;
+      }
     }
 
+    function dropBridge() {
+      if (bridgeEl) {
+        try { bridgeEl.pause(); } catch (_) {}
+        try { bridgeEl.srcObject = null; } catch (_) {}
+        try { if (typeof bridgeEl.remove === "function") bridgeEl.remove(); } catch (_) {}
+      }
+      bridgeCtx = null;
+      bridgeDest = null;
+      bridgeEl = null;
+      bridgeSink = null;
+    }
+
+    function mount(ctx) {
+      if (bridgeCtx === ctx && bridgeEl && bridgeDest) return;
+      dropBridge();
+      bridgeCtx = ctx;
+      bridgeDest = ctx.createMediaStreamDestination();
+      bridgeEl = new Audio();
+      bridgeEl.srcObject = bridgeDest.stream;
+      bridgeEl.volume = 1;
+      try { bridgeEl.setAttribute("playsinline", ""); } catch (_) {}
+      try { bridgeEl.setAttribute("aria-hidden", "true"); } catch (_) {}
+      if (bridgeEl.style) {
+        bridgeEl.style.position = "fixed";
+        bridgeEl.style.width = "0";
+        bridgeEl.style.height = "0";
+        bridgeEl.style.opacity = "0";
+        bridgeEl.style.pointerEvents = "none";
+      }
+      try {
+        if (document.body && typeof document.body.appendChild === "function") {
+          document.body.appendChild(bridgeEl);
+        }
+      } catch (_) {}
+    }
+
+    /** @returns {Promise<boolean>} false when a chosen speaker could not be applied. */
     async function applyElement(el) {
-      if (!el || typeof el.setSinkId !== "function") return;
-      if ((el.sinkId || "") === selectedId) return;
-      try { await el.setSinkId(selectedId); } catch (_) {}
+      if (!selectedId) return true;
+      if (!el || typeof el.setSinkId !== "function") return false;
+      if ((el.sinkId || "") === selectedId) return true;
+      try {
+        await el.setSinkId(selectedId);
+        return true;
+      } catch (_) {
+        return false;
+      }
     }
 
-    async function apply() {
-      const ctx = currentContext();
-      let result = { ok: true, pending: !ctx };
-      if (ctx && typeof ctx.setSinkId === "function") {
-        if (ctx.state === "suspended") {
-          try { await ctx.resume(); } catch (_) {}
-        }
-        if ((ctx.sinkId || "") !== selectedId) {
-          try {
-            await ctx.setSinkId(selectedId);
-          } catch (error) {
-            result = { ok: false, error };
-          }
-        }
-      } else if (ctx) {
+    async function route(id) {
+      const ctx = context();
+      if (!ctx) {
+        const error = new Error("no audio context");
+        error.name = "NotSupportedError";
+        return fail(error);
+      }
+      if (!supported()) {
+        if (!id) return { ok: true, ctx, node: ctx.destination };
         const error = new Error("setSinkId unavailable");
         error.name = "NotSupportedError";
-        result = { ok: false, error };
+        return fail(error);
+      }
+      if (ctx.state === "suspended") {
+        try { await ctx.resume(); } catch (_) {}
+      }
+      try {
+        mount(ctx);
+      } catch (error) {
+        return fail(error);
+      }
+      try {
+        if (bridgeSink !== id) {
+          await bridgeEl.setSinkId(id);
+          bridgeSink = id;
+        }
+        if (bridgeEl.paused !== false) await bridgeEl.play();
+      } catch (error) {
+        bridgeSink = null;
+        try { bridgeEl.pause(); } catch (_) {}
+        return fail(error);
       }
       await applyElement(liveElement);
+      return { ok: true, ctx, node: bridgeDest };
+    }
+
+    function fail(error) {
+      const result = { ok: false, error };
+      setHint(hintForApply(result));
       return result;
     }
 
-    function openContext(Ctx) {
+    /** Route the current speaker. One in-flight promise; a new id waits its turn. */
+    function prepare() {
       const id = selectedId;
-      let ctx = null;
-      if (id) {
-        try { ctx = new Ctx({ sinkId: id }); } catch (_) { ctx = null; }
-      }
-      if (!ctx) ctx = new Ctx();
-      if (id && typeof ctx.setSinkId === "function" && (ctx.sinkId || "") !== id) {
-        ctx.setSinkId(id).catch(() => {});
-      }
-      return ctx;
+      if (routePromise && routeId === id) return routePromise;
+      const run = () => route(id);
+      const prev = routePromise;
+      let pending;
+      pending = (prev ? prev.then(run, run) : run()).finally(() => {
+        if (routePromise === pending) routePromise = null;
+      });
+      routeId = id;
+      routePromise = pending;
+      return pending;
     }
 
     function stopTracks(stream) {
@@ -374,15 +459,6 @@
 
       devices = selectable(listed);
       paint();
-      if (gen !== refreshGen) return;
-      if (!namedList(devices)) return;
-
-      const resolved = resolvePreferred(devices);
-      if (!(resolved.matched && resolved.id)) return;
-      const applied = await apply();
-      if (gen !== refreshGen) return;
-      const status = hintForApply(applied);
-      if (status !== "ok") setHint(status);
     }
 
     async function adopt(info) {
@@ -390,7 +466,7 @@
       const label = ((info && info.label) || "").trim() || (id ? "Speaker" : "");
       persist(id, label);
       paint();
-      const status = hintForApply(await apply());
+      const status = hintForApply(await prepare());
       if (status !== "ok") setHint(status);
     }
 
@@ -428,11 +504,10 @@
     async function setActive(deviceId) {
       refreshGen += 1;
       persist(normalizeSinkId(deviceId), labelFor(normalizeSinkId(deviceId)));
-      let result = await apply();
+      let result = await prepare();
       if (!result.ok && isPermissionError(result.error)) {
         try {
           await unlockMic();
-          await refresh();
         } catch (err) {
           if (isPermissionError(err)) {
             micDenied = true;
@@ -443,7 +518,8 @@
           setHint("apply-error");
           return;
         }
-        return;
+        await refresh();
+        result = await prepare();
       }
       setHint(hintForApply(result));
     }
@@ -470,8 +546,8 @@
       bind,
       refresh,
       sinkId: () => selectedId,
-      openContext,
-      apply,
+      context,
+      prepare,
       applyElement,
       watch(el) { liveElement = el || null; }
     };
