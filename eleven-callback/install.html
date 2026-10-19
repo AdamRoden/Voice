@@ -1,0 +1,16 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Link ElevenLabs</title>
+<p id="msg">Preparing the ElevenLabs link…</p>
+<script>
+navigator.serviceWorker.register("/sw.js", { scope: "/" }).then(function () {
+  return navigator.serviceWorker.ready;
+}).then(function () {
+  var msg = document.getElementById("msg");
+  if (msg) msg.textContent = "ElevenLabs linking is ready. You can close this tab.";
+  window.close();
+}).catch(function () {
+  var msg = document.getElementById("msg");
+  if (msg) msg.textContent = "This browser could not prepare the ElevenLabs link.";
+});
+</script>

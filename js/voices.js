@@ -562,7 +562,7 @@ function defaultLoadKeys(storageKey) {
    *   closeModals: () => void,
    *   focusDisplayInput: () => void,
    *   onVoiceContextChanged?: () => void,
-   *   listSavedTags?: () => string[]
+   *   switchSidebarTab?: (tab: string, expand?: boolean, opts?: { focusComposer?: boolean }) => void
    * }} deps
    */
   function create(deps) {
@@ -759,30 +759,12 @@ function defaultLoadKeys(storageKey) {
       return Eleven.normalizeStandingTag(lsGet(VOICE_TAG_STORAGE_KEY, ""));
     }
 
-    function fillVoiceTagList() {
-      const list = $("voice-tag-list");
-      if (!list) return;
-      const tags = typeof d.listSavedTags === "function" ? d.listSavedTags() : [];
-      const seen = Object.create(null);
-      list.textContent = "";
-      (tags || []).forEach((tag) => {
-        const clean = Eleven.normalizeStandingTag(tag);
-        const key = clean.toLowerCase();
-        if (!clean || seen[key]) return;
-        seen[key] = true;
-        const opt = document.createElement("option");
-        opt.value = clean;
-        list.appendChild(opt);
-      });
-    }
-
     function syncVoiceTagRow() {
       const group = $("voice-tag-group");
       const input = $("voice-tag-input");
       const show = isElevenModelSelected();
       if (group) group.hidden = !show;
       if (!show || !input) return;
-      fillVoiceTagList();
       if (document.activeElement !== input) input.value = readStoredVoiceTag();
     }
 
@@ -894,16 +876,19 @@ function defaultLoadKeys(storageKey) {
       });
     }
 
-    function closeVoicesPanel() {
-      $("voices-panel")?.classList.remove("open");
+    function closeVoicesPanel(opts) {
+      const panel = $("voices-panel");
+      if (!panel || !panel.classList.contains("open")) return;
+      panel.classList.remove("open");
+      panel.setAttribute("aria-hidden", "true");
       stopPiperSamplePreview();
-      d.focusDisplayInput();
+      if ((!opts || opts.focus !== false) && typeof d.focusDisplayInput === "function") d.focusDisplayInput();
     }
 
     function selectVoice(persist) {
       persist();
       syncSelectedVoiceSummary();
-      setTimeout(closeVoicesPanel, 200);
+      setTimeout(() => closeVoicesPanel(), 200);
     }
 
     function setLoading(listEl, message) {
@@ -1275,8 +1260,13 @@ function defaultLoadKeys(storageKey) {
     }
 
     function openVoicesPanel(mode) {
+      if (typeof d.switchSidebarTab === "function") {
+        try { d.switchSidebarTab("voice", true, { focusComposer: false }); } catch (_) {}
+      }
       const group = applyVoiceModelList(mode || currentVoiceGroup(), { resetSearch: true });
-      $("voices-panel")?.classList.add("open");
+      const panel = $("voices-panel");
+      panel?.classList.add("open");
+      panel?.setAttribute("aria-hidden", "false");
       if (group === "eleven" && !hasElevenApiKey()) {
         ElevenKey.openApiKeyModal({
           previousModel: readStoredModel(),
@@ -1345,7 +1335,6 @@ function defaultLoadKeys(storageKey) {
 
       $("open-voices")?.addEventListener("click", () => openVoicesPanel());
       $("close-voices-panel-btn")?.addEventListener("click", closeVoicesPanel);
-      $("voice-tag-input")?.addEventListener("focus", fillVoiceTagList);
       $("voice-tag-input")?.addEventListener("input", persistVoiceTagDraft);
       $("voice-tag-input")?.addEventListener("change", commitVoiceTagFromInput);
       $("voice-tag-input")?.addEventListener("blur", commitVoiceTagFromInput);

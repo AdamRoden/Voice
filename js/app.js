@@ -679,12 +679,16 @@
           try { ElevenKey.onShellModalsClosed(); } catch (_) {}
         }
       },
+      onHelpClosed: () => {
+        if (ElevenKey && !ElevenKey.hasApiKey()) ElevenKey.openApiKeyModal();
+      },
       // Leaving portrait: rebuild landscape topics rail (must not stay empty after portrait clear-path).
       onLayoutMqChange: (isPortrait) => {
         if (!isPortrait && Topics) {
           try { Topics.renderTopics(); } catch (_) {}
         }
-      }
+      },
+      onVoicesPanelDismiss: (opts) => Voices?.closeVoicesPanel?.(opts)
     });
     Shell.bind();
 
@@ -946,8 +950,8 @@
       onRevertModel: (mid) => { Voices?.applyModelUi(mid, { persist: true }); },
       onCommitPendingModel: (mid) => { Voices?.applyModelUi(mid, { persist: true }); },
       onKeyStateChanged: (state) => { Voices?.onElevenKeyStateChanged(state); },
+      isHelpDismissed: () => !!(Shell && Shell.isHelpDismissed && Shell.isHelpDismissed()),
       onKeySaved: () => {
-        try { ports.switchSidebarTab("voice", true); } catch (_) {}
         Voices?.applyModelUi(SpeechEngines.ELEVEN_MODEL_ID, { persist: true });
         Voices?.openVoicesPanel("eleven");
         const search = document.getElementById("voice-search-input");
@@ -980,7 +984,7 @@
       closeModals: () => ports.closeModals(),
       focusDisplayInput,
       onVoiceContextChanged: () => syncInsertTagChrome(),
-      listSavedTags: () => ComposeApi.listSavedTags()
+      switchSidebarTab: (tab, expand, opts) => Shell?.switchSidebarTab?.(tab, expand, opts)
     });
     Voices.bind();
     ElevenKey.promptOnLoad();

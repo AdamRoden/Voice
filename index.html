@@ -87,7 +87,16 @@
           <div class="sidebar-setting-group" id="voice-tag-group" hidden>
             <label for="voice-tag-input">Voice tag</label>
             <input type="text" id="voice-tag-input" list="voice-tag-list" placeholder="None" autocomplete="off" spellcheck="false" enterkeyhint="done" aria-describedby="voice-tag-hint">
-            <datalist id="voice-tag-list"></datalist>
+            <datalist id="voice-tag-list">
+              <option value="anxious"></option>
+              <option value="bossy"></option>
+              <option value="dull"></option>
+              <option value="flirt"></option>
+              <option value="happy"></option>
+              <option value="loud"></option>
+              <option value="sing"></option>
+              <option value="whisper"></option>
+            </datalist>
             <p class="setting-hint" id="voice-tag-hint">Always sent as [tag] at the start of ElevenLabs speech. Leave empty for none.</p>
           </div>
 
@@ -114,6 +123,48 @@
               <span class="range-default-tick" title="Default (1.00)" aria-hidden="true"></span>
             </div>
             <datalist id="pitch-default-mark"><option value="1.0" label="Default"></option></datalist>
+          </div>
+          <div class="voices-panel" id="voices-panel" aria-hidden="true">
+            <div class="voices-panel-header">
+              <h2 class="voices-panel-title">Select Voice</h2>
+              <button class="icon-btn" id="close-voices-panel-btn" type="button" title="Close Panel">
+                <span class="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <div class="voices-panel-model">
+              <label class="voices-panel-model-label" for="model-select">Voice model</label>
+              <select id="model-select" title="Voice model" aria-label="Voice model">
+                <option value="browser_tts">Local Browser (Utterance)</option>
+                <option value="piper_tts">Piper (Local Neural)</option>
+                <option value="eleven_v4_turbo">ElevenLabs v4 Turbo</option>
+              </select>
+            </div>
+
+            <div class="voice-toolbar-row">
+              <div class="voice-search-box">
+                <span class="material-symbols-outlined search-icon">search</span>
+                <input type="text" id="voice-search-input" placeholder="Search…" aria-label="Search voices">
+              </div>
+              <label class="voice-filter-wrap voice-filter-wrap--lang" for="voice-language-filter">
+                <span class="sr-only">Language</span>
+                <select id="voice-language-filter" title="Filter by language" aria-label="Filter voices by language">
+                  <option value="all">All languages</option>
+                </select>
+              </label>
+              <label class="voice-filter-wrap voice-filter-wrap--gender" for="voice-gender-filter">
+                <span class="sr-only">Gender</span>
+                <select id="voice-gender-filter" title="Filter by gender" aria-label="Filter voices by gender">
+                  <option value="all">All</option>
+                  <option value="female">Female</option>
+                  <option value="male">Male</option>
+                </select>
+              </label>
+            </div>
+
+            <div id="voice-list-browser" class="voice-list"></div>
+            <div id="voice-list-eleven" class="voice-list"></div>
+            <div id="voice-list-piper" class="voice-list"></div>
           </div>
         </div>
 
@@ -393,7 +444,9 @@
         <li><strong>Topics</strong> — tap a topic to activate it. Tap the <strong>active</strong> topic (or its icon on the rail) to open the left sidebar. Tap other icons only switches the active topic.</li>
         <li><strong>Top bar</strong> — portrait only (menu button + chat chips). Tap empty space on the bar (or swipe up/down) to toggle normal vs slim (50% height).</li>
         <li><strong>Sounds</strong> — <span class="material-symbols-outlined coach-inline-icon">grid_view</span> <strong>buttons</strong> play their audio.</li>
-        <li><strong>Text box</strong> — <span class="material-symbols-outlined coach-inline-icon">more_horiz</span> <strong>Actions</strong> for clear, pin, and replay. <strong>Insert tag</strong> appears when the voice is ElevenLabs. <span class="material-symbols-outlined coach-inline-icon">volume_up</span> <strong>speaker</strong> always generates new speech (or press Enter). Replay plays the stored clip. Speech history is in the sidebar. The on-screen keyboard lives in <strong>Settings</strong> (off uses the system keyboard; in landscape the composer stays above it).</li>
+        <li><strong>Text box</strong> — <span class="material-symbols-outlined coach-inline-icon">more_horiz</span> <strong>Actions</strong> for clear, pin, and replay. <strong>Insert tag</strong> appears when the voice is ElevenLabs and adds a tag to the text in the box. <span class="material-symbols-outlined coach-inline-icon">volume_up</span> <strong>speaker</strong> always generates new speech (or press Enter). Replay plays the stored clip. Speech history is in the sidebar. The on-screen keyboard lives in <strong>Settings</strong> (off uses the system keyboard; in landscape the composer stays above it).</li>
+        <li><strong>ElevenLabs</strong> — closing Help opens the key prompt when this device has no key. <strong>Link to ElevenLabs (Free)</strong> signs you in and saves the key here, then asks you to choose a voice. If a localhost page stays open, close it.</li>
+        <li><strong>Voice tag</strong> — on the Voice tab, under the selected voice, while ElevenLabs is the model. Choose anxious, bossy, dull, flirt, happy, loud, sing, or whisper, or type one. Every ElevenLabs line starts with that tag in brackets. The text box and history keep your words. Leave the field empty for none.</li>
         <li><strong>Shortcuts</strong> — composer buttons show their keys in tooltips; open the full list with <strong>Keyboard shortcuts</strong> below.</li>
       </ol>
       <button type="button" class="status-btn help-hotkeys-btn" id="help-hotkeys-btn">
@@ -708,50 +761,6 @@
       <button class="modal-btn primary" id="color-picker-apply" type="button">Apply</button>
       <button class="modal-btn secondary" id="color-picker-cancel" type="button">Cancel</button>
     </div>
-  </div>
-
-  <!-- Voices Panel Drawer -->
-  <div class="voices-panel" id="voices-panel">
-    <div class="voices-panel-header">
-      <h2 class="voices-panel-title">Select Voice</h2>
-      <button class="icon-btn" id="close-voices-panel-btn" type="button" title="Close Panel">
-        <span class="material-symbols-outlined">close</span>
-      </button>
-    </div>
-
-    <div class="voices-panel-model">
-      <label class="voices-panel-model-label" for="model-select">Voice model</label>
-      <select id="model-select" title="Voice model" aria-label="Voice model">
-        <option value="browser_tts">Local Browser (Utterance)</option>
-        <option value="piper_tts">Piper (Local Neural)</option>
-        <option value="eleven_v4_turbo">ElevenLabs v4 Turbo</option>
-      </select>
-    </div>
-
-    <div class="voice-toolbar-row">
-      <div class="voice-search-box">
-        <span class="material-symbols-outlined search-icon">search</span>
-        <input type="text" id="voice-search-input" placeholder="Search…" aria-label="Search voices">
-      </div>
-      <label class="voice-filter-wrap voice-filter-wrap--lang" for="voice-language-filter">
-        <span class="sr-only">Language</span>
-        <select id="voice-language-filter" title="Filter by language" aria-label="Filter voices by language">
-          <option value="all">All languages</option>
-        </select>
-      </label>
-      <label class="voice-filter-wrap voice-filter-wrap--gender" for="voice-gender-filter">
-        <span class="sr-only">Gender</span>
-        <select id="voice-gender-filter" title="Filter by gender" aria-label="Filter voices by gender">
-          <option value="all">All</option>
-          <option value="female">Female</option>
-          <option value="male">Male</option>
-        </select>
-      </label>
-    </div>
-
-    <div id="voice-list-browser" class="voice-list"></div>
-    <div id="voice-list-eleven" class="voice-list"></div>
-    <div id="voice-list-piper" class="voice-list"></div>
   </div>
 
   <script src="js/vendor/lame.min.js" defer></script>

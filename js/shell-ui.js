@@ -211,6 +211,8 @@
    *   onSettingsTab?: () => void,
    *   isComposeMenuOpen?: () => boolean,
    *   closeComposeMenu?: () => void,
+   *   onCloseModal?: () => void,
+   *   onHelpClosed?: () => void,
    *   onLayoutMqChange?: (isPortrait: boolean) => void
    * }} deps
    */
@@ -329,6 +331,17 @@
       }
 
       if (restoreFocus) d.focusDisplayInput();
+    }
+
+    /** Close the voice list. Used by Escape and by leaving the Voice tab. */
+    function closeVoiceList(opts) {
+      const panel = document.getElementById("voices-panel");
+      if (!panel || !panel.classList.contains("open")) return;
+      if (typeof d.onVoicesPanelDismiss === "function") {
+        try { d.onVoicesPanelDismiss(opts || {}); } catch (_) {}
+        return;
+      }
+      panel.classList.remove("open");
     }
 
     function setLeftSidebarOpen(open, opts) {
@@ -478,6 +491,7 @@
         c.classList.remove("active");
       });
       document.getElementById(`tab-content-${t}`)?.classList.add("active");
+      if (t !== "voice") closeVoiceList({ focus: false });
       if (t === "history" && typeof d.onHistoryTab === "function") d.onHistoryTab();
       if (t === "voice" && typeof d.onVoiceTab === "function") d.onVoiceTab();
       if (t === "settings" && typeof d.onSettingsTab === "function") d.onSettingsTab();
@@ -487,7 +501,9 @@
      * Select a shell tab. Expand only when expandIfCollapsed is true —
      * routing/hash must never force the portrait drawer open.
      */
-    function applySidebarTab(tab, expandIfCollapsed = false) {
+    function applySidebarTab(tab, expandIfCollapsed = false, opts) {
+      const o = opts || {};
+      const focusComposer = o.focusComposer !== false;
       const t = normalizeTab(tab);
       const portrait = isPortraitLayout();
       const patch = {};
@@ -501,7 +517,7 @@
         setLayout(patch, { restoreFocus: false });
         // Portrait nav includes Topics; landscape right nav keeps utility highlight.
         if (portrait) syncNavActive("topics");
-        else d.focusDisplayInput();
+        else if (focusComposer) d.focusDisplayInput();
         return t;
       }
 
@@ -514,6 +530,7 @@
       // Settings is interactive — don't steal focus to compose.
       // Portrait drawers cover the message, so leave focus on the control that opened them.
       setLayout(patch, { restoreFocus: false });
+      if (!focusComposer) return t;
       if (t === "history") {
         document.getElementById("history-search-input")?.focus();
       } else if (t !== "settings" && !portrait) {
@@ -564,11 +581,12 @@
 
     function switchSidebarTab(tab, expandIfCollapsed = false, opts = {}) {
       const { replace = false, fromRoute = false } = opts;
-      const t = applySidebarTab(tab, expandIfCollapsed);
+      const t = applySidebarTab(tab, expandIfCollapsed, opts);
       if (fromRoute) return t;
       const next = `#/${t}`;
       if (location.hash === next) return t;
-      if (replace) {
+      // Opening the voice list must not push a hashchange that focuses the composer.
+      if (replace || opts.focusComposer === false) {
         const url = new URL(location.href);
         url.hash = `/${t}`;
         history.replaceState(null, "", url.pathname + url.search + url.hash);
@@ -592,6 +610,7 @@
     }
 
     function closeModals() {
+      const helpWasOpen = !!document.getElementById(HELP_MODAL_ID)?.classList.contains("open");
       document.querySelectorAll(".modal").forEach((m) => m.classList.remove("open"));
       if (modalOverlay) modalOverlay.classList.remove("open");
       document.body.classList.remove("modal-open");
@@ -599,6 +618,9 @@
         try { d.onCloseModal(); } catch (_) {}
       }
       d.focusDisplayInput();
+      if (helpWasOpen && typeof d.onHelpClosed === "function") {
+        try { d.onHelpClosed(); } catch (_) {}
+      }
     }
 
     /**
@@ -638,7 +660,6 @@
     function dismissHelp() {
       d.lsSet(HELP_DISMISS_KEY, "1");
       closeModals();
-      d.focusDisplayInput();
     }
 
     /** First-run / Help entry: same as openHelpModal. */
@@ -692,9 +713,8 @@
           if (typeof d.closeComposeMenu === "function") d.closeComposeMenu();
           return;
         }
-        const voicesPanel = document.getElementById("voices-panel");
-        if (voicesPanel?.classList.contains("open")) {
-          voicesPanel.classList.remove("open");
+        if (document.getElementById("voices-panel")?.classList.contains("open")) {
+          closeVoiceList();
           return;
         }
         if (isPortraitLayout() && isDrawerOpen()) closePortraitSidebar();

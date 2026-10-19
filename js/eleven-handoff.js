@@ -8,6 +8,8 @@
 
   const HANDOFF_CLIENT_ID = "c9c18126-5718-406a-8a12-21b69e5a888d";
   const HANDOFF_AUTHORIZE_URL = "https://elevenlabs.io/app/oauth/authorize";
+  // This public client only allows the localhost callback. eleven-callback/sw.js
+  // answers it and closes the tab. Register that worker with tools/eleven-callback-install.js.
   const HANDOFF_REDIRECT_URI = "http://localhost:8484/callback";
   const HANDOFF_SCOPES = ["text_to_speech", "voices_read", "user_read"];
   const QUICKSTART_URL = "https://elevenlabs.io/app/api/api-keys?quickstart=true";
@@ -17,7 +19,7 @@
     "elevenlabs:failed": "failed"
   };
 
-  const STATUS_SIGN_IN = "Sign in and tap Authorize. Come back here and the key is saved. If that tab cannot open localhost, close it. If the key is not saved, tap Link to ElevenLabs (Free) again.";
+  const STATUS_SIGN_IN = "Sign in and tap Authorize. This page saves the key when you come back. If a localhost page stays open, close it. If the key is not saved, tap Link to ElevenLabs (Free) again.";
   const STATUS_QUICKSTART = "Create the key in the ElevenLabs tab and copy it, then tap Link to ElevenLabs (Free) again.";
   const STATUS_BLOCKED = "The browser blocked the tab. Open ElevenLabs, approve the key, then tap Link to ElevenLabs (Free) again.";
   const STATUS_LOOKING = "Looking for the copied key…";

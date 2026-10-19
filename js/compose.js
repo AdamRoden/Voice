@@ -1,7 +1,6 @@
 /**
  * Compose surface: display field (caret, chips, tags) + overflow menu.
  * Primary export: AacCompose.createDisplay / AacCompose.createActions.
- * listSavedTags reads aac_saved_tags for the standing voice-tag list.
  */
 (function (global) {
   "use strict";
@@ -661,5 +660,5 @@
     };
   }
 
-  global.AacCompose = { createDisplay, createActions, listSavedTags };
+  global.AacCompose = { createDisplay, createActions };
 })(typeof window !== "undefined" ? window : globalThis);

@@ -22,6 +22,7 @@
    *   onRevertModel?: (modelId: string) => void,
    *   onCommitPendingModel?: (modelId: string) => void,
    *   onKeySaved?: () => void,
+   *   isHelpDismissed?: () => boolean,
    *   onKeyStateChanged?: (state: {
    *     voices?: any[]|null,
    *     clearCache?: boolean,
@@ -343,21 +344,27 @@
       return revokeAndFallback(opts);
     }
 
+    /** First-run Help is still going to cover the page. */
+    function helpStillPending() {
+      return typeof d.isHelpDismissed === "function" && !d.isHelpDismissed();
+    }
+
     /**
      * On each page load, open the link prompt unless a saved key is accepted
-     * by ElevenLabs. A network failure leaves a saved key in place.
+     * by ElevenLabs. A saved key is checked even while Help is open. An invalid
+     * key is cleared first. The prompt waits until no modal is open, so closing
+     * Help opens it when the key is gone. A network failure leaves a saved key.
      */
     function promptOnLoad() {
       const key = getApiKey();
       if (!key) {
-        openApiKeyModal();
+        if (!helpStillPending()) openApiKeyModal();
         return;
       }
       const checked = key;
       Eleven.validateApiKey(checked).then((result) => {
         if (session) return;
         if (getApiKey() !== checked) return;
-        if (document.querySelector(".modal.open")) return;
         if (result && result.ok) {
           notifyKeyState({
             voices: result.voices || [],
@@ -377,6 +384,8 @@
           loadError: false,
           refreshList: true
         });
+        // Help (or another modal) is up. Closing Help opens the prompt when the key is gone.
+        if (document.querySelector(".modal.open")) return;
         openApiKeyModal();
       }).catch(() => {});
     }
