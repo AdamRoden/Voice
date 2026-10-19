@@ -849,7 +849,10 @@ a.modal-btn { text-decoration: none; display: flex; align-items: center; justify
 /* ElevenLabs API key modal */
 .api-key-modal .modal-description { margin: 0; }
 .api-key-links { margin-top: 2px; gap: var(--gap-xl); }
-.api-key-link { gap: var(--gap-lg); width: 100%; min-height: 48px; justify-content: center; }
+.api-key-link { display: flex; align-items: center; box-sizing: border-box; gap: var(--gap-lg); width: 100%; min-height: 48px; justify-content: center; }
+.api-key-handoff-open { color: var(--accent); }
+#api-key-handoff-status[hidden],
+#api-key-handoff-open[hidden] { display: none !important; }
 .api-key-field { display: flex; flex-direction: column; gap: var(--gap-lg); margin-top: 4px; padding: var(--pad-xl); border-radius: 12px; border: 1px solid var(--border); background: var(--bg-main); }
 .api-key-field-label { font-size: 13px; font-weight: 600; color: var(--text); }
 .api-key-input { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: 16px; letter-spacing: 0.01em; word-break: break-all; min-height: 48px; width: 100%; }

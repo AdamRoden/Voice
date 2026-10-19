@@ -964,6 +964,7 @@
       onVoiceContextChanged: () => syncInsertTagChrome()
     });
     Voices.bind();
+    ElevenKey.promptOnLoad();
     Output.bind();
     Speech.bind();
 

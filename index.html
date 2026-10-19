@@ -584,17 +584,15 @@
   <div class="modal api-key-modal modal-full-mobile" id="api-key-modal" role="dialog" aria-modal="true" aria-labelledby="api-key-modal-title">
     <div class="modal-title" id="api-key-modal-title">ElevenLabs API Key</div>
     <div class="modal-scroll">
-      <p class="modal-description">Get more voices with ElevenLabs. Create an account, copy an unrestricted API key, then paste it below.</p>
-      <div class="modal-choice-group api-key-links" role="group" aria-label="ElevenLabs account links">
-        <a class="modal-btn primary api-key-link" href="https://elevenlabs.io/app/sign-up" target="_blank" rel="noopener noreferrer">
-          <span class="material-symbols-outlined icon-small">person_add</span>
-          <span>Create free account</span>
-        </a>
-        <a class="modal-btn secondary api-key-link" href="https://elevenlabs.io/app/developers/api-keys" target="_blank" rel="noopener noreferrer">
+      <p class="modal-description">Get more voices with ElevenLabs. Link to ElevenLabs (Free) signs you in, creates a key, and saves it on this device. You can also paste a key you already have.</p>
+      <div class="modal-choice-group api-key-links" role="group" aria-label="ElevenLabs account">
+        <button class="modal-btn primary api-key-link" id="get-api-key-btn" type="button">
           <span class="material-symbols-outlined icon-small">key</span>
-          <span>Get API key</span>
-        </a>
+          <span id="get-api-key-label">Link to ElevenLabs (Free)</span>
+        </button>
       </div>
+      <p class="api-key-help" id="api-key-handoff-status" role="status" hidden></p>
+      <a class="api-key-help api-key-handoff-open" id="api-key-handoff-open" target="_blank" rel="noopener noreferrer" hidden>Open ElevenLabs</a>
       <div class="api-key-field">
         <label class="api-key-field-label" for="api-key-input">Paste API key</label>
         <input
