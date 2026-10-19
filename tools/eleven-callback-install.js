@@ -17,7 +17,7 @@ function handler(req, res) {
     res.end(swJs);
     return;
   }
-  if (name === "/callback") {
+  if (name === "/callback" || name === "/callback/") {
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
     res.end(closeHtml);
     return;

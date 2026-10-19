@@ -759,13 +759,26 @@ function defaultLoadKeys(storageKey) {
       return Eleven.normalizeStandingTag(lsGet(VOICE_TAG_STORAGE_KEY, ""));
     }
 
+    function paintVoiceStyleList() {
+      const list = $("voice-tag-list");
+      if (!list) return;
+      const input = $("voice-tag-input");
+      const raw = input && document.activeElement === input ? input.value : readStoredVoiceTag();
+      const current = Eleven.normalizeStandingTag(raw).toLowerCase();
+      list.querySelectorAll("[data-style]").forEach((btn) => {
+        const on = current.length > 0 && (btn.getAttribute("data-style") || "").toLowerCase() === current;
+        btn.classList.toggle("selected", on);
+        btn.setAttribute("aria-selected", on ? "true" : "false");
+      });
+    }
+
     function syncVoiceTagRow() {
       const group = $("voice-tag-group");
       const input = $("voice-tag-input");
       const show = isElevenModelSelected();
       if (group) group.hidden = !show;
-      if (!show || !input) return;
-      if (document.activeElement !== input) input.value = readStoredVoiceTag();
+      if (show && input && document.activeElement !== input) input.value = readStoredVoiceTag();
+      if (show) paintVoiceStyleList();
     }
 
     function persistVoiceTagDraft() {
@@ -773,6 +786,7 @@ function defaultLoadKeys(storageKey) {
       if (!input) return "";
       const tag = Eleven.normalizeStandingTag(input.value);
       lsSet(VOICE_TAG_STORAGE_KEY, tag);
+      paintVoiceStyleList();
       return tag;
     }
 
@@ -781,7 +795,15 @@ function defaultLoadKeys(storageKey) {
       if (!input) return "";
       const tag = persistVoiceTagDraft();
       input.value = tag;
+      paintVoiceStyleList();
       return tag;
+    }
+
+    function chooseVoiceStyle(style) {
+      const input = $("voice-tag-input");
+      if (!input) return "";
+      input.value = style || "";
+      return commitVoiceTagFromInput();
     }
 
     /** Tag sent with ElevenLabs speech. Empty means none. The field writes storage as the user types. */
@@ -1338,6 +1360,11 @@ function defaultLoadKeys(storageKey) {
       $("voice-tag-input")?.addEventListener("input", persistVoiceTagDraft);
       $("voice-tag-input")?.addEventListener("change", commitVoiceTagFromInput);
       $("voice-tag-input")?.addEventListener("blur", commitVoiceTagFromInput);
+      $("voice-tag-list")?.addEventListener("click", (event) => {
+        const btn = event.target.closest("[data-style]");
+        if (!btn || !$("voice-tag-list")?.contains(btn)) return;
+        chooseVoiceStyle(btn.getAttribute("data-style") || "");
+      });
 
       modelSelect?.addEventListener("change", (e) => {
         const previousModel = readStoredModel();

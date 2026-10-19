@@ -829,7 +829,7 @@
 (function (global) {
   "use strict";
 
-  /** @type {Record<string, { key: string, dataset: string, optId: string, settingsKey: string }>} */
+  /** @type {Record<string, { key: string, dataset: string, optId: string, settingsKey: string, defaultOn?: boolean }>} */
   const SPEC = {
     messageWords: {
       key: "aac_feat_message_words",
@@ -841,7 +841,8 @@
       key: "aac_feat_button_insert",
       dataset: "featButtonInsert",
       optId: "opt-button-insert",
-      settingsKey: "featButtonInsert"
+      settingsKey: "featButtonInsert",
+      defaultOn: true
     },
     composeNew: {
       key: "aac_feat_compose_new",
@@ -885,7 +886,7 @@
     }
 
     Object.keys(SPEC).forEach((id) => {
-      state[id] = lsGetBool(SPEC[id].key, false);
+      state[id] = lsGetBool(SPEC[id].key, !!SPEC[id].defaultOn);
     });
 
     function get(id) {

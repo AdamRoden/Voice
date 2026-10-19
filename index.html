@@ -85,19 +85,19 @@
           </div>
 
           <div class="sidebar-setting-group" id="voice-tag-group" hidden>
-            <label for="voice-tag-input">Voice tag</label>
-            <input type="text" id="voice-tag-input" list="voice-tag-list" placeholder="None" autocomplete="off" spellcheck="false" enterkeyhint="done" aria-describedby="voice-tag-hint">
-            <datalist id="voice-tag-list">
-              <option value="anxious"></option>
-              <option value="bossy"></option>
-              <option value="dull"></option>
-              <option value="flirt"></option>
-              <option value="happy"></option>
-              <option value="loud"></option>
-              <option value="sing"></option>
-              <option value="whisper"></option>
-            </datalist>
-            <p class="setting-hint" id="voice-tag-hint">Always sent as [tag] at the start of ElevenLabs speech. Leave empty for none.</p>
+            <label for="voice-tag-input">Style</label>
+            <input type="text" id="voice-tag-input" placeholder="None" autocomplete="off" spellcheck="false" enterkeyhint="done" aria-describedby="voice-tag-hint">
+            <div class="voice-style-list" id="voice-tag-list" role="listbox" aria-label="Style">
+              <button type="button" class="voice-style-option" role="option" data-style="anxious" aria-selected="false">anxious</button>
+              <button type="button" class="voice-style-option" role="option" data-style="bossy" aria-selected="false">bossy</button>
+              <button type="button" class="voice-style-option" role="option" data-style="dull" aria-selected="false">dull</button>
+              <button type="button" class="voice-style-option" role="option" data-style="flirt" aria-selected="false">flirt</button>
+              <button type="button" class="voice-style-option" role="option" data-style="happy" aria-selected="false">happy</button>
+              <button type="button" class="voice-style-option" role="option" data-style="loud" aria-selected="false">loud</button>
+              <button type="button" class="voice-style-option" role="option" data-style="sing" aria-selected="false">sing</button>
+              <button type="button" class="voice-style-option" role="option" data-style="whisper" aria-selected="false">whisper</button>
+            </div>
+            <p class="setting-hint" id="voice-tag-hint">Always sent as [style] at the start of ElevenLabs speech. Leave empty for none.</p>
           </div>
 
           <div class="sidebar-setting-group">
@@ -226,7 +226,7 @@
                 <span class="setting-toggle-title">Insert from sound buttons</span>
                 <span class="setting-toggle-desc">Show + on sound buttons to add text to the message</span>
               </span>
-              <input type="checkbox" id="opt-button-insert" class="setting-toggle-input">
+              <input type="checkbox" id="opt-button-insert" class="setting-toggle-input" checked>
             </label>
             <label class="setting-toggle-row" for="opt-osk" id="opt-osk-row">
               <span class="setting-toggle-text">
@@ -446,7 +446,7 @@
         <li><strong>Sounds</strong> — <span class="material-symbols-outlined coach-inline-icon">grid_view</span> <strong>buttons</strong> play their audio.</li>
         <li><strong>Text box</strong> — <span class="material-symbols-outlined coach-inline-icon">more_horiz</span> <strong>Actions</strong> for clear, pin, and replay. <strong>Insert tag</strong> appears when the voice is ElevenLabs and adds a tag to the text in the box. <span class="material-symbols-outlined coach-inline-icon">volume_up</span> <strong>speaker</strong> always generates new speech (or press Enter). Replay plays the stored clip. Speech history is in the sidebar. The on-screen keyboard lives in <strong>Settings</strong> (off uses the system keyboard; in landscape the composer stays above it).</li>
         <li><strong>ElevenLabs</strong> — closing Help opens the key prompt when this device has no key. <strong>Link to ElevenLabs (Free)</strong> signs you in and saves the key here, then asks you to choose a voice. If a localhost page stays open, close it.</li>
-        <li><strong>Voice tag</strong> — on the Voice tab, under the selected voice, while ElevenLabs is the model. Choose anxious, bossy, dull, flirt, happy, loud, sing, or whisper, or type one. Every ElevenLabs line starts with that tag in brackets. The text box and history keep your words. Leave the field empty for none.</li>
+        <li><strong>Style</strong> — on the Voice tab, under the selected voice, while ElevenLabs is the model. Choose anxious, bossy, dull, flirt, happy, loud, sing, or whisper, or type one. The list always shows every style. Every ElevenLabs line starts with that style in brackets. The text box and history keep your words. Leave the field empty for none.</li>
         <li><strong>Shortcuts</strong> — composer buttons show their keys in tooltips; open the full list with <strong>Keyboard shortcuts</strong> below.</li>
       </ol>
       <button type="button" class="status-btn help-hotkeys-btn" id="help-hotkeys-btn">
