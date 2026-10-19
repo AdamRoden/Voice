@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   <link rel="stylesheet" href="css/app.css">
 </head>
-<body class="osk-visible">
+<body>
 
   <div class="sidebar-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
   <div id="sr-live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
@@ -175,7 +175,7 @@
                 <span class="setting-toggle-title">On-screen keyboard</span>
                 <span class="setting-toggle-desc">Use the custom keyboard instead of the system keyboard</span>
               </span>
-              <input type="checkbox" id="opt-osk" class="setting-toggle-input" checked>
+              <input type="checkbox" id="opt-osk" class="setting-toggle-input">
             </label>
             <div class="modal-description settings-section-label">Compose quick actions</div>
             <label class="setting-toggle-row" for="opt-compose-new">
@@ -332,7 +332,7 @@
   </div><!-- /.app-shell -->
 
   <!-- Full-width OSK: left edge → right edge under shell -->
-  <div class="osk-panel osk-open" id="osk-panel" aria-label="On-screen keyboard"></div>
+  <div class="osk-panel" id="osk-panel" aria-label="On-screen keyboard"></div>
   </div><!-- /.app-layout -->
 
   <!-- ==================== MODALS & POPUPS ==================== -->
@@ -588,7 +588,7 @@
       <div class="modal-choice-group api-key-links" role="group" aria-label="ElevenLabs account">
         <button class="modal-btn primary api-key-link" id="get-api-key-btn" type="button">
           <span class="material-symbols-outlined icon-small">key</span>
-          <span id="get-api-key-label">Link to ElevenLabs (Free)</span>
+          <span>Link to ElevenLabs (Free)</span>
         </button>
       </div>
       <p class="api-key-help" id="api-key-handoff-status" role="status" hidden></p>
@@ -759,6 +759,7 @@
   <script src="js/keyboard.js" defer></script>
   <script src="js/speech-engines.js" defer></script>
   <script src="js/eleven.js" defer></script>
+  <script src="js/eleven-handoff.js" defer></script>
   <script src="js/eleven-key.js" defer></script>
   <script src="js/piper.js" defer></script>
   <script src="js/output-device.js" defer></script>

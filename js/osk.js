@@ -141,12 +141,13 @@
   }
 
   /**
-   * Phones only (narrow widths). iPad / landscape keep custom OSK (Settings).
+   * Phones only (narrow widths). iPad and landscape use the system keyboard
+   * unless Settings turns the custom keyboard on.
    * Keep in sync with css/app.css @media (max-width: 600px) OSK hide.
    */
   const PHONE_OSK_MQ = "(max-width: 600px)";
   const LS_OSK = "aac_osk_visible";
-  const LS_OSK_V2 = "aac_osk_default_v2";
+  const LS_OSK_V3 = "aac_osk_default_v3";
 
   function oskAllowed() {
     try {
@@ -165,7 +166,7 @@
   let keysEl = null;
   let visible = false;
   /** User preference only — never overwritten by phone policy. */
-  let userPrefersOsk = true;
+  let userPrefersOsk = false;
   let isShift = false;
   let isCtrl = false;
   let isSymbol = false;
@@ -718,15 +719,16 @@
     } = optsIn;
     if (!panel) return;
 
-    // Default ON. Migrate once; then honor stored preference (phones never override storage).
-    userPrefersOsk = true;
+    // Default off. v2 forced the keyboard on; v3 applies the off default once,
+    // then the stored checkbox wins. Phones never show the custom keyboard.
+    userPrefersOsk = false;
     if (lsGet && lsSet) {
-      if (lsGet(LS_OSK_V2, null) !== "1") {
-        lsSet(LS_OSK_V2, "1");
-        lsSet(LS_OSK, "1");
-        userPrefersOsk = true;
+      if (lsGet(LS_OSK_V3, null) !== "1") {
+        lsSet(LS_OSK_V3, "1");
+        lsSet(LS_OSK, "0");
+        userPrefersOsk = false;
       } else {
-        userPrefersOsk = lsGet(LS_OSK, "1") === "1";
+        userPrefersOsk = lsGet(LS_OSK, "0") === "1";
       }
     }
 

@@ -123,6 +123,7 @@
     const VOLUME_GAIN_MAX = VOLUME_STOP_GAINS[VOLUME_STOP_GAINS.length - 1];
     const AudioFx = window.AacAudioFx;
     const Eleven = window.AacEleven;
+    const ElevenHandoffApi = window.AacElevenHandoff;
     const ElevenKeyApi = window.AacElevenKey;
     const Piper = window.AacPiper;
     const SpeechEngines = window.AacSpeechEngines;
@@ -149,6 +150,7 @@
     }
     requireModule("AacSpeechEngines", SpeechEngines);
     requireModule("AacEleven", Eleven);
+    requireModule("AacElevenHandoff", ElevenHandoffApi);
     requireModule("AacElevenKey", ElevenKeyApi);
     requireModule("AacPiper", Piper);
     requireModule("AacVoicesFilters", VoicesFilters);
