@@ -232,6 +232,7 @@ html[data-layout="portrait"] .portrait-only { display: flex !important; }
 .color-field-hex { flex: 1 1 auto; min-width: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; letter-spacing: 0.04em; text-transform: lowercase; }
 /* Settings Groups */
 .sidebar-setting-group { display: flex; flex-direction: column; gap: var(--gap-sm); padding: 4px; margin-bottom: 6px; }
+.sidebar-setting-group[hidden] { display: none !important; }
 .sidebar-setting-group label { font-size: 13px; color: var(--text-secondary); display: flex; justify-content: space-between; font-weight: 500; }
 .sidebar-setting-group select, .sidebar-setting-group input[type="text"] { background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: 10px 12px; border-radius: var(--radius-md); font-size: 16px; outline: none; width: 100%; min-height: var(--touch-min); }
 .sidebar-setting-group select:focus, .sidebar-setting-group input[type="text"]:focus { border-color: var(--accent); }
@@ -536,7 +537,8 @@ body:not([data-feat-message-words="1"]) .compose-strip { display: none !importan
 body:not([data-feat-compose-new="1"]) #compose-new-message-btn { display: none !important; }
 body:not([data-feat-compose-pin="1"]) #compose-pin-btn { display: none !important; }
 body:not([data-feat-compose-replay="1"]) #compose-replay-btn { display: none !important; }
-body:not([data-feat-insert-tag="1"]) #insert-tag-btn { display: none !important; }
+#insert-tag-btn[hidden],
+#compose-quick-actions[hidden] { display: none !important; }
 /* Composition word chips (under display) */
 .compose-strip { display: none; flex-direction: column; gap: var(--gap-sm); flex-shrink: 0; min-width: 0; }
 .compose-strip.has-items,

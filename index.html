@@ -84,6 +84,13 @@
             </div>
           </div>
 
+          <div class="sidebar-setting-group" id="voice-tag-group" hidden>
+            <label for="voice-tag-input">Voice tag</label>
+            <input type="text" id="voice-tag-input" list="voice-tag-list" placeholder="None" autocomplete="off" spellcheck="false" enterkeyhint="done" aria-describedby="voice-tag-hint">
+            <datalist id="voice-tag-list"></datalist>
+            <p class="setting-hint" id="voice-tag-hint">Always sent as [tag] at the start of ElevenLabs speech. Leave empty for none.</p>
+          </div>
+
           <div class="sidebar-setting-group">
             <label for="volume-slider"><span>Amplifier</span><span id="val-volume">100%</span></label>
             <div class="range-field" style="--range-mark: 0;">
@@ -199,13 +206,6 @@
               </span>
               <input type="checkbox" id="opt-compose-replay" class="setting-toggle-input">
             </label>
-            <label class="setting-toggle-row" for="opt-insert-tag">
-              <span class="setting-toggle-text">
-                <span class="setting-toggle-title">Insert tag button</span>
-                <span class="setting-toggle-desc">Show + next to the text box to insert [tags]</span>
-              </span>
-              <input type="checkbox" id="opt-insert-tag" class="setting-toggle-input">
-            </label>
             <div class="sidebar-setting-group" id="group-output-device">
               <label for="output-device-select">Speaker</label>
               <select id="output-device-select" aria-describedby="output-device-hint">
@@ -281,8 +281,8 @@
         <div class="compose-box" id="toolbar">
           <div class="compose-row">
             <div class="compose-leading" id="compose-leading">
-              <div class="compose-quick-actions" id="compose-quick-actions" aria-label="Quick actions">
-                <button type="button" class="compose-icon-btn compose-standalone" id="insert-tag-btn" aria-label="Insert tag" title="Insert tag">
+              <div class="compose-quick-actions" id="compose-quick-actions" aria-label="Quick actions" hidden>
+                <button type="button" class="compose-icon-btn compose-standalone" id="insert-tag-btn" aria-label="Insert tag" title="Insert tag" hidden>
                   <span class="material-symbols-outlined">add</span>
                 </button>
               </div>
@@ -393,7 +393,7 @@
         <li><strong>Topics</strong> — tap a topic to activate it. Tap the <strong>active</strong> topic (or its icon on the rail) to open the left sidebar. Tap other icons only switches the active topic.</li>
         <li><strong>Top bar</strong> — portrait only (menu button + chat chips). Tap empty space on the bar (or swipe up/down) to toggle normal vs slim (50% height).</li>
         <li><strong>Sounds</strong> — <span class="material-symbols-outlined coach-inline-icon">grid_view</span> <strong>buttons</strong> play their audio.</li>
-        <li><strong>Text box</strong> — <span class="material-symbols-outlined coach-inline-icon">more_horiz</span> <strong>Actions</strong> for clear, pin, replay, and tags; <span class="material-symbols-outlined coach-inline-icon">volume_up</span> <strong>speaker</strong> always generates new speech (or press Enter). Replay plays the stored clip. Speech history is in the sidebar. The on-screen keyboard lives in <strong>Settings</strong> (off uses the system keyboard; in landscape the composer stays above it).</li>
+        <li><strong>Text box</strong> — <span class="material-symbols-outlined coach-inline-icon">more_horiz</span> <strong>Actions</strong> for clear, pin, and replay. <strong>Insert tag</strong> appears when the voice is ElevenLabs. <span class="material-symbols-outlined coach-inline-icon">volume_up</span> <strong>speaker</strong> always generates new speech (or press Enter). Replay plays the stored clip. Speech history is in the sidebar. The on-screen keyboard lives in <strong>Settings</strong> (off uses the system keyboard; in landscape the composer stays above it).</li>
         <li><strong>Shortcuts</strong> — composer buttons show their keys in tooltips; open the full list with <strong>Keyboard shortcuts</strong> below.</li>
       </ol>
       <button type="button" class="status-btn help-hotkeys-btn" id="help-hotkeys-btn">

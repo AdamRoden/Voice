@@ -823,12 +823,6 @@
       optId: "opt-button-insert",
       settingsKey: "featButtonInsert"
     },
-    insertTag: {
-      key: "aac_feat_insert_tag",
-      dataset: "featInsertTag",
-      optId: "opt-insert-tag",
-      settingsKey: "featInsertTag"
-    },
     composeNew: {
       key: "aac_feat_compose_new",
       dataset: "featComposeNew",

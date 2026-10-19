@@ -21,6 +21,7 @@
    *   onNeedBrowserFallback?: () => void,
    *   onRevertModel?: (modelId: string) => void,
    *   onCommitPendingModel?: (modelId: string) => void,
+   *   onKeySaved?: () => void,
    *   onKeyStateChanged?: (state: {
    *     voices?: any[]|null,
    *     clearCache?: boolean,
@@ -104,6 +105,12 @@
     function notifyKeyState(state) {
       if (typeof d.onKeyStateChanged === "function") {
         try { d.onKeyStateChanged(state || {}); } catch (_) {}
+      }
+    }
+
+    function notifyKeySaved() {
+      if (typeof d.onKeySaved === "function") {
+        try { d.onKeySaved(); } catch (_) {}
       }
     }
 
@@ -275,17 +282,18 @@
         takeSession();
         lsSet(KEY_STORAGE, key);
         paintApiKeyButton();
+        if (pendingModel && typeof d.onCommitPendingModel === "function") {
+          try { d.onCommitPendingModel(pendingModel); } catch (_) {}
+        }
         notifyKeyState({
           voices: result.voices || [],
           loadError: false,
           clearCache: false,
           refreshList: true
         });
-        if (pendingModel && typeof d.onCommitPendingModel === "function") {
-          try { d.onCommitPendingModel(pendingModel); } catch (_) {}
-        }
         finishModalUi(returnToModal);
         await handoff.finish(key);
+        notifyKeySaved();
         return true;
       } finally {
         if (isSessionAlive(sid) && session) session.checking = false;

@@ -39,6 +39,35 @@
     return stripInlineTags(text).length > 0;
   }
 
+  /**
+   * Standing voice tag: trim, drop one wrapping [pair], then drop any leftover brackets.
+   * Empty means no standing tag.
+   */
+  function normalizeStandingTag(raw) {
+    let t = String(raw == null ? "" : raw).trim();
+    if (t.length >= 2 && t.charAt(0) === "[" && t.charAt(t.length - 1) === "]") {
+      t = t.slice(1, -1).trim();
+    }
+    return t.replace(/[\[\]]/g, "").replace(/\s+/g, " ").trim();
+  }
+
+  /**
+   * Put [tag] at the start of text sent to ElevenLabs.
+   * Leave the phrase alone when it already starts with that tag.
+   */
+  function applyStandingTag(phrase, tag) {
+    const clean = normalizeStandingTag(tag);
+    const text = String(phrase == null ? "" : phrase);
+    if (!clean) return text;
+    const wrapped = `[${clean}]`;
+    const lead = text.trimStart();
+    if (lead.length >= wrapped.length
+      && lead.slice(0, wrapped.length).toLowerCase() === wrapped.toLowerCase()) {
+      return text;
+    }
+    return `${wrapped} ${text}`;
+  }
+
   function elevenModelId() {
     const id = global.AacSpeechEngines && global.AacSpeechEngines.ELEVEN_MODEL_ID;
     if (!id) throw new Error("AacSpeechEngines required");
@@ -501,6 +530,8 @@
     phraseHasInlineTags,
     stripInlineTags,
     hasNonTagSpeechContent,
+    normalizeStandingTag,
+    applyStandingTag,
     PCM_STREAM_FORMAT,
     PCM_STREAM_SAMPLE_RATE,
     takePcm16,

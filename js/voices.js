@@ -538,6 +538,7 @@ function defaultLoadKeys(storageKey) {
   const FAV_ELEVEN_KEY = "aac_fav_eleven_voices";
   const FAV_PIPER_KEY = "aac_fav_piper_voices";
   const PREVIEW_TEXT = "This is a preview.";
+  const VOICE_TAG_STORAGE_KEY = "aac_eleven_voice_tag";
 
   /**
    * @param {{
@@ -560,7 +561,8 @@ function defaultLoadKeys(storageKey) {
    *   openModal: (id: string) => void,
    *   closeModals: () => void,
    *   focusDisplayInput: () => void,
-   *   onVoiceContextChanged?: () => void
+   *   onVoiceContextChanged?: () => void,
+   *   listSavedTags?: () => string[]
    * }} deps
    */
   function create(deps) {
@@ -753,7 +755,61 @@ function defaultLoadKeys(storageKey) {
       return label;
     }
 
+    function readStoredVoiceTag() {
+      return Eleven.normalizeStandingTag(lsGet(VOICE_TAG_STORAGE_KEY, ""));
+    }
+
+    function fillVoiceTagList() {
+      const list = $("voice-tag-list");
+      if (!list) return;
+      const tags = typeof d.listSavedTags === "function" ? d.listSavedTags() : [];
+      const seen = Object.create(null);
+      list.textContent = "";
+      (tags || []).forEach((tag) => {
+        const clean = Eleven.normalizeStandingTag(tag);
+        const key = clean.toLowerCase();
+        if (!clean || seen[key]) return;
+        seen[key] = true;
+        const opt = document.createElement("option");
+        opt.value = clean;
+        list.appendChild(opt);
+      });
+    }
+
+    function syncVoiceTagRow() {
+      const group = $("voice-tag-group");
+      const input = $("voice-tag-input");
+      const show = isElevenModelSelected();
+      if (group) group.hidden = !show;
+      if (!show || !input) return;
+      fillVoiceTagList();
+      if (document.activeElement !== input) input.value = readStoredVoiceTag();
+    }
+
+    function persistVoiceTagDraft() {
+      const input = $("voice-tag-input");
+      if (!input) return "";
+      const tag = Eleven.normalizeStandingTag(input.value);
+      lsSet(VOICE_TAG_STORAGE_KEY, tag);
+      return tag;
+    }
+
+    function commitVoiceTagFromInput() {
+      const input = $("voice-tag-input");
+      if (!input) return "";
+      const tag = persistVoiceTagDraft();
+      input.value = tag;
+      return tag;
+    }
+
+    /** Tag sent with ElevenLabs speech. Empty means none. The field writes storage as the user types. */
+    function getStandingVoiceTag() {
+      if (!isElevenModelSelected()) return "";
+      return readStoredVoiceTag();
+    }
+
     function notifyVoiceContextChanged() {
+      syncVoiceTagRow();
       if (typeof d.onVoiceContextChanged === "function") d.onVoiceContextChanged();
     }
 
@@ -1289,6 +1345,10 @@ function defaultLoadKeys(storageKey) {
 
       $("open-voices")?.addEventListener("click", () => openVoicesPanel());
       $("close-voices-panel-btn")?.addEventListener("click", closeVoicesPanel);
+      $("voice-tag-input")?.addEventListener("focus", fillVoiceTagList);
+      $("voice-tag-input")?.addEventListener("input", persistVoiceTagDraft);
+      $("voice-tag-input")?.addEventListener("change", commitVoiceTagFromInput);
+      $("voice-tag-input")?.addEventListener("blur", commitVoiceTagFromInput);
 
       modelSelect?.addEventListener("change", (e) => {
         const previousModel = readStoredModel();
@@ -1375,6 +1435,7 @@ function defaultLoadKeys(storageKey) {
       getBrowserVoiceIndex: () => browserVoiceIndex,
       getPiperVoiceId: () => piperVoiceId,
       getElevenVoiceId: () => elevenVoiceId,
+      getStandingVoiceTag,
       stopPiperSamplePreview
     };
   }

@@ -30,6 +30,7 @@
    *     elevenVoiceId: string,
    *     browserVoiceIndex: number|string
    *   },
+   *   getStandingVoiceTag?: () => string,
    *   addToHistory: (text: string, model: string, voiceId: string, dataUrl: string|null, extra?: object) => void,
    *   isUtteranceSource: (src: any) => boolean,
    *   getUtteranceText: (src: any) => string,
@@ -515,6 +516,11 @@
       const phrase = d.trim(text);
       if (!phrase) return;
 
+      const elevenPhrase = () => Eleven.applyStandingTag(
+        phrase,
+        typeof d.getStandingVoiceTag === "function" ? d.getStandingVoiceTag() : ""
+      );
+
       const gainSetting = d.getVolumeGain();
       const speed = d.getSpeechSpeed();
       const pitch = d.getSpeechPitch();
@@ -643,7 +649,7 @@
           try {
             if (engine.id === "eleven" && !fxChangesSound(speed, pitch)) {
               await runEleven({
-                phrase,
+                phrase: elevenPhrase(),
                 voiceId: engine.voiceId || elevenVoiceId,
                 apiKey,
                 speed,
@@ -678,7 +684,7 @@
               ? (engine.voiceId || elevenVoiceId)
               : (engine.voiceId || piperVoiceId);
             const out = engine.id === "eleven"
-              ? await produceElevenClip({ phrase, voiceId, apiKey, speed, pitch })
+              ? await produceElevenClip({ phrase: elevenPhrase(), voiceId, apiKey, speed, pitch })
               : await SpeechEngines.produce(engine, {
                 phrase,
                 text: Eleven.stripInlineTags(phrase) || phrase,

@@ -448,8 +448,11 @@
     /** Bracket tags only apply when an ElevenLabs model is selected. */
     const canInsertTag = () => !!(Voices?.isElevenModelSelected?.());
     const syncInsertTagChrome = () => {
+      const show = canInsertTag();
       const btn = document.getElementById("insert-tag-btn");
-      if (btn) btn.hidden = !canInsertTag();
+      const wrap = document.getElementById("compose-quick-actions");
+      if (btn) btn.hidden = !show;
+      if (wrap) wrap.hidden = !show;
       if (Compose?.isOpen?.()) Compose.render();
     };
 
@@ -907,6 +910,9 @@
           elevenVoiceId: "",
           browserVoiceIndex: 0
         }),
+      getStandingVoiceTag: () => (Voices && typeof Voices.getStandingVoiceTag === "function"
+        ? Voices.getStandingVoiceTag()
+        : ""),
       addToHistory: (...a) => ports.addToHistory(...a),
       isUtteranceSource,
       getUtteranceText,
@@ -939,7 +945,17 @@
       onNeedBrowserFallback: () => { Voices?.fallbackToDefaultModel(); },
       onRevertModel: (mid) => { Voices?.applyModelUi(mid, { persist: true }); },
       onCommitPendingModel: (mid) => { Voices?.applyModelUi(mid, { persist: true }); },
-      onKeyStateChanged: (state) => { Voices?.onElevenKeyStateChanged(state); }
+      onKeyStateChanged: (state) => { Voices?.onElevenKeyStateChanged(state); },
+      onKeySaved: () => {
+        try { ports.switchSidebarTab("voice", true); } catch (_) {}
+        Voices?.applyModelUi(SpeechEngines.ELEVEN_MODEL_ID, { persist: true });
+        Voices?.openVoicesPanel("eleven");
+        const search = document.getElementById("voice-search-input");
+        if (!search) return;
+        try { search.focus({ preventScroll: true }); } catch (_) {
+          try { search.focus(); } catch (__) {}
+        }
+      }
     });
     ElevenKey.bind();
 
@@ -963,7 +979,8 @@
       openModal: (id) => ports.openModal(id),
       closeModals: () => ports.closeModals(),
       focusDisplayInput,
-      onVoiceContextChanged: () => syncInsertTagChrome()
+      onVoiceContextChanged: () => syncInsertTagChrome(),
+      listSavedTags: () => ComposeApi.listSavedTags()
     });
     Voices.bind();
     ElevenKey.promptOnLoad();

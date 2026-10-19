@@ -1,6 +1,7 @@
 /**
  * Compose surface: display field (caret, chips, tags) + overflow menu.
  * Primary export: AacCompose.createDisplay / AacCompose.createActions.
+ * listSavedTags reads aac_saved_tags for the standing voice-tag list.
  */
 (function (global) {
   "use strict";
@@ -10,6 +11,24 @@
     "english accent", "irish accent", "pirate accent"
   ];
   const SAVED_TAGS_STORAGE_KEY = "aac_saved_tags";
+
+  function parseTagsList(str) {
+    return String(str || "")
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+  }
+
+  function listSavedTags() {
+    try {
+      const raw = localStorage.getItem(SAVED_TAGS_STORAGE_KEY);
+      if (raw == null || raw === "") return DEFAULT_SAVED_TAGS.slice();
+      const parsed = parseTagsList(raw);
+      return parsed.length ? parsed : DEFAULT_SAVED_TAGS.slice();
+    } catch (_) {
+      return DEFAULT_SAVED_TAGS.slice();
+    }
+  }
 
   /**
    * Display field helpers: caret, chips, tags, insert/delete, undo/redo history.
@@ -44,7 +63,7 @@
     }
 
     const displayInput = d.displayInput;
-    let savedTagsList = loadSavedTags();
+    let savedTagsList = listSavedTags();
     let savedTagsInputTimer = null;
 
     // ---- Undo / redo (owns history; raw paint stays d.setText) ----
@@ -352,24 +371,6 @@
       d.focusDisplayInput();
     }
 
-    function parseTagsList(str) {
-      return String(str || "")
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean);
-    }
-
-    function loadSavedTags() {
-      try {
-        const raw = localStorage.getItem(SAVED_TAGS_STORAGE_KEY);
-        if (raw == null || raw === "") return [...DEFAULT_SAVED_TAGS];
-        const parsed = parseTagsList(raw);
-        return parsed.length ? parsed : [...DEFAULT_SAVED_TAGS];
-      } catch (_) {
-        return [...DEFAULT_SAVED_TAGS];
-      }
-    }
-
     function persistSavedTags(tags) {
       savedTagsList = Array.isArray(tags) ? tags.slice() : [];
       try {
@@ -406,7 +407,7 @@
 
     function openTagInsertModal() {
       if (typeof d.canInsertTag === "function" && !d.canInsertTag()) return;
-      savedTagsList = loadSavedTags();
+      savedTagsList = listSavedTags();
       const savedInput = document.getElementById("saved-tags-input");
       if (savedInput) savedInput.value = tagsListToText(savedTagsList);
       renderTagInsertGrid(savedTagsList);
@@ -660,5 +661,5 @@
     };
   }
 
-  global.AacCompose = { createDisplay, createActions };
+  global.AacCompose = { createDisplay, createActions, listSavedTags };
 })(typeof window !== "undefined" ? window : globalThis);
