@@ -1,20 +1,5 @@
 <!doctype html>
 <meta charset="utf-8">
 <title>ElevenLabs</title>
-<script>
-(function () {
-  function shut() {
-    try { window.close(); } catch (e) {}
-    try { self.close(); } catch (e) {}
-    try {
-      var w = window.open("", "_self");
-      if (w) w.close();
-    } catch (e) {}
-  }
-  shut();
-  addEventListener("pageshow", shut);
-  setTimeout(shut, 50);
-  setTimeout(shut, 250);
-})();
-</script>
+<script>window.close()</script>
 <p>You're signed in. You can close this tab.</p>

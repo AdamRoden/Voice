@@ -8,8 +8,8 @@
 
   const HANDOFF_CLIENT_ID = "c9c18126-5718-406a-8a12-21b69e5a888d";
   const HANDOFF_AUTHORIZE_URL = "https://elevenlabs.io/app/oauth/authorize";
-  // This public client only allows the localhost callback. eleven-callback/sw.js
-  // answers it and closes the tab. Register that worker with tools/eleven-callback-install.js.
+  // This public client only allows the localhost callback. close.html calls
+  // window.close(). The installer serves that file and fills it into the worker.
   const HANDOFF_REDIRECT_URI = "http://localhost:8484/callback";
   const HANDOFF_SCOPES = ["text_to_speech", "voices_read", "user_read"];
   const QUICKSTART_URL = "https://elevenlabs.io/app/api/api-keys?quickstart=true";

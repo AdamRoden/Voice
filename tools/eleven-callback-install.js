@@ -6,8 +6,14 @@ const path = require("path");
 
 const root = path.join(__dirname, "..", "eleven-callback");
 const installHtml = fs.readFileSync(path.join(root, "install.html"));
-const swJs = fs.readFileSync(path.join(root, "sw.js"));
 const closeHtml = fs.readFileSync(path.join(root, "close.html"));
+const swMarker = 'const CLOSE_HTML = "";';
+const swTemplate = fs.readFileSync(path.join(root, "sw.js"), "utf8");
+if (!swTemplate.includes(swMarker)) throw new Error("callback worker is missing CLOSE_HTML");
+const swJs = swTemplate.replace(
+  swMarker,
+  "const CLOSE_HTML = " + JSON.stringify(closeHtml.toString("utf8")) + ";"
+);
 
 function handler(req, res) {
   const name = new URL(req.url, "http://localhost:8484").pathname;
@@ -26,15 +32,30 @@ function handler(req, res) {
   res.end(installHtml);
 }
 
+const hosts = ["127.0.0.1", "::1"];
+let pending = hosts.length;
+let listening = 0;
+
+function finish(host, err) {
+  if (err && err.code !== "EADDRINUSE") {
+    console.error(host + ": " + err.message);
+    process.exit(1);
+  }
+  if (err) console.error(host + ": already listening");
+  pending -= 1;
+  if (pending === 0 && listening === 0) process.exit(0);
+}
+
 function listen(host) {
   const server = http.createServer(handler);
-  server.on("error", (err) => {
-    console.error(host + ": " + err.message);
-  });
+  server.on("error", (err) => finish(host, err));
   server.listen(8484, host, () => {
+    listening += 1;
     console.log("listening on " + host + ":8484");
+    finish(host);
   });
 }
 
-listen("127.0.0.1");
-listen("::1");
+hosts.forEach(listen);
+
+

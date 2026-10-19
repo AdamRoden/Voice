@@ -9,7 +9,6 @@ navigator.serviceWorker.register("/sw.js", { scope: "/" }).then(function () {
   var msg = document.getElementById("msg");
   if (msg) msg.textContent = "ElevenLabs linking is ready. You can close this tab.";
   window.close();
-  setTimeout(function () { window.close(); }, 50);
 }).catch(function () {
   var msg = document.getElementById("msg");
   if (msg) msg.textContent = "This browser could not prepare the ElevenLabs link.";
