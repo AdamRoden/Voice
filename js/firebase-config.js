@@ -1,6 +1,7 @@
 /**
  * Firebase project voice-1d8a8, web app Voice.
  * Email/Password sign-in and the Firestore (default) database live in that project.
+ * Continue with Google loads the Firebase Auth scripts the first time it is used.
  * A key saved from Settings overrides this one in this browser only.
  */
 (function (global) {

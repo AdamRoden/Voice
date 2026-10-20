@@ -7,6 +7,7 @@
   "use strict";
 
   const Sync = global.AacAccountSync;
+  const Google = global.AacGoogleSignIn;
   if (!Sync) return;
 
   const storage = installStorageHook();
@@ -144,9 +145,12 @@
     show("account-signed-out", !signedIn && !needsKey);
     show("account-signed-in", signedIn && !conflict);
     show("account-conflict", conflict);
-    const label = current && current.email ? "Signed in as " + current.email : "Signed in";
+    const email = current && current.email ? String(current.email) : "";
+    const label = email || "Signed in";
     const line = $("account-email-line");
     if (line) line.textContent = signedIn ? label : "";
+    const avatar = $("account-avatar");
+    if (avatar) avatar.textContent = email.trim().charAt(0).toUpperCase() || "?";
     const conflictLine = $("account-conflict-email");
     if (conflictLine) conflictLine.textContent = signedIn ? label : "";
   }
@@ -154,7 +158,7 @@
   function setBusy(on) {
     busy = !!on;
     [
-      "account-signin", "account-create", "account-forgot", "account-sync",
+      "account-google", "account-signin", "account-create", "account-forgot", "account-sync",
       "account-signout", "account-keep-device", "account-use-cloud",
       "account-combine", "account-api-key-save", "account-banner-action"
     ].forEach((id) => {
@@ -203,11 +207,14 @@
     return typed !== saved;
   }
 
-  function canAutoReload() {
-    if (document.querySelector(".modal.open")) return false;
+  function dialogOpen() {
+    if (document.querySelector(".modal.open")) return true;
     const overlay = $("modal-overlay");
-    if (overlay && overlay.classList.contains("open")) return false;
-    return !composerIsDirty();
+    return !!(overlay && overlay.classList.contains("open"));
+  }
+
+  function canAutoReload() {
+    return !dialogOpen() && !composerIsDirty();
   }
 
   function openSettings() {
@@ -603,8 +610,12 @@
         return;
       }
       noteUpload(meta, plan, localKeys);
-      showBanner("Your account has newer boards.", "apply", "Apply");
-      if (!opts.quiet) setStatus("Your account has newer boards. Apply them when you are ready.");
+      if (composerIsDirty()) {
+        showBanner("Your account has newer boards.", "apply", "Apply");
+        if (!opts.quiet) setStatus("Your account has newer boards. Apply them when you are ready.");
+      } else {
+        hideBanner();
+      }
       paint();
       return;
     }
@@ -710,6 +721,48 @@
     }
   }
 
+  function googleOptions() {
+    return {
+      apiKey: webApiKey(),
+      projectId: projectId(),
+      config: global.AacFirebaseConfig || {}
+    };
+  }
+
+  async function signInWithGoogle() {
+    if (busy) return;
+    if (!Google) {
+      setStatus("Google sign-in is not available in this copy of the app.", "error");
+      return;
+    }
+    setBusy(true);
+    setStatus("Opening Google…");
+    try {
+      await Google.start(googleOptions());
+    } catch (err) {
+      setStatus(err && err.userMessage || "Could not sign in with Google.", "error");
+      setBusy(false);
+    }
+  }
+
+  async function resumeGoogle() {
+    if (!Google) return false;
+    try {
+      const back = await Google.resume(googleOptions());
+      if (back && back.session) {
+        writeSession(back.session);
+        paint();
+        setStatus("Signed in. Syncing…");
+        return true;
+      }
+      if (back && back.cancelled && !readSession()) setStatus("Google sign-in was cancelled.");
+      return false;
+    } catch (err) {
+      setStatus(err && err.userMessage || "Could not sign in with Google.", "error");
+      return false;
+    }
+  }
+
   function signOut() {
     clearSession();
     paint();
@@ -734,7 +787,19 @@
     setStatus("API key saved on this device.");
   }
 
+  function activateBanner() {
+    if (bannerAction === "settings") {
+      openSettings();
+      return;
+    }
+    if (bannerAction === "apply") {
+      setStatus("Applying your account…");
+      sync({ reason: "apply", forceReload: true });
+    }
+  }
+
   function bind() {
+    $("account-google")?.addEventListener("click", () => signInWithGoogle());
     $("account-signin")?.addEventListener("click", () => signInOrCreate("sign-in"));
     $("account-create")?.addEventListener("click", () => signInOrCreate("create"));
     $("account-forgot")?.addEventListener("click", () => forgotPassword());
@@ -764,20 +829,11 @@
         }
       });
     });
-    $("account-banner-action")?.addEventListener("click", () => {
-      if (bannerAction === "settings") {
-        openSettings();
-        return;
-      }
-      if (bannerAction === "apply") {
-        setStatus("Applying your account…");
-        sync({ reason: "apply", forceReload: true });
-      }
+    $("account-banner-action")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      activateBanner();
     });
-    $("account-banner")?.addEventListener("click", (event) => {
-      if (event.target && event.target.closest && event.target.closest("#account-banner-action")) return;
-      if (bannerAction === "settings") openSettings();
-    });
+    $("account-banner")?.addEventListener("click", () => activateBanner());
     document.addEventListener("visibilitychange", () => {
       if (!readSession()) return;
       if (document.visibilityState === "visible") sync({ reason: "show", quiet: true });
@@ -793,14 +849,23 @@
   function boot() {
     bind();
     paint();
-    if (!readSession()) return;
-    startPoll();
-    setStatus("Syncing…");
-    sync({ reason: "boot" });
+    resumeGoogle().then((resumed) => {
+      if (!readSession()) return;
+      startPoll();
+      // The message box and Help are painted by a later DOMContentLoaded
+      // listener. Wait until that finishes before deciding to reload.
+      setTimeout(() => {
+        if (!readSession()) return;
+        setStatus(resumed ? "Signed in. Syncing…" : "Syncing…");
+        sync({ reason: resumed ? "sign-in" : "boot" });
+      }, 0);
+    });
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
-  else boot();
+  // Defer scripts run at readyState "interactive", before the message box
+  // is filled and before Help opens. Syncing then leaves the banner up.
+  if (document.readyState === "complete") boot();
+  else document.addEventListener("DOMContentLoaded", boot);
 
   global.AacAccount = {
     webApiKey,

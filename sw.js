@@ -1,5 +1,5 @@
 /* AAC Workspace service worker — offline shell + app assets */
-const CACHE_NAME = "aac-workspace-v95";
+const CACHE_NAME = "aac-workspace-v97";
 const PRECACHE = [
   "./",
   "./index.html",
@@ -7,6 +7,7 @@ const PRECACHE = [
   "./js/firebase-config.js",
   "./js/starter-boards.js",
   "./js/account-sync.js",
+  "./js/account-google.js",
   "./js/account.js",
   "./js/app.js",
   "./js/vendor/lame.min.js",

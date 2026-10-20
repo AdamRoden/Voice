@@ -221,7 +221,7 @@ html[data-layout="portrait"] .portrait-only { display: flex !important; }
 .offline-banner { display: none; align-items: center; gap: var(--gap-lg); padding: 8px 12px; margin: 0 0 4px; border-radius: var(--radius-md); background: color-mix(in srgb, var(--accent) 16%, var(--bg-surface)); border: 1px solid var(--accent); color: var(--text); font-size: 13px; font-weight: 500; flex-shrink: 0; }
 .offline-banner.open { display: flex; }
 .account-banner { display: none; align-items: center; gap: var(--gap-lg); padding: 8px 12px; margin: 0 0 4px; border-radius: var(--radius-md); background: color-mix(in srgb, var(--accent) 16%, var(--bg-surface)); border: 1px solid var(--accent); color: var(--text); font-size: 13px; font-weight: 500; flex-shrink: 0; }
-.account-banner.open { display: flex; }
+.account-banner.open { display: flex; cursor: pointer; }
 .account-banner #account-banner-text { flex: 1; min-width: 0; }
 .account-banner .tool-btn { flex: 0 0 auto; }
 .accent-color-row { display: flex; align-items: center; gap: var(--gap-lg); }
@@ -297,15 +297,33 @@ html[data-layout="portrait"] .portrait-only { display: flex !important; }
 .advanced-settings-section-hint { margin-top: -2px; margin-bottom: 4px; }
 .account-block { display: flex; flex-direction: column; gap: 8px; padding: 0 8px 4px; }
 .account-block[hidden] { display: none !important; }
-.account-field { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
 .account-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.account-actions .tool-btn { flex: 1 1 40%; justify-content: center; }
-.account-actions-stack .tool-btn { flex: 1 1 100%; }
-.account-email-line { font-size: 14px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; }
+.account-actions .tool-btn { flex: 1 1 40%; justify-content: center; min-height: var(--touch-min); }
+.account-actions-stack { flex-direction: column; }
+.account-actions-stack .tool-btn { flex: 1 1 auto; width: 100%; }
+.account-who { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.account-avatar { width: 36px; height: 36px; border-radius: 50%; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; color: var(--accent); background: color-mix(in srgb, var(--accent) 22%, var(--bg-main)); }
+.account-email-line { min-width: 0; font-size: 14px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-who .account-email-line { flex: 1; }
+.account-sso,
+.account-primary { width: 100%; min-height: var(--touch-min); border-radius: var(--radius-lg); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
+.account-sso { border: 1px solid var(--border); background: #fff; color: #1f1f1f; }
+.account-sso:hover:not(:disabled) { background: #f3f4f5; }
+.account-sso-mark { width: 18px; height: 18px; flex: 0 0 auto; }
+.account-primary { border: 0; background: var(--accent); color: #fff; }
+.account-primary:hover:not(:disabled) { background: var(--accent-hover); }
+.account-sso:disabled,
+.account-primary:disabled,
+.account-link:disabled { opacity: 0.45; cursor: default; }
+.account-or { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 12px; font-weight: 600; }
+.account-or::before,
+.account-or::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.account-links { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.account-link { appearance: none; background: none; border: 0; color: var(--accent); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; min-height: var(--touch-min); padding: 8px 2px; }
+.account-link:hover:not(:disabled) { color: var(--accent-hover); }
 .account-status { margin: 0; padding: 0 8px; font-size: 12px; line-height: 1.35; color: var(--text-secondary); }
 .account-status:empty { display: none; }
 .account-status[data-kind="error"] { color: var(--danger); }
-#account-forgot { width: 100%; justify-content: center; }
 #account-api-key-save { width: 100%; justify-content: center; }
 /* Icon name inputs render the Material Symbol glyph instead of the raw name */
 .icon-name-input { font-family: 'Material Symbols Outlined' !important; font-size: 28px !important; text-align: center; height: 48px; letter-spacing: normal; font-variation-settings: 'FILL' var(--icon-fill, 0), 'wght' var(--icon-wght, 400), 'GRAD' var(--icon-grad, 0), 'opsz' var(--icon-opsz, 24); -webkit-font-feature-settings: 'liga'; line-height: 1; }

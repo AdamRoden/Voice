@@ -1,5 +1,20 @@
 {
   "firestore": {
     "rules": "firestore.rules"
+  },
+  "auth": {
+    "providers": {
+      "emailPassword": true,
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "Voice",
+        "supportEmail": "adam.roden@gmail.com",
+        "authorizedRedirectUris": [
+          "http://localhost",
+          "http://localhost:5000",
+          "https://voice-1d8a8.firebaseapp.com",
+          "https://voice-1d8a8.web.app"
+        ]
+      }
+    }
   }
 }
