@@ -848,7 +848,8 @@
       key: "aac_feat_compose_new",
       dataset: "featComposeNew",
       optId: "opt-compose-new",
-      settingsKey: "featComposeNew"
+      settingsKey: "featComposeNew",
+      defaultOn: true
     },
     composePin: {
       key: "aac_feat_compose_pin",
@@ -861,6 +862,13 @@
       dataset: "featComposeReplay",
       optId: "opt-compose-replay",
       settingsKey: "featComposeReplay"
+    },
+    composeTag: {
+      key: "aac_feat_compose_tag",
+      dataset: "featComposeTag",
+      optId: "opt-compose-tag",
+      settingsKey: "featComposeTag",
+      defaultOn: true
     }
   };
 

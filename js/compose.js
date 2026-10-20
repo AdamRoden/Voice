@@ -522,13 +522,13 @@
   }
 
   /**
-   * Compose overflow menu (clear / pin / replay / tag).
+   * Compose overflow menu. Which rows show comes from deps.composeChrome.
    */
   function createActions(deps) {
     const d = deps || {};
     const required = [
       "canAssignFromDisplay", "canReplayLast", "clearDisplayText",
-      "startAssignFromDisplay", "replayLastSpeech", "openTagInsertModal", "canInsertTag"
+      "startAssignFromDisplay", "replayLastSpeech", "openTagInsertModal", "composeChrome"
     ];
     for (const key of required) {
       if (typeof d[key] !== "function") {
@@ -547,12 +547,15 @@
       if (!composeActionsMenu) return;
       const hasText = d.canAssignFromDisplay();
       const replayOk = d.canReplayLast();
+      const chrome = d.composeChrome();
       const items = [
-        { id: "new", icon: "close", label: "Clear message", disabled: false },
         { id: "pin", icon: "push_pin", label: "Pin to button", disabled: !hasText },
         { id: "replay", icon: "replay", label: "Replay last speech", disabled: !replayOk }
       ];
-      if (d.canInsertTag()) {
+      if (chrome.menuNew) {
+        items.unshift({ id: "new", icon: "close", label: "Clear message", disabled: false });
+      }
+      if (chrome.menuTag) {
         items.push({ id: "tag", icon: "add", label: "Insert tag", disabled: false });
       }
       composeActionsMenu.innerHTML = "";

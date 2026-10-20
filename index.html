@@ -88,14 +88,15 @@
             <label for="voice-tag-input">Style</label>
             <input type="text" id="voice-tag-input" placeholder="None" autocomplete="off" spellcheck="false" enterkeyhint="done" aria-describedby="voice-tag-hint">
             <div class="voice-style-list" id="voice-tag-list" role="listbox" aria-label="Style">
-              <button type="button" class="voice-style-option" role="option" data-style="anxious" aria-selected="false">anxious</button>
-              <button type="button" class="voice-style-option" role="option" data-style="bossy" aria-selected="false">bossy</button>
-              <button type="button" class="voice-style-option" role="option" data-style="dull" aria-selected="false">dull</button>
-              <button type="button" class="voice-style-option" role="option" data-style="flirt" aria-selected="false">flirt</button>
-              <button type="button" class="voice-style-option" role="option" data-style="happy" aria-selected="false">happy</button>
-              <button type="button" class="voice-style-option" role="option" data-style="loud" aria-selected="false">loud</button>
-              <button type="button" class="voice-style-option" role="option" data-style="sing" aria-selected="false">sing</button>
-              <button type="button" class="voice-style-option" role="option" data-style="whisper" aria-selected="false">whisper</button>
+              <button type="button" class="voice-style-option" role="option" data-style="none">none</button>
+              <button type="button" class="voice-style-option" role="option" data-style="anxious">anxious</button>
+              <button type="button" class="voice-style-option" role="option" data-style="bossy">bossy</button>
+              <button type="button" class="voice-style-option" role="option" data-style="dull">dull</button>
+              <button type="button" class="voice-style-option" role="option" data-style="flirt">flirt</button>
+              <button type="button" class="voice-style-option" role="option" data-style="happy">happy</button>
+              <button type="button" class="voice-style-option" role="option" data-style="loud">loud</button>
+              <button type="button" class="voice-style-option" role="option" data-style="sing">sing</button>
+              <button type="button" class="voice-style-option" role="option" data-style="whisper">whisper</button>
             </div>
             <p class="setting-hint" id="voice-tag-hint">Always sent as [style] at the start of ElevenLabs speech. Leave empty for none.</p>
           </div>
@@ -103,7 +104,7 @@
           <div class="sidebar-setting-group">
             <label for="volume-slider"><span>Amplifier</span><span id="val-volume">100%</span></label>
             <div class="range-field" style="--range-mark: 0;">
-              <input type="range" id="volume-slider" min="1" max="10" step="1" value="1" aria-label="Amplifier" aria-valuemin="1" aria-valuemax="10" list="volume-default-mark">
+              <input type="range" id="volume-slider" min="1" max="5" step="1" value="1" aria-label="Amplifier" aria-valuemin="1" aria-valuemax="5" list="volume-default-mark">
               <span class="range-default-tick" title="Default (100%)" aria-hidden="true"></span>
             </div>
             <datalist id="volume-default-mark"><option value="1" label="Default"></option></datalist>
@@ -241,7 +242,7 @@
                 <span class="setting-toggle-title">Clear message button</span>
                 <span class="setting-toggle-desc">Show × to the right of the text box</span>
               </span>
-              <input type="checkbox" id="opt-compose-new" class="setting-toggle-input">
+              <input type="checkbox" id="opt-compose-new" class="setting-toggle-input" checked>
             </label>
             <label class="setting-toggle-row" for="opt-compose-pin">
               <span class="setting-toggle-text">
@@ -256,6 +257,13 @@
                 <span class="setting-toggle-desc">Show replay to the right of the text box</span>
               </span>
               <input type="checkbox" id="opt-compose-replay" class="setting-toggle-input">
+            </label>
+            <label class="setting-toggle-row" for="opt-compose-tag" id="opt-compose-tag-row" hidden>
+              <span class="setting-toggle-text">
+                <span class="setting-toggle-title">Insert tag button</span>
+                <span class="setting-toggle-desc">Show + to the left of the text box</span>
+              </span>
+              <input type="checkbox" id="opt-compose-tag" class="setting-toggle-input" checked>
             </label>
             <div class="sidebar-setting-group" id="group-output-device">
               <label for="output-device-select">Speaker</label>
@@ -442,7 +450,7 @@
       <ol class="help-list">
         <li><strong>Layout</strong> — <span class="material-symbols-outlined coach-inline-icon">folder</span> Topics on the left. <span class="material-symbols-outlined coach-inline-icon">record_voice_over</span> Voice, <span class="material-symbols-outlined coach-inline-icon">history</span> History, <span class="material-symbols-outlined coach-inline-icon">settings</span> Settings, and <span class="material-symbols-outlined coach-inline-icon">help</span> Help on the right. Portrait: the logo opens the drawer. Tap empty space on the top bar to slim it.</li>
         <li><strong>Topics</strong> — tap a topic to use it. Tap it again to open its list. Sound buttons play their audio.</li>
-        <li><strong>Message</strong> — <span class="material-symbols-outlined coach-inline-icon">more_horiz</span> Actions: <span class="material-symbols-outlined coach-inline-icon">close</span> Clear, <span class="material-symbols-outlined coach-inline-icon">push_pin</span> Pin, <span class="material-symbols-outlined coach-inline-icon">replay</span> Replay. <span class="material-symbols-outlined coach-inline-icon">add</span> Insert tag shows for ElevenLabs. <span class="material-symbols-outlined coach-inline-icon">volume_up</span> Speak, or Enter, makes new speech. Replay plays the saved clip. On-screen keyboard is in Settings.</li>
+        <li><strong>Message</strong> — <span class="material-symbols-outlined coach-inline-icon">more_horiz</span> Actions: <span class="material-symbols-outlined coach-inline-icon">push_pin</span> Pin, <span class="material-symbols-outlined coach-inline-icon">replay</span> Replay, and <span class="material-symbols-outlined coach-inline-icon">close</span> Clear or <span class="material-symbols-outlined coach-inline-icon">add</span> Insert tag when that button is off. Insert tag is ElevenLabs only. <span class="material-symbols-outlined coach-inline-icon">volume_up</span> Speak, or Enter, makes new speech. Replay plays the saved clip. On-screen keyboard is in Settings.</li>
         <li><strong>ElevenLabs</strong> — no key yet: closing Help asks for one. <span class="material-symbols-outlined coach-inline-icon">key</span> Link to ElevenLabs saves it and opens the voice list. Style, under the voice, is sent in brackets. Empty means none.</li>
         <li><strong>Shortcuts</strong> — keys are on the button tooltips. The full list is below.</li>
       </ol>

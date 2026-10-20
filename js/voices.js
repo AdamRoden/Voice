@@ -755,8 +755,15 @@ function defaultLoadKeys(storageKey) {
       return label;
     }
 
+    /** Empty and the word "none" both mean no standing tag. */
+    function canonicalVoiceTag(raw) {
+      const tag = Eleven.normalizeStandingTag(raw);
+      if (tag.toLowerCase() === "none") return "";
+      return tag;
+    }
+
     function readStoredVoiceTag() {
-      return Eleven.normalizeStandingTag(lsGet(VOICE_TAG_STORAGE_KEY, ""));
+      return canonicalVoiceTag(lsGet(VOICE_TAG_STORAGE_KEY, ""));
     }
 
     function paintVoiceStyleList() {
@@ -764,11 +771,10 @@ function defaultLoadKeys(storageKey) {
       if (!list) return;
       const input = $("voice-tag-input");
       const raw = input && document.activeElement === input ? input.value : readStoredVoiceTag();
-      const current = Eleven.normalizeStandingTag(raw).toLowerCase();
+      const current = canonicalVoiceTag(raw).toLowerCase();
       list.querySelectorAll("[data-style]").forEach((btn) => {
-        const on = current.length > 0 && (btn.getAttribute("data-style") || "").toLowerCase() === current;
-        btn.classList.toggle("selected", on);
-        btn.setAttribute("aria-selected", on ? "true" : "false");
+        const key = canonicalVoiceTag(btn.getAttribute("data-style") || "").toLowerCase();
+        btn.hidden = key === current;
       });
     }
 
@@ -784,7 +790,7 @@ function defaultLoadKeys(storageKey) {
     function persistVoiceTagDraft() {
       const input = $("voice-tag-input");
       if (!input) return "";
-      const tag = Eleven.normalizeStandingTag(input.value);
+      const tag = canonicalVoiceTag(input.value);
       lsSet(VOICE_TAG_STORAGE_KEY, tag);
       paintVoiceStyleList();
       return tag;
@@ -802,7 +808,7 @@ function defaultLoadKeys(storageKey) {
     function chooseVoiceStyle(style) {
       const input = $("voice-tag-input");
       if (!input) return "";
-      input.value = style || "";
+      input.value = canonicalVoiceTag(style);
       return commitVoiceTagFromInput();
     }
 
@@ -1357,9 +1363,13 @@ function defaultLoadKeys(storageKey) {
 
       $("open-voices")?.addEventListener("click", () => openVoicesPanel());
       $("close-voices-panel-btn")?.addEventListener("click", closeVoicesPanel);
-      $("voice-tag-input")?.addEventListener("input", persistVoiceTagDraft);
-      $("voice-tag-input")?.addEventListener("change", commitVoiceTagFromInput);
-      $("voice-tag-input")?.addEventListener("blur", commitVoiceTagFromInput);
+      const voiceTagInput = $("voice-tag-input");
+      voiceTagInput?.addEventListener("input", persistVoiceTagDraft);
+      voiceTagInput?.addEventListener("change", commitVoiceTagFromInput);
+      voiceTagInput?.addEventListener("blur", commitVoiceTagFromInput);
+      voiceTagInput?.addEventListener("click", () => {
+        voiceTagInput.select();
+      });
       $("voice-tag-list")?.addEventListener("click", (event) => {
         const btn = event.target.closest("[data-style]");
         if (!btn || !$("voice-tag-list")?.contains(btn)) return;

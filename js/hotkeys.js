@@ -22,7 +22,7 @@
   const COMMANDS = {
     a: { label: "Select all", group: "edit", textEdit: true, action: "selectAll" },
     z: { label: "Undo", group: "edit", textEdit: true, action: "undo" },
-    y: { label: "Redo (also Shift+Z)", group: "edit", textEdit: true, action: "redo" },
+    y: { label: "Redo", group: "edit", textEdit: true, action: "redo" },
     x: { label: "Cut", group: "edit", textEdit: true, action: "cut" },
     c: { label: "Copy", group: "edit", textEdit: true, action: "copy" },
     v: { label: "Paste", group: "edit", textEdit: true, action: "paste" },
@@ -38,24 +38,6 @@
       action: "clearMessage",
       composeAction: "new",
       buttons: [{ id: "compose-new-message-btn", base: "Clear message" }]
-    },
-    b: {
-      label: "Open voice settings",
-      group: "app",
-      action: "voiceSettings",
-      buttons: [{ id: "nav-voice", base: "Voice settings" }]
-    },
-    m: {
-      label: "Open voice selector",
-      group: "app",
-      action: "voiceSelector",
-      buttons: [{ id: "open-voices", base: "Select voice model and voice" }]
-    },
-    h: {
-      label: "Open history",
-      group: "app",
-      action: "history",
-      buttons: [{ id: "nav-history", base: "History" }]
     },
     i: {
       label: "Insert tag",
@@ -88,9 +70,7 @@
         },
         { id: "textarea-replay-btn", base: "Replay last speech" }
       ]
-    },
-    q: { label: "Previous topic", group: "app", action: "prevTopic" },
-    w: { label: "Next topic", group: "app", action: "nextTopic" }
+    }
   };
 
   const GROUP_ORDER = [
@@ -310,8 +290,13 @@
         else if (typeof key === "string" && key.length === 1) key = key.toLowerCase();
         else return;
 
-        // Standard redo chord: Cmd/Ctrl+Shift+Z (in addition to Cmd/Ctrl+Y).
-        if (key === "z" && e.shiftKey) key = "y";
+        // Ctrl/Cmd+Shift+Z is not a shortcut. Swallow it so the browser
+        // does not run native redo against the compose field.
+        if (key === "z" && e.shiftKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
 
         const cmd = COMMANDS[key];
         if (!cmd) return;

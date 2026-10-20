@@ -245,11 +245,11 @@ html[data-layout="portrait"] .portrait-only { display: flex !important; }
 .settings-stack { display: flex; flex-direction: column; gap: var(--gap-sm); }
 .setting-divider { border: 0; border-top: 1px solid var(--border); margin: 6px 0; }
 .setting-hint { margin: 0; font-size: 12px; opacity: 0.75; line-height: 1.35; }
-/* Standing style: every option stays visible. Typing does not hide rows, and the list does not scroll. */
+/* Standing style: the textbox value is omitted from the list. The list does not scroll. */
 .voice-style-list { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; overflow: visible; max-height: none; }
 .voice-style-option { appearance: none; -webkit-appearance: none; width: 100%; text-align: left; background: var(--bg-main); color: var(--text); border: 1px solid transparent; border-radius: var(--radius-md); min-height: var(--touch-min); padding: 6px 10px; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; }
+.voice-style-option[hidden] { display: none !important; }
 .voice-style-option:hover { background: var(--bg-surface-hover); }
-.voice-style-option.selected { border-color: var(--accent); color: var(--accent); background: var(--bg-surface-active); }
 /* Piper model download progress */
 .piper-progress { display: flex; flex-direction: column; gap: var(--gap-md); padding: 10px 12px; border-radius: var(--radius-lg); background: var(--bg-main); border: 1px solid var(--border); }
 .piper-progress[hidden] { display: none !important; }
@@ -537,7 +537,7 @@ html[data-layout="portrait"] .workspace-header-shell { display: flex !important;
 .sound-button.utterance-button .sound-button-insert:hover { background: color-mix(in srgb, currentColor 22%, transparent); }
 .sound-button.utterance-button .sound-button-main:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
 /* ==================== 6. COMPOSE DOCK ==================== */
-/* Feature flags: hide optional UI when off (default) */
+/* Feature flags: hide optional UI when that feature is off */
 body:not([data-feat-message-words="1"]) .compose-strip { display: none !important; }
 body:not([data-feat-compose-new="1"]) #compose-new-message-btn { display: none !important; }
 body:not([data-feat-compose-pin="1"]) #compose-pin-btn { display: none !important; }

@@ -117,9 +117,9 @@
     const speedSlider = $("speed-slider");
     const pitchSlider = $("pitch-slider");
     const valVolume = $("val-volume");
-    /** Gain multipliers for Amplifier stops 1-10 -> 100%...1000%. */
-    const VOLUME_STOP_COUNT = 10;
-    const VOLUME_STOP_GAINS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    /** Gain multipliers for Amplifier stops 1-5 -> 100%...500%. */
+    const VOLUME_STOP_COUNT = 5;
+    const VOLUME_STOP_GAINS = [1, 2, 3, 4, 5];
     const VOLUME_GAIN_MAX = VOLUME_STOP_GAINS[VOLUME_STOP_GAINS.length - 1];
     const AudioFx = window.AacAudioFx;
     const Eleven = window.AacEleven;
@@ -178,12 +178,12 @@
       return clamp(raw, 1, VOLUME_STOP_COUNT);
     }
 
-    /** Audio gain for the current Amplifier stop (1-10). */
+    /** Audio gain for the current Amplifier stop (1-5). */
     function getVolumeGain() {
       return VOLUME_STOP_GAINS[getVolumeStop() - 1];
     }
 
-    /** Display percent for a stop: 100, 200, ..., 1000. */
+    /** Display percent for a stop: 100, 200, ..., 500. */
     function volumeStopToPercent(stop) {
       const s = clamp(stop, 1, VOLUME_STOP_COUNT);
       return Math.round(VOLUME_STOP_GAINS[s - 1] * 100);
@@ -447,13 +447,28 @@
 
     /** Bracket tags only apply when an ElevenLabs model is selected. */
     const canInsertTag = () => !!(Voices?.isElevenModelSelected?.());
+    /**
+     * Where Clear and Insert tag appear. Pin and Replay stay in the menu.
+     * Insert tag exists only for an ElevenLabs voice.
+     */
+    function composeChrome() {
+      const eleven = canInsertTag();
+      const tagButton = eleven && Features.get("composeTag");
+      return {
+        tagButton,
+        tagSetting: eleven,
+        menuNew: !Features.get("composeNew"),
+        menuTag: eleven && !tagButton
+      };
+    }
     const syncInsertTagChrome = () => {
-      const show = canInsertTag();
+      const chrome = composeChrome();
       const btn = document.getElementById("insert-tag-btn");
       const wrap = document.getElementById("compose-quick-actions");
-      if (btn) btn.hidden = !show;
-      if (wrap) wrap.hidden = !show;
-      if (Compose?.isOpen?.()) Compose.render();
+      const setting = document.getElementById("opt-compose-tag-row");
+      if (btn) btn.hidden = !chrome.tagButton;
+      if (wrap) wrap.hidden = !chrome.tagButton;
+      if (setting) setting.hidden = !chrome.tagSetting;
     };
 
     // Compose display: applyText = raw paint; setText → commitText (history).
@@ -487,6 +502,7 @@
       onChange: () => {
         syncComposeStrip();
         syncGeneratedAudioActions();
+        syncInsertTagChrome();
         if (Topics) Topics.renderSoundButtons();
       }
     });
@@ -632,14 +648,18 @@
       el.addEventListener("input", () => { paint(); lsSet(storeKey, el.value); });
     }
 
-    /** Amplifier: 10 stops -> gain 1-10; label shows 100%-1000%. */
+    /** Amplifier: 5 stops -> gain 1-5; label shows 100%-500%. */
     function syncVolumeSlider() {
       if (!volumeSlider || !valVolume) return;
       const saved = lsGet("elevenlabs_volume");
       if (saved !== null && saved !== "") {
         const n = parseFloat(saved);
-        // Migrate legacy values to nearest stop 1-10
-        if (Number.isFinite(n)) volumeSlider.value = String(clamp(Math.round(n), 1, VOLUME_STOP_COUNT));
+        // Migrate legacy values (including the old 1000% top) to a stop 1-5.
+        if (Number.isFinite(n)) {
+          const stop = clamp(Math.round(n), 1, VOLUME_STOP_COUNT);
+          volumeSlider.value = String(stop);
+          if (String(stop) !== String(Math.round(n))) lsSet("elevenlabs_volume", String(stop));
+        }
       }
       const paint = () => {
         valVolume.textContent = `${volumeStopToPercent(getVolumeStop())}%`;
@@ -810,7 +830,7 @@
       startAssignFromDisplay: () => Topics.startAssignFromDisplay(),
       replayLastSpeech,
       openTagInsertModal,
-      canInsertTag,
+      composeChrome,
       actionHotkeyChord: (id) => (Hotkeys ? Hotkeys.chordForComposeAction(id) : null)
     });
     Compose.bind();
@@ -983,7 +1003,10 @@
       openModal: (id) => ports.openModal(id),
       closeModals: () => ports.closeModals(),
       focusDisplayInput,
-      onVoiceContextChanged: () => syncInsertTagChrome(),
+      onVoiceContextChanged: () => {
+        syncInsertTagChrome();
+        if (Compose?.isOpen?.()) Compose.render();
+      },
       switchSidebarTab: (tab, expand, opts) => Shell?.switchSidebarTab?.(tab, expand, opts)
     });
     Voices.bind();
@@ -992,20 +1015,6 @@
     Speech.bind();
 
     // ==================== HOTKEYS (catalog in AacHotkeys) ====================
-    function stepActiveTopic(delta) {
-      if (!Topics || typeof Topics.getTopicsList !== "function") return false;
-      const list = Topics.getTopicsList() || [];
-      if (!list.length) return false;
-      const id = Topics.getActiveTopicId();
-      let i = list.findIndex((t) => t.id === id);
-      if (i < 0) i = 0;
-      const n = list.length;
-      const next = list[((i + delta) % n + n) % n];
-      if (!next || next.id === id) return false;
-      Topics.switchTopic(next.id);
-      return true;
-    }
-
     if (window.AacHotkeys && typeof window.AacHotkeys.create === "function") {
       Hotkeys = window.AacHotkeys.create({
         displayInput,
@@ -1022,14 +1031,9 @@
           paste: () => ComposeDisplay?.clipboard?.("paste"),
           backword: () => deleteWholeWordBeforeCaret(),
           clearMessage: () => ports.clearDisplayText(),
-          voiceSettings: () => ports.switchSidebarTab("voice", true),
-          voiceSelector: () => Voices?.openVoicesPanel?.(),
-          history: () => ports.switchSidebarTab("history", true),
           insertTag: () => openTagInsertModal(),
           pin: () => Compose?.run?.("pin"),
-          replay: () => replayLastSpeech(),
-          prevTopic: () => stepActiveTopic(-1),
-          nextTopic: () => stepActiveTopic(1)
+          replay: () => replayLastSpeech()
         }
       });
     }
