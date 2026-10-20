@@ -182,6 +182,43 @@
         <!-- Settings Tab Content -->
         <div id="tab-content-settings" class="tab-content">
           <div class="settings-body">
+            <div class="modal-description settings-section-label">Account</div>
+            <div class="modal-description settings-section-hint" id="account-hint">Sign in to use your boards, voices, and settings on another device. The speaker stays on this device.</div>
+            <div id="account-setup" class="account-block" hidden>
+              <div class="modal-description">Add a Web app in Firebase project voice-1d8a8 and paste its API key. Also turn on Email/Password, create Firestore, and publish firestore.rules.</div>
+              <input id="account-api-key" class="modal-input" type="text" autocomplete="off" spellcheck="false" placeholder="Web API key" aria-label="Firebase web API key">
+              <button type="button" class="tool-btn" id="account-api-key-save">Save key</button>
+            </div>
+            <div id="account-signed-out" class="account-block" hidden>
+              <label class="account-field" for="account-email">Email</label>
+              <input id="account-email" class="modal-input" type="email" autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false">
+              <label class="account-field" for="account-password">Password</label>
+              <input id="account-password" class="modal-input" type="password" autocomplete="current-password">
+              <div class="account-actions">
+                <button type="button" class="tool-btn" id="account-signin">Sign in</button>
+                <button type="button" class="tool-btn" id="account-create">Create account</button>
+              </div>
+              <button type="button" class="tool-btn" id="account-forgot">Email a password reset</button>
+            </div>
+            <div id="account-signed-in" class="account-block" hidden>
+              <div class="account-email-line" id="account-email-line"></div>
+              <div class="modal-description">Boards, history, voices, and your ElevenLabs key are saved to this account.</div>
+              <div class="account-actions">
+                <button type="button" class="tool-btn" id="account-sync">Sync now</button>
+                <button type="button" class="tool-btn" id="account-signout">Sign out</button>
+              </div>
+            </div>
+            <div id="account-conflict" class="account-block" hidden>
+              <div class="account-email-line" id="account-conflict-email"></div>
+              <div class="modal-description">This device and your account both have boards.</div>
+              <div class="account-actions account-actions-stack">
+                <button type="button" class="tool-btn" id="account-keep-device">Keep this device</button>
+                <button type="button" class="tool-btn" id="account-use-cloud">Use account</button>
+                <button type="button" class="tool-btn" id="account-combine">Combine both</button>
+              </div>
+            </div>
+            <p class="account-status" id="account-status" role="status"></p>
+
             <div class="modal-description settings-section-label">Appearance</div>
             <div class="sidebar-setting-group">
               <label><span>Font Size</span><span id="font-display">28px</span></label>
@@ -327,6 +364,11 @@
       <span class="material-symbols-outlined icon-medium">wifi_off</span>
       <span>Offline — browser voice still works. Cached Piper voices work offline; ElevenLabs needs a connection.</span>
     </div>
+    <div class="account-banner" id="account-banner" role="status">
+      <span class="material-symbols-outlined icon-medium">cloud_sync</span>
+      <span id="account-banner-text">Your account has newer boards.</span>
+      <button type="button" class="tool-btn" id="account-banner-action">Apply</button>
+    </div>
 
     <div class="sound-canvas" id="sound-canvas"></div>
 
@@ -452,6 +494,7 @@
         <li><strong>Topics</strong> — tap a topic to use it. Tap it again to open its list. Sound buttons play their audio.</li>
         <li><strong>Message</strong> — <span class="material-symbols-outlined coach-inline-icon">more_horiz</span> Actions: <span class="material-symbols-outlined coach-inline-icon">push_pin</span> Pin, <span class="material-symbols-outlined coach-inline-icon">replay</span> Replay, and <span class="material-symbols-outlined coach-inline-icon">close</span> Clear or <span class="material-symbols-outlined coach-inline-icon">add</span> Insert tag when that button is off. Insert tag is ElevenLabs only. <span class="material-symbols-outlined coach-inline-icon">volume_up</span> Speak, or Enter, makes new speech. Replay plays the saved clip. On-screen keyboard is in Settings.</li>
         <li><strong>ElevenLabs</strong> — no key yet: closing Help asks for one. <span class="material-symbols-outlined coach-inline-icon">key</span> Link to ElevenLabs saves it and opens the voice list. Style, under the voice, is sent in brackets. Empty means none.</li>
+        <li><strong>Account</strong> — in Settings, sign in to save boards, voices, and the ElevenLabs key. Another device can sign in and use them. Speaker choice stays on this device.</li>
         <li><strong>Shortcuts</strong> — keys are on the button tooltips. The full list is below.</li>
       </ol>
       <button type="button" class="status-btn help-hotkeys-btn" id="help-hotkeys-btn">
@@ -768,6 +811,10 @@
     </div>
   </div>
 
+  <script src="js/firebase-config.js" defer></script>
+  <script src="js/starter-boards.js" defer></script>
+  <script src="js/account-sync.js" defer></script>
+  <script src="js/account.js" defer></script>
   <script src="js/vendor/lame.min.js" defer></script>
   <script src="js/audio-fx.js" defer></script>
   <script src="js/keyboard.js" defer></script>

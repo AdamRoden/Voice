@@ -220,6 +220,10 @@ html[data-layout="portrait"] .portrait-only { display: flex !important; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .offline-banner { display: none; align-items: center; gap: var(--gap-lg); padding: 8px 12px; margin: 0 0 4px; border-radius: var(--radius-md); background: color-mix(in srgb, var(--accent) 16%, var(--bg-surface)); border: 1px solid var(--accent); color: var(--text); font-size: 13px; font-weight: 500; flex-shrink: 0; }
 .offline-banner.open { display: flex; }
+.account-banner { display: none; align-items: center; gap: var(--gap-lg); padding: 8px 12px; margin: 0 0 4px; border-radius: var(--radius-md); background: color-mix(in srgb, var(--accent) 16%, var(--bg-surface)); border: 1px solid var(--accent); color: var(--text); font-size: 13px; font-weight: 500; flex-shrink: 0; }
+.account-banner.open { display: flex; }
+.account-banner #account-banner-text { flex: 1; min-width: 0; }
+.account-banner .tool-btn { flex: 0 0 auto; }
 .accent-color-row { display: flex; align-items: center; gap: var(--gap-lg); }
 .accent-color-row .color-field { flex: 1; min-width: 0; }
 .accent-color-row .font-btn { flex: 0 0 auto; }
@@ -291,6 +295,18 @@ html[data-layout="portrait"] .portrait-only { display: flex !important; }
 .advanced-settings-section-label { margin-top: 12px; font-weight: 600; color: var(--text); font-size: 13px; }
 .settings-section-hint,
 .advanced-settings-section-hint { margin-top: -2px; margin-bottom: 4px; }
+.account-block { display: flex; flex-direction: column; gap: 8px; padding: 0 8px 4px; }
+.account-block[hidden] { display: none !important; }
+.account-field { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.account-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.account-actions .tool-btn { flex: 1 1 40%; justify-content: center; }
+.account-actions-stack .tool-btn { flex: 1 1 100%; }
+.account-email-line { font-size: 14px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; }
+.account-status { margin: 0; padding: 0 8px; font-size: 12px; line-height: 1.35; color: var(--text-secondary); }
+.account-status:empty { display: none; }
+.account-status[data-kind="error"] { color: var(--danger); }
+#account-forgot { width: 100%; justify-content: center; }
+#account-api-key-save { width: 100%; justify-content: center; }
 /* Icon name inputs render the Material Symbol glyph instead of the raw name */
 .icon-name-input { font-family: 'Material Symbols Outlined' !important; font-size: 28px !important; text-align: center; height: 48px; letter-spacing: normal; font-variation-settings: 'FILL' var(--icon-fill, 0), 'wght' var(--icon-wght, 400), 'GRAD' var(--icon-grad, 0), 'opsz' var(--icon-opsz, 24); -webkit-font-feature-settings: 'liga'; line-height: 1; }
 .status-btn { background-color: var(--bg-main); color: var(--text); border: 1px solid var(--border); padding: var(--pad-lg) var(--pad-xl); border-radius: var(--radius-md); font-size: 14px; cursor: pointer; text-align: left; transition: all var(--duration-normal); display: flex; justify-content: space-between; align-items: center; width: 100%; gap: var(--gap-lg); min-height: var(--touch-min); }
@@ -339,7 +355,9 @@ html[data-layout="portrait"] .portrait-only { display: flex !important; }
 html.keyboard-open .app-main,
 body.osk-visible .app-main { min-height: 0; }
 html.keyboard-open .offline-banner,
-body.osk-visible .offline-banner { flex-shrink: 1; min-height: 0; overflow: hidden; }
+body.osk-visible .offline-banner,
+html.keyboard-open .account-banner,
+body.osk-visible .account-banner { flex-shrink: 1; min-height: 0; overflow: hidden; }
 /* Landscape (iPad): when the system keyboard is up, keep the compose dock
    inside the visual viewport. keyboard.js pins body to visualViewport. */
 @media (orientation: landscape) {
