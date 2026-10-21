@@ -562,6 +562,7 @@ function defaultLoadKeys(storageKey) {
    *   closeModals: () => void,
    *   focusDisplayInput: () => void,
    *   onVoiceContextChanged?: () => void,
+   *   onVoiceTagEnter?: () => void,
    *   switchSidebarTab?: (tab: string, expand?: boolean, opts?: { focusComposer?: boolean }) => void
    * }} deps
    */
@@ -1367,6 +1368,13 @@ function defaultLoadKeys(storageKey) {
       voiceTagInput?.addEventListener("input", persistVoiceTagDraft);
       voiceTagInput?.addEventListener("change", commitVoiceTagFromInput);
       voiceTagInput?.addEventListener("blur", commitVoiceTagFromInput);
+      voiceTagInput?.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" || event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) return;
+        if (event.isComposing || event.keyCode === 229) return;
+        event.preventDefault();
+        commitVoiceTagFromInput();
+        if (typeof d.onVoiceTagEnter === "function") d.onVoiceTagEnter();
+      });
       voiceTagInput?.addEventListener("click", () => {
         voiceTagInput.select();
       });

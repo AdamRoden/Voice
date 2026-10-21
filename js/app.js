@@ -1003,6 +1003,7 @@
       openModal: (id) => ports.openModal(id),
       closeModals: () => ports.closeModals(),
       focusDisplayInput,
+      onVoiceTagEnter: () => primarySpeak(),
       onVoiceContextChanged: () => {
         syncInsertTagChrome();
         if (Compose?.isOpen?.()) Compose.render();
