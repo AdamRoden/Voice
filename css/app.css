@@ -278,15 +278,20 @@ html[data-layout="portrait"] .portrait-only { display: flex !important; }
 .voice-item-meta { display: inline-flex; align-items: center; gap: var(--gap-sm); margin-left: 6px; font-size: 11px; font-weight: 500; opacity: 0.75; flex-shrink: 0; font-variant-numeric: tabular-nums; }
 .voice-item-meta.cached { color: var(--accent); opacity: 0.95; }
 /* --- Settings form (main column) --- */
+.main-stage { position: relative; flex: 1 1 auto; min-height: 0; min-width: 0; width: 100%; display: flex; flex-direction: column; gap: inherit; }
 .workspace-board { flex: 1 1 auto; min-height: 0; min-width: 0; width: 100%; display: flex; flex-direction: column; gap: inherit; }
 .workspace-board[hidden] { display: none !important; }
+.help-cover { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; align-items: center; background: var(--bg-main); }
+.help-cover[hidden] { display: none !important; }
 .settings-form { flex: 1 1 auto; align-self: center; width: min(720px, 100%); min-height: 0; min-width: 0; display: flex; flex-direction: column; background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
 .settings-form[hidden] { display: none !important; }
 .settings-form:focus { outline: none; }
 .settings-form-header { display: flex; align-items: center; gap: var(--gap-lg); padding: 8px 8px 8px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; min-height: 52px; }
 .settings-form-title { margin: 0; font-size: 18px; font-weight: 600; color: var(--text); }
-.settings-help-link { margin-left: auto; background: none; border: none; padding: 8px 10px; color: var(--accent); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; min-height: 44px; border-radius: var(--radius-lg); }
-.settings-help-link:hover { color: var(--accent-hover); background: var(--bg-surface-hover); }
+.settings-help-link { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; background: none; border: none; padding: 8px 12px; color: var(--text); font: inherit; font-size: 18px; font-weight: 600; cursor: pointer; min-height: 44px; border-radius: var(--radius-lg); }
+.settings-help-link .material-symbols-outlined { font-size: 22px; color: var(--accent); }
+.settings-help-link:hover { color: var(--accent); background: var(--bg-surface-hover); }
+#help-form .settings-form-header .icon-btn { margin-left: auto; }
 .settings-form-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 4px 12px 20px; }
 #settings-form .sidebar-setting-group { margin-top: 8px; padding: 4px 8px; }
 .settings-body,
@@ -463,10 +468,37 @@ html[data-layout="portrait"] .workspace-header-shell { display: flex !important;
 .sound-canvas-empty-text { font-size: 13px; line-height: 1.4; max-width: 28em; }
 .sound-canvas-empty-actions { display: flex; flex-wrap: wrap; gap: var(--gap-lg); justify-content: center; margin-top: 4px; }
 .sound-canvas-empty-actions .status-btn { width: auto; min-width: 0; padding: 10px 14px; font-size: 13px; }
-/* Help modal list + inline icons (shared with coach content) */
-.help-list { margin: 0; padding-left: 1.25em; font-size: 14px; line-height: 1.5; color: var(--text); display: flex; flex-direction: column; gap: var(--gap-xl); }
-.help-list li { margin: 0; }
-.coach-inline-icon { font-size: 16px !important; width: 1em; height: 1em; vertical-align: -0.2em; color: var(--accent); margin: 0 1px; }
+/* Help uses the Settings card. The stage is a miniature of the page. */
+.help-lead { margin: 8px 8px 0; }
+.help-stage { display: grid; grid-template-columns: minmax(72px, 120px) minmax(0, 1fr) minmax(88px, 132px); gap: 6px; min-height: 248px; margin: 8px; padding: 8px; background: var(--bg-main); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
+.help-rail { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+.help-rail-head { display: flex; align-items: center; gap: 4px; padding: 8px 8px 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-secondary); }
+.help-rail-head .material-symbols-outlined { font-size: 16px; color: var(--accent); }
+.help-topic, .help-voice { margin: 2px 6px; padding: 6px 8px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; color: var(--text); }
+.help-topic.is-active, .help-voice.is-active { background: var(--bg-surface-active); color: var(--accent); }
+.help-main { display: flex; flex-direction: column; gap: 6px; min-width: 0; min-height: 0; overflow: hidden; }
+.help-canvas { flex: 1 1 auto; display: flex; flex-direction: column; gap: 4px; padding: 8px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.help-sound { display: flex; align-items: center; justify-content: center; min-height: 40px; border-radius: var(--radius-md); background: color-mix(in srgb, var(--accent) 62%, #16324f); color: #fff; font-size: 14px; font-weight: 600; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45); }
+.help-sound.alt { background: color-mix(in srgb, #7dcea0 55%, #14342c); }
+.help-compose { display: flex; align-items: center; gap: 4px; min-width: 0; padding: 6px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: 22px; }
+.help-compose-field { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); font-size: 13px; padding: 0 4px; }
+.help-mini-btn { flex: 0 0 28px; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; background: var(--key-bg); color: var(--text); }
+.help-mini-btn .material-symbols-outlined { font-size: 16px; }
+.help-mini-speak { background: var(--accent); color: #fff; }
+.help-nav { margin-top: auto; display: flex; flex-direction: column; border-top: 1px solid var(--border); }
+.help-nav-btn { min-width: 0; display: flex; flex-direction: row; align-items: center; gap: 4px; padding: 6px 8px; font-size: 11px; font-weight: 600; line-height: 1.1; color: var(--text-secondary); }
+.help-nav-btn .material-symbols-outlined { font-size: 16px; }
+.help-nav-btn.is-active { background: var(--bg-surface-active); color: var(--accent); }
+.coach-inline-icon { font-size: 16px !important; width: 1em; height: 1em; overflow: hidden; vertical-align: -0.2em; color: var(--accent); margin: 0 1px; }
+.help-done { width: 100%; margin: 8px 0 4px; min-height: 48px; border: none; border-radius: var(--radius-lg); background: var(--accent); color: #fff; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+.help-done:hover { background: var(--accent-hover); }
+@media (orientation: portrait) {
+  .help-stage { grid-template-columns: 76px minmax(0, 1fr) 96px; }
+  .help-compose { flex-wrap: wrap; row-gap: 4px; }
+  .help-compose-field { flex: 1 1 100%; order: -1; }
+  .help-mini-btn { flex-basis: 24px; width: 24px; height: 24px; }
+  .help-mini-btn .material-symbols-outlined { font-size: 15px; }
+}
 .help-hotkeys-btn {
   display: flex;
   align-items: center;

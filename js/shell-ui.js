@@ -184,7 +184,6 @@
   const NARROW_LANDSCAPE_MQ = "(orientation: landscape) and (max-width: 1100px)";
   /** Persisted dismiss for first-run help (legacy key name kept for continuity). */
   const HELP_DISMISS_KEY = "aac_coach_dismissed";
-  const HELP_MODAL_ID = "modal-help";
   const SECTION_TITLES = {
     voice: "Voice",
     history: "History",
@@ -488,8 +487,13 @@
       return !!form && !form.hidden;
     }
 
+    function isHelpOpen() {
+      const cover = document.getElementById("help-cover");
+      return !!cover && !cover.hidden;
+    }
+
     function focusSurface() {
-      const form = document.getElementById("settings-form");
+      const form = (isHelpOpen() && document.getElementById("help-form")) || document.getElementById("settings-form");
       if (!form || form.hidden) { d.focusDisplayInput(); return; }
       try { form.focus({ preventScroll: true }); } catch (_) { form.focus(); }
     }
@@ -514,6 +518,23 @@
       const form = document.getElementById("settings-form");
       if (form && form.contains(document.activeElement)) focusSurface();
     }
+
+    function setHelpOpen(open) {
+      const cover = document.getElementById("help-cover");
+      if (!cover || (!cover.hidden) === open) return false;
+      if (!open && document.body.classList.contains("modal-open")) return false;
+      const help = document.getElementById("help-form");
+      const restore = !open && !!(help && help.contains(document.activeElement));
+      cover.hidden = !open;
+      document.getElementById("workspace-board").inert = open;
+      document.getElementById("settings-form").inert = open;
+      if (open && isPortraitLayout()) setLayout({ drawerOpen: false }, { restoreFocus: false });
+      if (open || restore) focusSurface();
+      if (!open) try { if (typeof d.onHelpClosed === "function") d.onHelpClosed(); } catch (_) {}
+      return true;
+    }
+
+    function closeHelp() { return setHelpOpen(false); }
 
     /** Paint right-rail content + nav highlight (does not open chrome). */
     function paintUtilityTab(tab) {
@@ -565,23 +586,6 @@
       return t;
     }
 
-    /**
-     * Open a shell modal; optionally close the portrait drawer first.
-     * @param {string} id
-     * @param {{ closeDrawer?: boolean }} [opts]
-     */
-    function openShellModal(id, opts) {
-      const o = opts || {};
-      if (o.closeDrawer !== false && isPortraitLayout()) {
-        setLayout({ drawerOpen: false }, { restoreFocus: false });
-      }
-      openModal(id);
-    }
-
-    function openHelpModal() {
-      openShellModal(HELP_MODAL_ID, { closeDrawer: true });
-    }
-
     function runNavAction(action) {
       const a = String(action || "").toLowerCase();
       if (!VALID_SIDEBAR_TABS.has(a)) return;
@@ -594,6 +598,7 @@
     function switchSidebarTab(tab, expandIfCollapsed = false, opts = {}) {
       const { replace = false, fromRoute = false } = opts;
       const normalized = normalizeTab(tab);
+      if (isHelpOpen()) closeHelp();
       if (normalized === "settings") setMainView("settings");
       else {
         settingsReturnTab = normalized;
@@ -628,7 +633,6 @@
     }
 
     function closeModals() {
-      const helpWasOpen = !!document.getElementById(HELP_MODAL_ID)?.classList.contains("open");
       document.querySelectorAll(".modal").forEach((m) => m.classList.remove("open"));
       if (modalOverlay) modalOverlay.classList.remove("open");
       document.body.classList.remove("modal-open");
@@ -636,9 +640,6 @@
         try { d.onCloseModal(); } catch (_) {}
       }
       focusSurface();
-      if (helpWasOpen && typeof d.onHelpClosed === "function") {
-        try { d.onHelpClosed(); } catch (_) {}
-      }
     }
 
     /**
@@ -677,12 +678,12 @@
 
     function dismissHelp() {
       d.lsSet(HELP_DISMISS_KEY, "1");
-      closeModals();
+      closeHelp();
     }
 
-    /** First-run / Help entry: same as openHelpModal. */
+    /** First-run Help. Same entry as the Settings link. */
     function showCoach() {
-      openHelpModal();
+      setHelpOpen(true);
     }
 
     function bind() {
@@ -739,6 +740,7 @@
           closePortraitSidebar();
           return;
         }
+        if (closeHelp()) { e.preventDefault(); e.stopImmediatePropagation(); return; }
         closeSettings();
       });
 
@@ -768,7 +770,8 @@
 
       document.getElementById("coach-dismiss-btn")?.addEventListener("click", dismissHelp);
       document.getElementById("settings-close-btn")?.addEventListener("click", closeSettings);
-      document.getElementById("settings-help-link")?.addEventListener("click", () => openHelpModal());
+      document.getElementById("help-close-btn")?.addEventListener("click", closeHelp);
+      document.getElementById("settings-help-link")?.addEventListener("click", () => setHelpOpen(true));
 
       // Theme buttons use onclick="applyTheme(...)" in index.html via window.applyTheme
 
@@ -820,7 +823,6 @@
       openModal,
       openNestedModal,
       closeNestedModal,
-      openShellModal,
       closeModals,
       isHelpDismissed,
       isCoachDismissed,
@@ -832,11 +834,10 @@
       openSettings() { switchSidebarTab("settings", false); },
       isSettingsOpen,
       focusSurface,
-      openHelpModal,
+      openHelpModal() { setHelpOpen(true); },
       initRoute,
       bind,
-      get modalOverlay() { return modalOverlay; },
-      HELP_MODAL_ID
+      get modalOverlay() { return modalOverlay; }
     };
   }
 
@@ -846,8 +847,7 @@
     RIGHT_SIDEBAR_TABS,
     DEFAULT_SIDEBAR_TAB,
     DEFAULT_RIGHT_TAB,
-    SECTION_TITLES,
-    HELP_MODAL_ID
+    SECTION_TITLES
   };
 })(typeof window !== "undefined" ? window : globalThis);
 

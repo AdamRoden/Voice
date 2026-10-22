@@ -258,8 +258,8 @@
     }
 
     function backToHelp() {
-      if (typeof d.closeNestedModal === "function") {
-        d.closeNestedModal(nestedReturnId || "modal-help");
+      if (nestedReturnId && typeof d.closeNestedModal === "function") {
+        d.closeNestedModal(nestedReturnId);
       } else if (typeof d.closeModals === "function") {
         d.closeModals();
       }

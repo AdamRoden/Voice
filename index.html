@@ -223,6 +223,7 @@
       <button type="button" class="tool-btn" id="account-banner-action">Apply</button>
     </div>
 
+    <div class="main-stage" id="main-stage">
     <div class="workspace-board" id="workspace-board">
     <div class="sound-canvas" id="sound-canvas"></div>
 
@@ -282,7 +283,10 @@
     <section class="settings-form" id="settings-form" hidden tabindex="-1" aria-labelledby="settings-form-title">
       <div class="settings-form-header">
         <h1 class="settings-form-title" id="settings-form-title">Settings</h1>
-        <button type="button" class="settings-help-link" id="settings-help-link">Help</button>
+        <button type="button" class="settings-help-link" id="settings-help-link">
+          <span class="material-symbols-outlined" aria-hidden="true">help</span>
+          Help
+        </button>
         <button type="button" class="icon-btn" id="settings-close-btn" title="Close settings" aria-label="Close settings">
           <span class="material-symbols-outlined">close</span>
         </button>
@@ -441,6 +445,78 @@
           </div>
       </div>
     </section>
+    <div class="help-cover" id="help-cover" hidden>
+    <section class="settings-form" id="help-form" tabindex="-1" aria-labelledby="help-form-title">
+      <div class="settings-form-header">
+        <h1 class="settings-form-title" id="help-form-title">Help</h1>
+        <button type="button" class="icon-btn" id="help-close-btn" title="Close help" aria-label="Close help">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="settings-form-scroll">
+        <div class="settings-body">
+          <p class="modal-description help-lead">How to speak with Voice.</p>
+          <div class="help-stage" aria-hidden="true">
+            <div class="help-rail">
+              <div class="help-rail-head">
+                <span class="material-symbols-outlined">folder</span>
+                Topics
+              </div>
+              <div class="help-topic is-active">Home</div>
+              <div class="help-topic">Food</div>
+              <div class="help-topic">Places</div>
+            </div>
+            <div class="help-main">
+              <div class="help-canvas">
+                <div class="help-sound">Yes</div>
+                <div class="help-sound alt">Please</div>
+              </div>
+              <div class="help-compose">
+                <span class="help-mini-btn" title="Actions"><span class="material-symbols-outlined">more_horiz</span></span>
+                <span class="help-compose-field">Type anything…</span>
+                <span class="help-mini-btn" title="Clear"><span class="material-symbols-outlined">close</span></span>
+                <span class="help-mini-btn" title="Pin"><span class="material-symbols-outlined">push_pin</span></span>
+                <span class="help-mini-btn" title="Replay"><span class="material-symbols-outlined">replay</span></span>
+                <span class="help-mini-btn help-mini-speak" title="Speak"><span class="material-symbols-outlined">volume_up</span></span>
+              </div>
+            </div>
+            <div class="help-rail help-rail-tools">
+              <div class="help-rail-head">
+                <span class="material-symbols-outlined">record_voice_over</span>
+                Voice
+              </div>
+              <div class="help-voice is-active">In use</div>
+              <div class="help-voice">More</div>
+              <div class="help-nav">
+                <span class="help-nav-btn is-active"><span class="material-symbols-outlined">record_voice_over</span>Voice</span>
+                <span class="help-nav-btn"><span class="material-symbols-outlined">history</span>History</span>
+                <span class="help-nav-btn"><span class="material-symbols-outlined">settings</span>Settings</span>
+              </div>
+            </div>
+          </div>
+          <div class="modal-description settings-section-label">Layout</div>
+          <div class="modal-description settings-section-hint">Topics on the left. Voice and History on the right. Settings opens in this main area. Portrait: the logo opens the drawer. Tap empty space on the top bar to slim it.</div>
+          <div class="modal-description settings-section-label">Topics</div>
+          <div class="modal-description settings-section-hint">Tap a topic to use it. Tap it again to open its list. Sound buttons play their audio.</div>
+          <div class="modal-description settings-section-label">Message</div>
+          <div class="modal-description settings-section-hint"><span class="material-symbols-outlined coach-inline-icon">more_horiz</span> Actions holds <span class="material-symbols-outlined coach-inline-icon">push_pin</span> Pin, <span class="material-symbols-outlined coach-inline-icon">replay</span> Replay, and <span class="material-symbols-outlined coach-inline-icon">close</span> Clear or <span class="material-symbols-outlined coach-inline-icon">add</span> Insert tag when that button is off. Insert tag is ElevenLabs only. <span class="material-symbols-outlined coach-inline-icon">volume_up</span> Speak, or Enter, makes new speech. Replay plays the saved clip. The on-screen keyboard is in Settings.</div>
+          <div class="modal-description settings-section-label">ElevenLabs</div>
+          <div class="modal-description settings-section-hint">No key yet: closing Help asks for one. <span class="material-symbols-outlined coach-inline-icon">key</span> Link to ElevenLabs saves it and opens the voice list. Style, under the voice, is sent in brackets. Enter speaks. Empty means none.</div>
+          <div class="modal-description settings-section-label">Account</div>
+          <div class="modal-description settings-section-hint">In Settings, sign in with Google or email to save boards, voices, and the ElevenLabs key. Another device can sign in and use them. Speaker choice stays on this device.</div>
+          <div class="modal-description settings-section-label">Shortcuts</div>
+          <div class="modal-description settings-section-hint">Keys are on the button tooltips. The full list is below.</div>
+          <button type="button" class="status-btn help-hotkeys-btn" id="help-hotkeys-btn">
+            <span class="material-symbols-outlined icon-medium icon-btn-margin">keyboard</span>
+            Keyboard shortcuts
+            <span class="material-symbols-outlined icon-small">chevron_right</span>
+          </button>
+          <button type="button" class="help-done" id="coach-dismiss-btn">Got it</button>
+        </div>
+      </div>
+    </section>
+    </div>
+    </div>
   </main>
   </div><!-- /.app-shell -->
 
@@ -478,33 +554,6 @@
     </div>
     <div class="modal-buttons">
       <button class="modal-btn secondary" id="import-cancel-btn" type="button" data-close-modal>Cancel</button>
-    </div>
-  </div>
-
-  <!-- Help / Quick start -->
-  <div class="modal modal-full-mobile" id="modal-help" role="dialog" aria-modal="true" aria-labelledby="modal-help-title">
-    <div class="modal-title" id="modal-help-title">
-      <span class="material-symbols-outlined icon-medium" style="vertical-align: -0.15em; margin-right: 6px; color: var(--accent);">help</span>
-      Help
-    </div>
-    <div class="modal-scroll">
-      <div class="modal-description">How to speak with Voice.</div>
-      <ol class="help-list">
-        <li><strong>Layout</strong> — <span class="material-symbols-outlined coach-inline-icon">folder</span> Topics on the left. <span class="material-symbols-outlined coach-inline-icon">record_voice_over</span> Voice and <span class="material-symbols-outlined coach-inline-icon">history</span> History on the right. <span class="material-symbols-outlined coach-inline-icon">settings</span> Settings opens in the main area. Help is a link in Settings. Portrait: the logo opens the drawer. Tap empty space on the top bar to slim it.</li>
-        <li><strong>Topics</strong> — tap a topic to use it. Tap it again to open its list. Sound buttons play their audio.</li>
-        <li><strong>Message</strong> — <span class="material-symbols-outlined coach-inline-icon">more_horiz</span> Actions: <span class="material-symbols-outlined coach-inline-icon">push_pin</span> Pin, <span class="material-symbols-outlined coach-inline-icon">replay</span> Replay, and <span class="material-symbols-outlined coach-inline-icon">close</span> Clear or <span class="material-symbols-outlined coach-inline-icon">add</span> Insert tag when that button is off. Insert tag is ElevenLabs only. <span class="material-symbols-outlined coach-inline-icon">volume_up</span> Speak, or Enter, makes new speech. Replay plays the saved clip. On-screen keyboard is in Settings.</li>
-        <li><strong>ElevenLabs</strong> — no key yet: closing Help asks for one. <span class="material-symbols-outlined coach-inline-icon">key</span> Link to ElevenLabs saves it and opens the voice list. Style, under the voice, is sent in brackets. Enter speaks. Empty means none.</li>
-        <li><strong>Account</strong> — in Settings, sign in with Google or email to save boards, voices, and the ElevenLabs key. Another device can sign in and use them. Speaker choice stays on this device.</li>
-        <li><strong>Shortcuts</strong> — keys are on the button tooltips. The full list is below.</li>
-      </ol>
-      <button type="button" class="status-btn help-hotkeys-btn" id="help-hotkeys-btn">
-        <span class="material-symbols-outlined icon-medium icon-btn-margin">keyboard</span>
-        Keyboard shortcuts
-        <span class="material-symbols-outlined icon-small">chevron_right</span>
-      </button>
-    </div>
-    <div class="modal-buttons">
-      <button type="button" class="modal-btn primary" id="coach-dismiss-btn">Got it</button>
     </div>
   </div>
 
