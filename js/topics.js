@@ -155,7 +155,7 @@
     };
   }
 
-  // ---- sound board grid, assign, overwrite ----
+  // ---- sound board grid and pin ----
   function installBoard(ctx) {
     function autosizeSoundCanvas(activeTab) {
       if (!ctx.soundCanvas || !activeTab) return;
@@ -196,11 +196,10 @@
      * Canonical sound-button chrome (canvas grid + topic sidebar list).
      * @param {object} btnData
      * @param {{
-     *   mode?: "overwrite" | "speak" | "speak-insert",
-     *   layout?: "canvas" | "list",
-     *   onOverwrite?: (btnId: string) => void
+     *   mode?: "speak" | "speak-insert",
+     *   layout?: "canvas" | "list"
      * }} [opts]
-     * List: speak / speak-insert only (no overwrite). Canvas: all modes.
+     * List is speak, or speak-insert when that feature is on. Canvas uses the same modes.
      */
     function createSoundButtonEl(btnData, opts) {
       const o = opts || {};
@@ -214,7 +213,6 @@
       const btnEl = document.createElement("div");
       const classes = ["sound-button"];
       if (layout === "list") classes.push("topic-list-sound-button");
-      if (mode === "overwrite") classes.push("overwrite-target");
       if (isUtteranceBtn) classes.push("utterance-button");
       if (mode === "speak-insert") classes.push("speak-layout");
       btnEl.className = classes.join(" ");
@@ -231,19 +229,6 @@
         btnEl.style.color = btnColor;
       } else {
         btnEl.style.backgroundColor = btnColor;
-      }
-
-      if (mode === "overwrite") {
-        const inner = document.createElement("div");
-        inner.className = "sound-button-inner";
-        inner.style.width = "100%";
-        inner.style.padding = "0 8px";
-        fillSoundButtonInner(inner, btnData);
-        btnEl.appendChild(inner);
-        btnEl.addEventListener("click", () => {
-          if (typeof o.onOverwrite === "function") o.onOverwrite(btnData.id);
-        });
-        return btnEl;
       }
 
       const main = document.createElement("button");
@@ -281,7 +266,6 @@
     }
 
     function canvasButtonMode() {
-      if (ctx.isOverwriteMode) return "overwrite";
       if (ctx.isFeatButtonInsert()) return "speak-insert";
       return "speak";
     }
@@ -302,7 +286,7 @@
         empty.innerHTML = `
           <div class="sound-canvas-empty-title">No sound buttons yet</div>
           <div class="sound-canvas-empty-text">
-            Type a phrase below, speak it, then use <strong>Assign to Button</strong> —
+            Type a phrase below, speak it, then use <strong>Pin</strong> —
             or load starter everyday phrases.
           </div>
           <div class="sound-canvas-empty-actions">
@@ -333,15 +317,26 @@
       activeTab.buttons.forEach((btnData) => {
         ctx.soundCanvas.appendChild(createSoundButtonEl(btnData, {
           mode,
-          layout: "canvas",
-          onOverwrite: (id) => executeOverwrite(id)
+          layout: "canvas"
         }));
       });
     }
 
     function startAssignFromDisplay() {
       if (!ctx.canAssignFromDisplay()) return;
-      ctx.openModal("modal-assign-choice");
+      const source = ctx.getAssignSource();
+      const activeTab = ctx.getActiveTopic();
+      if (!source || !activeTab) return;
+      const btn = ctx.normalizeButton({
+        id: ctx.generateId(),
+        col: activeTab.buttons.length % activeTab.gridCols,
+        row: Math.floor(activeTab.buttons.length / activeTab.gridCols)
+      }, activeTab.buttons.length);
+      applyGeneratedSpeechToButton(btn, source);
+      activeTab.buttons.push(btn);
+      ctx.repackSequentialGrid(activeTab);
+      ctx.commitTopicsUi();
+      ctx.openButtonEditModal(btn.id, activeTab.id);
     }
 
     function applyGeneratedSpeechToButton(btn, source) {
@@ -363,59 +358,12 @@
     document.getElementById("compose-pin-btn")?.addEventListener("click", () => startAssignFromDisplay());
     document.getElementById("textarea-assign-btn")?.addEventListener("click", () => startAssignFromDisplay());
 
-    ctx.$("choice-create-new-btn")?.addEventListener("click", () => {
-      const source = ctx.getAssignSource();
-      if (!source) return;
-      const activeTab = ctx.getActiveTopic();
-      if (!activeTab) return;
-      const btn = ctx.normalizeButton({
-        id: ctx.generateId(),
-        col: activeTab.buttons.length % activeTab.gridCols,
-        row: Math.floor(activeTab.buttons.length / activeTab.gridCols)
-      }, activeTab.buttons.length);
-      applyGeneratedSpeechToButton(btn, source);
-      activeTab.buttons.push(btn);
-      ctx.repackSequentialGrid(activeTab);
-      ctx.commitTopicsUi();
-      ctx.closeModals();
-    });
-
-    ctx.$("choice-overwrite-btn")?.addEventListener("click", () => {
-      ctx.closeModals();
-      setOverwriteMode(true);
-    });
-
-    function setOverwriteMode(enabled) {
-      ctx.isOverwriteMode = enabled;
-      ctx.$("overwrite-banner")?.classList.toggle("active", enabled);
-      renderSoundButtons();
-    }
-
-    document.getElementById("cancel-overwrite-btn")?.addEventListener("click", () => {
-      setOverwriteMode(false);
-      ctx.focusDisplayInput();
-    });
-
-    function executeOverwrite(btnId) {
-      const source = ctx.getAssignSource();
-      if (!source) return;
-      const tab = ctx.getActiveTopic();
-      const btn = tab?.buttons.find((b) => b.id === btnId);
-      if (!btn) return;
-      applyGeneratedSpeechToButton(btn, source);
-      setOverwriteMode(false);
-      ctx.commitTopicsUi();
-      ctx.focusDisplayInput();
-    }
-
     return {
       autosizeSoundCanvas,
       createSoundButtonEl,
       renderSoundButtons,
       applyGeneratedSpeechToButton,
-      startAssignFromDisplay,
-      setOverwriteMode,
-      executeOverwrite
+      startAssignFromDisplay
     };
   }
 
@@ -622,7 +570,6 @@
       topicsList: [],
       activeTopicId: null,
       expandedTopicIds: new Set(),
-      isOverwriteMode: false,
       editingButtonId: null,
       editingButtonTopicId: null,
       modalButtonIndex: 1,
@@ -697,15 +644,12 @@
       openNewTopicFlow: (...a) => ctx.openNewTopicFlow(...a),
       openButtonEditModal: (...a) => ctx.openButtonEditModal(...a),
       loadStarterPhrasesIntoActiveTopic: () => ctx.loadStarterPhrasesIntoActiveTopic(),
-      setOverwriteMode: (...a) => ctx.setOverwriteMode(...a),
-      executeOverwrite: (...a) => ctx.executeOverwrite(...a),
       startAssignFromDisplay: () => ctx.startAssignFromDisplay(),
       switchTopic: (...a) => ctx.switchTopic(...a),
       resetEditState,
       stepModalGrid: (...a) => ctx.stepModalGrid(...a),
       stepModalButtonIndex: (...a) => ctx.stepModalButtonIndex(...a),
       stepModalTopicIndex: (...a) => ctx.stepModalTopicIndex(...a),
-      get isOverwriteMode() { return ctx.isOverwriteMode; },
       get editingTopicId() { return ctx.editingTopicId; }
     };
   }

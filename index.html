@@ -384,11 +384,6 @@
     <div class="sound-canvas" id="sound-canvas"></div>
 
     <div class="bottom-dock-wrap">
-      <div class="overwrite-banner" id="overwrite-banner">
-        <span class="material-symbols-outlined icon-medium">touch_app</span>
-        <span>Click any button on the grid below to overwrite its audio & label!</span>
-        <button class="overwrite-cancel-btn" id="cancel-overwrite-btn" type="button">Cancel</button>
-      </div>
       <div class="bottom-dock">
         <div class="compose-box" id="toolbar">
           <div class="compose-row">
@@ -449,18 +444,6 @@
 
   <!-- ==================== MODALS & POPUPS ==================== -->
   <div class="modal-overlay" id="modal-overlay"></div>
-
-  <!-- Assign Choice Modal -->
-  <div class="modal" id="modal-assign-choice">
-    <div class="modal-title">Assign Speech Audio</div>
-    <div class="modal-scroll">
-      <div class="modal-choice-group">
-        <button class="status-btn choice-btn-create" id="choice-create-new-btn"><span class="material-symbols-outlined icon-medium icon-btn-margin">workspace_premium</span> Create New Button</button>
-        <button class="status-btn choice-btn-overwrite" id="choice-overwrite-btn"><span class="material-symbols-outlined icon-medium icon-btn-margin">refresh</span> Overwrite Existing Button</button>
-      </div>
-    </div>
-    <div class="modal-buttons"><button class="modal-btn secondary" onclick="closeModals()">Cancel</button></div>
-  </div>
 
   <!-- Import: browse for JSON, then merge or replace -->
   <div class="modal" id="modal-import-choice">

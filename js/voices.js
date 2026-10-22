@@ -561,6 +561,7 @@ function defaultLoadKeys(storageKey) {
    *   openModal: (id: string) => void,
    *   closeModals: () => void,
    *   focusDisplayInput: () => void,
+   *   closePortraitSidebar?: () => void,
    *   onVoiceContextChanged?: () => void,
    *   onVoiceTagEnter?: () => void,
    *   switchSidebarTab?: (tab: string, expand?: boolean, opts?: { focusComposer?: boolean }) => void
@@ -810,7 +811,11 @@ function defaultLoadKeys(storageKey) {
       const input = $("voice-tag-input");
       if (!input) return "";
       input.value = canonicalVoiceTag(style);
-      return commitVoiceTagFromInput();
+      const tag = commitVoiceTagFromInput();
+      // The portrait drawer covers the message. Close it so the composer can take focus.
+      if (typeof d.closePortraitSidebar === "function") d.closePortraitSidebar();
+      if (typeof d.focusDisplayInput === "function") d.focusDisplayInput();
+      return tag;
     }
 
     /** Tag sent with ElevenLabs speech. Empty means none. The field writes storage as the user types. */

@@ -1003,6 +1003,7 @@
       openModal: (id) => ports.openModal(id),
       closeModals: () => ports.closeModals(),
       focusDisplayInput,
+      closePortraitSidebar: () => Shell?.closePortraitSidebar?.(),
       onVoiceTagEnter: () => primarySpeak(),
       onVoiceContextChanged: () => {
         syncInsertTagChrome();

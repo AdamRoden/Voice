@@ -447,10 +447,6 @@ html[data-layout="portrait"] .workspace-header-shell { display: flex !important;
 .bottom-dock-wrap { position: relative; flex: 1 1 0; min-height: 64px; width: 100%; display: flex; flex-direction: column; min-width: 0; }
 .bottom-dock-wrap:has(.compose-strip.has-items),
 .bottom-dock-wrap:has(.compose-strip.has-audio) { min-height: 132px; }
-.overwrite-banner { position: absolute; top: 0; left: 50%; transform: translateX(-50%); background-color: var(--accent); color: #fff; padding: 10px 16px; border-radius: var(--radius-lg); font-size: 14px; font-weight: 600; display: none; align-items: center; gap: var(--gap-xl); box-shadow: 0 6px 20px var(--shadow); z-index: var(--z-header); max-width: 100%; width: max-content; flex-wrap: wrap; justify-content: center; text-align: center; box-sizing: border-box; }
-.overwrite-banner.active { display: flex; }
-.overwrite-cancel-btn { background: rgba(0,0,0,0.25); border: none; color: #fff; padding: 8px 12px; border-radius: var(--radius-md); cursor: pointer; font-size: 13px; font-weight: bold; transition: background 0.2s; min-height: 36px; }
-.overwrite-cancel-btn:hover { background: rgba(0,0,0,0.4); }
 /* Sound Button Grid Canvas — height fits grid content (JS sets height from rows × row-height). Never flex-grow into empty space under the buttons. Can shrink + scroll if content is taller than the remaining shell. */
 .sound-canvas { flex: 0 1 auto; width: 100%; height: auto; min-height: 0; background-color: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-md); display: grid; gap: var(--gap-sm); padding: 5px; padding-top: 10px; overflow: auto; transition: border-color 0.2s; position: relative; align-content: start; }
 .sound-canvas-empty { grid-column: 1 / -1; grid-row: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--gap-xl); padding: 16px 12px; text-align: center; color: var(--text-secondary); min-height: 110px; }
@@ -532,14 +528,8 @@ html[data-layout="portrait"] .workspace-header-shell { display: flex !important;
 .compose-icon-btn.is-disabled,
 .compose-icon-btn:disabled,
 .compose-actions-item.is-disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
-@keyframes wiggle {
-  0% { transform: rotate(-1deg) scale(1); }
-  50% { transform: rotate(1deg) scale(1); }
-  100% { transform: rotate(-1deg) scale(1); }
-}
 .sound-button { position: relative; background-color: var(--key-bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0; cursor: default; user-select: none; -webkit-user-select: none; transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease, background-color 0.12s ease; display: flex; align-items: stretch; justify-content: flex-start; font-size: 14px; font-weight: 600; color: #fff; overflow: hidden; width: 100%; min-height: var(--sound-row-height, 48px); height: var(--sound-row-height, 48px); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); -webkit-touch-callout: none; box-sizing: border-box; }
 .sound-button:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 4px 10px var(--shadow); }
-.sound-button.overwrite-target { animation: wiggle 0.4s infinite ease-in-out; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 50%, transparent); cursor: pointer; }
 /* Utterance (live TTS) buttons: regenerate on press — outline style */
 .sound-button.utterance-button { background-color: transparent !important; border-width: 2px; border-style: solid; text-shadow: none; }
 .sound-button.utterance-button:hover { background-color: color-mix(in srgb, currentColor 12%, transparent) !important; border-color: currentColor; }
@@ -886,8 +876,6 @@ body.osk-unavailable #opt-osk-row { display: none !important; }
 .modal-btn:active { filter: brightness(0.95); }
 a.modal-btn { text-decoration: none; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
 .modal-choice-group { display: flex; flex-direction: column; gap: var(--gap-lg); margin-top: 6px; }
-.choice-btn-create { padding: var(--pad-xl); font-weight: 600; color: var(--accent); border-color: var(--accent); }
-.choice-btn-overwrite { padding: var(--pad-xl); font-weight: 600; }
 .btn-center { justify-content: center; }
 /* ElevenLabs API key modal */
 .api-key-modal .modal-description { margin: 0; }
@@ -1076,7 +1064,6 @@ html.keyboard-open .modal.modal-full-mobile.open .modal-buttons { padding-bottom
 .topic-actions { opacity: 1; }
 .sidebar-nav-btn { min-height: 52px; }
 .topic-item-header { min-height: var(--touch-min); padding: var(--pad-md); }
-.overwrite-banner { width: 100%; max-width: 100%; font-size: 13px; }
 }
 
 @media (max-width: 480px) {

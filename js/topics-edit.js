@@ -58,6 +58,39 @@
       ctx.previewLiveGridColsFromModal();
     }
     
+    function focusModalName(inputId) {
+      requestAnimationFrame(() => {
+        const el = document.getElementById(inputId);
+        const modal = el?.closest?.(".modal");
+        if (!el || (modal && !modal.classList.contains("open"))) return;
+        try {
+          el.focus({ preventScroll: true });
+          const len = String(el.value || "").length;
+          if (typeof el.setSelectionRange === "function") el.setSelectionRange(0, len);
+          else el.select();
+        } catch (_) {
+          try { el.focus(); el.select(); } catch (__) {}
+        }
+      });
+    }
+
+    /** Enter in a text field saves. Buttons and organizer tiles keep their own Enter action. */
+    function bindModalEnterSave(modalId, saveId) {
+      const modal = document.getElementById(modalId);
+      const saveBtn = document.getElementById(saveId);
+      if (!modal || !saveBtn) return;
+      modal.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter" || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
+        if (e.isComposing || e.keyCode === 229) return;
+        if (!modal.classList.contains("open")) return;
+        const target = e.target;
+        if (target && typeof target.closest === "function"
+          && target.closest("button, a, select, textarea, .topic-org-tile")) return;
+        e.preventDefault();
+        saveBtn.click();
+      });
+    }
+
     function fillTopicEditForm(topic, { isCreate = false } = {}) {
       const titleEl = document.getElementById("topic-edit-modal-title");
       if (titleEl) titleEl.textContent = isCreate ? "New Topic" : "Edit Topic Settings";
@@ -127,13 +160,7 @@
       ctx.editingTopicId = ctx.pendingNewTopic.id;
       ctx.fillTopicEditForm(ctx.pendingNewTopic, { isCreate: true });
       ctx.openModal("topic-edit-modal");
-      requestAnimationFrame(() => {
-        try {
-          const el = ctx.$("topic-name-input");
-          el?.focus({ preventScroll: true });
-          el?.select();
-        } catch (_) {}
-      });
+      focusModalName("topic-name-input");
     }
     
     /** Entry: choice modal, or scratch if no topics exist yet. */
@@ -254,6 +281,7 @@
         ctx.renderTopicButtonOrganizer();
       }
       ctx.openModal("topic-edit-modal");
+      focusModalName("topic-name-input");
     }
     
     function openOrganizerButtonEdit(btnId) {
@@ -272,6 +300,7 @@
       ctx.syncModalButtonIndexLabels();
       ctx.setColorField("button-color-field", btn.color, "#3f3f4e");
       ctx.openModal("button-edit-modal");
+      focusModalName("button-label-input");
     }
     
     function renderTopicButtonOrganizer() {
@@ -444,6 +473,7 @@
       ctx.editingTopicId = topicId;
       ctx.fillTopicEditForm(topic, { isCreate: false });
       ctx.openModal("topic-edit-modal");
+      focusModalName("topic-name-input");
     }
     
     function cancelTopicEditModal() {
@@ -605,6 +635,7 @@
       ctx.syncModalButtonIndexLabels();
       ctx.setColorField("button-color-field", btn.color, "#3f3f4e");
       ctx.openModal("button-edit-modal");
+      focusModalName("button-label-input");
     }
     
     ctx.$("button-index-down")?.addEventListener("click", () => ctx.stepModalButtonIndex(-1));
@@ -671,6 +702,9 @@
       ctx.finishButtonEditAndMaybeResume(true);
     });
     
+    bindModalEnterSave("topic-edit-modal", "save-topic-meta-btn");
+    bindModalEnterSave("button-edit-modal", "save-button-edit");
+
     // Cancel from button edit returns to topic edit when opened from organizer
     document.querySelector("#button-edit-modal .modal-btn.secondary")?.addEventListener("click", (e) => {
       if (!ctx.topicEditResumeId) return;
