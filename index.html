@@ -52,7 +52,7 @@
       <nav class="sidebar-topics-rail" id="topics-rail" aria-label="Topics"></nav>
     </aside>
 
-    <!-- ==================== RIGHT: VOICE / HISTORY / SETTINGS / HELP ==================== -->
+    <!-- ==================== RIGHT: VOICE / HISTORY ==================== -->
     <aside class="sidebar sidebar-right" id="sidebar-right" aria-label="Workspace tools">
       <div class="sidebar-header">
         <button class="logo-btn" id="toggle-sidebar-right-btn" type="button" title="Toggle sidebar" aria-label="Toggle sidebar">
@@ -179,8 +179,115 @@
           <button class="clear-history-btn" id="clear-history-btn" type="button">Clear All History</button>
         </div>
 
-        <!-- Settings Tab Content -->
-        <div id="tab-content-settings" class="tab-content">
+      </div>
+
+      <nav class="sidebar-nav" id="sidebar-nav" aria-label="Sidebar">
+        <button type="button" class="sidebar-nav-btn" data-nav="voice" id="nav-voice" title="Voice" aria-label="Voice">
+          <span class="material-symbols-outlined">record_voice_over</span>
+          <span class="sidebar-nav-label">Voice</span>
+        </button>
+        <button type="button" class="sidebar-nav-btn" data-nav="history" id="nav-history" title="History" aria-label="History">
+          <span class="material-symbols-outlined">history</span>
+          <span class="sidebar-nav-label">History</span>
+        </button>
+        <button type="button" class="sidebar-nav-btn portrait-only active" data-nav="topics" id="nav-topics" title="Topics" aria-label="Topics" aria-current="page">
+          <span class="material-symbols-outlined">folder</span>
+          <span class="sidebar-nav-label">Topics</span>
+        </button>
+        <button type="button" class="sidebar-nav-btn" data-nav="settings" id="nav-settings" title="Settings" aria-label="Settings" aria-pressed="false">
+          <span class="material-symbols-outlined">settings</span>
+          <span class="sidebar-nav-label">Settings</span>
+        </button>
+      </nav>
+    </aside>
+  </div>
+
+  <!-- ==================== MAIN WORKSPACE ==================== -->
+  <main class="app-main">
+    <div class="workspace-header-shell portrait-only" id="workspace-header-shell" data-size="normal">
+      <div class="workspace-header" id="workspace-header" title="Tap empty space to slim the top bar">
+        <button class="icon-btn mobile-menu-btn" id="mobile-menu-btn" type="button" title="Open menu" aria-label="Open menu">
+          <img class="app-logo" src="icon.png" width="24" height="24" alt="">
+        </button>
+        <div class="chat-slots" id="chat-slots" role="group" aria-label="Topic chats"></div>
+      </div>
+    </div>
+
+    <div class="offline-banner" id="offline-banner" role="status">
+      <span class="material-symbols-outlined icon-medium">wifi_off</span>
+      <span>Offline — browser voice still works. Cached Piper voices work offline; ElevenLabs needs a connection.</span>
+    </div>
+    <div class="account-banner" id="account-banner" role="status">
+      <span class="material-symbols-outlined icon-medium">cloud_sync</span>
+      <span id="account-banner-text">Your account has newer boards.</span>
+      <button type="button" class="tool-btn" id="account-banner-action">Apply</button>
+    </div>
+
+    <div class="workspace-board" id="workspace-board">
+    <div class="sound-canvas" id="sound-canvas"></div>
+
+    <div class="bottom-dock-wrap">
+      <div class="bottom-dock">
+        <div class="compose-box" id="toolbar">
+          <div class="compose-row">
+            <div class="compose-leading" id="compose-leading">
+              <div class="compose-quick-actions" id="compose-quick-actions" aria-label="Quick actions" hidden>
+                <button type="button" class="compose-icon-btn compose-standalone" id="insert-tag-btn" aria-label="Insert tag" title="Insert tag" hidden>
+                  <span class="material-symbols-outlined">add</span>
+                </button>
+              </div>
+              <div class="compose-actions-wrap" id="compose-actions-wrap">
+                <button type="button" class="compose-mode-btn" id="compose-actions-btn" aria-haspopup="menu" aria-expanded="false" title="Message actions">
+                  <span class="material-symbols-outlined compose-mode-icon">more_horiz</span>
+                  <span class="compose-mode-label">Actions</span>
+                  <span class="material-symbols-outlined compose-mode-caret">expand_more</span>
+                </button>
+                <div class="compose-actions-menu float-menu float-menu--shift" id="compose-actions-menu" role="menu" aria-label="Message actions" hidden></div>
+              </div>
+            </div>
+            <textarea class="display-textarea" id="display-input" spellcheck="true" autocomplete="off" autocapitalize="sentences" inputmode="none" virtualkeyboardpolicy="manual" placeholder="Type anything…" rows="1" aria-label="Message text"></textarea>
+            <div class="compose-trailing" id="compose-trailing" aria-label="Message controls">
+              <button type="button" class="compose-icon-btn compose-standalone" id="compose-new-message-btn" aria-label="Clear message" title="Clear message">
+                <span class="material-symbols-outlined">close</span>
+              </button>
+              <button type="button" class="compose-icon-btn compose-standalone" id="compose-pin-btn" aria-label="Pin to button" title="Pin message to button">
+                <span class="material-symbols-outlined">push_pin</span>
+              </button>
+              <button type="button" class="compose-icon-btn compose-standalone" id="compose-replay-btn" aria-label="Replay last speech" title="Replay last speech">
+                <span class="material-symbols-outlined">replay</span>
+              </button>
+            </div>
+            <button type="button" class="compose-speak-btn display-ctrl key tts-btn" id="speak-btn" aria-label="Speak" title="Speak text (or selection). Enter or click again while speaking to stop.">
+              <span class="material-symbols-outlined icon-medium">volume_up</span>
+            </button>
+          </div>
+        </div>
+        <div class="compose-strip" id="compose-strip" aria-label="Message words">
+          <div class="compose-strip-header">
+            <span class="compose-strip-label">Message</span>
+          </div>
+          <div class="compose-strip-body">
+            <div class="compose-chips" id="compose-chips" role="list"></div>
+            <div class="audio-actions-inline" id="generated-audio-actions">
+              <button class="audio-action-btn play" id="textarea-replay-btn" type="button" title="Replay last speech">
+                <span class="material-symbols-outlined icon-small">replay</span>
+                <span class="audio-action-label">Replay</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+    <section class="settings-form" id="settings-form" hidden tabindex="-1" aria-labelledby="settings-form-title">
+      <div class="settings-form-header">
+        <h1 class="settings-form-title" id="settings-form-title">Settings</h1>
+        <button type="button" class="settings-help-link" id="settings-help-link">Help</button>
+        <button type="button" class="icon-btn" id="settings-close-btn" title="Close settings" aria-label="Close settings">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="settings-form-scroll">
           <div class="settings-body">
             <div class="modal-description settings-section-label">Account</div>
             <div class="modal-description settings-section-hint" id="account-hint">Sign in with Google or email to use your boards, voices, and settings on another device. The speaker stays on this device.</div>
@@ -332,109 +439,8 @@
               </button>
             </div>
           </div>
-        </div>
       </div>
-
-      <nav class="sidebar-nav" id="sidebar-nav" aria-label="Sidebar">
-        <button type="button" class="sidebar-nav-btn" data-nav="voice" id="nav-voice" title="Voice" aria-label="Voice">
-          <span class="material-symbols-outlined">record_voice_over</span>
-          <span class="sidebar-nav-label">Voice</span>
-        </button>
-        <button type="button" class="sidebar-nav-btn" data-nav="history" id="nav-history" title="History" aria-label="History">
-          <span class="material-symbols-outlined">history</span>
-          <span class="sidebar-nav-label">History</span>
-        </button>
-        <button type="button" class="sidebar-nav-btn portrait-only active" data-nav="topics" id="nav-topics" title="Topics" aria-label="Topics" aria-current="page">
-          <span class="material-symbols-outlined">folder</span>
-          <span class="sidebar-nav-label">Topics</span>
-        </button>
-        <button type="button" class="sidebar-nav-btn" data-nav="settings" id="nav-settings" title="Settings" aria-label="Settings">
-          <span class="material-symbols-outlined">settings</span>
-          <span class="sidebar-nav-label">Settings</span>
-        </button>
-        <button type="button" class="sidebar-nav-btn" data-nav="help" id="nav-help" title="Help" aria-label="Help">
-          <span class="material-symbols-outlined">help</span>
-          <span class="sidebar-nav-label">Help</span>
-        </button>
-      </nav>
-    </aside>
-  </div>
-
-  <!-- ==================== MAIN WORKSPACE ==================== -->
-  <main class="app-main">
-    <div class="workspace-header-shell portrait-only" id="workspace-header-shell" data-size="normal">
-      <div class="workspace-header" id="workspace-header" title="Tap empty space to slim the top bar">
-        <button class="icon-btn mobile-menu-btn" id="mobile-menu-btn" type="button" title="Open menu" aria-label="Open menu">
-          <img class="app-logo" src="icon.png" width="24" height="24" alt="">
-        </button>
-        <div class="chat-slots" id="chat-slots" role="group" aria-label="Topic chats"></div>
-      </div>
-    </div>
-
-    <div class="offline-banner" id="offline-banner" role="status">
-      <span class="material-symbols-outlined icon-medium">wifi_off</span>
-      <span>Offline — browser voice still works. Cached Piper voices work offline; ElevenLabs needs a connection.</span>
-    </div>
-    <div class="account-banner" id="account-banner" role="status">
-      <span class="material-symbols-outlined icon-medium">cloud_sync</span>
-      <span id="account-banner-text">Your account has newer boards.</span>
-      <button type="button" class="tool-btn" id="account-banner-action">Apply</button>
-    </div>
-
-    <div class="sound-canvas" id="sound-canvas"></div>
-
-    <div class="bottom-dock-wrap">
-      <div class="bottom-dock">
-        <div class="compose-box" id="toolbar">
-          <div class="compose-row">
-            <div class="compose-leading" id="compose-leading">
-              <div class="compose-quick-actions" id="compose-quick-actions" aria-label="Quick actions" hidden>
-                <button type="button" class="compose-icon-btn compose-standalone" id="insert-tag-btn" aria-label="Insert tag" title="Insert tag" hidden>
-                  <span class="material-symbols-outlined">add</span>
-                </button>
-              </div>
-              <div class="compose-actions-wrap" id="compose-actions-wrap">
-                <button type="button" class="compose-mode-btn" id="compose-actions-btn" aria-haspopup="menu" aria-expanded="false" title="Message actions">
-                  <span class="material-symbols-outlined compose-mode-icon">more_horiz</span>
-                  <span class="compose-mode-label">Actions</span>
-                  <span class="material-symbols-outlined compose-mode-caret">expand_more</span>
-                </button>
-                <div class="compose-actions-menu float-menu float-menu--shift" id="compose-actions-menu" role="menu" aria-label="Message actions" hidden></div>
-              </div>
-            </div>
-            <textarea class="display-textarea" id="display-input" spellcheck="true" autocomplete="off" autocapitalize="sentences" inputmode="none" virtualkeyboardpolicy="manual" placeholder="Type anything…" rows="1" aria-label="Message text"></textarea>
-            <div class="compose-trailing" id="compose-trailing" aria-label="Message controls">
-              <button type="button" class="compose-icon-btn compose-standalone" id="compose-new-message-btn" aria-label="Clear message" title="Clear message">
-                <span class="material-symbols-outlined">close</span>
-              </button>
-              <button type="button" class="compose-icon-btn compose-standalone" id="compose-pin-btn" aria-label="Pin to button" title="Pin message to button">
-                <span class="material-symbols-outlined">push_pin</span>
-              </button>
-              <button type="button" class="compose-icon-btn compose-standalone" id="compose-replay-btn" aria-label="Replay last speech" title="Replay last speech">
-                <span class="material-symbols-outlined">replay</span>
-              </button>
-            </div>
-            <button type="button" class="compose-speak-btn display-ctrl key tts-btn" id="speak-btn" aria-label="Speak" title="Speak text (or selection). Enter or click again while speaking to stop.">
-              <span class="material-symbols-outlined icon-medium">volume_up</span>
-            </button>
-          </div>
-        </div>
-        <div class="compose-strip" id="compose-strip" aria-label="Message words">
-          <div class="compose-strip-header">
-            <span class="compose-strip-label">Message</span>
-          </div>
-          <div class="compose-strip-body">
-            <div class="compose-chips" id="compose-chips" role="list"></div>
-            <div class="audio-actions-inline" id="generated-audio-actions">
-              <button class="audio-action-btn play" id="textarea-replay-btn" type="button" title="Replay last speech">
-                <span class="material-symbols-outlined icon-small">replay</span>
-                <span class="audio-action-label">Replay</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    </section>
   </main>
   </div><!-- /.app-shell -->
 
@@ -484,7 +490,7 @@
     <div class="modal-scroll">
       <div class="modal-description">How to speak with Voice.</div>
       <ol class="help-list">
-        <li><strong>Layout</strong> — <span class="material-symbols-outlined coach-inline-icon">folder</span> Topics on the left. <span class="material-symbols-outlined coach-inline-icon">record_voice_over</span> Voice, <span class="material-symbols-outlined coach-inline-icon">history</span> History, <span class="material-symbols-outlined coach-inline-icon">settings</span> Settings, and <span class="material-symbols-outlined coach-inline-icon">help</span> Help on the right. Portrait: the logo opens the drawer. Tap empty space on the top bar to slim it.</li>
+        <li><strong>Layout</strong> — <span class="material-symbols-outlined coach-inline-icon">folder</span> Topics on the left. <span class="material-symbols-outlined coach-inline-icon">record_voice_over</span> Voice and <span class="material-symbols-outlined coach-inline-icon">history</span> History on the right. <span class="material-symbols-outlined coach-inline-icon">settings</span> Settings opens in the main area. Help is a link in Settings. Portrait: the logo opens the drawer. Tap empty space on the top bar to slim it.</li>
         <li><strong>Topics</strong> — tap a topic to use it. Tap it again to open its list. Sound buttons play their audio.</li>
         <li><strong>Message</strong> — <span class="material-symbols-outlined coach-inline-icon">more_horiz</span> Actions: <span class="material-symbols-outlined coach-inline-icon">push_pin</span> Pin, <span class="material-symbols-outlined coach-inline-icon">replay</span> Replay, and <span class="material-symbols-outlined coach-inline-icon">close</span> Clear or <span class="material-symbols-outlined coach-inline-icon">add</span> Insert tag when that button is off. Insert tag is ElevenLabs only. <span class="material-symbols-outlined coach-inline-icon">volume_up</span> Speak, or Enter, makes new speech. Replay plays the saved clip. On-screen keyboard is in Settings.</li>
         <li><strong>ElevenLabs</strong> — no key yet: closing Help asks for one. <span class="material-symbols-outlined coach-inline-icon">key</span> Link to ElevenLabs saves it and opens the voice list. Style, under the voice, is sent in brackets. Enter speaks. Empty means none.</li>

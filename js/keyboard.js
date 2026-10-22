@@ -219,16 +219,18 @@
       document.addEventListener("focusin", (e) => {
         if (!isTextEntryElement(e.target) && !isComposeDockChrome(e.target)) return;
         schedule({ settle: true });
-        // Keep focused fields visible inside full-window / scrolling modals.
+        // Keep a focused field inside its scroll parent (modals, Settings, sidebar).
         const field = e.target;
         if (!isTextEntryElement(field)) return;
         requestAnimationFrame(() => {
-          try {
-            const modal = field.closest && field.closest(".modal.open");
-            if (!modal) return;
-            field.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
-          } catch (_) {
-            try { field.scrollIntoView(true); } catch (__) {}
+          let node = field.parentElement;
+          while (node && node !== document.body) {
+            const oy = getComputedStyle(node).overflowY;
+            if ((oy === "auto" || oy === "scroll") && node.scrollHeight > node.clientHeight) {
+              try { field.scrollIntoView({ block: "nearest", inline: "nearest" }); } catch (_) {}
+              return;
+            }
+            node = node.parentElement;
           }
         });
       });

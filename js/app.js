@@ -1115,7 +1115,7 @@
       autosizeDisplayInput();
       ports.syncChatUi();
       if (!ports.isCoachDismissed()) ports.showCoach();
-      if (!ports.isPortraitLayout()) focusDisplayInput();
+      if (!ports.isPortraitLayout()) Shell.focusSurface();
 
       AudioFx?.scheduleMigrateStoredWavAudio?.({
         getContext: () => Speech?.getSharedAudioContext?.() || null,

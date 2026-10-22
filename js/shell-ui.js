@@ -173,8 +173,8 @@
   "use strict";
 
   const VALID_SIDEBAR_TABS = new Set(["voice", "history", "topics", "settings"]);
-  /** Right-rail utility tabs. Topics is left-only (landscape) / drawer panel (portrait). */
-  const RIGHT_SIDEBAR_TABS = new Set(["voice", "history", "settings"]);
+  /** Right-rail utility tabs. Settings is a main-column form, not rail content. */
+  const RIGHT_SIDEBAR_TABS = new Set(["voice", "history"]);
   const DEFAULT_SIDEBAR_TAB = "topics";
   const DEFAULT_RIGHT_TAB = "voice";
   /**
@@ -237,6 +237,7 @@
 
     /** Last painted utility tab (right content), independent of hash when on topics. */
     let utilityTab = DEFAULT_RIGHT_TAB;
+    let settingsReturnTab = DEFAULT_SIDEBAR_TAB;
 
     function isPortraitLayout() {
       return window.matchMedia(d.portraitLayoutMq).matches;
@@ -471,14 +472,47 @@
     }
 
     function syncNavActive(tab) {
-      const t = normalizeTab(tab);
+      const page = isSettingsOpen() ? "settings" : normalizeTab(tab);
       document.querySelectorAll(".sidebar-nav-btn").forEach((el) => {
         const nav = el.getAttribute("data-nav");
-        const isContent = nav === t;
-        el.classList.toggle("active", isContent);
-        if (isContent) el.setAttribute("aria-current", "page");
+        const on = nav === page;
+        el.classList.toggle("active", on);
+        if (on) el.setAttribute("aria-current", "page");
         else el.removeAttribute("aria-current");
+        if (nav === "settings") el.setAttribute("aria-pressed", on ? "true" : "false");
       });
+    }
+
+    function isSettingsOpen() {
+      const form = document.getElementById("settings-form");
+      return !!form && !form.hidden;
+    }
+
+    function focusSurface() {
+      const form = document.getElementById("settings-form");
+      if (!form || form.hidden) { d.focusDisplayInput(); return; }
+      try { form.focus({ preventScroll: true }); } catch (_) { form.focus(); }
+    }
+
+    function setMainView(view) {
+      const open = view === "settings";
+      const form = document.getElementById("settings-form");
+      const board = document.getElementById("workspace-board");
+      if (!form || (!form.hidden) === open) return;
+      form.hidden = !open;
+      if (board) board.hidden = open;
+      if (!open) return;
+      if (isPortraitLayout()) setLayout({ drawerOpen: false }, { restoreFocus: false });
+      syncNavActive("settings");
+      if (typeof d.onSettingsTab === "function") d.onSettingsTab();
+      focusSurface();
+    }
+
+    function closeSettings() {
+      if (!isSettingsOpen() || document.body.classList.contains("modal-open")) return;
+      switchSidebarTab(settingsReturnTab || DEFAULT_SIDEBAR_TAB, false);
+      const form = document.getElementById("settings-form");
+      if (form && form.contains(document.activeElement)) focusSurface();
     }
 
     /** Paint right-rail content + nav highlight (does not open chrome). */
@@ -494,13 +528,9 @@
       if (t !== "voice") closeVoiceList({ focus: false });
       if (t === "history" && typeof d.onHistoryTab === "function") d.onHistoryTab();
       if (t === "voice" && typeof d.onVoiceTab === "function") d.onVoiceTab();
-      if (t === "settings" && typeof d.onSettingsTab === "function") d.onSettingsTab();
     }
 
-    /**
-     * Select a shell tab. Expand only when expandIfCollapsed is true —
-     * routing/hash must never force the portrait drawer open.
-     */
+    /** Voice, History, or Topics. Settings is a main-column view, not a rail tab. */
     function applySidebarTab(tab, expandIfCollapsed = false, opts) {
       const o = opts || {};
       const focusComposer = o.focusComposer !== false;
@@ -515,9 +545,9 @@
           else patch.leftOpen = true;
         }
         setLayout(patch, { restoreFocus: false });
-        // Portrait nav includes Topics; landscape right nav keeps utility highlight.
         if (portrait) syncNavActive("topics");
-        else if (focusComposer) d.focusDisplayInput();
+        else syncNavActive(utilityTab);
+        if (!portrait && focusComposer) d.focusDisplayInput();
         return t;
       }
 
@@ -527,15 +557,11 @@
         if (portrait) patch.drawerOpen = true;
         else patch.rightOpen = true;
       }
-      // Settings is interactive — don't steal focus to compose.
       // Portrait drawers cover the message, so leave focus on the control that opened them.
       setLayout(patch, { restoreFocus: false });
       if (!focusComposer) return t;
-      if (t === "history") {
-        document.getElementById("history-search-input")?.focus();
-      } else if (t !== "settings" && !portrait) {
-        d.focusDisplayInput();
-      }
+      if (t === "history") document.getElementById("history-search-input")?.focus();
+      else if (!portrait) d.focusDisplayInput();
       return t;
     }
 
@@ -552,26 +578,12 @@
       openModal(id);
     }
 
-    /** Open Settings as a sidebar tab (expands drawer / right rail if needed). */
-    function openSettings() {
-      const expand = isPortraitLayout() ? !isDrawerOpen() : !isRightSidebarOpen();
-      switchSidebarTab("settings", expand);
-    }
-
-    function isSettingsOpen() {
-      return !!document.getElementById("tab-content-settings")?.classList.contains("active");
-    }
-
     function openHelpModal() {
       openShellModal(HELP_MODAL_ID, { closeDrawer: true });
     }
 
     function runNavAction(action) {
       const a = String(action || "").toLowerCase();
-      if (a === "help") {
-        openHelpModal();
-        return;
-      }
       if (!VALID_SIDEBAR_TABS.has(a)) return;
       const expand = isPortraitLayout()
         ? !isDrawerOpen()
@@ -581,7 +593,13 @@
 
     function switchSidebarTab(tab, expandIfCollapsed = false, opts = {}) {
       const { replace = false, fromRoute = false } = opts;
-      const t = applySidebarTab(tab, expandIfCollapsed, opts);
+      const normalized = normalizeTab(tab);
+      if (normalized === "settings") setMainView("settings");
+      else {
+        settingsReturnTab = normalized;
+        if (isSettingsOpen()) setMainView("board");
+      }
+      const t = normalized === "settings" ? normalized : applySidebarTab(normalized, expandIfCollapsed, opts);
       if (fromRoute) return t;
       const next = `#/${t}`;
       if (location.hash === next) return t;
@@ -597,7 +615,7 @@
     }
 
     function onRouteChange() {
-      applySidebarTab(tabFromHash(), false);
+      switchSidebarTab(tabFromHash(), false, { fromRoute: true });
     }
 
     function openModal(modalId) {
@@ -617,7 +635,7 @@
       if (typeof d.onCloseModal === "function") {
         try { d.onCloseModal(); } catch (_) {}
       }
-      d.focusDisplayInput();
+      focusSurface();
       if (helpWasOpen && typeof d.onHelpClosed === "function") {
         try { d.onHelpClosed(); } catch (_) {}
       }
@@ -717,7 +735,11 @@
           closeVoiceList();
           return;
         }
-        if (isPortraitLayout() && isDrawerOpen()) closePortraitSidebar();
+        if (isPortraitLayout() && isDrawerOpen()) {
+          closePortraitSidebar();
+          return;
+        }
+        closeSettings();
       });
 
       window.matchMedia(d.portraitLayoutMq).addEventListener("change", (e) => {
@@ -745,6 +767,8 @@
       });
 
       document.getElementById("coach-dismiss-btn")?.addEventListener("click", dismissHelp);
+      document.getElementById("settings-close-btn")?.addEventListener("click", closeSettings);
+      document.getElementById("settings-help-link")?.addEventListener("click", () => openHelpModal());
 
       // Theme buttons use onclick="applyTheme(...)" in index.html via window.applyTheme
 
@@ -775,7 +799,7 @@
       // Right content is independent of hash when route is topics — seed it once.
       const seedUtility = RIGHT_SIDEBAR_TABS.has(initialTab) ? initialTab : DEFAULT_RIGHT_TAB;
       paintUtilityTab(seedUtility);
-      applySidebarTab(initialTab, false);
+      switchSidebarTab(initialTab, false, { fromRoute: true });
       syncLayoutMode();
       // Landscape: avoid two full 260px rails crushing main on narrower iPads.
       applyLandscapeRailPolicy({ forceWideDefaults: true });
@@ -805,8 +829,9 @@
       tabFromHash,
       switchSidebarTab,
       applySidebarTab,
-      openSettings,
+      openSettings() { switchSidebarTab("settings", false); },
       isSettingsOpen,
+      focusSurface,
       openHelpModal,
       initRoute,
       bind,
