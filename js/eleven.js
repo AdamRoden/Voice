@@ -1,6 +1,8 @@
 /**
  * ElevenLabs: v4 Turbo only, streamed as 24 kHz PCM.
- * Bracket tags are kept. Speed and pitch are not sent to the API.
+ * Bracket tags are kept. A tag lasts one breath, so tagged lines are split
+ * on punctuation and each piece is its own stream. Speed and pitch are not
+ * sent to the API.
  */
 (function (global) {
   "use strict";
@@ -66,6 +68,156 @@
       return text;
     }
     return `${wrapped} ${text}`;
+  }
+
+  function isDigitChar(ch) {
+    return !!ch && ch >= "0" && ch <= "9";
+  }
+
+  function isLetterChar(ch) {
+    return !!ch && /[A-Za-z]/.test(ch);
+  }
+
+  function isClosingMark(ch) {
+    return ch === "\"" || ch === "'" || ch === ")" || ch === "]"
+      || ch === "”" || ch === "’";
+  }
+
+  /**
+   * Punctuation that ends a breath.
+   * 3.14, 1,000, 3:30, and example.com stay in one piece.
+   */
+  function isBreathPunct(text, index) {
+    const ch = text.charAt(index);
+    if (ch === "!" || ch === "?" || ch === "…") return true;
+    if (ch !== "." && ch !== "," && ch !== ";" && ch !== ":") return false;
+    const prev = text.charAt(index - 1);
+    const next = text.charAt(index + 1);
+    if (isDigitChar(prev) && isDigitChar(next)) return false;
+    if (ch === "." && isLetterChar(prev) && isLetterChar(next)) return false;
+    return true;
+  }
+
+  /**
+   * Split on breaths. Punctuation stays with the words before it.
+   * Brackets are opaque, so a comma inside [low, slow] is not a split.
+   */
+  function splitAtPunctuation(text) {
+    const src = String(text || "");
+    const parts = [];
+    let buf = "";
+    let depth = 0;
+    const push = () => {
+      const piece = buf.trim();
+      buf = "";
+      if (piece) parts.push(piece);
+    };
+    for (let i = 0; i < src.length; i++) {
+      const ch = src.charAt(i);
+      if (ch === "[") depth += 1;
+      if (depth > 0) {
+        buf += ch;
+        if (ch === "]") depth -= 1;
+        continue;
+      }
+      if (ch === "\n" || ch === "\r") {
+        push();
+        if (ch === "\r" && src.charAt(i + 1) === "\n") i += 1;
+        continue;
+      }
+      if (ch === "—" || ch === "–" || (ch === "-" && src.charAt(i + 1) === "-")) {
+        buf += ch === "-" ? "--" : ch;
+        if (ch === "-") i += 1;
+        push();
+        continue;
+      }
+      if (isBreathPunct(src, i)) {
+        buf += ch;
+        while (src.charAt(i + 1) && "!?.…,;:".indexOf(src.charAt(i + 1)) !== -1) {
+          i += 1;
+          buf += src.charAt(i);
+        }
+        while (isClosingMark(src.charAt(i + 1))) {
+          i += 1;
+          buf += src.charAt(i);
+        }
+        push();
+        continue;
+      }
+      buf += ch;
+    }
+    push();
+    return parts;
+  }
+
+  function gluePieces(left, right) {
+    if (left && right) return (left + " " + right).trim();
+    return (left || right || "").trim();
+  }
+
+  /**
+   * Breath pieces that can be spoken. A tag or pause with no words
+   * rides on the next piece, or the previous one when nothing follows.
+   */
+  function breathParts(text) {
+    const raw = splitAtPunctuation(text);
+    const parts = [];
+    let held = "";
+    for (let i = 0; i < raw.length; i++) {
+      const combined = gluePieces(held, raw[i]);
+      held = "";
+      if (!hasNonTagSpeechContent(combined)) {
+        held = combined;
+        continue;
+      }
+      parts.push(combined);
+    }
+    if (held) {
+      if (parts.length) parts[parts.length - 1] = gluePieces(parts[parts.length - 1], held);
+      else parts.push(held);
+    }
+    return parts;
+  }
+
+  /** Bracket tags at the start of a piece. A tag later in the piece stays local. */
+  function leadingTagRun(text) {
+    const match = String(text || "").match(/^\s*((?:\[[^\]]*\]\s*)+)/);
+    return match ? match[1].replace(/\s+/g, " ").trim() : "";
+  }
+
+  /**
+   * One request body per breath.
+   * The standing style, plus any tags at the start of the line, is repeated
+   * on every breath. A tag written later stays on that breath.
+   * With no tag at all, the line stays one request.
+   */
+  function taggedSends(phrase, tag) {
+    const text = String(phrase == null ? "" : phrase);
+    const clean = normalizeStandingTag(tag);
+    if (!clean && !phraseHasInlineTags(text)) return [text];
+    const parts = breathParts(text);
+    if (parts.length <= 1) return [applyStandingTag(text, clean)];
+    const lead = leadingTagRun(text);
+    const sends = [];
+    for (let i = 0; i < parts.length; i++) {
+      let body = parts[i].trim();
+      if (lead && body.charAt(0) !== "[") body = (lead + " " + body).trim();
+      if (!hasNonTagSpeechContent(body)) continue;
+      sends.push(applyStandingTag(body, clean));
+    }
+    return sends.length ? sends : [applyStandingTag(text, clean)];
+  }
+
+  function requestPhrases(opts) {
+    const source = opts && Array.isArray(opts.phrases) && opts.phrases.length
+      ? opts.phrases
+      : [opts && opts.phrase];
+    const out = [];
+    for (let i = 0; i < source.length; i++) {
+      const text = String(source[i] == null ? "" : source[i]).trim();
+      if (text) out.push(text);
+    }
+    return out.length ? out : [""];
   }
 
   function elevenModelId() {
@@ -295,32 +447,160 @@
     if (stall.aborted()) throw stall.mapError(new Error("aborted"));
   }
 
-  /**
-   * Read the PCM stream to the end. Does not play it.
-   * @returns {Promise<{ pcm: Uint8Array, sampleRate: number, modelId: string, fx: { speed: number, pitch: number } }>}
-   */
-  async function collectPcm(opts) {
-    const { opened, stall } = await openPcmWithStall(opts);
-    const parts = [];
-    await consumePcm(opened, stall, (bytes) => {
-      if (bytes && bytes.byteLength) parts.push(bytes);
-    });
-    const pcm = concatList(parts);
-    if (pcm.length < 2) throw new Error("Empty audio");
+  function phraseFields(opts, phrase) {
     return {
-      pcm,
-      sampleRate: opened.sampleRate,
-      modelId: opened.prepared.modelId,
-      fx: opened.prepared.fx
+      phrase: String(phrase || ""),
+      voiceId: opts.voiceId,
+      apiKey: opts.apiKey,
+      speed: opts.speed,
+      pitch: opts.pitch
     };
   }
 
   /**
-   * Play the PCM stream on an AudioContext. Resolves when playback ends.
+   * One phrase request. A stall aborts only this request, so the error
+   * stays a timeout instead of looking like the user stopped the turn.
+   */
+  function openTracked(opts, phrase) {
+    const local = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const cancelFetch = () => { try { if (local) local.abort(); } catch (_) {} };
+    let stopStall = () => {};
+    const cancel = () => {
+      cancelFetch();
+      try { stopStall(); } catch (_) {}
+    };
+    let onParent = null;
+    if (opts.signal) {
+      onParent = () => cancel();
+      if (opts.signal.aborted) cancel();
+      else opts.signal.addEventListener("abort", onParent);
+    }
+    const detach = () => {
+      if (onParent && opts.signal) opts.signal.removeEventListener("abort", onParent);
+      onParent = null;
+    };
+    const child = phraseFields(opts, phrase);
+    child.signal = local ? local.signal : opts.signal;
+    child.abort = local ? cancelFetch : opts.abort;
+    const job = openPcmWithStall(child).then(
+      (pair) => {
+        stopStall = () => pair.stall.stop();
+        return { opened: pair.opened, stall: pair.stall, detach };
+      },
+      (err) => {
+        detach();
+        throw err;
+      }
+    );
+    return { job, cancel };
+  }
+
+  /** Download one later breath while an earlier one is still being read. */
+  function bufferTracked(opts, phrase) {
+    const tracked = openTracked(opts, phrase);
+    const job = tracked.job.then(async (opened) => {
+      const parts = [];
+      try {
+        await consumePcm(opened.opened, opened.stall, (bytes) => {
+          if (bytes && bytes.byteLength) parts.push(bytes);
+        });
+      } finally {
+        opened.detach();
+      }
+      const pcm = concatList(parts);
+      if (pcm.length < 2) throw new Error("Empty audio");
+      return pcm;
+    });
+    return { job, cancel: tracked.cancel };
+  }
+
+  function quiet(job) {
+    if (job && typeof job.catch === "function") job.catch(() => {});
+  }
+
+  /**
+   * Open the first breath, then read every breath in order.
+   * The next request starts while the current body is still downloading.
+   * onChunk(bytes, flush) sees live bytes from the first breath and one
+   * full buffer from each later breath. Return false to stop.
+   */
+  async function beginPhrasePump(opts) {
+    const phrases = requestPhrases(opts);
+    const cancels = [];
+    const track = (row) => {
+      cancels.push(row.cancel);
+      return row;
+    };
+    const cancel = () => {
+      for (let i = 0; i < cancels.length; i++) {
+        try { cancels[i](); } catch (_) {}
+      }
+    };
+    const first = await track(openTracked(opts, phrases[0])).job;
+    return {
+      sampleRate: first.opened.sampleRate,
+      prepared: first.opened.prepared,
+      cancel,
+      async read(onChunk) {
+        let next = phrases.length > 1 ? track(bufferTracked(opts, phrases[1])) : null;
+        const stop = (err) => {
+          try { first.detach(); } catch (_) {}
+          cancel();
+          quiet(next && next.job);
+          if (err) throw err;
+        };
+        try {
+          await consumePcm(first.opened, first.stall, (bytes) => {
+            if (bytes && bytes.byteLength) onChunk(bytes, false);
+          });
+          first.detach();
+          if (onChunk(null, true) === false) return stop();
+          for (let i = 1; i < phrases.length; i++) {
+            const pcm = await next.job;
+            next = i + 1 < phrases.length ? track(bufferTracked(opts, phrases[i + 1])) : null;
+            if (onChunk(pcm, true) === false) return stop();
+          }
+        } catch (err) {
+          stop(err);
+        }
+      }
+    };
+  }
+
+  /**
+   * Read one phrase, or each breath in order, and stitch the PCM.
+   * @returns {Promise<{ pcm: Uint8Array, sampleRate: number, modelId: string, fx: { speed: number, pitch: number } }>}
+   */
+  async function collectPcm(opts) {
+    const pump = await beginPhrasePump(opts);
+    const parts = [];
+    try {
+      await pump.read((bytes) => {
+        if (bytes && bytes.byteLength) parts.push(bytes);
+      });
+    } catch (err) {
+      pump.cancel();
+      throw err;
+    }
+    const pcm = concatList(parts);
+    if (pcm.length < 2) throw new Error("Empty audio");
+    return {
+      pcm,
+      sampleRate: pump.sampleRate,
+      modelId: pump.prepared.modelId,
+      fx: pump.prepared.fx
+    };
+  }
+
+  /**
+   * Play one PCM stream, or each breath's stream in order, on an AudioContext.
+   * Resolves when the last piece finishes playing.
+   * The next request starts while the current piece is still playing.
+   * onPcm receives the stitched PCM after every piece has arrived.
    * Does not time-stretch chunks. Caller stores the clip via onPcm.
    */
   async function playStream(opts) {
-    const { opened, stall } = await openPcmWithStall(opts);
+    const pump = await beginPhrasePump(opts);
 
     let ctx;
     try {
@@ -328,10 +608,13 @@
       if (!ctx) throw new Error("no audio context");
       if (ctx.state === "suspended") await ctx.resume();
     } catch (err) {
-      stall.stop();
-      const mapped = stall.mapError(err);
-      try { if (typeof opts.abort === "function") opts.abort(); } catch (_) {}
-      throw mapped;
+      pump.cancel();
+      if (opts.signal && opts.signal.aborted) {
+        const aborted = new Error("aborted");
+        aborted.code = "aborted";
+        throw aborted;
+      }
+      throw err;
     }
 
     const gainNode = ctx.createGain();
@@ -346,7 +629,7 @@
     let playing = 0;
     let settled = false;
     const collected = [];
-    const sampleRate = opened.sampleRate;
+    const sampleRate = pump.sampleRate;
     const firstMinBytes = Math.floor(sampleRate * 0.05) * 2;
     let resolveEnd;
     let rejectEnd;
@@ -358,7 +641,7 @@
     const fail = (err) => {
       if (settled) return;
       settled = true;
-      stall.stop();
+      pump.cancel();
       try { gainNode.disconnect(); } catch (_) {}
       if (opts.signal) opts.signal.removeEventListener("abort", onAbort);
       rejectEnd(err);
@@ -366,14 +649,15 @@
     const finish = () => {
       if (settled || !streamDone || playing > 0) return;
       settled = true;
-      stall.stop();
       try { gainNode.disconnect(); } catch (_) {}
       if (opts.signal) opts.signal.removeEventListener("abort", onAbort);
       try { if (typeof opts.onEnded === "function") opts.onEnded(); } catch (_) {}
       resolveEnd();
     };
     function onAbort() {
-      fail(stall.mapError(new Error("aborted")));
+      const aborted = new Error("aborted");
+      aborted.code = "aborted";
+      fail(aborted);
     }
     if (opts.signal) opts.signal.addEventListener("abort", onAbort);
 
@@ -413,14 +697,15 @@
     };
 
     try {
-      await consumePcm(opened, stall, (bytes) => {
-        if (bytes === null) {
+      await pump.read((bytes, flush) => {
+        if (bytes && bytes.byteLength) {
+          collected.push(bytes);
+          drain(bytes, !!flush);
+        } else if (flush) {
           drain(null, true);
-          streamDone = true;
-          return;
         }
-        collected.push(bytes);
-        drain(bytes, false);
+        if (flush) rest = new Uint8Array(0);
+        if (flush && !started) return false;
       });
     } catch (err) {
       fail(err);
@@ -431,8 +716,10 @@
       fail(new Error("Empty audio"));
       return endedPromise;
     }
+
+    streamDone = true;
     if (typeof opts.onPcm === "function") {
-      try { opts.onPcm(concatList(collected), sampleRate, opened.prepared); } catch (_) {}
+      try { opts.onPcm(concatList(collected), sampleRate, pump.prepared); } catch (_) {}
     }
     if (playing === 0) finish();
     return endedPromise;
@@ -532,6 +819,7 @@
     hasNonTagSpeechContent,
     normalizeStandingTag,
     applyStandingTag,
+    taggedSends,
     PCM_STREAM_FORMAT,
     PCM_STREAM_SAMPLE_RATE,
     takePcm16,

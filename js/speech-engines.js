@@ -123,6 +123,7 @@
 
   /**
    * Full ElevenLabs clip for a later bake. Live playback stays in AacEleven.playStream.
+   * Several phrases are downloaded separately and stitched into one PCM buffer.
    * collectPcm returns modelId and fx from the request. Callers bake that fx.
    */
   async function produceEleven(engine, payload, deps) {
@@ -133,6 +134,7 @@
     const voiceId = payload.voiceId || engine.voiceId;
     const collected = await Eleven.collectPcm({
       phrase: payload.phrase,
+      phrases: payload.phrases,
       voiceId,
       apiKey: payload.apiKey,
       speed: payload.speed,

@@ -148,7 +148,8 @@
     }
 
     /**
-     * Run one ElevenLabs request on the active abort slot.
+     * Run one ElevenLabs turn on the active abort slot.
+     * A turn can be several breath streams. Abort covers all of them.
      * Returns null when this turn was aborted. Other errors propagate.
      */
     async function withElevenAbort(run) {
@@ -171,6 +172,7 @@
         { id: "eleven", voiceId: req.voiceId },
         {
           phrase: req.phrase,
+          phrases: req.phrases,
           voiceId: req.voiceId,
           apiKey: req.apiKey,
           speed: req.speed,
@@ -290,6 +292,7 @@
         if (!route.ok || !route.node) throw new Error("no audio output");
         await Eleven.playStream({
           phrase: req.phrase,
+          phrases: req.phrases,
           voiceId: req.voiceId,
           apiKey: req.apiKey,
           speed: req.speed,
@@ -516,10 +519,8 @@
       const phrase = d.trim(text);
       if (!phrase) return;
 
-      const elevenPhrase = () => Eleven.applyStandingTag(
-        phrase,
-        typeof d.getStandingVoiceTag === "function" ? d.getStandingVoiceTag() : ""
-      );
+      const standingTag = typeof d.getStandingVoiceTag === "function" ? d.getStandingVoiceTag() : "";
+      const elevenSends = () => Eleven.taggedSends(phrase, standingTag);
 
       const gainSetting = d.getVolumeGain();
       const speed = d.getSpeechSpeed();
@@ -649,7 +650,7 @@
           try {
             if (engine.id === "eleven" && !fxChangesSound(speed, pitch)) {
               await runEleven({
-                phrase: elevenPhrase(),
+                phrases: elevenSends(),
                 voiceId: engine.voiceId || elevenVoiceId,
                 apiKey,
                 speed,
@@ -684,7 +685,13 @@
               ? (engine.voiceId || elevenVoiceId)
               : (engine.voiceId || piperVoiceId);
             const out = engine.id === "eleven"
-              ? await produceElevenClip({ phrase: elevenPhrase(), voiceId, apiKey, speed, pitch })
+              ? await produceElevenClip({
+                phrases: elevenSends(),
+                voiceId,
+                apiKey,
+                speed,
+                pitch
+              })
               : await SpeechEngines.produce(engine, {
                 phrase,
                 text: Eleven.stripInlineTags(phrase) || phrase,
