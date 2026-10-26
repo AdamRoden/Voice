@@ -26,16 +26,13 @@ test("a missing catalog is the built-in favorites", () => {
   assert.deepStrictEqual(catalog.favorites, [
     "begging", "strict", "flirt", "happy", "indignant", "sing loud"
   ]);
-  assert.strictEqual(catalog.noneFavorite, false);
-  assert.deepStrictEqual(Styles.sidebarNames(catalog), catalog.favorites);
+  assert.strictEqual(Object.prototype.hasOwnProperty.call(catalog, "noneFavorite"), false);
 });
 
 test("an empty styles array is a real catalog", () => {
   const catalog = Styles.parseCatalog({ styles: [], favorites: ["happy"], noneFavorite: false });
   assert.deepStrictEqual(catalog.styles, []);
   assert.deepStrictEqual(catalog.favorites, []);
-  assert.strictEqual(catalog.noneFavorite, false);
-  assert.deepStrictEqual(Styles.sidebarNames(catalog), []);
 });
 
 test("names are cleaned and duplicates drop", () => {
@@ -45,14 +42,13 @@ test("names are cleaned and duplicates drop", () => {
   });
   assert.deepStrictEqual(catalog.styles, ["Happy", "soft night"]);
   assert.deepStrictEqual(catalog.favorites, ["Happy"]);
-  assert.strictEqual(catalog.noneFavorite, false);
-  const starredNone = Styles.parseCatalog({
+  const oldNone = Styles.parseCatalog({
     styles: ["happy"],
-    favorites: [],
+    favorites: ["happy"],
     noneFavorite: true
   });
-  assert.strictEqual(starredNone.noneFavorite, true);
-  assert.deepStrictEqual(Styles.sidebarNames(starredNone), ["none"]);
+  assert.deepStrictEqual(oldNone, { styles: ["happy"], favorites: ["happy"] });
+  assert.strictEqual(JSON.parse(Styles.serialize(oldNone)).noneFavorite, undefined);
 });
 
 test("add stars the new style and rejects none and duplicates", () => {
@@ -74,14 +70,13 @@ test("favorite and trash update both lists", () => {
   let catalog = Styles.defaultCatalog();
   catalog = Styles.toggleFavorite(catalog, "happy");
   assert.strictEqual(Styles.isFavorite(catalog, "happy"), false);
-  assert.ok(Styles.sidebarNames(catalog).indexOf("happy") < 0);
+  assert.ok(catalog.favorites.indexOf("happy") < 0);
   catalog = Styles.toggleFavorite(catalog, "happy");
   assert.strictEqual(Styles.isFavorite(catalog, "Happy"), true);
+  const beforeNone = Styles.serialize(catalog);
   catalog = Styles.toggleFavorite(catalog, "none");
-  assert.strictEqual(catalog.noneFavorite, true);
-  assert.strictEqual(Styles.sidebarNames(catalog)[0], "none");
-  catalog = Styles.toggleFavorite(catalog, "none");
-  assert.strictEqual(catalog.noneFavorite, false);
+  assert.strictEqual(Styles.serialize(catalog), beforeNone);
+  assert.strictEqual(Styles.isFavorite(catalog, "none"), false);
   const trashed = Styles.trashStyle(catalog, "whisper");
   assert.strictEqual(trashed.ok, true);
   assert.ok(trashed.catalog.styles.indexOf("whisper") < 0);
@@ -93,8 +88,7 @@ test("favorite and trash update both lists", () => {
 test("serialize round-trips a custom catalog", () => {
   const custom = Styles.parseCatalog({
     styles: ["calm", "happy"],
-    favorites: ["calm"],
-    noneFavorite: false
+    favorites: ["calm"]
   });
   const again = Styles.parseCatalog(JSON.parse(Styles.serialize(custom)));
   assert.deepStrictEqual(again, custom);

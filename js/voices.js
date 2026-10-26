@@ -776,7 +776,7 @@ function defaultLoadKeys(storageKey) {
     let styleCatalog = null;
 
     function loadStyleCatalog() {
-      if (!VoiceStyles) return { styles: [], favorites: [], noneFavorite: false };
+      if (!VoiceStyles) return { styles: [], favorites: [] };
       const stored = lsGet(VOICE_STYLES_STORAGE_KEY, null);
       if (stored == null || stored === "") return VoiceStyles.defaultCatalog();
       try {
@@ -797,7 +797,7 @@ function defaultLoadKeys(storageKey) {
       const input = $("voice-tag-input");
       const raw = input && document.activeElement === input ? input.value : readStoredVoiceTag();
       const tag = canonicalVoiceTag(raw);
-      return tag ? tag.toLowerCase() : "none";
+      return tag ? tag.toLowerCase() : "";
     }
 
     function setStyleStatus(text) {
@@ -846,11 +846,9 @@ function defaultLoadKeys(storageKey) {
     }
 
     function appendEditorRow(list, catalog, name, currentKey) {
-      const isNone = VoiceStyles.keyOf(name) === VoiceStyles.NONE_STYLE;
-      const label = isNone ? VoiceStyles.NONE_STYLE : name;
       const row = document.createElement("div");
       row.className = "voice-style-editor-row";
-      row.setAttribute("data-style", label);
+      row.setAttribute("data-style", name);
 
       const star = document.createElement("button");
       star.type = "button";
@@ -862,25 +860,24 @@ function defaultLoadKeys(storageKey) {
       const pick = document.createElement("button");
       pick.type = "button";
       pick.className = "voice-style-editor-name";
-      pick.textContent = label;
+      pick.textContent = name;
+
+      const trash = document.createElement("button");
+      trash.type = "button";
+      trash.className = "icon-btn voice-style-trash";
+      trash.title = "Trash style";
+      trash.setAttribute("aria-label", "Trash " + name);
+      const icon = document.createElement("span");
+      icon.className = "material-symbols-outlined";
+      icon.textContent = "delete";
+      trash.appendChild(icon);
 
       row.appendChild(star);
       row.appendChild(pick);
-      if (!isNone) {
-        const trash = document.createElement("button");
-        trash.type = "button";
-        trash.className = "icon-btn voice-style-trash";
-        trash.title = "Trash style";
-        trash.setAttribute("aria-label", "Trash " + label);
-        const icon = document.createElement("span");
-        icon.className = "material-symbols-outlined";
-        icon.textContent = "delete";
-        trash.appendChild(icon);
-        row.appendChild(trash);
-      }
+      row.appendChild(trash);
       list.appendChild(row);
       paintEditorFavorite(row, catalog);
-      paintEditorSelection(row, VoiceStyles.keyOf(label) === currentKey);
+      paintEditorSelection(row, VoiceStyles.keyOf(name) === currentKey);
       return row;
     }
 
@@ -890,7 +887,6 @@ function defaultLoadKeys(storageKey) {
       const catalog = ensureStyleCatalog();
       const current = currentStyleKey();
       list.textContent = "";
-      appendEditorRow(list, catalog, VoiceStyles.NONE_STYLE, current);
       catalog.styles.forEach((name) => appendEditorRow(list, catalog, name, current));
     }
 
@@ -899,7 +895,7 @@ function defaultLoadKeys(storageKey) {
       if (!list || !VoiceStyles) return;
       const catalog = ensureStyleCatalog();
       const current = currentStyleKey();
-      const names = VoiceStyles.sidebarNames(catalog);
+      const names = catalog.favorites || [];
       list.textContent = "";
       names.forEach((name) => {
         if (VoiceStyles.keyOf(name) === current) return;
@@ -1565,6 +1561,12 @@ function defaultLoadKeys(storageKey) {
       });
       voiceTagInput?.addEventListener("click", () => {
         voiceTagInput.select();
+      });
+      $("voice-style-clear-btn")?.addEventListener("click", () => {
+        applyVoiceStyle("");
+      });
+      $("voice-styles-clear-btn")?.addEventListener("click", () => {
+        applyVoiceStyle("");
       });
       $("voice-tag-list")?.addEventListener("click", (event) => {
         const btn = event.target.closest("[data-style]");

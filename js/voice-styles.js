@@ -2,7 +2,7 @@
  * Voice style catalog: built-in names, favorites, and trash.
  * The side list shows favorites. The editor shows every remaining style.
  * Missing storage means the built-in styles, with begging, strict, flirt,
- * happy, indignant, and sing loud starred. "none" is not a favorite.
+ * happy, indignant, and sing loud starred. "none" is not a style name.
  */
 (function (root, factory) {
   "use strict";
@@ -63,8 +63,7 @@
     const favKeys = new Set(DEFAULT_FAVORITE_STYLES.map(keyOf));
     return {
       styles,
-      favorites: styles.filter((name) => favKeys.has(keyOf(name))),
-      noneFavorite: false
+      favorites: styles.filter((name) => favKeys.has(keyOf(name)))
     };
   }
 
@@ -72,8 +71,7 @@
     const source = catalog || defaultCatalog();
     return {
       styles: (source.styles || []).slice(),
-      favorites: (source.favorites || []).slice(),
-      noneFavorite: !!source.noneFavorite
+      favorites: (source.favorites || []).slice()
     };
   }
 
@@ -96,8 +94,7 @@
     });
     return {
       styles,
-      favorites: styles.filter((name) => favKeys.has(keyOf(name))),
-      noneFavorite: raw.noneFavorite === true
+      favorites: styles.filter((name) => favKeys.has(keyOf(name)))
     };
   }
 
@@ -105,8 +102,7 @@
     const next = cloneCatalog(catalog);
     return JSON.stringify({
       styles: next.styles,
-      favorites: next.favorites,
-      noneFavorite: next.noneFavorite
+      favorites: next.favorites
     });
   }
 
@@ -126,10 +122,6 @@
   function toggleFavorite(catalog, name) {
     const current = cloneCatalog(catalog);
     const key = keyOf(name);
-    if (!key || key === NONE_STYLE) {
-      current.noneFavorite = !current.noneFavorite;
-      return current;
-    }
     const match = current.styles.find((style) => keyOf(style) === key);
     if (!match) return current;
     const favKeys = new Set(current.favorites.map(keyOf));
@@ -141,9 +133,8 @@
 
   function trashStyle(catalog, name) {
     const current = cloneCatalog(catalog);
-    const key = keyOf(normalizeStyleName(name) || name);
-    if (!key || key === NONE_STYLE) return { catalog: current, ok: false, reason: "none" };
-    if (!current.styles.some((style) => keyOf(style) === key)) {
+    const key = keyOf(normalizeStyleName(name));
+    if (!key || !current.styles.some((style) => keyOf(style) === key)) {
       return { catalog: current, ok: false, reason: "missing" };
     }
     current.styles = current.styles.filter((style) => keyOf(style) !== key);
@@ -153,20 +144,8 @@
 
   function isFavorite(catalog, name) {
     const key = keyOf(name);
-    if (!catalog) return false;
-    if (!key || key === NONE_STYLE) return !!catalog.noneFavorite;
+    if (!catalog || !key) return false;
     return (catalog.favorites || []).some((style) => keyOf(style) === key);
-  }
-
-  /** Side-list order: none, then favorites in catalog order. */
-  function sidebarNames(catalog) {
-    const names = [];
-    if (catalog && catalog.noneFavorite) names.push(NONE_STYLE);
-    (catalog && catalog.favorites ? catalog.favorites : []).forEach((name) => {
-      const key = keyOf(name);
-      if (key && key !== NONE_STYLE) names.push(name);
-    });
-    return names;
   }
 
   return {
@@ -181,7 +160,6 @@
     addStyle,
     toggleFavorite,
     trashStyle,
-    isFavorite,
-    sidebarNames
+    isFavorite
   };
 });

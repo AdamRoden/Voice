@@ -251,7 +251,11 @@ html[data-layout="portrait"] .portrait-only { display: flex !important; }
 .setting-hint { margin: 0; font-size: 12px; opacity: 0.75; line-height: 1.35; }
 /* Standing style: favorites only, and the textbox value is omitted. The list does not scroll. */
 .sidebar-setting-group .voice-style-field { display: flex; align-items: stretch; gap: var(--gap-md); }
-.sidebar-setting-group .voice-style-field > input[type="text"] { flex: 1 1 auto; min-width: 0; width: auto; }
+.voice-style-input { position: relative; flex: 1 1 auto; min-width: 0; display: flex; }
+.sidebar-setting-group .voice-style-input > input[type="text"] { width: 100%; min-width: 0; padding-right: 40px; }
+.voice-style-clear { position: absolute; top: 0; right: 0; bottom: 0; width: 40px; border: none; background: transparent; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; border-radius: var(--radius-md); }
+.voice-style-clear:hover { color: var(--text); background: var(--bg-surface-hover); }
+.voice-style-input:has(#voice-tag-input:placeholder-shown) .voice-style-clear { display: none; }
 .voice-style-edit-btn { flex: 0 0 auto; align-self: stretch; width: var(--touch-min); min-width: var(--touch-min); height: auto; min-height: var(--touch-min); border: 1px solid var(--border); background: var(--bg-main); border-radius: var(--radius-md); }
 .voice-style-edit-btn:hover,
 .voice-style-edit-btn[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
@@ -262,7 +266,7 @@ html[data-layout="portrait"] .portrait-only { display: flex !important; }
 #voice-style-empty[hidden] { display: none !important; }
 .voice-styles-cover { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column; align-items: center; background: var(--bg-main); }
 .voice-styles-cover[hidden] { display: none !important; }
-#voice-styles-form .settings-form-header .icon-btn { margin-left: auto; }
+#voice-styles-form .settings-form-header .voice-styles-clear { margin-left: auto; min-height: var(--touch-min); padding-inline: 14px; }
 .voice-styles-add { display: flex; align-items: center; gap: var(--gap-md); padding: 12px 8px 0; }
 .voice-styles-add .modal-input { flex: 1 1 auto; min-width: 0; width: auto; }
 .voice-styles-add .tool-btn { flex: 0 0 auto; min-height: var(--touch-min); padding-inline: 16px; }

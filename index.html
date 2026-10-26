@@ -87,14 +87,19 @@
           <div class="sidebar-setting-group" id="voice-tag-group" hidden>
             <label for="voice-tag-input">Style</label>
             <div class="voice-style-field">
-              <input type="text" id="voice-tag-input" placeholder="None" autocomplete="off" spellcheck="false" enterkeyhint="send" aria-describedby="voice-tag-hint">
+              <div class="voice-style-input">
+                <input type="text" id="voice-tag-input" placeholder="None" autocomplete="off" spellcheck="false" enterkeyhint="send" aria-describedby="voice-tag-hint">
+                <button type="button" class="voice-style-clear" id="voice-style-clear-btn" title="Clear style" aria-label="Clear style">
+                  <span class="material-symbols-outlined" aria-hidden="true">close</span>
+                </button>
+              </div>
               <button type="button" class="icon-btn voice-style-edit-btn" id="voice-style-edit-btn" title="Edit styles" aria-label="Edit styles" aria-expanded="false" aria-controls="voice-styles-form">
                 <span class="material-symbols-outlined">edit</span>
               </button>
             </div>
             <div class="voice-style-list" id="voice-tag-list" role="listbox" aria-label="Favorite styles"></div>
             <p class="setting-hint" id="voice-style-empty" hidden>No favorites yet. Edit to star styles for this list.</p>
-            <p class="setting-hint" id="voice-tag-hint">Sent as [style] on every breath, so it lasts the whole line. Leave empty for none. Enter speaks.</p>
+            <p class="setting-hint" id="voice-tag-hint">Sent as [style] on every breath, so it lasts the whole line. The X clears it to none. Enter speaks.</p>
           </div>
 
           <div class="sidebar-setting-group">
@@ -497,7 +502,7 @@
           <div class="modal-description settings-section-label">Message</div>
           <div class="modal-description settings-section-hint"><span class="material-symbols-outlined coach-inline-icon">more_horiz</span> Actions holds <span class="material-symbols-outlined coach-inline-icon">push_pin</span> Pin, <span class="material-symbols-outlined coach-inline-icon">replay</span> Replay, and <span class="material-symbols-outlined coach-inline-icon">close</span> Clear or <span class="material-symbols-outlined coach-inline-icon">add</span> Insert tag when that button is off. Insert tag is ElevenLabs only. <span class="material-symbols-outlined coach-inline-icon">volume_up</span> Speak, or Enter, makes new speech. Replay plays the saved clip. The on-screen keyboard is in Settings.</div>
           <div class="modal-description settings-section-label">ElevenLabs</div>
-          <div class="modal-description settings-section-hint">No key yet: closing Help asks for one. <span class="material-symbols-outlined coach-inline-icon">key</span> Link to ElevenLabs saves it and opens the voice list. Style, under the voice, is sent in brackets on every breath. Edit opens the full list. Starred styles stay under the box. Enter speaks. Empty means none.</div>
+          <div class="modal-description settings-section-hint">No key yet: closing Help asks for one. <span class="material-symbols-outlined coach-inline-icon">key</span> Link to ElevenLabs saves it and opens the voice list. Style, under the voice, is sent in brackets on every breath. Edit opens the full list. Starred styles stay under the box. Enter speaks. The X, or Clear on the styles page, sets it to none.</div>
           <div class="modal-description settings-section-label">Account</div>
           <div class="modal-description settings-section-hint">In Settings, sign in with Google or email to save boards, voices, styles, and the ElevenLabs key. Another device can sign in and use them. Speaker choice stays on this device.</div>
           <div class="modal-description settings-section-label">Shortcuts</div>
@@ -516,6 +521,7 @@
       <section class="settings-form" id="voice-styles-form" tabindex="-1" aria-labelledby="voice-styles-title">
         <div class="settings-form-header">
           <h1 class="settings-form-title" id="voice-styles-title">Styles</h1>
+          <button type="button" class="tool-btn voice-styles-clear" id="voice-styles-clear-btn" title="Clear style" aria-label="Clear style">Clear</button>
           <button type="button" class="icon-btn" id="voice-styles-close-btn" title="Close styles" aria-label="Close styles">
             <span class="material-symbols-outlined">close</span>
           </button>
@@ -526,7 +532,7 @@
             <button type="button" class="tool-btn" id="voice-style-add-btn">Add</button>
           </div>
           <p class="setting-hint voice-styles-status" id="voice-styles-status" role="status"></p>
-          <p class="setting-hint voice-styles-note">Star a style to list it under the voice box. New styles start starred. Trash removes a style.</p>
+          <p class="setting-hint voice-styles-note">Star a style to list it under the voice box. New styles start starred. Trash removes a style. Clear sets the voice to none.</p>
           <div id="voice-styles-editor-list" class="voice-styles-editor-list" role="list" aria-label="All styles"></div>
         </div>
       </section>
