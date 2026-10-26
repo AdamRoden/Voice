@@ -16,6 +16,7 @@
       name: "Everyday",
       icon: "chat",
       color: "#8ab4f8",
+      ownsThread: true,
       phrases: [
         { label: "Hello", symbol: "waving_hand", text: "Hello" },
         { label: "How are you?", symbol: "chat", text: "How are you?" },

@@ -328,6 +328,7 @@
       if (topic.name) dest.name = topic.name;
       if (topic.icon) dest.icon = topic.icon;
       if (topic.color) dest.color = topic.color;
+      if (topic.thread) dest.thread = topic.thread;
       dest.gridCols = Math.max(Number(dest.gridCols) || 1, Number(topic.gridCols) || 1);
       dest.gridRows = Math.max(Number(dest.gridRows) || 1, Number(topic.gridRows) || 1);
     });
@@ -378,24 +379,28 @@
     const remote = parseArray(remoteRaw);
     if (local == null) return remoteRaw == null ? null : String(remoteRaw);
     if (remote == null) return localRaw == null ? null : String(localRaw);
+    const chatKey = (chat) => (chat && (chat.threadId || chat.topicId)) || "";
     const remoteBy = new Map();
     remote.forEach((chat) => {
-      if (chat && chat.topicId) remoteBy.set(chat.topicId, chat);
+      const key = chatKey(chat);
+      if (key) remoteBy.set(key, chat);
     });
     const out = [];
     const seen = new Set();
     local.forEach((chat) => {
-      if (!chat || !chat.topicId || seen.has(chat.topicId)) return;
-      const other = remoteBy.get(chat.topicId);
+      const key = chatKey(chat);
+      if (!key || seen.has(key)) return;
+      const other = remoteBy.get(key);
       const localText = String(chat.text || "");
       const text = localText.trim() ? localText : (other && other.text) || "";
-      seen.add(chat.topicId);
-      out.push({ text: text, topicId: chat.topicId });
+      seen.add(key);
+      out.push({ text: text, threadId: key });
     });
     remote.forEach((chat) => {
-      if (!chat || !chat.topicId || seen.has(chat.topicId)) return;
-      seen.add(chat.topicId);
-      out.push({ text: chat.text || "", topicId: chat.topicId });
+      const key = chatKey(chat);
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      out.push({ text: chat.text || "", threadId: key });
     });
     if (!out.length) return localRaw || remoteRaw || null;
     return JSON.stringify(out.slice(0, CHAT_CAP));

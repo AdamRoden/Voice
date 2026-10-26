@@ -177,11 +177,8 @@
   const RIGHT_SIDEBAR_TABS = new Set(["voice", "history"]);
   const DEFAULT_SIDEBAR_TAB = "topics";
   const DEFAULT_RIGHT_TAB = "voice";
-  /**
-   * Landscape but narrow: both rails collapse to icons so main is not ~300px.
-   * Keep in sync with css/app.css (portrait = orientation: portrait).
-   */
-  const NARROW_LANDSCAPE_MQ = "(orientation: landscape) and (max-width: 1100px)";
+  /** Landscape rails at startup and when rotating into landscape. */
+  const LANDSCAPE_RAILS = { leftOpen: false, rightOpen: true };
   /** Persisted dismiss for first-run help (legacy key name kept for continuity). */
   const HELP_DISMISS_KEY = "aac_coach_dismissed";
   const SECTION_TITLES = {
@@ -379,21 +376,10 @@
       if (isPortraitLayout()) setLayout({ drawerOpen: false }, { restoreFocus: false });
     }
 
-    /** Collapse rails on narrow landscape; on wide landscape leave user/default state alone unless forced. */
-    function isNarrowLandscape() {
-      return !isPortraitLayout() && window.matchMedia(NARROW_LANDSCAPE_MQ).matches;
-    }
-
-    function applyLandscapeRailPolicy({ forceWideDefaults = false } = {}) {
+    /** Topics icon rail, Voice panel open. No-op in portrait. */
+    function applyLandscapeRails() {
       if (isPortraitLayout()) return;
-      if (isNarrowLandscape()) {
-        setLayout({ leftOpen: false, rightOpen: false }, { restoreFocus: false });
-        return;
-      }
-      if (forceWideDefaults) {
-        // Wide landscape default: topics expanded, tools as icon rail.
-        setLayout({ leftOpen: true, rightOpen: false }, { restoreFocus: false });
-      }
+      setLayout(LANDSCAPE_RAILS, { restoreFocus: false });
     }
 
     function getDefaultAccentForResolvedTheme() {
@@ -783,13 +769,13 @@
 
       window.matchMedia(d.portraitLayoutMq).addEventListener("change", (e) => {
         syncLayoutMode();
-        // Reset drawer chrome + rail collapse when crossing portrait ↔ landscape.
         clearMobileChrome();
-        sidebarLeft?.classList.remove("collapsed");
-        sidebarRight?.classList.remove("collapsed");
-        if (!e.matches) {
-          // Entering landscape: apply narrow-rail policy, rebuild topics rail if needed.
-          applyLandscapeRailPolicy();
+        if (e.matches) {
+          // Portrait drawer is full width, never an icon rail.
+          sidebarLeft?.classList.remove("collapsed");
+          sidebarRight?.classList.remove("collapsed");
+        } else {
+          applyLandscapeRails();
         }
         if (typeof d.onLayoutMqChange === "function") {
           try { d.onLayoutMqChange(!!e.matches); } catch (_) {}
@@ -797,12 +783,6 @@
       });
       window.addEventListener("orientationchange", () => {
         syncLayoutMode();
-      });
-
-      // Narrow landscape: keep both rails collapsed so main stays usable.
-      const narrowLandscapeMq = window.matchMedia(NARROW_LANDSCAPE_MQ);
-      narrowLandscapeMq.addEventListener("change", () => {
-        if (!isPortraitLayout()) applyLandscapeRailPolicy();
       });
 
       document.getElementById("coach-dismiss-btn")?.addEventListener("click", dismissHelp);
@@ -841,8 +821,7 @@
       paintUtilityTab(seedUtility);
       switchSidebarTab(initialTab, false, { fromRoute: true });
       syncLayoutMode();
-      // Landscape: avoid two full 260px rails crushing main on narrower iPads.
-      applyLandscapeRailPolicy({ forceWideDefaults: true });
+      applyLandscapeRails();
     }
 
     return {

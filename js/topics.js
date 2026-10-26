@@ -1,6 +1,6 @@
 /**
  * Topics: model + sound board + sidebar list + edit (AacTopicsEdit).
- * Topic chats (slots / portrait header chips) live in AacWorkspace.
+ * Composer threads (slots / portrait header chips) live in AacWorkspace.
  */
 (function (global) {
   "use strict";
@@ -12,7 +12,7 @@
     "playSpeechSource", "getText", "getAssignSource", "canAssignFromDisplay",
     "isUtteranceSource", "getUtteranceText", "getButtonSourceText",
     "isPortraitLayout", "isFeatButtonInsert",
-    "syncChatUi", "closePortraitSidebar", "openTopic", "onTopicDeleted",
+    "syncChatUi", "closePortraitSidebar", "openTopic", "onTopicDeleted", "onTopicThreadsChanged",
     "insertTextAtDisplayCaret",
     "setColorField", "getColorField",
     "isLeftSidebarOpen", "setLeftSidebarOpen"
@@ -68,6 +68,7 @@
           name: board.name,
           icon: board.icon,
           color: board.color,
+          thread: board.ownsThread ? board.id : "all",
           gridCols: cols,
           gridRows: Math.ceil(phrases.length / cols) || 1,
           buttons: phrases.map((phrase, i) => ({
@@ -88,21 +89,62 @@
       });
     }
 
+    /**
+     * Stored thread is "all" or an owner topic id.
+     * Missing, "own", and a self id mean this topic owns the thread.
+     * A chain resolves to that owner's id. A cycle or a missing owner becomes "all".
+     */
+    function canonicalThread(topic, byId, seen) {
+      if (!topic) return "all";
+      const raw = topic.thread;
+      if (raw === "all") return "all";
+      if (raw == null || raw === "" || raw === "own" || raw === topic.id) return topic.id;
+      if (seen.has(topic.id)) return "all";
+      seen.add(topic.id);
+      const next = byId.get(String(raw));
+      if (!next) return "all";
+      const owner = canonicalThread(next, byId, seen);
+      return owner === "all" ? "all" : owner;
+    }
+
     function normalizeTopicsList(rawList) {
       if (!Array.isArray(rawList) || rawList.length === 0) {
         return normalizeTopicsList(createStarterTopicsRaw());
       }
-      return rawList.map((topic, idx) => ({
+      const topics = rawList.map((topic, idx) => ({
         id: topic.id || ctx.generateId(),
         name: topic.name || `Topic ${idx + 1}`,
         icon: ctx.mapSymbol(topic.icon, "folder"),
         color: topic.color || ctx.COLOR_PALETTE[idx % ctx.COLOR_PALETTE.length],
+        thread: topic.thread,
         gridCols: ctx.clamp(parseInt(topic.gridCols, 10) || ctx.getDefaultGridCols(), 1, 12),
         gridRows: ctx.clamp(parseInt(topic.gridRows, 10) || ctx.DEFAULT_GRID_ROWS, 1, 8),
         buttons: Array.isArray(topic.buttons)
           ? topic.buttons.map((btn, bIdx) => normalizeButton(btn, bIdx))
           : []
       }));
+      const byId = new Map(topics.map((topic) => [topic.id, topic]));
+      const resolved = topics.map((topic) => canonicalThread(topic, byId, new Set()));
+      topics.forEach((topic, i) => { topic.thread = resolved[i]; });
+      return topics;
+    }
+
+    /** Owner topic id, or null when this topic continues the active thread. */
+    function resolveThreadId(topic) {
+      if (!topic || !topic.thread || topic.thread === "all") return null;
+      return topic.thread;
+    }
+
+    /** Point topic at "all" or an owner id. Topics that used its thread follow. */
+    function assignThread(topic, next) {
+      if (!topic) return;
+      const canonical = next === "all" ? "all" : String(next || topic.id);
+      if (topic.thread === topic.id && canonical !== topic.id) {
+        ctx.topicsList.forEach((other) => {
+          if (other !== topic && other.thread === topic.id) other.thread = canonical;
+        });
+      }
+      topic.thread = canonical;
     }
 
     function getActiveTopic() {
@@ -148,6 +190,8 @@
       normalizeButton,
       createStarterTopicsRaw,
       normalizeTopicsList,
+      resolveThreadId,
+      assignThread,
       repackSequentialGrid,
       getActiveTopic,
       loadStarterPhrasesIntoActiveTopic,
@@ -597,7 +641,7 @@
     if (!ctx.topicsList.find((t) => t.id === ctx.activeTopicId)) {
       ctx.activeTopicId = ctx.topicsList[0].id;
     }
-    ctx.expandedTopicIds = new Set([ctx.activeTopicId]);
+    ctx.expandedTopicIds = new Set();
 
     ctx.commitTopicsUi = function commitTopicsUi() {
       ctx.saveTopicsList();
@@ -633,6 +677,8 @@
       setExpandedTopicIds: (s) => { ctx.expandedTopicIds = s; },
       normalizeButton: (...a) => ctx.normalizeButton(...a),
       normalizeTopicsList: (...a) => ctx.normalizeTopicsList(...a),
+      resolveThreadId: (topic) => ctx.resolveThreadId(topic),
+      assignThread: (topic, next) => ctx.assignThread(topic, next),
       repackSequentialGrid: (...a) => ctx.repackSequentialGrid(...a),
       saveTopicsList: () => ctx.saveTopicsList(),
       commitTopicsUi: () => ctx.commitTopicsUi(),

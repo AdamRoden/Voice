@@ -1,6 +1,7 @@
 /**
- * Workspace owner: topic chats (1–5) and portrait header chat chips.
- * Topics module owns board model/edit; Workspace owns chat chrome.
+ * Workspace owner: composer threads (1–5) and portrait header chips.
+ * A topic's Thread setting picks All (keep the active thread), its own thread, or another topic's thread.
+ * Topics module owns board model/edit; Workspace owns thread chrome.
  * Header is portrait-only (see .portrait-only on #workspace-header-shell).
  */
 (function (global) {
@@ -20,7 +21,7 @@
       "focusDisplayInput", "syncComposeStrip", "syncGeneratedAudioActions",
       "autosizeDisplayInput", "topicsDeps"
     ];
-    // Optional: resetComposeHistory — clear undo/redo when swapping chats.
+    // Optional: resetComposeHistory — clear undo/redo when swapping threads.
     for (const key of required) {
       if (d[key] === undefined || d[key] === null) {
         throw new Error(`AacWorkspace missing required dep: ${key}`);
@@ -38,70 +39,63 @@
     /** @type {ReturnType<typeof global.AacTopics.create>|null} */
     let Topics = null;
 
-    function defaultTopicIdForChat(index) {
-      const list = Topics.getTopicsList();
-      const i = d.clamp(index, 0, Math.max(0, list.length - 1));
-      return (list[i] && list[i].id) || (list[0] && list[0].id) || null;
+    function ownerIds() {
+      return new Set(
+        Topics.getTopicsList().filter((topic) => topic.thread === topic.id).map((topic) => topic.id)
+      );
     }
 
-    function emptyChat(topicId = null) {
-      return { text: "", topicId: topicId || defaultTopicIdForChat(0) };
-    }
-
-    function normalizeChat(raw, fallbackTopicId = null) {
-      if (typeof raw === "string") {
-        return { text: raw, topicId: fallbackTopicId || defaultTopicIdForChat(0) };
-      }
-      if (!raw || typeof raw !== "object") return emptyChat(fallbackTopicId);
+    /** Read threadId, or topicId left by older saves. */
+    function normalizeChat(raw) {
+      if (typeof raw === "string") return { text: raw, threadId: null };
+      if (!raw || typeof raw !== "object") return { text: "", threadId: null };
+      const threadId = raw.threadId || raw.topicId || null;
       return {
         text: raw.text == null ? "" : String(raw.text),
-        topicId: raw.topicId || fallbackTopicId || defaultTopicIdForChat(0)
+        threadId
       };
     }
 
-    function reconcileChatsList(list) {
-      const validIds = new Set(Topics.getTopicsList().map((t) => t.id));
+    /** Keep one chat per topic that still owns a thread. Drops the no-owner buffer. */
+    function pruneChats(list) {
+      const owners = ownerIds();
       const seen = new Set();
       const out = [];
       (Array.isArray(list) ? list : []).forEach((raw) => {
-        const c = normalizeChat(raw, null);
-        if (!c.topicId || !validIds.has(c.topicId) || seen.has(c.topicId)) return;
-        seen.add(c.topicId);
-        out.push(c);
+        const chat = normalizeChat(raw);
+        if (!chat.threadId || !owners.has(chat.threadId) || seen.has(chat.threadId)) return;
+        seen.add(chat.threadId);
+        out.push(chat);
       });
       if (out.length > CHAT_MAX) out.length = CHAT_MAX;
-      if (out.length === 0) {
-        const tid = (Topics.getTopicsList()[0] && Topics.getTopicsList()[0].id)
-          || Topics.getActiveTopicId();
-        if (tid) out.push(emptyChat(tid));
-      }
       return out;
     }
 
     function loadChatsFromStorage() {
       const raw = d.lsGetJson(CHATS_STORAGE_KEY, null);
-      if (Array.isArray(raw) && raw.length) return reconcileChatsList(raw);
-      const n = Math.min(CHAT_MAX, Math.max(CHAT_MIN, Topics.getTopicsList().length || 1));
-      const starter = [];
-      for (let i = 0; i < n; i++) {
-        const tid = defaultTopicIdForChat(i);
-        if (!tid || starter.some((c) => c.topicId === tid)) continue;
-        starter.push(emptyChat(tid));
-      }
-      return reconcileChatsList(starter);
+      const loaded = pruneChats(Array.isArray(raw) ? raw : []);
+      if (loaded.length) return loaded;
+      const owner = Topics.getTopicsList().find((topic) => topic.thread === topic.id);
+      return [{ text: "", threadId: owner ? owner.id : null }];
     }
 
     function persistChats() {
       try {
-        d.lsSet(CHATS_STORAGE_KEY, JSON.stringify(chats));
+        const stored = chats.map((chat) => ({
+          text: chat.text || "",
+          threadId: chat.threadId || null
+        }));
+        d.lsSet(CHATS_STORAGE_KEY, JSON.stringify(stored));
         d.lsSet(ACTIVE_CHAT_KEY, String(activeChat));
       } catch (_) {}
     }
 
     function saveActiveChatSnapshot() {
       if (!chats || !chats[activeChat]) return;
-      const topicId = chats[activeChat].topicId || Topics.getActiveTopicId();
-      chats[activeChat] = { text: d.getText(), topicId };
+      chats[activeChat] = {
+        text: d.getText(),
+        threadId: chats[activeChat].threadId || null
+      };
       persistChats();
     }
 
@@ -115,8 +109,9 @@
       return !!(chat && d.trim(chat.text));
     }
 
-    function findChatIndexForTopic(topicId) {
-      return chats.findIndex((c) => c && c.topicId === topicId);
+    function findChatIndexForThread(threadId) {
+      if (!threadId) return -1;
+      return chats.findIndex((chat) => chat && chat.threadId === threadId);
     }
 
     // ---- portrait header chrome (slim/normal) ----
@@ -143,25 +138,21 @@
       syncHeaderChrome();
     }
 
-    function applyChatToWorkspace(chat) {
-      const c = normalizeChat(chat, Topics.getActiveTopicId());
-      // Chat switch is not a compose edit — drop undo/redo for the previous field.
+    function applyComposer(chat) {
+      const text = chat && chat.text != null ? String(chat.text) : "";
       if (typeof d.resetComposeHistory === "function") d.resetComposeHistory();
-      d.setText(c.text || "", (c.text || "").length, { skipHistory: true });
-
-      const list = Topics.getTopicsList();
-      const tid = c.topicId && list.some((t) => t.id === c.topicId)
-        ? c.topicId
-        : (list[0] && list[0].id) || Topics.getActiveTopicId();
-
-      Topics.setActiveTopicId(tid || Topics.getActiveTopicId());
-      d.lsSet("aac_active_tab", Topics.getActiveTopicId());
-      // Sidebar expand state is independent of top-bar topic switches
-      Topics.renderTopics();
-      Topics.renderSoundButtons();
+      d.setText(text, text.length, { skipHistory: true });
       d.syncComposeStrip();
       d.syncGeneratedAudioActions();
       d.autosizeDisplayInput();
+    }
+
+    function showTopicBoard(topicId) {
+      Topics.setActiveTopicId(topicId);
+      d.lsSet("aac_active_tab", topicId);
+      Topics.renderTopics();
+      Topics.renderSoundButtons();
+      syncChatUi();
     }
 
     function syncChatUi() {
@@ -172,23 +163,29 @@
 
       // Display order only: left→right follows topicsList index.
       // chats[] storage order is independent (open/active slots); data-chat keeps chats[] idx.
+      const activeTopic = topicsList.find((topic) => topic.id === Topics.getActiveTopicId()) || null;
       const chipOrder = chats.map((chatRow, idx) => {
-        const topicId = idx === activeChat
-          ? (chats[idx]?.topicId || Topics.getActiveTopicId())
-          : chatRow?.topicId;
-        const topicIndex = topicsList.findIndex((t) => t.id === topicId);
-        return { chatRow, idx, topicIndex: topicIndex < 0 ? Number.MAX_SAFE_INTEGER : topicIndex };
+        const threadId = idx === activeChat ? (chats[idx]?.threadId || null) : chatRow?.threadId;
+        const topicIndex = threadId
+          ? topicsList.findIndex((topic) => topic.id === threadId)
+          : topicsList.findIndex((topic) => topic.id === activeTopic?.id);
+        return {
+          chatRow,
+          idx,
+          topicIndex: topicIndex < 0 ? Number.MAX_SAFE_INTEGER : topicIndex
+        };
       }).sort((a, b) => a.topicIndex - b.topicIndex || a.idx - b.idx);
 
       chipOrder.forEach(({ chatRow, idx }) => {
         const chat = idx === activeChat
-          ? { text: d.getText(), topicId: chats[idx]?.topicId || Topics.getActiveTopicId() }
+          ? { text: d.getText(), threadId: chats[idx]?.threadId || null }
           : chatRow;
         const filled = chatHasContent(chat);
-        const topic = topicsList.find((t) => t.id === chat?.topicId)
-          || topicsList[0]
-          || null;
-        const topicName = topic?.name || `Chat ${idx + 1}`;
+        const owner = chat?.threadId
+          ? topicsList.find((topic) => topic.id === chat.threadId)
+          : null;
+        const topic = owner || (idx === activeChat ? activeTopic : null);
+        const topicName = topic?.name || "Thread";
         const icon = topic?.icon || "folder";
         const color = topic?.color || "";
         const isActive = idx === activeChat;
@@ -203,7 +200,7 @@
           : `${topicName}: ${previewSnippet(chat?.text)}`;
         chip.setAttribute(
           "aria-label",
-          `${topicName}${isActive ? ", current chat" : ""}${filled ? "" : ", empty"}`
+          `${topicName}${isActive ? ", current thread" : ""}${filled ? "" : ", empty"}`
         );
         if (color) chip.style.setProperty("--chat-topic-color", color);
 
@@ -224,109 +221,121 @@
       });
     }
 
+    function snapshotActiveThread() {
+      const threadId = chats[activeChat]?.threadId || null;
+      if (!threadId) return;
+      const chat = chats.find((item) => item && item.threadId === threadId);
+      if (chat) chat.text = d.getText();
+    }
+
     /**
-     * Canonical path: open or focus the chat for a topic and show its board.
+     * Show the composer for an owner topic id.
+     * confirm: false overwrites a full list without asking (startup and thread edits).
+     * Returns false only when the user keeps the current thread.
+     * Does not change the board.
+     */
+    function activateThread(threadId, opts) {
+      if (!threadId) return true;
+      const ask = !opts || opts.confirm !== false;
+      const wasActive = chats[activeChat]?.threadId === threadId;
+      snapshotActiveThread();
+      chats = pruneChats(chats);
+      let idx = chats.findIndex((chat) => chat.threadId === threadId);
+      if (idx >= 0) {
+        activeChat = idx;
+        if (!wasActive) applyComposer(chats[idx]);
+        persistChats();
+        return true;
+      }
+
+      const slot = { text: "", threadId };
+      if (chats.length < CHAT_MAX) {
+        chats.push(slot);
+        activeChat = chats.length - 1;
+      } else {
+        const emptyIdx = chats.findIndex((chat) => chat && !d.trim(chat.text));
+        if (emptyIdx >= 0) {
+          chats[emptyIdx] = slot;
+          activeChat = emptyIdx;
+        } else if (ask) {
+          const replace = confirm("All five threads have text. Replace the current thread? Its message will be discarded.");
+          if (!replace) {
+            activeChat = d.clamp(activeChat, 0, Math.max(0, chats.length - 1));
+            if (chats[activeChat]) applyComposer(chats[activeChat]);
+            persistChats();
+            return false;
+          }
+          activeChat = d.clamp(activeChat, 0, Math.max(0, chats.length - 1));
+          chats[activeChat] = slot;
+        } else {
+          chats[0] = slot;
+          activeChat = 0;
+        }
+      }
+      applyComposer(chats[activeChat]);
+      persistChats();
+      return true;
+    }
+
+    /**
+     * Show a topic board. All keeps the composer. Any other thread loads that composer.
      */
     function openTopic(topicId) {
-      if (!topicId || !Topics.getTopicsList().some((t) => t.id === topicId)) return;
-      const existing = findChatIndexForTopic(topicId);
-
-      if (existing === activeChat) {
-        Topics.setActiveTopicId(topicId);
-        d.lsSet("aac_active_tab", Topics.getActiveTopicId());
-        Topics.renderTopics();
-        Topics.renderSoundButtons();
-        syncChatUi();
-        return;
-      }
-
-      saveActiveChatSnapshot();
-
-      if (existing >= 0) {
-        const a = activeChat;
-        const tmp = chats[a];
-        chats[a] = chats[existing];
-        chats[existing] = tmp;
-        applyChatToWorkspace(chats[a]);
-        persistChats();
-        syncChatUi();
-        d.focusDisplayInput();
-        return;
-      }
-
-      if (chats.length < CHAT_MAX) {
-        const prev = {
-          text: chats[activeChat]?.text || "",
-          topicId: chats[activeChat]?.topicId
-        };
-        chats[activeChat] = emptyChat(topicId);
-        if (prev.topicId && prev.topicId !== topicId) chats.push(normalizeChat(prev));
-        applyChatToWorkspace(chats[activeChat]);
-        persistChats();
-        syncChatUi();
-        d.focusDisplayInput();
-        return;
-      }
-
-      const emptyIdx = chats.findIndex((c, i) => i !== activeChat && c && !d.trim(c.text));
-      if (emptyIdx >= 0) {
-        const prev = {
-          text: chats[activeChat]?.text || "",
-          topicId: chats[activeChat]?.topicId
-        };
-        chats[emptyIdx] = normalizeChat(prev);
-        chats[activeChat] = emptyChat(topicId);
-        applyChatToWorkspace(chats[activeChat]);
-        persistChats();
-        syncChatUi();
-        d.focusDisplayInput();
-        return;
-      }
-
-      const replace = confirm("All five chats have text. Replace the current chat? Its message will be discarded.");
-      if (!replace) return;
-      chats[activeChat] = emptyChat(topicId);
-      applyChatToWorkspace(chats[activeChat]);
-      persistChats();
-      syncChatUi();
+      const topic = Topics.getTopicsList().find((item) => item.id === topicId);
+      if (!topic) return;
+      const threadId = Topics.resolveThreadId(topic);
+      if (threadId && !activateThread(threadId)) return;
+      showTopicBoard(topicId);
       d.focusDisplayInput();
     }
 
-    function reconcileChatsAfterTopicChange(opts) {
+    function reconcileChatsAfterTopicChange() {
       if (!Array.isArray(chats)) return;
-      const preferBoard = !!(opts && opts.preferBoardTopic);
-      const prevActiveTopic = preferBoard
-        ? (Topics.getActiveTopicId() || chats[activeChat]?.topicId)
-        : (chats[activeChat]?.topicId || Topics.getActiveTopicId());
-      chats = reconcileChatsList(chats);
-      let idx = findChatIndexForTopic(prevActiveTopic);
-      if (idx < 0 && prevActiveTopic && Topics.getTopicsList().some((t) => t.id === prevActiveTopic)) {
-        const slot = emptyChat(prevActiveTopic);
-        const emptyIdx = chats.findIndex((c) => c && !d.trim(c.text));
-        if (chats.length < CHAT_MAX) {
-          chats.push(slot);
-          idx = chats.length - 1;
-        } else if (emptyIdx >= 0) {
-          chats[emptyIdx] = slot;
-          idx = emptyIdx;
-        } else {
-          chats[activeChat] = slot;
-          idx = activeChat;
+      const boardId = Topics.getActiveTopicId();
+      const board = Topics.getTopicsList().find((topic) => topic.id === boardId);
+      const wanted = board ? Topics.resolveThreadId(board) : null;
+      const anyOwner = Topics.getTopicsList().some((topic) => topic.thread === topic.id);
+
+      if (wanted) {
+        activateThread(wanted, { confirm: false });
+      } else if (!anyOwner) {
+        chats = [{ text: d.getText(), threadId: null }];
+        activeChat = 0;
+        applyComposer(chats[0]);
+        persistChats();
+      } else {
+        const liveThread = chats[activeChat]?.threadId || null;
+        snapshotActiveThread();
+        chats = pruneChats(chats);
+        if (!chats.length) {
+          const owner = Topics.getTopicsList().find((topic) => topic.thread === topic.id);
+          chats = [{ text: "", threadId: owner ? owner.id : null }];
         }
+        const survived = chats.findIndex((chat) => chat.threadId === liveThread);
+        activeChat = survived >= 0 ? survived : 0;
+        applyComposer(chats[activeChat]);
+        persistChats();
       }
-      if (idx < 0) idx = 0;
-      activeChat = d.clamp(idx, 0, chats.length - 1);
-      if (chats[activeChat]) applyChatToWorkspace(chats[activeChat]);
-      persistChats();
+
+      if (boardId && Topics.getTopicsList().some((topic) => topic.id === boardId)) {
+        Topics.setActiveTopicId(boardId);
+        d.lsSet("aac_active_tab", boardId);
+      }
+      Topics.renderTopics();
+      Topics.renderSoundButtons();
       syncChatUi();
     }
 
     function showChat(index) {
       const i = d.clamp(index, 0, Math.max(0, chats.length - 1));
       activeChat = i;
-      applyChatToWorkspace(chats[i]);
+      applyComposer(chats[i]);
+      const threadId = chats[i]?.threadId || null;
+      const current = Topics.getActiveTopic();
+      const currentThread = current ? Topics.resolveThreadId(current) : null;
+      if (threadId && currentThread && currentThread !== threadId) showTopicBoard(threadId);
+      else syncChatUi();
       persistChats();
-      syncChatUi();
       d.focusDisplayInput();
     }
 
@@ -348,24 +357,21 @@
     }
 
     /**
-     * Single chat mutation path when a topic is deleted.
+     * Single thread mutation path when a topic is deleted.
      * Topics must not assign `chats` directly.
      */
-    function onTopicDeleted(topicId) {
-      if (!topicId) return;
-      chats = (Array.isArray(chats) ? chats : []).filter((c) => c && c.topicId !== topicId);
+    function onTopicDeleted() {
       reconcileChatsAfterTopicChange();
-      persistChats();
-      syncChatUi();
     }
 
-    // Topics: no chat list deps — only openTopic / onTopicDeleted / syncChatUi
+    // Topics: no thread list deps — only openTopic / onTopicDeleted / onTopicThreadsChanged / syncChatUi
     const td = d.topicsDeps;
     Topics = global.AacTopics.create({
       ...td,
       syncChatUi: () => syncChatUi(),
       openTopic: (id) => openTopic(id),
-      onTopicDeleted: (id) => onTopicDeleted(id)
+      onTopicDeleted: () => onTopicDeleted(),
+      onTopicThreadsChanged: () => reconcileChatsAfterTopicChange()
     });
 
     chats = loadChatsFromStorage();
@@ -374,11 +380,19 @@
       const idx = Number.isFinite(n) ? n : 0;
       return d.clamp(idx, 0, Math.max(0, chats.length - 1));
     })();
-    if (chats[activeChat]?.topicId) {
-      Topics.setActiveTopicId(chats[activeChat].topicId);
-      d.lsSet("aac_active_tab", Topics.getActiveTopicId());
-    }
-    applyChatToWorkspace(chats[activeChat]);
+    (() => {
+      const board = Topics.getTopicsList().find((topic) => topic.id === Topics.getActiveTopicId());
+      const wanted = board ? Topics.resolveThreadId(board) : null;
+      // The textarea is still empty. Load the stored chat before activateThread snapshots it.
+      applyComposer(chats[activeChat]);
+      if (wanted) {
+        activateThread(wanted, { confirm: false });
+        return;
+      }
+      persistChats();
+    })();
+    Topics.renderTopics();
+    Topics.renderSoundButtons();
 
     // Header normal / slim: empty-space click or swipe (portrait only; shell is hidden in landscape)
     headerShell?.addEventListener("click", (e) => {

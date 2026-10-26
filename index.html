@@ -30,7 +30,7 @@
   <!-- Dual sidebars (landscape: left topics | main | right utils). #sidebar wraps both for portrait drawer. -->
   <div class="sidebar-drawer" id="sidebar" data-panel="topics">
     <!-- ==================== LEFT: TOPICS ==================== -->
-    <aside class="sidebar sidebar-left" id="sidebar-left" aria-label="Topics">
+    <aside class="sidebar sidebar-left collapsed" id="sidebar-left" aria-label="Topics">
       <div class="sidebar-header">
         <button class="logo-btn" id="toggle-sidebar-left-btn" type="button" title="Toggle topics sidebar" aria-label="Toggle topics sidebar">
           <span class="material-symbols-outlined logo-mark">folder</span>
@@ -66,7 +66,7 @@
 
       <div class="sidebar-content" id="sidebar-right-content">
         <!-- Voice Tab Content -->
-        <div id="tab-content-voice" class="tab-content">
+        <div id="tab-content-voice" class="tab-content active">
           <div class="sidebar-setting-group">
             <label>Voice</label>
             <button class="status-btn" id="open-voices" type="button" title="Select voice model and voice">
@@ -178,7 +178,7 @@
       </div>
 
       <nav class="sidebar-nav" id="sidebar-nav" aria-label="Sidebar">
-        <button type="button" class="sidebar-nav-btn" data-nav="voice" id="nav-voice" title="Voice" aria-label="Voice">
+        <button type="button" class="sidebar-nav-btn active" data-nav="voice" id="nav-voice" title="Voice" aria-label="Voice" aria-current="page">
           <span class="material-symbols-outlined">record_voice_over</span>
           <span class="sidebar-nav-label">Voice</span>
         </button>
@@ -186,7 +186,7 @@
           <span class="material-symbols-outlined">history</span>
           <span class="sidebar-nav-label">History</span>
         </button>
-        <button type="button" class="sidebar-nav-btn portrait-only active" data-nav="topics" id="nav-topics" title="Topics" aria-label="Topics" aria-current="page">
+        <button type="button" class="sidebar-nav-btn portrait-only" data-nav="topics" id="nav-topics" title="Topics" aria-label="Topics">
           <span class="material-symbols-outlined">folder</span>
           <span class="sidebar-nav-label">Topics</span>
         </button>
@@ -205,7 +205,7 @@
         <button class="icon-btn mobile-menu-btn" id="mobile-menu-btn" type="button" title="Open menu" aria-label="Open menu">
           <img class="app-logo" src="icon.png" width="24" height="24" alt="">
         </button>
-        <div class="chat-slots" id="chat-slots" role="group" aria-label="Topic chats"></div>
+        <div class="chat-slots" id="chat-slots" role="group" aria-label="Threads"></div>
       </div>
     </div>
 
@@ -644,6 +644,11 @@
       <div class="sidebar-setting-group">
         <label for="topic-name-input">Name</label>
         <input type="text" id="topic-name-input" class="modal-input" placeholder="Topic name" maxlength="30">
+      </div>
+      <div class="sidebar-setting-group">
+        <label for="topic-thread-select">Thread</label>
+        <select id="topic-thread-select" aria-label="Thread"></select>
+        <div class="modal-description">All keeps the message already on screen. A name saves the message on that thread.</div>
       </div>
       <div class="modal-field-row">
         <div class="sidebar-setting-group modal-field-color">

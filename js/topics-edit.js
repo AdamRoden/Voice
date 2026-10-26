@@ -117,7 +117,41 @@
         : [];
       ctx.repackSequentialGrid({ buttons: ctx.modalButtonsDraft, gridCols: ctx.modalGridCols });
       ctx.renderTopicButtonOrganizer();
+      fillThreadSelect(topic.thread === "all" || !topic.thread ? "all" : topic.thread);
     }
+
+    function ownThreadLabel() {
+      const name = ctx.trim(ctx.$("topic-name-input")?.value);
+      return name || "This topic";
+    }
+
+    /** All, this topic's name, and every other topic that owns a thread. Values are "all" or a topic id. */
+    function fillThreadSelect(selected) {
+      const select = document.getElementById("topic-thread-select");
+      if (!select) return;
+      const editingId = ctx.editingTopicId;
+      select.replaceChildren();
+      const add = (value, label) => {
+        const opt = document.createElement("option");
+        opt.value = value;
+        opt.textContent = label;
+        select.appendChild(opt);
+      };
+      add("all", "All");
+      if (editingId) add(editingId, ownThreadLabel());
+      ctx.topicsList.forEach((topic) => {
+        if (!topic || topic.id === editingId || topic.thread !== topic.id) return;
+        add(topic.id, topic.name || "Topic");
+      });
+      const values = Array.from(select.options).map((opt) => opt.value);
+      select.value = values.includes(selected) ? selected : "all";
+    }
+
+    document.getElementById("topic-name-input")?.addEventListener("input", () => {
+      const select = document.getElementById("topic-thread-select");
+      const own = select && Array.from(select.options).find((opt) => opt.value === ctx.editingTopicId);
+      if (own) own.textContent = ownThreadLabel();
+    });
     
     function cloneTopicAsTemplate(source) {
       const src = source || {};
@@ -138,6 +172,7 @@
         name: `Copy of ${baseName}`.slice(0, 30),
         icon: src.icon || "folder",
         color: src.color || ctx.COLOR_PALETTE[ctx.topicsList.length % ctx.COLOR_PALETTE.length],
+        thread: "all",
         gridCols: ctx.clamp(parseInt(src.gridCols, 10) || ctx.getDefaultGridCols(), 1, 12),
         gridRows: ctx.clamp(parseInt(src.gridRows, 10) || ctx.DEFAULT_GRID_ROWS, 1, 8),
         buttons
@@ -152,6 +187,7 @@
             name: `Topic ${ctx.topicsList.length + 1}`,
             icon: "folder",
             color: ctx.COLOR_PALETTE[ctx.topicsList.length % ctx.COLOR_PALETTE.length],
+            thread: "all",
             gridCols: ctx.getDefaultGridCols(),
             gridRows: ctx.DEFAULT_GRID_ROWS,
             buttons: []
@@ -231,6 +267,7 @@
         cols: ctx.modalGridCols,
         rows: ctx.modalGridRows,
         topicIndex: ctx.modalTopicIndex,
+        thread: document.getElementById("topic-thread-select")?.value || "all",
         isCreate: !!(ctx.pendingNewTopic && ctx.pendingNewTopic.id === ctx.editingTopicId),
         topicId: ctx.editingTopicId,
         buttons: Array.isArray(ctx.modalButtonsDraft)
@@ -276,6 +313,7 @@
           ctx.modalTopicIndex = ctx.clamp(snap.topicIndex, 1, ctx.modalTopicIndexMax);
           ctx.syncModalTopicIndexLabels();
         }
+        fillThreadSelect(snap.thread || "all");
         ctx.modalButtonsDraft = snap.buttons.map((b, i) => ctx.normalizeButton({ ...b }, i));
         ctx.repackSequentialGrid({ buttons: ctx.modalButtonsDraft, gridCols: ctx.modalGridCols });
         ctx.renderTopicButtonOrganizer();
@@ -503,6 +541,9 @@
       topic.name = ctx.trim(ctx.$("topic-name-input").value) || (isCreate ? "New Topic" : "Untitled");
       topic.icon = ctx.mapSymbol(ctx.$("topic-icon-input").value, "folder");
       topic.color = ctx.getColorField("topic-color-field", topic.color || "#3f3f4e");
+      const prevThread = topic.thread;
+      const picked = document.getElementById("topic-thread-select")?.value || "all";
+      ctx.assignThread(topic, picked === "all" ? "all" : picked);
       topic.gridCols = ctx.clamp(ctx.modalGridCols, 1, 12);
       // Rows grow with buttons; keep existing/default row count for storage
       topic.gridRows = ctx.clamp(ctx.modalGridRows, 1, 8);
@@ -518,12 +559,12 @@
         ctx.topicsList.splice(insertAt, 0, topic);
         ctx.pendingNewTopic = null;
         ctx.saveTopicsList();
-        // New topic opens as its own chat (if under max)
         ctx.switchTopic(topic.id);
       } else {
         moveTopicToIndex(topic.id, ctx.modalTopicIndex - 1);
         // commitTopicsUi → save + renderTopics + renderSoundButtons + syncChatUi
         ctx.commitTopicsUi();
+        if (prevThread !== topic.thread) ctx.onTopicThreadsChanged();
       }
       ctx.closeModals();
     });
@@ -532,10 +573,13 @@
       if (ctx.pendingNewTopic) { cancelTopicEditModal(); return; }
       if (ctx.topicsList.length === 1) { alert("Cannot delete the last topic."); return; }
       if (!confirm("Are you sure you want to delete this topic and all its buttons?")) return;
-      ctx.topicsList = ctx.topicsList.filter(t => t.id !== ctx.editingTopicId);
+      const deletedId = ctx.editingTopicId;
+      const deleted = ctx.topicsList.find((topic) => topic.id === deletedId);
+      if (deleted) ctx.assignThread(deleted, "all");
+      ctx.topicsList = ctx.topicsList.filter(t => t.id !== deletedId);
       if (!ctx.topicsList.find(t => t.id === ctx.activeTopicId)) ctx.activeTopicId = ctx.topicsList[0].id;
-      // Workspace owns chats — single mutation path
-      ctx.onTopicDeleted(ctx.editingTopicId);
+      // Workspace owns threads — single mutation path
+      ctx.onTopicDeleted(deletedId);
       ctx.commitTopicsUi();
       ctx.closeModals();
     });

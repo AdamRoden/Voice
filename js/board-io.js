@@ -46,6 +46,7 @@
       name: topic.name,
       icon: topic.icon,
       color: topic.color,
+      thread: topic.thread || "all",
       gridCols: topic.gridCols,
       gridRows: topic.gridRows,
       buttons: (topic.buttons || []).map(exportButtonPayload)
