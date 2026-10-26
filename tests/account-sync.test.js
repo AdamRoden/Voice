@@ -251,6 +251,145 @@ test("speaker and browser voice index are not synced", () => {
   assert.strictEqual(Sync.isSyncKey("aac_browser_voice_index"), false);
   assert.strictEqual(Sync.isSyncKey("aac_tabs"), true);
   assert.strictEqual(Sync.isSyncKey("elevenlabs_key"), true);
+  assert.strictEqual(Sync.isSyncKey("aac_voice_styles"), true);
+  assert.strictEqual(Sync.isSyncKey("aac_eleven_voice_tag"), true);
+});
+
+const STYLE_CATALOG = JSON.stringify({
+  styles: ["begging", "strict", "flirt", "happy", "indignant", "sing loud"],
+  favorites: ["begging", "strict", "flirt", "happy", "indignant", "sing loud"],
+  noneFavorite: false
+});
+
+const OTHER_CATALOG = JSON.stringify({
+  styles: ["yell", "whisper"],
+  favorites: ["yell"],
+  noneFavorite: true
+});
+
+test("a saved style catalog or chosen style is not a fresh device", () => {
+  assert.strictEqual(Sync.deviceLooksFresh(keys()), true);
+  assert.strictEqual(Sync.deviceLooksFresh(keys({ aac_voice_styles: "" })), true);
+  assert.strictEqual(Sync.deviceLooksFresh(keys({ aac_eleven_voice_tag: "" })), true);
+  assert.strictEqual(Sync.deviceLooksFresh(keys({ aac_voice_styles: STYLE_CATALOG })), false);
+  assert.strictEqual(Sync.deviceLooksFresh(keys({ aac_eleven_voice_tag: "sing loud" })), false);
+});
+
+test("first sign-in uploads styles when the account has none", () => {
+  const local = keys({
+    aac_voice_styles: STYLE_CATALOG,
+    aac_eleven_voice_tag: "begging"
+  });
+  const remote = remoteFrom(keys(), 1);
+  assert.strictEqual(Sync.decideFirstSync(local, remote), "upload");
+  const plan = Sync.planSync({ localKeys: local, meta: { bootstrapped: false }, remote, now: 100 });
+  assert.strictEqual(plan.action, "upload");
+  assert.strictEqual(plan.reload, false);
+  assert.strictEqual(plan.uploadKeys.aac_voice_styles, STYLE_CATALOG);
+  assert.strictEqual(plan.uploadKeys.aac_eleven_voice_tag, "begging");
+  assert.ok(plan.dirty.indexOf("aac_voice_styles") !== -1);
+});
+
+test("first sign-in downloads the account style catalog onto a fresh device", () => {
+  const remote = remoteFrom(keys({
+    aac_voice_styles: STYLE_CATALOG,
+    aac_eleven_voice_tag: "flirt"
+  }), 4);
+  const plan = Sync.planSync({
+    localKeys: keys(),
+    meta: { bootstrapped: false },
+    remote,
+    now: 100
+  });
+  assert.strictEqual(plan.action, "download");
+  assert.strictEqual(plan.reload, true);
+  assert.strictEqual(plan.keys.aac_voice_styles, STYLE_CATALOG);
+  assert.strictEqual(plan.keys.aac_eleven_voice_tag, "flirt");
+  assert.strictEqual(plan.dirty.length, 0);
+});
+
+test("first sign-in asks when both sides have a style catalog", () => {
+  const local = keys({ aac_voice_styles: STYLE_CATALOG });
+  const remote = remoteFrom(keys({ aac_voice_styles: OTHER_CATALOG }), 2);
+  assert.strictEqual(Sync.decideFirstSync(local, remote), "ask");
+  const plan = Sync.planSync({ localKeys: local, meta: { bootstrapped: false }, remote, now: 50 });
+  assert.strictEqual(plan.action, "ask");
+  assert.strictEqual(plan.reload, false);
+});
+
+test("combine keeps one style catalog, preferring this device", () => {
+  const both = Sync.combineProfiles(
+    keys({ aac_voice_styles: STYLE_CATALOG, aac_eleven_voice_tag: "begging" }),
+    keys({ aac_voice_styles: OTHER_CATALOG, aac_eleven_voice_tag: "yell" })
+  );
+  assert.strictEqual(both.aac_voice_styles, STYLE_CATALOG);
+  assert.strictEqual(both.aac_eleven_voice_tag, "begging");
+  const fromAccount = Sync.combineProfiles(keys(), keys({
+    aac_voice_styles: OTHER_CATALOG,
+    aac_eleven_voice_tag: "yell"
+  }));
+  assert.strictEqual(fromAccount.aac_voice_styles, OTHER_CATALOG);
+  assert.strictEqual(fromAccount.aac_eleven_voice_tag, "yell");
+});
+
+test("a newer style catalog wins per device", () => {
+  const local = keys({ aac_voice_styles: STYLE_CATALOG, aac_eleven_voice_tag: "begging" });
+  const remote = remoteFrom(keys({
+    aac_voice_styles: OTHER_CATALOG,
+    aac_eleven_voice_tag: "yell"
+  }), 3, { aac_voice_styles: 100, aac_eleven_voice_tag: 100 });
+  const upload = Sync.planSync({
+    localKeys: local,
+    meta: {
+      bootstrapped: true,
+      ackedRev: 3,
+      times: { aac_voice_styles: 400, aac_eleven_voice_tag: 400 },
+      keyHashes: Sync.hashAll(local),
+      stripped: {}
+    },
+    remote,
+    now: 500
+  });
+  assert.strictEqual(upload.action, "upload");
+  assert.strictEqual(upload.reload, false);
+  assert.strictEqual(upload.uploadKeys.aac_voice_styles, STYLE_CATALOG);
+  assert.strictEqual(upload.uploadKeys.aac_eleven_voice_tag, "begging");
+  assert.ok(upload.dirty.indexOf("aac_voice_styles") !== -1);
+  assert.ok(upload.dirty.indexOf("aac_eleven_voice_tag") !== -1);
+
+  const download = Sync.planSync({
+    localKeys: local,
+    meta: {
+      bootstrapped: true,
+      ackedRev: 3,
+      times: { aac_voice_styles: 50, aac_eleven_voice_tag: 50 },
+      keyHashes: Sync.hashAll(local),
+      stripped: {}
+    },
+    remote,
+    now: 500
+  });
+  assert.strictEqual(download.action, "download");
+  assert.strictEqual(download.reload, true);
+  assert.strictEqual(download.keys.aac_voice_styles, OTHER_CATALOG);
+  assert.strictEqual(download.keys.aac_eleven_voice_tag, "yell");
+  assert.ok(download.applied.indexOf("aac_voice_styles") !== -1);
+  assert.strictEqual(download.dirty.length, 0);
+});
+
+test("the style catalog round-trips in the profile document", () => {
+  const doc = Sync.encodeProfileDoc({
+    rev: 2,
+    updatedAt: "2026-10-25T00:00:00.000Z",
+    deviceId: "dev",
+    keys: keys({ aac_voice_styles: STYLE_CATALOG, aac_eleven_voice_tag: "sing loud" }),
+    times: { aac_voice_styles: 9, aac_eleven_voice_tag: 8 }
+  });
+  const decoded = Sync.decodeProfileDoc(doc);
+  assert.strictEqual(decoded.keys.aac_voice_styles, STYLE_CATALOG);
+  assert.strictEqual(decoded.keys.aac_eleven_voice_tag, "sing loud");
+  assert.strictEqual(decoded.times.aac_voice_styles, 9);
+  assert.strictEqual(decoded.times.aac_eleven_voice_tag, 8);
 });
 
 if (failed) {

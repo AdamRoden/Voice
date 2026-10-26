@@ -539,6 +539,7 @@ function defaultLoadKeys(storageKey) {
   const FAV_PIPER_KEY = "aac_fav_piper_voices";
   const PREVIEW_TEXT = "This is a preview.";
   const VOICE_TAG_STORAGE_KEY = "aac_eleven_voice_tag";
+  const VOICE_STYLES_STORAGE_KEY = "aac_voice_styles";
 
   /**
    * @param {{
@@ -564,7 +565,10 @@ function defaultLoadKeys(storageKey) {
    *   closePortraitSidebar?: () => void,
    *   onVoiceContextChanged?: () => void,
    *   onVoiceTagEnter?: () => void,
-   *   switchSidebarTab?: (tab: string, expand?: boolean, opts?: { focusComposer?: boolean }) => void
+   *   switchSidebarTab?: (tab: string, expand?: boolean, opts?: { focusComposer?: boolean }) => void,
+   *   VoiceStyles?: object,
+   *   setVoiceStylesOpen?: (open: boolean) => boolean,
+   *   isVoiceStylesOpen?: () => boolean
    * }} deps
    */
   function create(deps) {
@@ -768,16 +772,154 @@ function defaultLoadKeys(storageKey) {
       return canonicalVoiceTag(lsGet(VOICE_TAG_STORAGE_KEY, ""));
     }
 
-    function paintVoiceStyleList() {
-      const list = $("voice-tag-list");
-      if (!list) return;
+    const VoiceStyles = d.VoiceStyles || global.AacVoiceStyles || null;
+    let styleCatalog = null;
+
+    function loadStyleCatalog() {
+      if (!VoiceStyles) return { styles: [], favorites: [], noneFavorite: false };
+      const stored = lsGet(VOICE_STYLES_STORAGE_KEY, null);
+      if (stored == null || stored === "") return VoiceStyles.defaultCatalog();
+      try {
+        const raw = JSON.parse(stored);
+        if (raw == null) return VoiceStyles.defaultCatalog();
+        return VoiceStyles.parseCatalog(raw);
+      } catch (_) {
+        return VoiceStyles.defaultCatalog();
+      }
+    }
+
+    function ensureStyleCatalog() {
+      if (!styleCatalog) styleCatalog = loadStyleCatalog();
+      return styleCatalog;
+    }
+
+    function currentStyleKey() {
       const input = $("voice-tag-input");
       const raw = input && document.activeElement === input ? input.value : readStoredVoiceTag();
-      const current = canonicalVoiceTag(raw).toLowerCase();
-      list.querySelectorAll("[data-style]").forEach((btn) => {
-        const key = canonicalVoiceTag(btn.getAttribute("data-style") || "").toLowerCase();
-        btn.hidden = key === current;
+      const tag = canonicalVoiceTag(raw);
+      return tag ? tag.toLowerCase() : "none";
+    }
+
+    function setStyleStatus(text) {
+      const el = $("voice-styles-status");
+      if (el) el.textContent = text || "";
+    }
+
+    function syncStyleEditExpanded() {
+      const btn = $("voice-style-edit-btn");
+      if (!btn) return;
+      const open = typeof d.isVoiceStylesOpen === "function" && d.isVoiceStylesOpen();
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+
+    function paintEditorFavorite(row, catalog) {
+      const label = row.getAttribute("data-style") || "";
+      const star = row.querySelector(".voice-fav-btn");
+      if (!star || !VoiceStyles) return;
+      const fav = VoiceStyles.isFavorite(catalog, label);
+      star.classList.toggle("is-on", fav);
+      star.title = fav ? "Remove from favorites" : "Add to favorites";
+      star.setAttribute("aria-label", (fav ? "Remove " : "Add ") + label + (fav ? " from favorites" : " to favorites"));
+      star.setAttribute("aria-pressed", fav ? "true" : "false");
+      const icon = star.querySelector(".material-symbols-outlined");
+      if (icon) icon.textContent = fav ? "star" : "star_border";
+    }
+
+    function paintEditorSelection(row, selected) {
+      row.classList.toggle("is-selected", selected);
+      const pick = row.querySelector(".voice-style-editor-name");
+      if (!pick) return;
+      pick.title = selected ? "In use" : "Use this style";
+      pick.setAttribute("aria-pressed", selected ? "true" : "false");
+    }
+
+    function syncEditorSelection() {
+      const list = $("voice-styles-editor-list");
+      if (!list || !VoiceStyles) return;
+      if (typeof d.isVoiceStylesOpen !== "function" || !d.isVoiceStylesOpen()) return;
+      const current = currentStyleKey();
+      const rows = list.children;
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        paintEditorSelection(row, VoiceStyles.keyOf(row.getAttribute("data-style") || "") === current);
+      }
+    }
+
+    function appendEditorRow(list, catalog, name, currentKey) {
+      const isNone = VoiceStyles.keyOf(name) === VoiceStyles.NONE_STYLE;
+      const label = isNone ? VoiceStyles.NONE_STYLE : name;
+      const row = document.createElement("div");
+      row.className = "voice-style-editor-row";
+      row.setAttribute("data-style", label);
+
+      const star = document.createElement("button");
+      star.type = "button";
+      star.className = "voice-fav-btn";
+      const starIcon = document.createElement("span");
+      starIcon.className = "material-symbols-outlined icon-small";
+      star.appendChild(starIcon);
+
+      const pick = document.createElement("button");
+      pick.type = "button";
+      pick.className = "voice-style-editor-name";
+      pick.textContent = label;
+
+      row.appendChild(star);
+      row.appendChild(pick);
+      if (!isNone) {
+        const trash = document.createElement("button");
+        trash.type = "button";
+        trash.className = "icon-btn voice-style-trash";
+        trash.title = "Trash style";
+        trash.setAttribute("aria-label", "Trash " + label);
+        const icon = document.createElement("span");
+        icon.className = "material-symbols-outlined";
+        icon.textContent = "delete";
+        trash.appendChild(icon);
+        row.appendChild(trash);
+      }
+      list.appendChild(row);
+      paintEditorFavorite(row, catalog);
+      paintEditorSelection(row, VoiceStyles.keyOf(label) === currentKey);
+      return row;
+    }
+
+    function paintStylesEditor() {
+      const list = $("voice-styles-editor-list");
+      if (!list || !VoiceStyles) return;
+      const catalog = ensureStyleCatalog();
+      const current = currentStyleKey();
+      list.textContent = "";
+      appendEditorRow(list, catalog, VoiceStyles.NONE_STYLE, current);
+      catalog.styles.forEach((name) => appendEditorRow(list, catalog, name, current));
+    }
+
+    function paintVoiceStyleList() {
+      const list = $("voice-tag-list");
+      if (!list || !VoiceStyles) return;
+      const catalog = ensureStyleCatalog();
+      const current = currentStyleKey();
+      const names = VoiceStyles.sidebarNames(catalog);
+      list.textContent = "";
+      names.forEach((name) => {
+        if (VoiceStyles.keyOf(name) === current) return;
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "voice-style-option";
+        btn.setAttribute("role", "option");
+        btn.setAttribute("data-style", name);
+        btn.textContent = name;
+        list.appendChild(btn);
       });
+      const empty = $("voice-style-empty");
+      if (empty) empty.hidden = names.length > 0;
+      syncEditorSelection();
+    }
+
+    function saveStyleCatalog(next) {
+      styleCatalog = next;
+      if (VoiceStyles) lsSet(VOICE_STYLES_STORAGE_KEY, VoiceStyles.serialize(next));
+      paintVoiceStyleList();
     }
 
     function syncVoiceTagRow() {
@@ -787,6 +929,7 @@ function defaultLoadKeys(storageKey) {
       if (group) group.hidden = !show;
       if (show && input && document.activeElement !== input) input.value = readStoredVoiceTag();
       if (show) paintVoiceStyleList();
+      else if (typeof d.isVoiceStylesOpen === "function" && d.isVoiceStylesOpen()) closeVoiceStyles();
     }
 
     function persistVoiceTagDraft() {
@@ -807,15 +950,55 @@ function defaultLoadKeys(storageKey) {
       return tag;
     }
 
-    function chooseVoiceStyle(style) {
+    function applyVoiceStyle(style) {
       const input = $("voice-tag-input");
       if (!input) return "";
       input.value = canonicalVoiceTag(style);
-      const tag = commitVoiceTagFromInput();
+      return commitVoiceTagFromInput();
+    }
+
+    function chooseVoiceStyle(style) {
+      const tag = applyVoiceStyle(style);
+      if (typeof d.isVoiceStylesOpen === "function" && d.isVoiceStylesOpen()) closeVoiceStyles();
       // The portrait drawer covers the message. Close it so the composer can take focus.
       if (typeof d.closePortraitSidebar === "function") d.closePortraitSidebar();
       if (typeof d.focusDisplayInput === "function") d.focusDisplayInput();
       return tag;
+    }
+
+    function openVoiceStyles() {
+      const add = $("voice-style-add-input");
+      if (add) add.value = "";
+      setStyleStatus("");
+      paintStylesEditor();
+      if (typeof d.setVoiceStylesOpen === "function") d.setVoiceStylesOpen(true);
+      syncStyleEditExpanded();
+    }
+
+    function closeVoiceStyles() {
+      if (typeof d.isVoiceStylesOpen !== "function" || !d.isVoiceStylesOpen()) return false;
+      if (typeof d.setVoiceStylesOpen !== "function") return false;
+      const closed = d.setVoiceStylesOpen(false);
+      if (closed) syncStyleEditExpanded();
+      return !!closed;
+    }
+
+    function addStyleFromInput() {
+      const input = $("voice-style-add-input");
+      if (!input || !VoiceStyles) return;
+      const result = VoiceStyles.addStyle(ensureStyleCatalog(), input.value);
+      if (!result.ok) {
+        setStyleStatus(result.reason === "duplicate" ? "Already in the list." : "Type a style name.");
+        try { input.focus({ preventScroll: true }); } catch (_) { input.focus(); }
+        return;
+      }
+      input.value = "";
+      setStyleStatus("");
+      saveStyleCatalog(result.catalog);
+      const list = $("voice-styles-editor-list");
+      if (!list) return;
+      const row = appendEditorRow(list, result.catalog, result.name, currentStyleKey());
+      if (row && row.scrollIntoView) row.scrollIntoView({ block: "nearest" });
     }
 
     /** Tag sent with ElevenLabs speech. Empty means none. The field writes storage as the user types. */
@@ -1388,6 +1571,38 @@ function defaultLoadKeys(storageKey) {
         if (!btn || !$("voice-tag-list")?.contains(btn)) return;
         chooseVoiceStyle(btn.getAttribute("data-style") || "");
       });
+      $("voice-style-edit-btn")?.addEventListener("click", () => {
+        if (typeof d.isVoiceStylesOpen === "function" && d.isVoiceStylesOpen()) closeVoiceStyles();
+        else openVoiceStyles();
+      });
+      $("voice-styles-close-btn")?.addEventListener("click", () => closeVoiceStyles());
+      $("voice-style-add-btn")?.addEventListener("click", () => addStyleFromInput());
+      $("voice-style-add-input")?.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" || event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) return;
+        if (event.isComposing || event.keyCode === 229) return;
+        event.preventDefault();
+        addStyleFromInput();
+      });
+      $("voice-styles-editor-list")?.addEventListener("click", (event) => {
+        const list = $("voice-styles-editor-list");
+        const row = event.target.closest("[data-style]");
+        if (!row || !list || !list.contains(row) || !VoiceStyles) return;
+        const style = row.getAttribute("data-style") || "";
+        if (event.target.closest(".voice-fav-btn")) {
+          const catalog = VoiceStyles.toggleFavorite(ensureStyleCatalog(), style);
+          saveStyleCatalog(catalog);
+          paintEditorFavorite(row, catalog);
+          return;
+        }
+        if (event.target.closest(".voice-style-trash")) {
+          const result = VoiceStyles.trashStyle(ensureStyleCatalog(), style);
+          if (!result.ok) return;
+          saveStyleCatalog(result.catalog);
+          row.remove();
+          return;
+        }
+        if (event.target.closest(".voice-style-editor-name")) applyVoiceStyle(style);
+      });
 
       modelSelect?.addEventListener("change", (e) => {
         const previousModel = readStoredModel();
@@ -1475,7 +1690,8 @@ function defaultLoadKeys(storageKey) {
       getPiperVoiceId: () => piperVoiceId,
       getElevenVoiceId: () => elevenVoiceId,
       getStandingVoiceTag,
-      stopPiperSamplePreview
+      stopPiperSamplePreview,
+      closeVoiceStyles
     };
   }
 

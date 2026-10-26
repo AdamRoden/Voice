@@ -127,6 +127,7 @@
     const ElevenKeyApi = window.AacElevenKey;
     const Piper = window.AacPiper;
     const SpeechEngines = window.AacSpeechEngines;
+    const VoiceStylesApi = window.AacVoiceStyles;
     const VoicesFilters = window.AacVoicesFilters;
     const VoicesPanel = window.AacVoicesPanel;
     const VoicesControllerApi = window.AacVoicesController;
@@ -153,6 +154,7 @@
     requireModule("AacElevenHandoff", ElevenHandoffApi);
     requireModule("AacElevenKey", ElevenKeyApi);
     requireModule("AacPiper", Piper);
+    requireModule("AacVoiceStyles", VoiceStylesApi);
     requireModule("AacVoicesFilters", VoicesFilters);
     requireModule("AacVoicesPanel", VoicesPanel);
     requireModule("AacVoicesController", VoicesControllerApi);
@@ -708,7 +710,8 @@
           try { Topics.renderTopics(); } catch (_) {}
         }
       },
-      onVoicesPanelDismiss: (opts) => Voices?.closeVoicesPanel?.(opts)
+      onVoicesPanelDismiss: (opts) => Voices?.closeVoicesPanel?.(opts),
+      closeVoiceStyles: () => !!(Voices && Voices.closeVoiceStyles && Voices.closeVoiceStyles())
     });
     Shell.bind();
 
@@ -1009,7 +1012,10 @@
         syncInsertTagChrome();
         if (Compose?.isOpen?.()) Compose.render();
       },
-      switchSidebarTab: (tab, expand, opts) => Shell?.switchSidebarTab?.(tab, expand, opts)
+      switchSidebarTab: (tab, expand, opts) => Shell?.switchSidebarTab?.(tab, expand, opts),
+      VoiceStyles: VoiceStylesApi,
+      setVoiceStylesOpen: (open) => !!(Shell && Shell.setVoiceStylesOpen && Shell.setVoiceStylesOpen(open)),
+      isVoiceStylesOpen: () => !!(Shell && Shell.isVoiceStylesOpen && Shell.isVoiceStylesOpen())
     });
     Voices.bind();
     ElevenKey.promptOnLoad();

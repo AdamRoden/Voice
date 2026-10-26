@@ -86,18 +86,14 @@
 
           <div class="sidebar-setting-group" id="voice-tag-group" hidden>
             <label for="voice-tag-input">Style</label>
-            <input type="text" id="voice-tag-input" placeholder="None" autocomplete="off" spellcheck="false" enterkeyhint="send" aria-describedby="voice-tag-hint">
-            <div class="voice-style-list" id="voice-tag-list" role="listbox" aria-label="Style">
-              <button type="button" class="voice-style-option" role="option" data-style="none">none</button>
-              <button type="button" class="voice-style-option" role="option" data-style="arrogant">arrogant</button>
-              <button type="button" class="voice-style-option" role="option" data-style="booming">booming</button>
-              <button type="button" class="voice-style-option" role="option" data-style="dull">dull</button>
-              <button type="button" class="voice-style-option" role="option" data-style="flirt">flirt</button>
-              <button type="button" class="voice-style-option" role="option" data-style="happy">happy</button>
-              <button type="button" class="voice-style-option" role="option" data-style="pleading">pleading</button>
-              <button type="button" class="voice-style-option" role="option" data-style="sing">sing</button>
-              <button type="button" class="voice-style-option" role="option" data-style="whisper">whisper</button>
+            <div class="voice-style-field">
+              <input type="text" id="voice-tag-input" placeholder="None" autocomplete="off" spellcheck="false" enterkeyhint="send" aria-describedby="voice-tag-hint">
+              <button type="button" class="icon-btn voice-style-edit-btn" id="voice-style-edit-btn" title="Edit styles" aria-label="Edit styles" aria-expanded="false" aria-controls="voice-styles-form">
+                <span class="material-symbols-outlined">edit</span>
+              </button>
             </div>
+            <div class="voice-style-list" id="voice-tag-list" role="listbox" aria-label="Favorite styles"></div>
+            <p class="setting-hint" id="voice-style-empty" hidden>No favorites yet. Edit to star styles for this list.</p>
             <p class="setting-hint" id="voice-tag-hint">Sent as [style] on every breath, so it lasts the whole line. Leave empty for none. Enter speaks.</p>
           </div>
 
@@ -294,7 +290,7 @@
       <div class="settings-form-scroll">
           <div class="settings-body">
             <div class="modal-description settings-section-label">Account</div>
-            <div class="modal-description settings-section-hint" id="account-hint">Sign in with Google or email to use your boards, voices, and settings on another device. The speaker stays on this device.</div>
+            <div class="modal-description settings-section-hint" id="account-hint">Sign in with Google or email to use your boards, voices, styles, and settings on another device. The speaker stays on this device.</div>
             <div id="account-setup" class="account-block" hidden>
               <div class="modal-description">Add a Web app in Firebase project voice-1d8a8 and paste its API key. Also turn on Email/Password, create Firestore, and publish firestore.rules.</div>
               <input id="account-api-key" class="modal-input" type="text" autocomplete="off" spellcheck="false" placeholder="Web API key" aria-label="Firebase web API key">
@@ -324,7 +320,7 @@
                 <span class="account-avatar" id="account-avatar" aria-hidden="true"></span>
                 <div class="account-email-line" id="account-email-line"></div>
               </div>
-              <div class="modal-description">Boards, history, voices, and your ElevenLabs key are saved to this account.</div>
+              <div class="modal-description">Boards, history, voices, styles, and your ElevenLabs key are saved to this account.</div>
               <div class="account-actions">
                 <button type="button" class="tool-btn" id="account-sync">Sync now</button>
                 <button type="button" class="tool-btn" id="account-signout">Sign out</button>
@@ -501,9 +497,9 @@
           <div class="modal-description settings-section-label">Message</div>
           <div class="modal-description settings-section-hint"><span class="material-symbols-outlined coach-inline-icon">more_horiz</span> Actions holds <span class="material-symbols-outlined coach-inline-icon">push_pin</span> Pin, <span class="material-symbols-outlined coach-inline-icon">replay</span> Replay, and <span class="material-symbols-outlined coach-inline-icon">close</span> Clear or <span class="material-symbols-outlined coach-inline-icon">add</span> Insert tag when that button is off. Insert tag is ElevenLabs only. <span class="material-symbols-outlined coach-inline-icon">volume_up</span> Speak, or Enter, makes new speech. Replay plays the saved clip. The on-screen keyboard is in Settings.</div>
           <div class="modal-description settings-section-label">ElevenLabs</div>
-          <div class="modal-description settings-section-hint">No key yet: closing Help asks for one. <span class="material-symbols-outlined coach-inline-icon">key</span> Link to ElevenLabs saves it and opens the voice list. Style, under the voice, is sent in brackets on every breath. Enter speaks. Empty means none.</div>
+          <div class="modal-description settings-section-hint">No key yet: closing Help asks for one. <span class="material-symbols-outlined coach-inline-icon">key</span> Link to ElevenLabs saves it and opens the voice list. Style, under the voice, is sent in brackets on every breath. Edit opens the full list. Starred styles stay under the box. Enter speaks. Empty means none.</div>
           <div class="modal-description settings-section-label">Account</div>
-          <div class="modal-description settings-section-hint">In Settings, sign in with Google or email to save boards, voices, and the ElevenLabs key. Another device can sign in and use them. Speaker choice stays on this device.</div>
+          <div class="modal-description settings-section-hint">In Settings, sign in with Google or email to save boards, voices, styles, and the ElevenLabs key. Another device can sign in and use them. Speaker choice stays on this device.</div>
           <div class="modal-description settings-section-label">Shortcuts</div>
           <div class="modal-description settings-section-hint">Keys are on the button tooltips. The full list is below.</div>
           <button type="button" class="status-btn help-hotkeys-btn" id="help-hotkeys-btn">
@@ -515,6 +511,25 @@
         </div>
       </div>
     </section>
+    </div>
+    <div class="voice-styles-cover" id="voice-styles-cover" hidden>
+      <section class="settings-form" id="voice-styles-form" tabindex="-1" aria-labelledby="voice-styles-title">
+        <div class="settings-form-header">
+          <h1 class="settings-form-title" id="voice-styles-title">Styles</h1>
+          <button type="button" class="icon-btn" id="voice-styles-close-btn" title="Close styles" aria-label="Close styles">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div class="settings-form-scroll">
+          <div class="voice-styles-add">
+            <input type="text" id="voice-style-add-input" class="modal-input" maxlength="40" placeholder="New style" aria-label="New style" autocomplete="off" spellcheck="false" enterkeyhint="done">
+            <button type="button" class="tool-btn" id="voice-style-add-btn">Add</button>
+          </div>
+          <p class="setting-hint voice-styles-status" id="voice-styles-status" role="status"></p>
+          <p class="setting-hint voice-styles-note">Star a style to list it under the voice box. New styles start starred. Trash removes a style.</p>
+          <div id="voice-styles-editor-list" class="voice-styles-editor-list" role="list" aria-label="All styles"></div>
+        </div>
+      </section>
     </div>
     </div>
   </main>
@@ -875,6 +890,7 @@
   <script src="js/piper.js" defer></script>
   <script src="js/output-device.js" defer></script>
   <script src="js/speech-playback.js" defer></script>
+  <script src="js/voice-styles.js" defer></script>
   <script src="js/voices.js" defer></script>
   <script src="js/topics-edit.js" defer></script>
   <script src="js/topics.js" defer></script>

@@ -58,6 +58,7 @@
     "aac_fav_piper_voices",
     "aac_voice_language_filter",
     "aac_eleven_voice_tag",
+    "aac_voice_styles",
     "voice_predict_personal_v1",
     "voice_predict_personal_text_v1"
   ];
@@ -167,7 +168,11 @@
     }
   }
 
-  /** A device that still has the built-in boards and no personal speech data. */
+  /**
+   * Built-in boards and no personal speech, style list, or chosen style.
+   * A missing style catalog is the local default and is not personal.
+   * The catalog is one JSON value: styles, favorites, and whether none is starred.
+   */
   function deviceLooksFresh(keys) {
     const src = keys || {};
     if (!isStarterTabsJson(src.aac_tabs)) return false;
@@ -176,6 +181,8 @@
     if (String(src.voice_predict_personal_text_v1 || "").trim()) return false;
     if (predictHasLearning(src.voice_predict_personal_v1)) return false;
     if (chatsHaveUserText(src.aac_chats)) return false;
+    if (String(src.aac_voice_styles || "").trim()) return false;
+    if (String(src.aac_eleven_voice_tag || "").trim()) return false;
     return true;
   }
 

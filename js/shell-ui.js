@@ -492,8 +492,23 @@
       return !!cover && !cover.hidden;
     }
 
+    function isVoiceStylesOpen() {
+      const cover = document.getElementById("voice-styles-cover");
+      return !!cover && !cover.hidden;
+    }
+
+    function syncMainInert() {
+      const lock = isHelpOpen() || isVoiceStylesOpen();
+      const board = document.getElementById("workspace-board");
+      const settings = document.getElementById("settings-form");
+      if (board) board.inert = lock;
+      if (settings) settings.inert = lock;
+    }
+
     function focusSurface() {
-      const form = (isHelpOpen() && document.getElementById("help-form")) || document.getElementById("settings-form");
+      const form = (isVoiceStylesOpen() && document.getElementById("voice-styles-form"))
+        || (isHelpOpen() && document.getElementById("help-form"))
+        || document.getElementById("settings-form");
       if (!form || form.hidden) { d.focusDisplayInput(); return; }
       try { form.focus({ preventScroll: true }); } catch (_) { form.focus(); }
     }
@@ -526,8 +541,7 @@
       const help = document.getElementById("help-form");
       const restore = !open && !!(help && help.contains(document.activeElement));
       cover.hidden = !open;
-      document.getElementById("workspace-board").inert = open;
-      document.getElementById("settings-form").inert = open;
+      syncMainInert();
       if (open && isPortraitLayout()) setLayout({ drawerOpen: false }, { restoreFocus: false });
       if (open || restore) focusSurface();
       if (!open) try { if (typeof d.onHelpClosed === "function") d.onHelpClosed(); } catch (_) {}
@@ -535,6 +549,21 @@
     }
 
     function closeHelp() { return setHelpOpen(false); }
+
+    function setVoiceStylesOpen(open) {
+      const cover = document.getElementById("voice-styles-cover");
+      if (!cover || (!cover.hidden) === !!open) return false;
+      if (!open && document.body.classList.contains("modal-open")) return false;
+      const form = document.getElementById("voice-styles-form");
+      const restore = !open && !!(form && form.contains(document.activeElement));
+      cover.hidden = !open;
+      syncMainInert();
+      if (open && isPortraitLayout()) setLayout({ drawerOpen: false }, { restoreFocus: false });
+      if (open && form) {
+        try { form.focus({ preventScroll: true }); } catch (_) { form.focus(); }
+      } else if (restore) focusSurface();
+      return true;
+    }
 
     /** Paint right-rail content + nav highlight (does not open chrome). */
     function paintUtilityTab(tab) {
@@ -599,6 +628,9 @@
       const { replace = false, fromRoute = false } = opts;
       const normalized = normalizeTab(tab);
       if (isHelpOpen()) closeHelp();
+      if (normalized === "settings" && isVoiceStylesOpen() && typeof d.closeVoiceStyles === "function") {
+        d.closeVoiceStyles();
+      }
       if (normalized === "settings") setMainView("settings");
       else {
         settingsReturnTab = normalized;
@@ -740,6 +772,11 @@
           closePortraitSidebar();
           return;
         }
+        if (typeof d.closeVoiceStyles === "function" && d.closeVoiceStyles()) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          return;
+        }
         if (closeHelp()) { e.preventDefault(); e.stopImmediatePropagation(); return; }
         closeSettings();
       });
@@ -835,6 +872,8 @@
       isSettingsOpen,
       focusSurface,
       openHelpModal() { setHelpOpen(true); },
+      isVoiceStylesOpen,
+      setVoiceStylesOpen,
       initRoute,
       bind,
       get modalOverlay() { return modalOverlay; }
